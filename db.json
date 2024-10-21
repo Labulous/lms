@@ -1,0 +1,61 @@
+{
+  "cases": [
+    {
+      "id": "1",
+      "clientName": "Coal Harbour Dental",
+      "patientName": "Matthias Cook",
+      "dueDate": "2023-05-15",
+      "currentStage": "Custom Shading",
+      "progress": 60,
+      "status": "In Progress",
+      "assignedTechnicians": ["John Doe", "Jane Smith"],
+      "stages": [
+        { "name": "Impression", "status": "completed" },
+        { "name": "Modeling", "status": "completed" },
+        { "name": "Custom Shading", "status": "in_progress" },
+        { "name": "Finishing", "status": "pending" }
+      ]
+    },
+    {
+      "id": "2",
+      "clientName": "Smile Dental",
+      "patientName": "Emma Thompson",
+      "dueDate": "2023-05-16",
+      "currentStage": "Waxing",
+      "progress": 40,
+      "status": "In Progress",
+      "assignedTechnicians": ["Alice Johnson"],
+      "stages": [
+        { "name": "Impression", "status": "completed" },
+        { "name": "Waxing", "status": "in_progress" },
+        { "name": "Casting", "status": "pending" },
+        { "name": "Finishing", "status": "pending" }
+      ]
+    }
+  ],
+  "comments": [
+    {
+      "id": "1",
+      "caseId": "1",
+      "author": "John Doe",
+      "content": "Custom shading in progress. Waiting for client approval.",
+      "timestamp": "2023-05-10T14:30:00Z"
+    },
+    {
+      "id": "2",
+      "caseId": "1",
+      "author": "Jane Smith",
+      "content": "Client approved the shade. Moving to finishing stage.",
+      "timestamp": "2023-05-11T10:15:00Z"
+    }
+  ],
+  "photos": [
+    {
+      "id": "1",
+      "caseId": "1",
+      "url": "https://example.com/case1-photo1.jpg",
+      "stage": "Custom Shading",
+      "timestamp": "2023-05-10T15:45:00Z"
+    }
+  ]
+}
