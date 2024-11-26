@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Clock, PauseCircle, Package, Maximize2 } from 'lucide-react';
-import { getCurrentUser } from '../services/authService';
+import { useAuth } from '../contexts/AuthContext';
 import DueDatesCalendar from '../components/calendar/DueDatesCalendar';
 import CalendarModal from '../components/calendar/CalendarModal';
 import { getCases, Case } from '../data/mockCasesData';
@@ -8,8 +8,8 @@ import { getCases, Case } from '../data/mockCasesData';
 const Home: React.FC = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
-  const currentUser = getCurrentUser();
-  const userName = currentUser ? currentUser.name : "User";
+  const { user } = useAuth();
+  const userName = user ? user.name : "User";
   const greeting = `Good ${getTimeOfDay()}, ${userName}!`;
 
   useEffect(() => {

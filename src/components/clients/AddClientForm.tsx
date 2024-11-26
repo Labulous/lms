@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import DoctorFields from './DoctorFields';
-import { addClient } from '../../data/mockClientsData';
+import { ClientInput } from '../../services/clientsService';
 import { toast } from 'react-hot-toast';
+import { supabase } from '../../config/supabase';
 
 interface Doctor {
   name: string;
@@ -10,34 +11,24 @@ interface Doctor {
   notes: string;
 }
 
-interface ClientFormData {
-  clientName: string;
-  contactName: string;
-  phone: string;
-  email: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
-  };
-  clinicRegistrationNumber: string;
-  notes: string;
-  doctors: Doctor[];
-}
-
 interface AddClientFormProps {
-  onSubmit: (data: ClientFormData) => void;
+  onSubmit: (data: ClientInput) => void;
   onCancel: () => void;
+  loading?: boolean;
 }
 
-const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => {
-  const [formData, setFormData] = useState<ClientFormData>({
+const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loading }) => {
+  const [formData, setFormData] = useState<ClientInput>({
     clientName: '',
     contactName: '',
     phone: '',
     email: '',
-    address: { street: '', city: '', state: '', zipCode: '' },
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+    },
     clinicRegistrationNumber: '',
     notes: '',
     doctors: [{ name: '', phone: '', email: '', notes: '' }],
@@ -62,28 +53,52 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
     }
   };
 
-  const handleDoctorChange = (index: number, doctorData: Doctor) => {
-    setFormData(prev => {
-      const newDoctors = [...prev.doctors];
-      newDoctors[index] = doctorData;
-      return { ...prev, doctors: newDoctors };
-    });
-  };
-
-  const handleDoctorCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const count = parseInt(e.target.value, 10);
+  const handleDoctorChange = (index: number, field: keyof Doctor, value: string) => {
     setFormData(prev => ({
       ...prev,
-      doctors: Array(count).fill(null).map((_, i) => prev.doctors[i] || { name: '', phone: '', email: '', notes: '' }),
+      doctors: prev.doctors.map((doctor, i) =>
+        i === index ? { ...doctor, [field]: value } : doctor
+      ),
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addDoctor = () => {
+    setFormData(prev => ({
+      ...prev,
+      doctors: [...prev.doctors, { name: '', phone: '', email: '', notes: '' }],
+    }));
+  };
+
+  const removeDoctor = (index: number) => {
+    if (formData.doctors.length === 1) {
+      toast.error('At least one doctor is required');
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      doctors: prev.doctors.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
-      const newClient = addClient(formData);
+      // First check if we have admin permissions
+      const { data: userInfo, error: userError } = await supabase.rpc('get_current_user_info');
+      
+      if (userError) {
+        toast.error('Failed to verify permissions');
+        return;
+      }
+      
+      if (!userInfo?.[0] || userInfo[0].user_role !== 'admin') {
+        toast.error('Only administrators can add new clients');
+        return;
+      }
+
+      await onSubmit(formData);
       toast.success('Client added successfully');
-      onSubmit(formData);
     } catch (error) {
       toast.error('Failed to add client');
       console.error('Error adding client:', error);
@@ -91,170 +106,167 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900">Client Information</h2>
-        <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-          <div className="sm:col-span-3">
-            <label htmlFor="clientName" className="block text-sm font-medium text-gray-700">Client Name</label>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Add New Client</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Client Name</label>
             <input
               type="text"
               name="clientName"
-              id="clientName"
-              required
               value={formData.clientName}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-3">
-            <label htmlFor="contactName" className="block text-sm font-medium text-gray-700">Contact Name</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Contact Name</label>
             <input
               type="text"
               name="contactName"
-              id="contactName"
-              required
               value={formData.contactName}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-3">
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Phone</label>
             <input
               type="tel"
               name="phone"
-              id="phone"
-              required
               value={formData.phone}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-3">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
             <input
               type="email"
               name="email"
-              id="email"
-              required
               value={formData.email}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-6">
-            <label htmlFor="street" className="block text-sm font-medium text-gray-700">Street Address</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Street Address</label>
             <input
               type="text"
               name="address.street"
-              id="street"
-              required
               value={formData.address.street}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">City</label>
             <input
               type="text"
               name="address.city"
-              id="city"
-              required
               value={formData.address.city}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">State</label>
             <input
               type="text"
               name="address.state"
-              id="state"
-              required
               value={formData.address.state}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">Zip Code</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
             <input
               type="text"
               name="address.zipCode"
-              id="zipCode"
-              required
               value={formData.address.zipCode}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              required
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-3">
-            <label htmlFor="clinicRegistrationNumber" className="block text-sm font-medium text-gray-700">Clinic Registration Number</label>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Clinic Registration Number</label>
             <input
               type="text"
               name="clinicRegistrationNumber"
-              id="clinicRegistrationNumber"
               value={formData.clinicRegistrationNumber}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-          <div className="sm:col-span-6">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
+
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Notes</label>
             <textarea
               name="notes"
-              id="notes"
-              rows={3}
               value={formData.notes}
               onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            ></textarea>
+              rows={3}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            />
           </div>
         </div>
-      </div>
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-gray-900">Doctor Information</h2>
-        <div>
-          <label htmlFor="doctorCount" className="block text-sm font-medium text-gray-700">Number of Doctors</label>
-          <select
-            id="doctorCount"
-            value={formData.doctors.length}
-            onChange={handleDoctorCountChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">Doctors</h3>
+          {formData.doctors.map((doctor, index) => (
+            <DoctorFields
+              key={index}
+              doctor={doctor}
+              onChange={(field, value) => handleDoctorChange(index, field, value)}
+              onRemove={() => removeDoctor(index)}
+              showRemove={formData.doctors.length > 1}
+            />
+          ))}
+          <button
+            type="button"
+            onClick={addDoctor}
+            className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-500"
           >
-            {[1, 2, 3, 4, 5].map((num) => (
-              <option key={num} value={num}>{num}</option>
-            ))}
-          </select>
+            + Add Another Doctor
+          </button>
         </div>
-        {formData.doctors.map((doctor, index) => (
-          <DoctorFields
-            key={index}
-            doctor={doctor}
-            onChange={(data) => handleDoctorChange(index, data)}
-            index={index}
-          />
-        ))}
-      </div>
 
-      <div className="flex justify-end space-x-4">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Add Client
-        </button>
+        <div className="mt-8 flex justify-end space-x-4">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-md disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add Client'}
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -3,31 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { login, isAuthenticated } from '../services/authService';
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated()) {
-      console.log('User is already authenticated, redirecting to dashboard');
-      navigate('/');
-    }
+    const checkAuth = async () => {
+      if (await isAuthenticated()) {
+        navigate('/dashboard');
+      }
+    };
+    checkAuth();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     setIsLoading(true);
+
     try {
-      console.log('Attempting login with:', email, password);
       await login(email, password);
-      console.log('Login successful, redirecting to dashboard');
-      navigate('/', { replace: true });
+      navigate('/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
-      setError('Invalid email or password');
+      setError(err instanceof Error ? err.message : 'An error occurred during login');
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +42,6 @@ const Login: React.FC = () => {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <input type="hidden" name="remember" defaultValue="true" />
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email-address" className="sr-only">
@@ -78,7 +77,11 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && (
+            <div className="text-red-600 text-sm text-center">
+              {error}
+            </div>
+          )}
 
           <div>
             <button

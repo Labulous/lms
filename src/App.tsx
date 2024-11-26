@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Cases from './pages/Cases';
@@ -13,129 +13,89 @@ import Login from './pages/Login';
 import Layout from './components/layout/Layout';
 import ClientActivity from './pages/ClientActivity';
 import ProductsServices from './pages/settings/ProductsServices';
-import { isAuthenticated, getCurrentUser } from './services/authService';
-
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  allowedRoles?: string[];
-}
-
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const isAuth = isAuthenticated();
-  const currentUser = getCurrentUser();
-
-  React.useEffect(() => {
-    if (!isAuth) {
-      console.log('[ProtectedRoute] Not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
-    } else if (allowedRoles && currentUser && !allowedRoles.includes(currentUser.role)) {
-      console.log('[ProtectedRoute] Unauthorized role, redirecting to home');
-      navigate('/', { replace: true });
-    }
-  }, [isAuth, currentUser, allowedRoles, navigate]);
-
-  if (!isAuth) {
-    return null;
-  }
-
-  if (allowedRoles && currentUser && !allowedRoles.includes(currentUser.role)) {
-    return null;
-  }
-
-  return <Layout>{children}</Layout>;
-};
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import AuthDebug from './components/auth/AuthDebug';
 
 const App: React.FC = () => {
-  const location = useLocation();
-
   return (
     <ErrorBoundary>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          path="/"
-          element={
+      <>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={
             <ProtectedRoute>
-              <Home />
+              <Layout>
+                <Home />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/cases/*"
-          element={
-            <ProtectedRoute allowedRoles={['admin', 'technician']}>
-              <Cases />
+          } />
+          <Route path="/cases/*" element={
+            <ProtectedRoute requiredRole="technician">
+              <Layout>
+                <Cases />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/shipping/*"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Shipping />
+          } />
+          <Route path="/shipping/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Shipping />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/clients/*"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Clients />
+          } />
+          <Route path="/clients/*" element={
+            <ProtectedRoute requiredRole={['admin', 'technician']}>
+              <Layout>
+                <Clients />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/client-activity"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ClientActivity />
+          } />
+          <Route path="/client-activity" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <ClientActivity />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/inventory/*"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Inventory />
+          } />
+          <Route path="/inventory/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Inventory />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/billing/*"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Billing />
+          } />
+          <Route path="/settings/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Settings />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
+          } />
+          <Route path="/billing/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Billing />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings/products"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ProductsServices />
+          } />
+          <Route path="/reports/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Reports />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <Reports />
+          } />
+          <Route path="/products-services/*" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <ProductsServices />
+              </Layout>
             </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <AuthDebug />
+      </>
     </ErrorBoundary>
   );
 };

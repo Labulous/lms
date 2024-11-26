@@ -1,90 +1,205 @@
-import { jwtDecode } from 'jwt-decode';
+import { supabase } from '../config/supabase';
+import { User } from '@supabase/supabase-js';
+import { createLogger } from '../utils/logger';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'technician' | 'client';
-}
-
-interface DecodedToken {
-  user: User;
-  exp: number;
-}
-
-const MOCK_USERS: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
-  { id: '2', name: 'Tech User', email: 'tech@example.com', role: 'technician' },
-  { id: '3', name: 'Client User', email: 'client@example.com', role: 'client' },
-];
+const logger = createLogger({ module: 'AuthService' });
 
 const AUTH_TOKEN_KEY = 'auth_token';
 
-export const login = (email: string, password: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = MOCK_USERS.find(u => u.email === email);
-      console.log('Login attempt:', { email, password, userFound: !!user });
-      if (user && password === 'password123') {
-        const token = generateToken(user);
-        localStorage.setItem(AUTH_TOKEN_KEY, token);
-        console.log('Login successful, token set:', token);
-        resolve(token);
-      } else {
-        console.log('Login failed: Invalid credentials');
-        reject(new Error('Invalid credentials'));
+export interface CustomUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'technician' | 'client';
+  name: string;
+}
+
+export const login = async (email: string, password: string): Promise<void> => {
+  try {
+    logger.info('Attempting login', { email, timestamp: new Date().toISOString() });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      logger.error('Login failed', {
+        error: {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        }
+      });
+      throw error;
+    }
+
+    logger.info('Login successful', {
+      userId: data.user?.id,
+      email: data.user?.email,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Unexpected error during login', {
+      error: error instanceof Error ? {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      } : error
+    });
+    throw error;
+  }
+};
+
+export const logout = async (): Promise<void> => {
+  try {
+    logger.info('Logging out user');
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      logger.error('Logout failed', error);
+      throw error;
+    }
+    logger.info('Logout successful');
+  } catch (error) {
+    logger.error('Unexpected error during logout', error);
+    throw error;
+  }
+};
+
+export const isAuthenticated = async (): Promise<boolean> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const isAuth = !!session;
+  logger.debug('Authentication check', { isAuthenticated: isAuth });
+  return isAuth;
+};
+
+export const getCurrentUser = async (): Promise<CustomUser | null> => {
+  try {
+    logger.debug('Getting current user from Supabase');
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+    if (authError) {
+      logger.error('Error getting auth user', { error: authError });
+      throw authError;
+    }
+
+    if (!authUser) {
+      logger.debug('No authenticated user found');
+      return null;
+    }
+
+    logger.debug('Auth user found, fetching profile data', { userId: authUser.id });
+
+    // Fetch user profile data
+    const { data: userData, error: dbError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authUser.id)
+      .single();
+
+    if (dbError) {
+      if (dbError.code === 'PGRST116') {
+        // Record not found, create new user profile
+        logger.info('Creating new user profile', { userId: authUser.id });
+        const newUser: CustomUser = {
+          id: authUser.id,
+          email: authUser.email!,
+          role: 'admin', // Default role
+          name: authUser.email!.split('@')[0],
+        };
+
+        const { data: insertedUser, error: insertError } = await supabase
+          .from('users')
+          .insert([newUser])
+          .select()
+          .single();
+
+        if (insertError) {
+          logger.error('Failed to create user profile', { error: insertError });
+          throw insertError;
+        }
+
+        logger.info('User profile created successfully', { userId: newUser.id });
+        return insertedUser || newUser;
       }
-    }, 1000);
-  });
-};
 
-export const logout = (): void => {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  console.log('User logged out, token removed');
-};
+      logger.error('Error fetching user profile', { error: dbError });
+      throw dbError;
+    }
 
-export const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  console.log('Checking authentication, token exists:', !!token);
-  if (!token) return false;
-  
-  try {
-    const decodedToken = parseToken(token);
-    const isValid = decodedToken.exp > Date.now() / 1000;
-    console.log('Token validation result:', isValid);
-    return isValid;
+    if (!userData) {
+      logger.warn('No user profile found', { userId: authUser.id });
+      return null;
+    }
+
+    const customUser: CustomUser = {
+      id: userData.id,
+      email: userData.email,
+      role: userData.role,
+      name: userData.name,
+    };
+
+    logger.debug('User data retrieved successfully', { 
+      userId: customUser.id,
+      role: customUser.role
+    });
+
+    return customUser;
   } catch (error) {
-    console.error('Error validating token:', error);
-    return false;
+    logger.error('Unexpected error in getCurrentUser', {
+      error: error instanceof Error ? {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      } : error
+    });
+    throw error;
   }
 };
 
-export const getCurrentUser = (): User | null => {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (!token) return null;
-  
+export const signUp = async (
+  email: string,
+  password: string,
+  name: string,
+  role: 'client' | 'technician'
+): Promise<void> => {
   try {
-    const decodedToken = parseToken(token);
-    return decodedToken.user;
+    logger.info('Starting user signup', { email, role });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    if (error) {
+      logger.error('Signup failed', error);
+      throw error;
+    }
+
+    logger.info('Signup successful', { userId: data.user?.id });
+
+    // Insert the user's custom data
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert([
+        {
+          id: data.user.id,
+          email,
+          name,
+          role,
+        }
+      ]);
+
+    if (profileError) {
+      // If profile creation fails, we should clean up the auth user
+      await supabase.auth.admin.deleteUser(data.user.id);
+      logger.error('Error creating user profile', profileError);
+      throw profileError;
+    }
   } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
+    logger.error('Unexpected error during signup', error);
+    throw error;
   }
 };
 
-const generateToken = (user: User): string => {
-  const payload = {
-    user: { ...user, password: undefined },
-    exp: Math.floor(Date.now() / 1000) + (60 * 60), // 1 hour expiration
-  };
-  return btoa(JSON.stringify(payload));
-};
-
-const parseToken = (token: string): DecodedToken => {
-  try {
-    return JSON.parse(atob(token)) as DecodedToken;
-  } catch (error) {
-    console.error('Error parsing token:', error);
-    throw new Error('Invalid token');
-  }
-};
+// Listen to auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  logger.debug('Auth state changed', { event, userId: session?.user?.id });
+});
