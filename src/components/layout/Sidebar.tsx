@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Truck, Users, DollarSign, BarChart2, PlusCircle, Calendar, FileText } from 'lucide-react';
+import { Home, Briefcase, Truck, Users, DollarSign, BarChart2, PlusCircle, Calendar, FileText, Package, Activity } from 'lucide-react';
 import { getCurrentUser } from '../../services/authService';
 
 interface SidebarProps {
@@ -17,21 +17,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     { icon: Briefcase, label: 'Cases', href: '/cases', roles: ['admin', 'technician'] },
     { icon: Truck, label: 'Shipping', href: '/shipping', roles: ['admin'], notification: 3 },
     { icon: Users, label: 'Clients', href: '/clients', roles: ['admin'] },
+    { icon: Activity, label: 'Client Activity', href: '/client-activity', roles: ['admin'] },
     { icon: DollarSign, label: 'Billing', href: '/billing', roles: ['admin'] },
     { icon: BarChart2, label: 'Reports', href: '/reports', roles: ['admin'] },
+    { icon: Package, label: 'Inventory', href: '/inventory', roles: ['admin'] },
   ];
 
   const quickActions = [
     { icon: PlusCircle, label: 'Create a New Case', href: '/cases/new', roles: ['admin', 'client'] },
-    { icon: Calendar, label: 'Schedule a Delivery', href: '/shipping/schedule', roles: ['admin'] },
-    { icon: FileText, label: 'Generate an Invoice', href: '/billing/generate', roles: ['admin'] },
+    { icon: Calendar, label: 'Schedule a Delivery', href: '/shipping/new', roles: ['admin'] },
+    { icon: FileText, label: 'Generate an Invoice', href: '/billing/new', roles: ['admin'] },
+    { icon: Package, label: 'Add an Inventory Item', href: '/inventory/add', roles: ['admin'] },
   ];
 
   const filteredMenuItems = menuItems.filter(item => item.roles.includes(currentUser?.role || ''));
   const filteredQuickActions = quickActions.filter(action => action.roles.includes(currentUser?.role || ''));
 
   return (
-    <aside className={`bg-gray-800 text-white w-64 min-h-screen p-4 ${isOpen ? 'block' : 'hidden'} md:block`}>
+    <aside className={`bg-gray-800 text-white w-56 min-h-screen p-4 ${isOpen ? 'block' : 'hidden'} md:block`}>
       <nav>
         <ul>
           {filteredMenuItems.map((item) => (

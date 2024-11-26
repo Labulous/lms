@@ -1,82 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle, Clock, PauseCircle } from 'lucide-react';
-import CaseProgress from './CaseProgress';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { AlertTriangle, Clock, PauseCircle, Package, Plus } from 'lucide-react';
 import CaseFilters from './CaseFilters';
 import PrintButtonWithDropdown from './PrintButtonWithDropdown';
-import { fetchCases } from '../../services/api';
-
-interface Case {
-  id: string;
-  clientName: string;
-  patientName: string;
-  dueDate: string;
-  currentStage: string;
-  progress: number;
-  status: 'In Progress' | 'Completed' | 'On Hold';
-}
+import { getCases, Case } from '../../data/mockCasesData';
+import { format, isEqual, parseISO, isValid } from 'date-fns';
+import SortableTableHeader from '../common/SortableTableHeader';
+import { useSortableData } from '../../hooks/useSortableData';
 
 const CaseList: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>([]);
   const [filteredCases, setFilteredCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCases, setSelectedCases] = useState<string[]>([]);
+
+  const { items: sortedCases, requestSort, sortConfig } = useSortableData(filteredCases);
 
   useEffect(() => {
-    fetchCaseData();
+    // Get cases from our data store
+    const allCases = getCases();
+    setCases(allCases);
+    setLoading(false);
   }, []);
 
-  const fetchCaseData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('Fetching cases...');
-      const fetchedCases = await fetchCases();
-      console.log('Fetched cases:', fetchedCases);
-      setCases(fetchedCases);
-      setFilteredCases(fetchedCases);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(`Failed to load cases. ${errorMessage}`);
-      console.error('Error fetching cases:', err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (cases.length > 0) {
+      let filtered = [...cases];
+      const dueDateParam = searchParams.get('dueDate');
+
+      if (dueDateParam) {
+        filtered = filtered.filter(caseItem => {
+          const caseDate = format(parseISO(caseItem.dueDate), 'yyyy-MM-dd');
+          return caseDate === dueDateParam;
+        });
+      }
+
+      setFilteredCases(filtered);
     }
-  };
+  }, [cases, searchParams]);
 
   const handleFilterChange = (filters: any) => {
-    // Implement filtering logic here
-    const filtered = cases.filter(caseItem => {
-      if (filters.dueDate === 'Today' && new Date(caseItem.dueDate).toDateString() !== new Date().toDateString()) return false;
-      if (filters.status && caseItem.status !== filters.status) return false;
-      return true;
-    });
+    let filtered = [...cases];
+
+    if (filters.dueDate) {
+      const today = new Date();
+      filtered = filtered.filter(caseItem => {
+        const dueDate = parseISO(caseItem.dueDate);
+        return isValid(dueDate) && isEqual(dueDate, today);
+      });
+    }
+
+    if (filters.status) {
+      filtered = filtered.filter(caseItem => caseItem.caseStatus === filters.status);
+    }
+
     setFilteredCases(filtered);
   };
 
   const handleSearch = (searchTerm: string) => {
     const filtered = cases.filter(caseItem =>
       caseItem.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      caseItem.id.toLowerCase().includes(searchTerm.toLowerCase())
+      caseItem.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.caseId.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCases(filtered);
   };
 
   const handlePrintOptionSelect = (option: string) => {
-    // Implement print functionality here
-    console.log(`Print option selected: ${option}`);
+    console.log(`Print option selected: ${option} for cases:`, selectedCases);
   };
 
-  console.log('Rendering CaseList, cases:', cases);
-  console.log('Rendering CaseList, filteredCases:', filteredCases);
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedCases(sortedCases.map(caseItem => caseItem.id));
+    } else {
+      setSelectedCases([]);
+    }
+  };
+
+  const handleSelectCase = (caseId: string) => {
+    setSelectedCases(prev => {
+      if (prev.includes(caseId)) {
+        return prev.filter(id => id !== caseId);
+      } else {
+        return [...prev, caseId];
+      }
+    });
+  };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <div className="text-center py-4">Loading cases...</div>;
   }
 
   if (error) {
@@ -88,76 +104,164 @@ const CaseList: React.FC = () => {
     );
   }
 
+  const dueDateParam = searchParams.get('dueDate');
+  const headerText = dueDateParam && isValid(parseISO(dueDateParam))
+    ? `Cases Due on ${format(parseISO(dueDateParam), 'MMMM d, yyyy')}`
+    : 'Case Management';
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return 'Invalid Date';
+      }
+      return format(date, 'MMM d, yyyy');
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Invalid Date';
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Case Management</h1>
-      <CaseFilters onFilterChange={handleFilterChange} onSearch={handleSearch} />
-      <div className="mb-4">
-        <PrintButtonWithDropdown caseId="" onPrintOptionSelect={handlePrintOptionSelect} />
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-semibold text-gray-800">{headerText}</h1>
+        <button
+          onClick={() => navigate('/cases/new')}
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
+        >
+          <Plus className="mr-2" size={20} />
+          Add New Case
+        </button>
       </div>
-      {filteredCases.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">No cases found.</div>
-      ) : (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <table className="min-w-full leading-normal">
-            <thead>
-              <tr>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Client / Patient
-                </th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Due Date
-                </th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Current Stage
-                </th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Progress
-                </th>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  Status
-                </th>
+
+      <CaseFilters onFilterChange={handleFilterChange} onSearch={handleSearch} />
+      
+      <div className="mb-4">
+        <PrintButtonWithDropdown 
+          caseId="" 
+          onPrintOptionSelect={handlePrintOptionSelect}
+          disabled={selectedCases.length === 0}
+        />
+      </div>
+
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full leading-normal">
+          <thead>
+            <tr>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100">
+                <input
+                  type="checkbox"
+                  checked={selectedCases.length === sortedCases.length}
+                  onChange={handleSelectAll}
+                  className="form-checkbox h-4 w-4 text-blue-600"
+                />
+              </th>
+              <SortableTableHeader
+                label="Invoice ID"
+                sortKey="invoiceId"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <SortableTableHeader
+                label="Patient"
+                sortKey="patientName"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <SortableTableHeader
+                label="Clinic"
+                sortKey="clientName"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <SortableTableHeader
+                label="Doctor"
+                sortKey="doctorName"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <SortableTableHeader
+                label="Status"
+                sortKey="caseStatus"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <SortableTableHeader
+                label="Due Date"
+                sortKey="dueDate"
+                currentSort={sortConfig.key}
+                currentDirection={sortConfig.direction}
+                onSort={requestSort}
+              />
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedCases.map((caseItem) => (
+              <tr key={caseItem.id}>
+                <td className="px-5 py-4 border-b border-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={selectedCases.includes(caseItem.id)}
+                    onChange={() => handleSelectCase(caseItem.id)}
+                    className="form-checkbox h-4 w-4 text-blue-600"
+                  />
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <p className="text-gray-900 whitespace-no-wrap font-semibold">
+                    {caseItem.caseId}
+                  </p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <p className="text-gray-900 whitespace-no-wrap">
+                    {caseItem.patientName || 'N/A'}
+                  </p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <p className="text-gray-900 whitespace-no-wrap">
+                    {caseItem.clientName}
+                  </p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <p className="text-gray-900 whitespace-no-wrap">
+                    {caseItem.doctorName || 'N/A'}
+                  </p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    caseItem.caseStatus === 'Completed' ? 'bg-green-100 text-green-800' :
+                    caseItem.caseStatus === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {caseItem.caseStatus}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <p className="text-gray-900 whitespace-no-wrap">
+                    {formatDate(caseItem.dueDate)}
+                  </p>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <Link to={`/cases/${caseItem.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
+                    View
+                  </Link>
+                  <Link to={`/cases/${caseItem.id}/edit`} className="text-indigo-600 hover:text-indigo-900">
+                    Edit
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredCases.map((caseItem) => (
-                <tr key={caseItem.id}>
-                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <Link to={`/cases/${caseItem.id}`} className="hover:text-blue-500">
-                      <div className="flex items-center">
-                        <div className="ml-3">
-                          <p className="text-gray-900 whitespace-no-wrap font-semibold">
-                            {caseItem.clientName}
-                          </p>
-                          <p className="text-gray-600 whitespace-no-wrap">{caseItem.patientName}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </td>
-                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap">{new Date(caseItem.dueDate).toLocaleDateString()}</p>
-                  </td>
-                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <p className="text-gray-900 whitespace-no-wrap">{caseItem.currentStage}</p>
-                  </td>
-                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <CaseProgress progress={caseItem.progress} />
-                  </td>
-                  <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      caseItem.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      caseItem.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {caseItem.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

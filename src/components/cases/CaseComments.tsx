@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { User, Send } from 'lucide-react';
-import { fetchComments, addComment } from '../../services/api';
 
 interface Comment {
   id: string;
@@ -21,39 +20,38 @@ const CaseComments: React.FC<CaseCommentsProps> = ({ caseId }) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchCommentData();
-  }, [caseId]);
-
-  const fetchCommentData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await fetchComments(caseId);
-      setComments(response.data);
-    } catch (err) {
-      setError('Failed to load comments. Please try again later.');
-      console.error('Error fetching comments:', err);
-    } finally {
+    // Simulating API call with setTimeout
+    const timer = setTimeout(() => {
+      const mockComments: Comment[] = [
+        { id: '1', author: 'John Doe', content: 'This is a sample comment', timestamp: new Date().toISOString() },
+        { id: '2', author: 'Jane Smith', content: 'Another sample comment', timestamp: new Date().toISOString() },
+      ];
+      setComments(mockComments);
       setLoading(false);
-    }
-  };
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [caseId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || submitting) return;
 
-    try {
-      setSubmitting(true);
-      setError(null);
-      const response = await addComment(caseId, 'Current User', newComment);
-      setComments([...comments, response.data]);
+    setSubmitting(true);
+    setError(null);
+
+    // Simulating API call with setTimeout
+    setTimeout(() => {
+      const newCommentObj: Comment = {
+        id: (comments.length + 1).toString(),
+        author: 'Current User',
+        content: newComment,
+        timestamp: new Date().toISOString(),
+      };
+      setComments([...comments, newCommentObj]);
       setNewComment('');
-    } catch (err) {
-      setError('Failed to post comment. Please try again.');
-      console.error('Error posting comment:', err);
-    } finally {
       setSubmitting(false);
-    }
+    }, 500);
   };
 
   if (loading) {

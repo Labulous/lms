@@ -1,13 +1,20 @@
 import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import ShippingList from '../components/shipping/ShippingList';
+import AddShipmentForm from '../components/shipping/AddShipmentForm';
+import EditShipmentForm from '../components/shipping/EditShipmentForm';
+import ShipmentDetails from '../components/shipping/ShipmentDetails';
+import ShippingProviders from '../components/shipping/ShippingProviders';
 
 const Shipping: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Shipping</h1>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <p>Shipping management functionality will be implemented here.</p>
-      </div>
-    </div>
+    <Routes>
+      <Route index element={<ShippingList />} />
+      <Route path="new" element={<AddShipmentForm />} />
+      <Route path=":id" element={<ShipmentDetails />} />
+      <Route path=":id/edit" element={<EditShipmentForm />} />
+      <Route path="providers" element={<ShippingProviders />} />
+    </Routes>
   );
 };
 

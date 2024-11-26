@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserCircle, Bell, Menu, Search, LogOut } from 'lucide-react';
+import { UserCircle, Bell, Menu, Search, LogOut, Settings } from 'lucide-react';
 import { getCurrentUser, logout } from '../../services/authService';
+import SettingsMenu from './SettingsMenu';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -10,6 +11,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -25,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               <Menu className="h-6 w-6" />
             </button>
             <Link to="/" className="text-2xl font-bold text-gray-800 ml-2 md:ml-0">
-              Labulous
+              Solaris Dental Design
             </Link>
           </div>
           <div className="flex-1 max-w-2xl px-4">
@@ -44,6 +46,17 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             <button className="text-gray-600 hover:text-gray-800">
               <Bell className="h-6 w-6" />
             </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <Settings className="h-6 w-6" />
+              </button>
+              {showSettingsMenu && (
+                <SettingsMenu onClose={() => setShowSettingsMenu(false)} />
+              )}
+            </div>
             <div className="relative">
               <button className="flex items-center text-gray-600 hover:text-gray-800">
                 <UserCircle className="h-6 w-6 mr-2" />

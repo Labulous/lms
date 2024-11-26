@@ -1,22 +1,92 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@import 'react-big-calendar/lib/css/react-big-calendar.css';
+/* Calendar custom styles */
+.rbc-calendar {
+  @apply font-sans;
+}
 
-/* ... (keep existing styles) */
+.rbc-header {
+  @apply py-2 font-semibold text-gray-700 text-sm;
+}
 
+.rbc-date-cell {
+  @apply text-sm text-gray-600;
+}
+
+.rbc-today {
+  @apply bg-blue-50;
+}
+
+.rbc-off-range-bg {
+  @apply bg-gray-50;
+}
+
+.rbc-toolbar button {
+  @apply px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.rbc-toolbar button.rbc-active {
+  @apply bg-blue-500 text-white border-blue-500 hover:bg-blue-600;
+}
+
+/* Remove default event styling since we're not using events */
+.rbc-event {
+  display: none;
+}
+
+/* Align date numbers to the top-left and add padding */
+.rbc-date-cell {
+  @apply text-left align-top p-2;
+}
+
+/* Ensure the date cell content has proper spacing */
+.rbc-date-cell > div {
+  @apply p-1;
+}
+
+/* Print styles */
 @media print {
   body * {
     visibility: hidden;
   }
-  .print-only, .print-only * {
-    visibility: visible;
+  
+  .print-content, .print-content * {
+    visibility: visible !important;
   }
-  .print-only {
+  
+  .print-content {
     position: absolute;
     left: 0;
     top: 0;
+    width: 100%;
+  }
+
+  /* Hide non-printable elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break {
+    page-break-before: always;
+  }
+
+  /* Set paper size and margins */
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  /* Ensure text is black for better printing */
+  * {
+    color: black !important;
+  }
+
+  /* Ensure borders are visible */
+  table, th, td {
+    border-color: #000 !important;
   }
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Cases from './pages/Cases';
 import Shipping from './pages/Shipping';
@@ -10,9 +11,9 @@ import Reports from './pages/Reports';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import Layout from './components/layout/Layout';
+import ClientActivity from './pages/ClientActivity';
+import ProductsServices from './pages/settings/ProductsServices';
 import { isAuthenticated, getCurrentUser } from './services/authService';
-
-console.log('App component is rendering');
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,13 +22,16 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const isAuth = isAuthenticated();
   const currentUser = getCurrentUser();
 
   React.useEffect(() => {
     if (!isAuth) {
+      console.log('[ProtectedRoute] Not authenticated, redirecting to login');
       navigate('/login', { replace: true });
     } else if (allowedRoles && currentUser && !allowedRoles.includes(currentUser.role)) {
+      console.log('[ProtectedRoute] Unauthorized role, redirecting to home');
       navigate('/', { replace: true });
     }
   }, [isAuth, currentUser, allowedRoles, navigate]);
@@ -44,76 +48,95 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
 };
 
 const App: React.FC = () => {
-  console.log('Rendering App component');
+  const location = useLocation();
+
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/cases/*"
-        element={
-          <ProtectedRoute allowedRoles={['admin', 'technician']}>
-            <Cases />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/shipping"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Shipping />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/clients/*"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Clients />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/billing"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Billing />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/reports"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Reports />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Inventory />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cases/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin', 'technician']}>
+              <Cases />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/shipping/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Shipping />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/clients/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Clients />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client-activity"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ClientActivity />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/inventory/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Inventory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/billing/*"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Billing />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/products"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ProductsServices />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 };
 

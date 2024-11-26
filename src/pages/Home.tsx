@@ -1,32 +1,20 @@
-import React from 'react';
-import { AlertTriangle, Clock, PauseCircle, Package, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Clock, PauseCircle, Package, Maximize2 } from 'lucide-react';
 import { getCurrentUser } from '../services/authService';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import enUS from 'date-fns/locale/en-US';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-
-const locales = {
-  'en-US': enUS,
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
+import DueDatesCalendar from '../components/calendar/DueDatesCalendar';
+import CalendarModal from '../components/calendar/CalendarModal';
+import { getCases, Case } from '../data/mockCasesData';
 
 const Home: React.FC = () => {
-  console.log('Rendering Home component, currentUser:', getCurrentUser());
-
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [cases, setCases] = useState<Case[]>([]);
   const currentUser = getCurrentUser();
   const userName = currentUser ? currentUser.name : "User";
   const greeting = `Good ${getTimeOfDay()}, ${userName}!`;
+
+  useEffect(() => {
+    setCases(getCases());
+  }, []);
 
   const keyMetrics = [
     { icon: AlertTriangle, label: 'Cases Past Due', value: 1, color: 'bg-red-500' },
@@ -39,27 +27,6 @@ const Home: React.FC = () => {
     { client: 'Coal Harbour Dental', patient: 'Matthias Cook', dueDate: 'Today', stage: 'Custom Shading', progress: 60 },
     { client: 'Smile Dental', patient: 'Emma Thompson', dueDate: 'Tomorrow', stage: 'Waxing', progress: 40 },
     { client: 'Bright Teeth Clinic', patient: 'John Doe', dueDate: 'In 2 days', stage: 'Modeling', progress: 20 },
-  ];
-
-  const calendarEvents = [
-    {
-      title: 'Case Due',
-      start: new Date(2023, 4, 15),
-      end: new Date(2023, 4, 15),
-      allDay: true,
-    },
-    {
-      title: 'Case Due',
-      start: new Date(2023, 4, 18),
-      end: new Date(2023, 4, 18),
-      allDay: true,
-    },
-    {
-      title: 'Case Due',
-      start: new Date(2023, 4, 22),
-      end: new Date(2023, 4, 22),
-      allDay: true,
-    },
   ];
 
   return (
@@ -82,65 +49,58 @@ const Home: React.FC = () => {
         <div className="lg:w-3/5">
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Cases In Progress</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b">
-                    <th className="pb-3 font-semibold text-gray-600">Client</th>
-                    <th className="pb-3 font-semibold text-gray-600">Patient</th>
-                    <th className="pb-3 font-semibold text-gray-600">Due Date</th>
-                    <th className="pb-3 font-semibold text-gray-600">Stage</th>
-                    <th className="pb-3 font-semibold text-gray-600">Progress</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {casesInProgress.map((caseItem, index) => (
-                    <tr key={index} className="border-b last:border-b-0">
-                      <td className="py-3">{caseItem.client}</td>
-                      <td className="py-3">{caseItem.patient}</td>
-                      <td className="py-3">{caseItem.dueDate}</td>
-                      <td className="py-3">{caseItem.stage}</td>
-                      <td className="py-3">
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${caseItem.progress}%` }}></div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4">
+              {casesInProgress.map((caseItem, index) => (
+                <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-800">{caseItem.client}</h3>
+                      <p className="text-sm text-gray-600">{caseItem.patient}</p>
+                    </div>
+                    <span className="text-sm font-medium text-gray-600">{caseItem.dueDate}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">{caseItem.stage}</span>
+                    <div className="w-1/2">
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className="bg-blue-600 h-2.5 rounded-full" 
+                          style={{ width: `${caseItem.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
         <div className="lg:w-2/5">
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Upcoming Due Dates</h2>
-            <Calendar
-              localizer={localizer}
-              events={calendarEvents}
-              startAccessor="start"
-              endAccessor="end"
-              style={{ height: 400 }}
-              views={['month']}
-              components={{
-                dateCellWrapper: (props) => {
-                  const hasEvent = calendarEvents.some(
-                    (event) => event.start.toDateString() === props.value.toDateString()
-                  );
-                  return (
-                    <div className="relative h-full">
-                      {props.children}
-                      {hasEvent && (
-                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-blue-500 rounded-full"></div>
-                      )}
-                    </div>
-                  );
-                },
-              }}
-            />
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-semibold text-gray-800">Due Dates Calendar</h2>
+              <button
+                onClick={() => setIsCalendarModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Maximize2 className="w-4 h-4" />
+                Expand
+              </button>
+            </div>
+            <div className="h-[500px]">
+              <DueDatesCalendar events={cases} />
+            </div>
           </div>
         </div>
       </div>
+
+      {isCalendarModalOpen && (
+        <CalendarModal
+          isOpen={isCalendarModalOpen}
+          onClose={() => setIsCalendarModalOpen(false)}
+          events={cases}
+        />
+      )}
     </div>
   );
 };

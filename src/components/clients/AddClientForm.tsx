@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import DoctorFields from './DoctorFields';
+import { addClient } from '../../data/mockClientsData';
+import { toast } from 'react-hot-toast';
 
 interface Doctor {
   name: string;
@@ -43,22 +45,25 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      address: { ...prev.address, [name]: value },
-    }));
+    if (name.startsWith('address.')) {
+      const addressField = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [addressField]: value,
+        },
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleDoctorChange = (index: number, doctorData: Doctor) => {
-    setFormData((prev) => {
+    setFormData(prev => {
       const newDoctors = [...prev.doctors];
       newDoctors[index] = doctorData;
       return { ...prev, doctors: newDoctors };
@@ -67,7 +72,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
 
   const handleDoctorCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const count = parseInt(e.target.value, 10);
-    setFormData((prev) => ({
+    setFormData(prev => ({
       ...prev,
       doctors: Array(count).fill(null).map((_, i) => prev.doctors[i] || { name: '', phone: '', email: '', notes: '' }),
     }));
@@ -75,7 +80,14 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    try {
+      const newClient = addClient(formData);
+      toast.success('Client added successfully');
+      onSubmit(formData);
+    } catch (error) {
+      toast.error('Failed to add client');
+      console.error('Error adding client:', error);
+    }
   };
 
   return (
@@ -135,11 +147,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
             <label htmlFor="street" className="block text-sm font-medium text-gray-700">Street Address</label>
             <input
               type="text"
-              name="street"
+              name="address.street"
               id="street"
               required
               value={formData.address.street}
-              onChange={handleAddressChange}
+              onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
@@ -147,11 +159,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
             <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
             <input
               type="text"
-              name="city"
+              name="address.city"
               id="city"
               required
               value={formData.address.city}
-              onChange={handleAddressChange}
+              onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
@@ -159,11 +171,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
             <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
             <input
               type="text"
-              name="state"
+              name="address.state"
               id="state"
               required
               value={formData.address.state}
-              onChange={handleAddressChange}
+              onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
@@ -171,16 +183,16 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
             <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700">Zip Code</label>
             <input
               type="text"
-              name="zipCode"
+              name="address.zipCode"
               id="zipCode"
               required
               value={formData.address.zipCode}
-              onChange={handleAddressChange}
+              onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
           <div className="sm:col-span-3">
-            <label htmlFor="clinicRegistrationNumber" className="block text-sm font-medium text-gray-700">Clinic Registration Number (Optional)</label>
+            <label htmlFor="clinicRegistrationNumber" className="block text-sm font-medium text-gray-700">Clinic Registration Number</label>
             <input
               type="text"
               name="clinicRegistrationNumber"
@@ -191,7 +203,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
             />
           </div>
           <div className="sm:col-span-6">
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
             <textarea
               name="notes"
               id="notes"
@@ -210,7 +222,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel }) => 
           <label htmlFor="doctorCount" className="block text-sm font-medium text-gray-700">Number of Doctors</label>
           <select
             id="doctorCount"
-            name="doctorCount"
             value={formData.doctors.length}
             onChange={handleDoctorCountChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"

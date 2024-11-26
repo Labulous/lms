@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ClientFilters from './ClientFilters';
-
-interface Client {
-  id: string;
-  clientName: string;
-  contactName: string;
-  phone: string;
-  email: string;
-}
+import { Client } from '../../data/mockClientsData';
 
 interface ClientListProps {
   clients: Client[];
@@ -17,6 +10,7 @@ interface ClientListProps {
 
 const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient }) => {
   const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setFilteredClients(clients);
@@ -26,13 +20,19 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient }) => {
     const filtered = clients.filter(client =>
       client.clientName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       client.contactName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      client.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      client.accountNumber.toLowerCase().includes(filters.searchTerm.toLowerCase())
     );
     setFilteredClients(filtered);
   };
 
-  console.log('Rendering ClientList, clients:', clients);
-  console.log('Rendering ClientList, filteredClients:', filteredClients);
+  const handleView = (clientId: string) => {
+    navigate(`/clients/${clientId}`);
+  };
+
+  const handleEdit = (clientId: string) => {
+    navigate(`/clients/${clientId}/edit`);
+  };
 
   return (
     <div>
@@ -53,6 +53,9 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Account #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Client Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -72,17 +75,26 @@ const ClientList: React.FC<ClientListProps> = ({ clients, onDeleteClient }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredClients.map((client) => (
               <tr key={client.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {client.accountNumber}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">{client.clientName}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{client.contactName}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{client.phone}</td>
                 <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link to={`/clients/${client.id}`} className="text-indigo-600 hover:text-indigo-900 mr-2">
+                  <button
+                    onClick={() => handleView(client.id)}
+                    className="text-indigo-600 hover:text-indigo-900 mr-2"
+                  >
                     View
-                  </Link>
-                  <Link to={`/clients/${client.id}/edit`} className="text-blue-600 hover:text-blue-900 mr-2">
+                  </button>
+                  <button
+                    onClick={() => handleEdit(client.id)}
+                    className="text-blue-600 hover:text-blue-900 mr-2"
+                  >
                     Edit
-                  </Link>
+                  </button>
                   <button
                     onClick={() => onDeleteClient(client.id)}
                     className="text-red-600 hover:text-red-900"

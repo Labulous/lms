@@ -4,9 +4,14 @@ import { Printer, ChevronDown } from 'lucide-react';
 interface PrintButtonWithDropdownProps {
   caseId: string;
   onPrintOptionSelect: (option: string) => void;
+  disabled?: boolean;
 }
 
-const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({ caseId, onPrintOptionSelect }) => {
+const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({ 
+  caseId, 
+  onPrintOptionSelect,
+  disabled = false 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const printOptions = [
@@ -27,8 +32,13 @@ const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({ caseI
       <div>
         <button
           type="button"
-          className="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500"
-          onClick={() => setIsOpen(!isOpen)}
+          className={`inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium ${
+            disabled 
+              ? 'text-gray-400 cursor-not-allowed' 
+              : 'text-gray-700 hover:bg-gray-50'
+          } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500`}
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
         >
           <Printer className="mr-2 h-5 w-5" />
           Print
@@ -36,7 +46,7 @@ const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({ caseI
         </button>
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
           <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
             {printOptions.map((option) => (

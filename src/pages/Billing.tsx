@@ -1,12 +1,33 @@
 import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import InvoiceList from '../components/billing/InvoiceList';
+import InvoiceForm from '../components/billing/InvoiceForm';
 
 const Billing: React.FC = () => {
+  const location = useLocation();
+  console.log('[Billing] Current path:', location.pathname);
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Billing</h1>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <p>Billing management functionality will be implemented here.</p>
-      </div>
+      <Routes>
+        <Route 
+          index 
+          element={
+            <React.Suspense fallback={<div>Loading invoice list...</div>}>
+              <InvoiceList />
+            </React.Suspense>
+          } 
+        />
+        <Route 
+          path="new" 
+          element={
+            <React.Suspense fallback={<div>Loading invoice form...</div>}>
+              <InvoiceForm />
+            </React.Suspense>
+          } 
+        />
+        <Route path="*" element={<Navigate to="/billing" replace />} />
+      </Routes>
     </div>
   );
 };
