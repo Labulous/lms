@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { createLogger } from '../utils/logger';
+import { validateAccountNumber } from '../utils/accountNumberFormatter';
 
 const logger = createLogger({ module: 'ClientsService' });
 
@@ -216,15 +217,19 @@ class ClientsService {
   }
 
   async addClient(clientData: ClientInput): Promise<Client> {
-    const accountNumber = await this.generateAccountNumber();
-
     try {
-      // Start a Supabase transaction
+      // Get the next account number first
+      const { data: nextNumber, error: numberError } = await supabase
+        .rpc('get_next_account_number');
+      
+      if (numberError) throw numberError;
+
+      // Insert client with the pre-fetched account number
       const { data: client, error } = await supabase
         .from('clients')
         .insert({
           ...this.transformClientToDB(clientData),
-          account_number: accountNumber,
+          account_number: nextNumber,
         })
         .select()
         .single();
@@ -254,6 +259,11 @@ class ClientsService {
 
   async updateClient(id: string, clientData: ClientInput): Promise<Client> {
     try {
+      // Validate account number if it's being updated
+      if (clientData.accountNumber && !validateAccountNumber(clientData.accountNumber)) {
+        throw new Error('Invalid account number format');
+      }
+
       // Update client
       const { error: clientError } = await supabase
         .from('clients')

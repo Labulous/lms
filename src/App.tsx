@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import Home from './pages/Home';
 import Cases from './pages/Cases';
@@ -14,12 +15,12 @@ import Layout from './components/layout/Layout';
 import ClientActivity from './pages/ClientActivity';
 import ProductsServices from './pages/settings/ProductsServices';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import AuthDebug from './components/auth/AuthDebug';
 
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <>
+        <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={
@@ -94,7 +95,6 @@ const App: React.FC = () => {
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <AuthDebug />
       </>
     </ErrorBoundary>
   );

@@ -22,7 +22,8 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, onCan
 
   useEffect(() => {
     if (client) {
-      const { id, account_number, created_at, updated_at, ...clientData } = client;
+      // Keep account_number in the form data but remove other server-side fields
+      const { id, created_at, updated_at, ...clientData } = client;
       setFormData(clientData);
     }
   }, [client]);
@@ -91,11 +92,32 @@ const EditClientForm: React.FC<EditClientFormProps> = ({ client, onSubmit, onCan
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+      <div className="space-y-4">
         <h2 className="text-2xl font-bold mb-6">Edit Client</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Account Number Display */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">Account Number</label>
+          <div className="mt-1 relative">
+            <div 
+              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-100 text-gray-500 select-none"
+              aria-readonly="true"
+            >
+              {client?.account_number || ''}
+            </div>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Account number cannot be modified</p>
+        </div>
+
+        {/* Client Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Client Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Client Name</label>
             <input

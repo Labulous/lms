@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DoctorFields from './DoctorFields';
 import { ClientInput } from '../../services/clientsService';
 import { toast } from 'react-hot-toast';
@@ -15,9 +15,11 @@ interface AddClientFormProps {
   onSubmit: (data: ClientInput) => void;
   onCancel: () => void;
   loading?: boolean;
+  onSuccess?: () => void;
 }
 
-const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loading }) => {
+const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loading, onSuccess }) => {
+  const [nextAccountNumber, setNextAccountNumber] = useState<string>('');
   const [formData, setFormData] = useState<ClientInput>({
     clientName: '',
     contactName: '',
@@ -33,6 +35,41 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
     notes: '',
     doctors: [{ name: '', phone: '', email: '', notes: '' }],
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchNextAccountNumber = async () => {
+      try {
+        console.log('Fetching next account number...');
+        const { data, error } = await supabase
+          .rpc('get_next_account_number', {}, {
+            count: 'exact'
+          });
+        
+        console.log('Fetch response:', { data, error });
+        
+        if (error) {
+          console.error('Error fetching next account number:', error);
+          return;
+        }
+        
+        if (data) {
+          console.log('Setting account number to:', data);
+          setNextAccountNumber(data);
+        } else {
+          console.warn('No account number received');
+          setNextAccountNumber('1001'); // Default fallback
+        }
+      } catch (err) {
+        console.error('Error in fetchNextAccountNumber:', err);
+        setNextAccountNumber('1001'); // Default fallback
+      }
+    };
+
+    fetchNextAccountNumber();
+  }, []);
+
+  console.log('Rendering with account number:', nextAccountNumber);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -82,47 +119,71 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      // First check if we have admin permissions
-      const { data: userInfo, error: userError } = await supabase.rpc('get_current_user_info');
-      
-      if (userError) {
-        toast.error('Failed to verify permissions');
-        return;
-      }
-      
-      if (!userInfo?.[0] || userInfo[0].user_role !== 'admin') {
-        toast.error('Only administrators can add new clients');
-        return;
-      }
+    setIsSubmitting(true);
 
-      await onSubmit(formData);
-      toast.success('Client added successfully');
+    try {
+      const { data: accountNumber, error: numberError } = await supabase.rpc('get_next_account_number');
+      if (numberError) throw numberError;
+
+      const result = await onSubmit({
+        ...formData,
+        account_number: accountNumber,
+      });
+
+      if (result) {
+        toast.success('Client added successfully!');
+        setFormData({
+          clientName: '',
+          contactName: '',
+          phone: '',
+          email: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            zipCode: '',
+          },
+          clinicRegistrationNumber: '',
+          notes: '',
+          doctors: [{ name: '', phone: '', email: '', notes: '' }],
+        });
+        onSuccess?.();
+      }
     } catch (error) {
-      toast.error('Failed to add client');
       console.error('Error adding client:', error);
+      toast.error('Failed to add client. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Add New Client</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+      <div className="space-y-4">
+        <div className="flex items-center mb-6">
+          <h2 className="text-2xl font-bold">
+            Add New Client
+            {nextAccountNumber && (
+              <span className="ml-2 text-gray-500">
+                – Account #{nextAccountNumber}
+              </span>
+            )}
+          </h2>
+        </div>
+
+        {/* Client Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Client Name</label>
+            <label className="block text-sm font-medium text-gray-700">Client Name *</label>
             <input
               type="text"
               name="clientName"
               value={formData.clientName}
               onChange={handleInputChange}
-              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700">Contact Name</label>
             <input
@@ -130,83 +191,86 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
               name="contactName"
               value={formData.contactName}
               onChange={handleInputChange}
-              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
+            <label className="block text-sm font-medium text-gray-700">Phone *</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
-              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
             />
           </div>
-
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label className="block text-sm font-medium text-gray-700">Email *</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              required
             />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Street Address</label>
-            <input
-              type="text"
-              name="address.street"
-              value={formData.address.street}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+        {/* Address */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Street *</label>
+              <input
+                type="text"
+                name="address.street"
+                value={formData.address.street}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">City *</label>
+              <input
+                type="text"
+                name="address.city"
+                value={formData.address.city}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">State *</label>
+              <input
+                type="text"
+                name="address.state"
+                value={formData.address.state}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">ZIP Code *</label>
+              <input
+                type="text"
+                name="address.zipCode"
+                value={formData.address.zipCode}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">City</label>
-            <input
-              type="text"
-              name="address.city"
-              value={formData.address.city}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">State</label>
-            <input
-              type="text"
-              name="address.state"
-              value={formData.address.state}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
-            <input
-              type="text"
-              name="address.zipCode"
-              value={formData.address.zipCode}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
+        {/* Additional Information */}
+        <div className="mt-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Clinic Registration Number</label>
             <input
@@ -217,8 +281,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
-
-          <div className="col-span-2">
+          <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700">Notes</label>
             <textarea
               name="notes"
@@ -230,8 +293,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
           </div>
         </div>
 
-        <div className="mt-8">
-          <h3 className="text-lg font-medium mb-4">Doctors</h3>
+        {/* Doctors Section */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Doctors</h3>
           {formData.doctors.map((doctor, index) => (
             <DoctorFields
               key={index}
@@ -244,29 +308,29 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
           <button
             type="button"
             onClick={addDoctor}
-            className="mt-4 px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-500"
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            + Add Another Doctor
+            Add Another Doctor
           </button>
         </div>
+      </div>
 
-        <div className="mt-8 flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-500 rounded-md disabled:opacity-50"
-          >
-            {loading ? 'Adding...' : 'Add Client'}
-          </button>
-        </div>
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-4 mt-8">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting || loading}
+          className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+        >
+          {isSubmitting ? 'Adding...' : 'Add Client'}
+        </button>
       </div>
     </form>
   );

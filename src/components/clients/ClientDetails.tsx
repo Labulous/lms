@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Client } from '../../services/clientsService';
+import { Client, ClientInput, Doctor } from '../../services/clientsService';
+import { toast } from 'react-hot-toast';
 
 interface ClientDetailsProps {
   client: Client | null;
-  onEdit: () => void;
+  onEdit: (clientData: ClientInput) => void;
   onDelete: () => void;
   loading: boolean;
   error: string | null;
@@ -12,6 +13,8 @@ interface ClientDetailsProps {
 
 const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete, loading, error }) => {
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedData, setEditedData] = useState<ClientInput | null>(null);
 
   if (loading) {
     return (
@@ -49,94 +52,307 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
     );
   }
 
-  return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-        <div>
-          <h3 className="text-lg leading-6 font-medium text-gray-900">Client Details</h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">Account #{client.accountNumber}</p>
+  const handleEditClick = () => {
+    const { id, accountNumber, created_at, updated_at, ...clientData } = client;
+    setEditedData(clientData);
+    setIsEditing(true);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditedData(prev => {
+      if (!prev) return null;
+      if (name.startsWith('address.')) {
+        const addressField = name.split('.')[1];
+        return {
+          ...prev,
+          address: {
+            ...prev.address,
+            [addressField]: value
+          }
+        };
+      }
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
+  };
+
+  const handleDoctorChange = (index: number, field: keyof Doctor, value: string) => {
+    setEditedData(prev => {
+      if (!prev) return null;
+      const updatedDoctors = [...(prev.doctors || [])];
+      if (!updatedDoctors[index]) {
+        updatedDoctors[index] = { name: '', email: '', phone: '', notes: '' };
+      }
+      updatedDoctors[index] = { ...updatedDoctors[index], [field]: value };
+      return {
+        ...prev,
+        doctors: updatedDoctors
+      };
+    });
+  };
+
+  const addDoctor = () => {
+    setEditedData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        doctors: [...(prev.doctors || []), { name: '', email: '', phone: '', notes: '' }]
+      };
+    });
+  };
+
+  const removeDoctor = (index: number) => {
+    setEditedData(prev => {
+      if (!prev) return null;
+      const updatedDoctors = [...(prev.doctors || [])];
+      updatedDoctors.splice(index, 1);
+      return {
+        ...prev,
+        doctors: updatedDoctors
+      };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!editedData) return;
+    
+    try {
+      await onEdit(editedData);
+      setIsEditing(false);
+      toast.success('Client details updated successfully');
+    } catch (error) {
+      toast.error('Failed to update client details');
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedData(null);
+  };
+
+  const renderField = (label: string, name: string, value: string) => {
+    // Special handling for account number
+    if (name === 'accountNumber') {
+      return isEditing ? (
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2">{label}</label>
+          <input
+            type="text"
+            value={client.accountNumber}
+            disabled
+            className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded text-gray-500 cursor-not-allowed"
+          />
         </div>
-        <div className="flex space-x-4">
-          <button
-            onClick={onEdit}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              if (window.confirm('Are you sure you want to delete this client?')) {
-                onDelete();
-              }
-            }}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
-          >
-            Delete
-          </button>
+      ) : (
+        <div className="mb-4">
+          <span className="block text-gray-700 text-sm font-bold mb-2">{label}</span>
+          <span className="text-gray-700">{client.accountNumber}</span>
         </div>
+      );
+    }
+
+    return isEditing ? (
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">{label}</label>
+        <input
+          type="text"
+          name={name}
+          value={editedData?.[name] || ''}
+          onChange={handleInputChange}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        />
       </div>
-      <div className="border-t border-gray-200">
-        <dl>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Client Name</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.clientName}</dd>
-          </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Contact Name</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.contactName}</dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Email</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.email}</dd>
-          </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Phone</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.phone}</dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Address</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              {client.address.street}<br />
-              {client.address.city}, {client.address.state} {client.address.zipCode}
-            </dd>
-          </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Clinic Registration Number</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.clinicRegistrationNumber}</dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Notes</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.notes}</dd>
-          </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Account Number</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{client.accountNumber}</dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Doctors</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              {client.doctors && client.doctors.length > 0 ? (
-                <ul className="divide-y divide-gray-200">
-                  {client.doctors.map((doctor, index) => (
-                    <li key={doctor.id || index} className="py-4">
-                      <div className="flex flex-col space-y-2">
-                        <div className="font-medium">{doctor.name}</div>
-                        <div className="text-gray-500">Email: {doctor.email}</div>
-                        <div className="text-gray-500">Phone: {doctor.phone}</div>
-                        {doctor.notes && (
-                          <div className="text-gray-500">Notes: {doctor.notes}</div>
-                        )}
+    ) : (
+      <div className="mb-4">
+        <span className="block text-gray-700 text-sm font-bold mb-2">{label}</span>
+        <span className="text-gray-700">{value}</span>
+      </div>
+    );
+  };
+
+  const renderAddressField = (label: string, field: string, value: string) => {
+    return isEditing ? (
+      <div className="mb-4">
+        <label className="block text-gray-700 text-sm font-bold mb-2">{label}</label>
+        <input
+          type="text"
+          name={`address.${field}`}
+          value={editedData?.address?.[field] || ''}
+          onChange={handleInputChange}
+          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        />
+      </div>
+    ) : (
+      <div className="mb-4">
+        <span className="block text-gray-700 text-sm font-bold mb-2">{label}</span>
+        <span className="text-gray-700">{value}</span>
+      </div>
+    );
+  };
+
+  const renderDoctors = () => {
+    const doctors = isEditing ? editedData?.doctors || [] : client.doctors || [];
+
+    return (
+      <div className="mt-8">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Doctors</h3>
+          {isEditing && (
+            <button
+              onClick={addDoctor}
+              className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm"
+            >
+              Add Doctor
+            </button>
+          )}
+        </div>
+        {doctors.length === 0 ? (
+          <p className="text-gray-500">No doctors assigned</p>
+        ) : (
+          <div className="space-y-4">
+            {doctors.map((doctor, index) => (
+              <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                {isEditing ? (
+                  <>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="font-medium">Doctor #{index + 1}</h4>
+                      <button
+                        onClick={() => removeDoctor(index)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Name</label>
+                        <input
+                          type="text"
+                          value={doctor.name}
+                          onChange={(e) => handleDoctorChange(index, 'name', e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No doctors assigned</p>
-              )}
-            </dd>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Email</label>
+                        <input
+                          type="email"
+                          value={doctor.email}
+                          onChange={(e) => handleDoctorChange(index, 'email', e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Phone</label>
+                        <input
+                          type="tel"
+                          value={doctor.phone}
+                          onChange={(e) => handleDoctorChange(index, 'phone', e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Notes</label>
+                        <input
+                          type="text"
+                          value={doctor.notes || ''}
+                          onChange={(e) => handleDoctorChange(index, 'notes', e.target.value)}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div>
+                    <h4 className="font-medium text-lg mb-2">{doctor.name}</h4>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">Email:</span> {doctor.email}
+                      </div>
+                      <div>
+                        <span className="font-medium">Phone:</span> {doctor.phone}
+                      </div>
+                      {doctor.notes && (
+                        <div className="col-span-2">
+                          <span className="font-medium">Notes:</span> {doctor.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        </dl>
+        )}
       </div>
+    );
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-lg p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Client Details</h2>
+        <div className="space-x-2">
+          {!isEditing ? (
+            <>
+              <button
+                onClick={handleEditClick}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Edit
+              </button>
+              <button
+                onClick={onDelete}
+                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleSave}
+                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancel}
+                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          {renderField('Account Number', 'accountNumber', client.accountNumber)}
+          {renderField('Client Name', 'clientName', client.clientName)}
+          {renderField('Contact Name', 'contactName', client.contactName)}
+          {renderField('Phone', 'phone', client.phone)}
+          {renderField('Email', 'email', client.email)}
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Address</h3>
+          {renderAddressField('Street', 'street', client.address.street)}
+          {renderAddressField('City', 'city', client.address.city)}
+          {renderAddressField('State', 'state', client.address.state)}
+          {renderAddressField('Zip Code', 'zipCode', client.address.zipCode)}
+        </div>
+      </div>
+
+      <div className="mt-6">
+        {renderField('Clinic Registration Number', 'clinicRegistrationNumber', client.clinicRegistrationNumber)}
+        {renderField('Notes', 'notes', client.notes || '')}
+      </div>
+
+      {renderDoctors()}
     </div>
   );
 };

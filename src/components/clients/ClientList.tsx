@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
+import Tippy from '@tippyjs/react';
+import 'tippy.js/dist/tippy.css';
 import ClientFilters from './ClientFilters';
 import { Client } from '../../services/clientsService';
 
@@ -11,7 +14,6 @@ interface ClientListProps {
 
 const ClientList: React.FC<ClientListProps> = ({ clients, loading, onDeleteClient }) => {
   const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
-  const navigate = useNavigate();
 
   useEffect(() => {
     setFilteredClients(clients);
@@ -20,11 +22,15 @@ const ClientList: React.FC<ClientListProps> = ({ clients, loading, onDeleteClien
   const handleFilterChange = (filters: { searchTerm: string }) => {
     const filtered = clients.filter(client =>
       client.clientName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.contactName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.accountNumber.toLowerCase().includes(filters.searchTerm.toLowerCase())
+      client.accountNumber.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+      client.address.city.toLowerCase().includes(filters.searchTerm.toLowerCase())
     );
     setFilteredClients(filtered);
+  };
+
+  const getFullAddress = (client: Client) => {
+    return `${client.address.street}, ${client.address.city}, ${client.address.state} ${client.address.zipCode}`;
   };
 
   if (loading) {
@@ -56,7 +62,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, loading, onDeleteClien
               <tr className="bg-gray-100">
                 <th className="px-4 py-2 text-left">Account #</th>
                 <th className="px-4 py-2 text-left">Client Name</th>
-                <th className="px-4 py-2 text-left">Contact</th>
+                <th className="px-4 py-2 text-left">City</th>
                 <th className="px-4 py-2 text-left">Email</th>
                 <th className="px-4 py-2 text-left">Phone</th>
                 <th className="px-4 py-2 text-center">Actions</th>
@@ -67,7 +73,18 @@ const ClientList: React.FC<ClientListProps> = ({ clients, loading, onDeleteClien
                 <tr key={client.id} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-2">{client.accountNumber}</td>
                   <td className="px-4 py-2">{client.clientName}</td>
-                  <td className="px-4 py-2">{client.contactName}</td>
+                  <td className="px-4 py-2">
+                    <Tippy 
+                      content={getFullAddress(client)}
+                      placement="top"
+                      className="bg-gray-900 text-white px-3 py-2 rounded text-sm"
+                    >
+                      <div className="flex items-center gap-1 cursor-pointer">
+                        <MapPin className="w-4 h-4 text-gray-500" />
+                        {client.address.city}
+                      </div>
+                    </Tippy>
+                  </td>
                   <td className="px-4 py-2">{client.email}</td>
                   <td className="px-4 py-2">{client.phone}</td>
                   <td className="px-4 py-2">
