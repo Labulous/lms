@@ -1,7 +1,6 @@
 /* Calendar Wrapper */
 .calendar-wrapper {
-  width: 100%;
-  height: 100%;
+  @apply relative w-full h-full;
   background-color: transparent;
   display: flex;
   flex-direction: column;
@@ -22,6 +21,8 @@
 
 /* Month View Container */
 .rbc-month-view {
+  @apply border border-border rounded-lg overflow-hidden;
+  animation: fadeIn 0.3s ease-out;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -33,6 +34,7 @@
 
 /* Month Header (Days of Week) */
 .rbc-row.rbc-month-header {
+  @apply bg-muted/50;
   display: flex;
   background-color: #F9FAFB;
   border-bottom: 1px solid #E5E7EB;
@@ -41,16 +43,20 @@
 }
 
 .rbc-header {
+  @apply text-xs font-medium text-gray-500 py-2 border-b border-gray-200;
   flex: 1 1 0%;
   min-width: 0;
   padding: 0.75rem;
   font-weight: 600;
-  font-size: 0.875rem;
   text-align: center;
   text-transform: uppercase;
   color: #4B5563;
   border-right: 1px solid #E5E7EB;
   position: relative;
+}
+
+.rbc-header + .rbc-header {
+  @apply border-l border-gray-200;
 }
 
 .rbc-header:last-child {
@@ -59,6 +65,7 @@
 
 /* Month Grid */
 .rbc-month-row {
+  @apply border-border;
   display: flex;
   flex: 1 1 0%;
   min-height: 100px;
@@ -93,6 +100,7 @@
 
 /* Date Cells */
 .rbc-date-cell {
+  @apply p-1 text-right text-sm text-muted-foreground;
   flex: 1 1 0%;
   min-width: 0;
   position: relative;
@@ -107,6 +115,7 @@
 
 /* Custom Date Cell Content */
 .custom-date-cell {
+  @apply relative h-full p-2 hover:bg-accent/50 transition-colors cursor-pointer;
   width: 100%;
   height: 100%;
   min-height: 100px;
@@ -122,6 +131,7 @@
 }
 
 .date-number {
+  @apply text-sm font-medium text-foreground;
   position: absolute;
   top: 4px;
   left: 4px;
@@ -133,6 +143,7 @@
 
 /* Badge Container */
 .badge-container {
+  @apply absolute bottom-2 left-2;
   position: absolute;
   top: 24px;
   left: 50%;
@@ -141,6 +152,7 @@
 }
 
 .count-badge {
+  @apply inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full bg-primary text-white shadow-sm transition-transform hover:scale-110;
   min-width: 1.5rem;
   height: 1.5rem;
   padding: 0 0.375rem;
@@ -163,6 +175,7 @@
 
 /* Off-range dates */
 .rbc-off-range {
+  @apply text-muted-foreground/50;
   color: #9CA3AF;
 }
 
@@ -172,6 +185,7 @@
 
 /* Today's date */
 .rbc-today {
+  @apply bg-accent/30;
   background-color: #EFF6FF;
 }
 
@@ -189,6 +203,7 @@
 
 /* Calendar Container */
 .calendar-container {
+  @apply bg-white rounded-lg shadow-sm h-full;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -247,6 +262,7 @@
 
 /* Ensure header cells align with date cells */
 .calendar-container .rbc-header {
+  @apply text-xs font-medium text-gray-500 py-2 border-b border-gray-200;
   flex: 1;
   min-width: 0;
   border-right: 1px solid #E5E7EB;
@@ -260,6 +276,7 @@
 
 /* Toolbar */
 .rbc-toolbar {
+  @apply mb-4 flex flex-wrap justify-between items-center gap-2;
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
@@ -282,6 +299,7 @@
 }
 
 .rbc-toolbar button {
+  @apply px-3 py-2 text-sm font-medium rounded-md border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground transition-colors;
   padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
@@ -302,12 +320,15 @@
 }
 
 .rbc-toolbar button.rbc-active {
+  @apply bg-primary text-white shadow hover:bg-primary/90;
   background-color: #F3F4F6;
   color: #1F2937;
 }
 
 /* Tooltip */
 .tooltip {
+  @apply absolute bottom-full left-0 mb-2 w-64 p-3 bg-popover text-popover-foreground rounded-lg shadow-lg border border-border z-50;
+  animation: slideUp 0.2s ease-out;
   position: absolute;
   z-index: 10;
   top: calc(100% + 4px);
@@ -323,8 +344,9 @@
   padding: 0.75rem;
 }
 
-.tooltip::before {
+.tooltip::after {
   content: '';
+  @apply absolute -bottom-2 left-4 w-4 h-4 bg-popover rotate-45 border-r border-b border-border;
   position: absolute;
   top: -4px;
   left: 50%;
@@ -337,6 +359,7 @@
 }
 
 .tooltip-content {
+  @apply text-sm font-medium mb-2 text-foreground;
   font-size: 0.75rem;
   font-weight: 600;
   color: #374151;
@@ -346,6 +369,7 @@
 }
 
 .tooltip-list {
+  @apply space-y-2 max-h-48 overflow-y-auto;
   max-height: 200px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -367,6 +391,7 @@
 }
 
 .tooltip-item {
+  @apply p-2 rounded-md hover:bg-accent/50 transition-colors;
   padding: 0.5rem;
   border-radius: 0.25rem;
   transition: background-color 150ms;
@@ -382,6 +407,7 @@
 }
 
 .tooltip-item-title {
+  @apply text-sm font-medium text-foreground;
   font-size: 0.75rem;
   font-weight: 600;
   color: #1F2937;
@@ -389,13 +415,86 @@
 }
 
 .tooltip-item-subtitle {
+  @apply text-xs text-muted-foreground;
   font-size: 0.75rem;
   color: #4B5563;
   margin-bottom: 0.25rem;
 }
 
 .tooltip-item-notes {
+  @apply text-xs text-muted-foreground mt-1 italic;
   font-size: 0.75rem;
   color: #6B7280;
   font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(4px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Month transition animations */
+.calendar-slide {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.slide-left {
+  animation: slideLeft 0.3s ease-out;
+}
+
+.slide-right {
+  animation: slideRight 0.3s ease-out;
+}
+
+@keyframes slideLeft {
+  from {
+    transform: translateX(15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideRight {
+  from {
+    transform: translateX(-15px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Keyboard focus styles */
+.custom-date-cell:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2;
+}
+
+.tooltip-item:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2;
+}
+
+.count-badge:focus-visible {
+  @apply outline-none ring-2 ring-ring ring-offset-2;
 }

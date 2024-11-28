@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
+import { Button } from '../../ui/button';
 import OrderDetailsStep from './steps/OrderDetailsStep';
 import ProductsServicesStep from './steps/ProductsServicesStep';
 import FilesStep from './steps/FilesStep';
@@ -301,39 +302,33 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
         {renderStep()}
 
         <div className="mt-8 flex justify-between">
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
           >
             Cancel
-          </button>
+          </Button>
           <div className="flex space-x-2">
             {currentStep !== 'order' && (
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 onClick={handlePrevious}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
               >
                 Previous
-              </button>
+              </Button>
             )}
             {currentStep !== 'notes' ? (
-              <button
-                type="button"
+              <Button
                 onClick={handleNext}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
               >
                 Next
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
+              <Button
                 onClick={handleSave}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
               >
                 Create Case
-              </button>
+              </Button>
             )}
           </div>
         </div>

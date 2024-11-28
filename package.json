@@ -12,11 +12,23 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run api\""
   },
   "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.1",
+    "@radix-ui/react-checkbox": "^1.1.2",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-popover": "^1.1.2",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-select": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@supabase/supabase-js": "^2.46.1",
+    "@tanstack/react-table": "^8.20.5",
     "@tippyjs/react": "^4.2.6",
     "axios": "^1.4.0",
     "chart.js": "^4.4.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
@@ -26,13 +38,16 @@
     "react": "^18.2.0",
     "react-big-calendar": "^1.8.7",
     "react-chartjs-2": "^5.2.0",
+    "react-day-picker": "^9.4.0",
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.22.3",
     "react-to-print": "^3.0.2",
+    "tailwind-merge": "^2.5.5",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@shadcn/ui": "^0.0.4",
     "@types/react": "^18.2.64",
     "@types/react-big-calendar": "^1.6.4",
     "@types/react-dom": "^18.2.21",
@@ -49,6 +64,7 @@
     "json-server": "^0.17.3",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.4.2",
     "vite": "^5.1.5"
   }

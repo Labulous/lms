@@ -9,6 +9,7 @@ import NotesStep from '../../components/cases/wizard/steps/NotesStep';
 import { Case, CaseStatus, DeliveryMethod, addCase } from '../../data/mockCasesData';
 import { Client, clientsService } from '../../services/clientsService';
 import { useAuth } from '../../contexts/AuthContext';
+import { Button } from '../../components/ui/button';
 
 const defaultEnclosedItems = {
   impression: 0,
@@ -178,18 +179,17 @@ const NewCase: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
-          <button
+          <Button
+            variant="outline"
             onClick={handleClose}
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
-            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
             Save Case
-          </button>
+          </Button>
         </div>
       </div>
     </div>

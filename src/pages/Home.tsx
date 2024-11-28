@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import DueDatesCalendar from '../components/calendar/DueDatesCalendar';
 import CalendarModal from '../components/calendar/CalendarModal';
 import { getCases, Case } from '../data/mockCasesData';
+import { Button } from '../components/ui/button';
 
 const Home: React.FC = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
@@ -68,13 +69,15 @@ const Home: React.FC = () => {
           <div className="bg-white p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold text-gray-800">Due Dates Calendar</h2>
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setIsCalendarModalOpen(true)}
-                className="flex items-center gap-2 px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="flex items-center gap-2"
               >
-                <Maximize2 className="w-4 h-4" />
+                <Maximize2 className="h-4 w-4" />
                 Expand
-              </button>
+              </Button>
             </div>
             <div className="h-[500px]">
               <DueDatesCalendar events={cases} />
@@ -99,10 +102,10 @@ const Home: React.FC = () => {
                     <span className="text-sm text-gray-600">{caseItem.stage}</span>
                     <div className="w-1/2">
                       <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className="bg-blue-600 h-2.5 rounded-full" 
+                        <div
+                          className="bg-blue-700 h-2.5 rounded-full"
                           style={{ width: `${caseItem.progress}%` }}
-                        ></div>
+                        />
                       </div>
                     </div>
                   </div>

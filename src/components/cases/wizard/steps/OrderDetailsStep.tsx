@@ -2,6 +2,10 @@ import React, { useEffect } from 'react';
 import { CASE_STATUSES, DELIVERY_METHODS, CaseStatus, DeliveryMethod } from '../../../../data/mockCasesData';
 import { Client } from '../../../../services/clientsService';
 import { createLogger } from '../../../../utils/logger';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const logger = createLogger({ module: 'OrderDetailsStep' });
 
@@ -114,10 +118,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         {/* Column 1: Client Selection */}
         <div className="col-span-4">
           <div className="space-y-4">
-            <div>
-              <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
-                Client *
-              </label>
+            <div className="space-y-2">
+              <Label htmlFor="clientId" className="text-xs">Client *</Label>
               <div className="mt-1">
                 {loading ? (
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -126,28 +128,31 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   </div>
                 ) : (
                   <>
-                    <select
-                      id="clientId"
+                    <Select
                       name="clientId"
                       value={formData.clientId}
-                      onChange={handleInputChange}
-                      className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm h-10 ${
-                        errors.clientId 
-                          ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                          : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-                      } bg-white`}
+                      onValueChange={(value) => {
+                        onChange({
+                          ...formData,
+                          clientId: value,
+                        });
+                      }}
                     >
-                      <option value="">Select a client</option>
-                      {clients && clients.length > 0 ? (
-                        clients.map((client) => (
-                          <option key={client.id} value={client.id}>
-                            {client.clientName || 'Unnamed Client'}
-                          </option>
-                        ))
-                      ) : (
-                        <option value="" disabled>No clients available</option>
-                      )}
-                    </select>
+                      <SelectTrigger className={errors.clientId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select a client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients && clients.length > 0 ? (
+                          clients.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.clientName || 'Unnamed Client'}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>No clients available</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                     {errors.clientId && (
                       <p className="mt-1 text-sm text-red-600">{errors.clientId}</p>
                     )}
@@ -156,146 +161,181 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               </div>
             </div>
 
-            {/* Client Details */}
-            {selectedClient && (
-              <div className="bg-gray-50 rounded-md p-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Client Details</h4>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-700">{selectedClient.clientName}</p>
-                  <p className="text-sm text-gray-600">
-                    {selectedClient.address.street}<br />
-                    {selectedClient.address.city}, {selectedClient.address.state} {selectedClient.address.zipCode}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Column 2: Patient Info */}
-        <div className="col-span-4 space-y-4">
-          <div>
-            <label htmlFor="patientFirstName" className="block text-sm font-medium text-gray-700">
-              Patient First Name *
-            </label>
-            <input
-              type="text"
-              id="patientFirstName"
-              name="patientFirstName"
-              value={formData.patientFirstName}
-              onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm h-10 ${
-                errors.patientFirstName 
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-              } bg-white`}
-            />
-            {errors.patientFirstName && <p className="mt-1 text-sm text-red-600">{errors.patientFirstName}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="patientLastName" className="block text-sm font-medium text-gray-700">
-              Patient Last Name *
-            </label>
-            <input
-              type="text"
-              id="patientLastName"
-              name="patientLastName"
-              value={formData.patientLastName}
-              onChange={handleInputChange}
-              className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm h-10 ${
-                errors.patientLastName 
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400'
-              } bg-white`}
-            />
-            {errors.patientLastName && <p className="mt-1 text-sm text-red-600">{errors.patientLastName}</p>}
-          </div>
-
-          <div>
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <select
-              id="status"
-              name="status"
-              value={formData.status}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400 sm:text-sm h-10 bg-white"
-            >
-              {CASE_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Column 3: Dates and Delivery */}
-        <div className="col-span-4 space-y-4">
-          <div>
-            <label htmlFor="orderDate" className="block text-sm font-medium text-gray-700">
-              Order Date
-            </label>
-            <input
-              type="date"
-              id="orderDate"
-              name="orderDate"
-              value={formData.orderDate}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400 sm:text-sm h-10 bg-white"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="deliveryMethod" className="block text-sm font-medium text-gray-700">
-              Delivery Method
-            </label>
-            <select
-              id="deliveryMethod"
-              name="deliveryMethod"
-              value={formData.deliveryMethod}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400 sm:text-sm h-10 bg-white"
-            >
-              {DELIVERY_METHODS.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isDueDateTBD"
-                name="isDueDateTBD"
-                checked={formData.isDueDateTBD}
+            <div className="space-y-2">
+              <Label htmlFor="patientFirstName" className="text-xs">Patient First Name *</Label>
+              <Input
+                type="text"
+                id="patientFirstName"
+                name="patientFirstName"
+                value={formData.patientFirstName}
                 onChange={handleInputChange}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className={errors.patientFirstName ? "border-red-500" : ""}
               />
-              <label htmlFor="isDueDateTBD" className="ml-2 block text-sm text-gray-700">
-                Due Date TBD
-              </label>
+              {errors.patientFirstName && (
+                <p className="mt-1 text-sm text-red-600">{errors.patientFirstName}</p>
+              )}
             </div>
-            {!formData.isDueDateTBD && (
-              <div className="mt-2">
-                <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">
-                  Due Date
-                </label>
-                <input
-                  type="date"
-                  id="dueDate"
-                  name="dueDate"
-                  value={formData.dueDate || ''}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400 sm:text-sm h-10 bg-white"
+
+            <div className="space-y-2">
+              <Label htmlFor="patientLastName" className="text-xs">Patient Last Name *</Label>
+              <Input
+                type="text"
+                id="patientLastName"
+                name="patientLastName"
+                value={formData.patientLastName}
+                onChange={handleInputChange}
+                className={errors.patientLastName ? "border-red-500" : ""}
+              />
+              {errors.patientLastName && (
+                <p className="mt-1 text-sm text-red-600">{errors.patientLastName}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Column 2: Order Details */}
+        <div className="col-span-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="orderDate" className="text-xs">Order Date *</Label>
+              <Input
+                type="date"
+                id="orderDate"
+                name="orderDate"
+                value={formData.orderDate}
+                onChange={handleInputChange}
+                className={errors.orderDate ? "border-red-500" : ""}
+              />
+              {errors.orderDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-xs">Status *</Label>
+              <Select
+                name="status"
+                value={formData.status}
+                onValueChange={(value) => {
+                  onChange({
+                    ...formData,
+                    status: value as CaseStatus,
+                  });
+                }}
+              >
+                <SelectTrigger className={errors.status ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CASE_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.status && (
+                <p className="mt-1 text-sm text-red-600">{errors.status}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="deliveryMethod" className="text-xs">Delivery Method *</Label>
+              <Select
+                name="deliveryMethod"
+                value={formData.deliveryMethod}
+                onValueChange={(value) => {
+                  onChange({
+                    ...formData,
+                    deliveryMethod: value as DeliveryMethod,
+                  });
+                }}
+              >
+                <SelectTrigger className={errors.deliveryMethod ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Select delivery method" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_METHODS.map((method) => (
+                    <SelectItem key={method} value={method}>
+                      {method}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.deliveryMethod && (
+                <p className="mt-1 text-sm text-red-600">{errors.deliveryMethod}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Column 3: Due Date & Appointment */}
+        <div className="col-span-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isDueDateTBD"
+                  name="isDueDateTBD"
+                  checked={formData.isDueDateTBD}
+                  onCheckedChange={(checked) => {
+                    onChange({
+                      ...formData,
+                      isDueDateTBD: checked as boolean,
+                      ...(checked ? { dueDate: undefined } : {}),
+                    });
+                  }}
                 />
+                <Label htmlFor="isDueDateTBD" className="text-xs">Due Date TBD</Label>
               </div>
-            )}
+
+              {!formData.isDueDateTBD && (
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate" className="text-xs">Due Date</Label>
+                  <Input
+                    type="date"
+                    id="dueDate"
+                    name="dueDate"
+                    value={formData.dueDate || ''}
+                    onChange={handleInputChange}
+                    className={errors.dueDate ? "border-red-500" : ""}
+                  />
+                  {errors.dueDate && (
+                    <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="appointmentDate" className="text-xs">Appointment Date</Label>
+              <Input
+                type="date"
+                id="appointmentDate"
+                name="appointmentDate"
+                value={formData.appointmentDate || ''}
+                onChange={handleInputChange}
+                className={errors.appointmentDate ? "border-red-500" : ""}
+              />
+              {errors.appointmentDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.appointmentDate}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="appointmentTime" className="text-xs">Appointment Time</Label>
+              <Input
+                type="time"
+                id="appointmentTime"
+                name="appointmentTime"
+                value={formData.appointmentTime || ''}
+                onChange={handleInputChange}
+                className={errors.appointmentTime ? "border-red-500" : ""}
+              />
+              {errors.appointmentTime && (
+                <p className="mt-1 text-sm text-red-600">{errors.appointmentTime}</p>
+              )}
+            </div>
           </div>
         </div>
       </div>

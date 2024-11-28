@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Clock, PauseCircle, Package, Plus } from 'lucide-react';
+import { AlertTriangle, Clock, PauseCircle, Package, Plus, ChevronUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import CaseFilters from './CaseFilters';
 import PrintButtonWithDropdown from './PrintButtonWithDropdown';
-import { getCases, Case } from '../../data/mockCasesData';
+import { getCases, Case } from '@/data/mockCasesData';
 import { format, isEqual, parseISO, isValid } from 'date-fns';
-import SortableTableHeader from '../common/SortableTableHeader';
-import { useSortableData } from '../../hooks/useSortableData';
+import { Button } from '@/components/ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getSortedRowModel,
+  SortingState,
+  ColumnFiltersState,
+  getFilteredRowModel,
+  VisibilityState,
+} from "@tanstack/react-table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const CaseList: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -15,12 +34,119 @@ const CaseList: React.FC = () => {
   const [filteredCases, setFilteredCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCases, setSelectedCases] = useState<string[]>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
 
-  const { items: sortedCases, requestSort, sortConfig } = useSortableData(filteredCases);
+  const columns: ColumnDef<Case>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "caseId",
+      header: "Invoice ID",
+      cell: ({ row }) => (
+        <div className="font-semibold">{row.getValue("caseId")}</div>
+      ),
+    },
+    {
+      accessorKey: "patientName",
+      header: "Patient",
+      cell: ({ row }) => (
+        <div>{row.getValue("patientName") || "N/A"}</div>
+      ),
+    },
+    {
+      accessorKey: "clientName",
+      header: "Clinic",
+    },
+    {
+      accessorKey: "doctorName",
+      header: "Doctor",
+      cell: ({ row }) => (
+        <div>{row.getValue("doctorName") || "N/A"}</div>
+      ),
+    },
+    {
+      accessorKey: "caseStatus",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("caseStatus") as string;
+        return (
+          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            status === 'Completed' ? 'bg-green-100 text-green-800' :
+            status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+            'bg-yellow-100 text-yellow-800'
+          }`}>
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "dueDate",
+      header: "Due Date",
+      cell: ({ row }) => {
+        const date = row.getValue("dueDate") as string;
+        return <div>{formatDate(date)}</div>;
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const caseId = row.original.id;
+        return (
+          <div className="space-x-4">
+            <Link to={`/cases/${caseId}`} className="text-indigo-600 hover:text-indigo-900">
+              View
+            </Link>
+            <Link to={`/cases/${caseId}/edit`} className="text-indigo-600 hover:text-indigo-900">
+              Edit
+            </Link>
+          </div>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: filteredCases,
+    columns,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+  });
 
   useEffect(() => {
-    // Get cases from our data store
     const allCases = getCases();
     setCases(allCases);
     setLoading(false);
@@ -70,25 +196,21 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string) => {
-    console.log(`Print option selected: ${option} for cases:`, selectedCases);
+    const selectedIds = Object.keys(rowSelection);
+    console.log(`Print option selected: ${option} for cases:`, selectedIds);
   };
 
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedCases(sortedCases.map(caseItem => caseItem.id));
-    } else {
-      setSelectedCases([]);
-    }
-  };
-
-  const handleSelectCase = (caseId: string) => {
-    setSelectedCases(prev => {
-      if (prev.includes(caseId)) {
-        return prev.filter(id => id !== caseId);
-      } else {
-        return [...prev, caseId];
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return 'Invalid Date';
       }
-    });
+      return format(date, 'MMM d, yyyy');
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Invalid Date';
+    }
   };
 
   if (loading) {
@@ -109,30 +231,17 @@ const CaseList: React.FC = () => {
     ? `Cases Due on ${format(parseISO(dueDateParam), 'MMMM d, yyyy')}`
     : 'Case Management';
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return 'Invalid Date';
-      }
-      return format(date, 'MMM d, yyyy');
-    } catch (err) {
-      console.error('Error formatting date:', err);
-      return 'Invalid Date';
-    }
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-0">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-semibold text-gray-800">{headerText}</h1>
-        <button
+        <Button
           onClick={() => navigate('/cases/new')}
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
+          className="inline-flex items-center"
         >
-          <Plus className="mr-2" size={20} />
+          <Plus className="mr-2 h-5 w-5" />
           Add New Case
-        </button>
+        </Button>
       </div>
 
       <CaseFilters onFilterChange={handleFilterChange} onSearch={handleSearch} />
@@ -141,126 +250,57 @@ const CaseList: React.FC = () => {
         <PrintButtonWithDropdown 
           caseId="" 
           onPrintOptionSelect={handlePrintOptionSelect}
-          disabled={selectedCases.length === 0}
+          disabled={Object.keys(rowSelection).length === 0}
         />
       </div>
 
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full leading-normal">
-          <thead>
-            <tr>
-              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100">
-                <input
-                  type="checkbox"
-                  checked={selectedCases.length === sortedCases.length}
-                  onChange={handleSelectAll}
-                  className="form-checkbox h-4 w-4 text-blue-600"
-                />
-              </th>
-              <SortableTableHeader
-                label="Invoice ID"
-                sortKey="invoiceId"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <SortableTableHeader
-                label="Patient"
-                sortKey="patientName"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <SortableTableHeader
-                label="Clinic"
-                sortKey="clientName"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <SortableTableHeader
-                label="Doctor"
-                sortKey="doctorName"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <SortableTableHeader
-                label="Status"
-                sortKey="caseStatus"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <SortableTableHeader
-                label="Due Date"
-                sortKey="dueDate"
-                currentSort={sortConfig.key}
-                currentDirection={sortConfig.direction}
-                onSort={requestSort}
-              />
-              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedCases.map((caseItem) => (
-              <tr key={caseItem.id}>
-                <td className="px-5 py-4 border-b border-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={selectedCases.includes(caseItem.id)}
-                    onChange={() => handleSelectCase(caseItem.id)}
-                    className="form-checkbox h-4 w-4 text-blue-600"
-                  />
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-gray-900 whitespace-no-wrap font-semibold">
-                    {caseItem.caseId}
-                  </p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-gray-900 whitespace-no-wrap">
-                    {caseItem.patientName || 'N/A'}
-                  </p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-gray-900 whitespace-no-wrap">
-                    {caseItem.clientName}
-                  </p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-gray-900 whitespace-no-wrap">
-                    {caseItem.doctorName || 'N/A'}
-                  </p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    caseItem.caseStatus === 'Completed' ? 'bg-green-100 text-green-800' :
-                    caseItem.caseStatus === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {caseItem.caseStatus}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <p className="text-gray-900 whitespace-no-wrap">
-                    {formatDate(caseItem.dueDate)}
-                  </p>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link to={`/cases/${caseItem.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
-                    View
-                  </Link>
-                  <Link to={`/cases/${caseItem.id}/edit`} className="text-indigo-600 hover:text-indigo-900">
-                    Edit
-                  </Link>
-                </td>
-              </tr>
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                  </TableHead>
+                ))}
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
+                  No results.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
