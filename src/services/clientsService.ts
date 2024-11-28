@@ -127,35 +127,112 @@ class ClientsService {
 
   async getClients(): Promise<Client[]> {
     try {
-      const { data: clients, error } = await supabase
+      logger.debug('Starting getClients request');
+      
+      // Get current user's role from public.users table
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        logger.error('Error getting auth user', { authError });
+        throw new Error('Failed to get user information');
+      }
+      
+      if (!authUser) {
+        logger.error('No authenticated user');
+        throw new Error('No authenticated user');
+      }
+
+      logger.debug('Got auth user', { userId: authUser.id });
+
+      // Get user role from public.users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', authUser.id)
+        .single();
+
+      if (userError) {
+        logger.error('Error getting user role', { userError });
+        throw new Error('Failed to get user role');
+      }
+
+      if (!userData || !userData.role) {
+        logger.error('No role found for user', { userId: authUser.id });
+        throw new Error('User role not found');
+      }
+
+      logger.debug('Got user role from database', { role: userData.role });
+      
+      if (!['admin', 'technician'].includes(userData.role)) {
+        logger.error('User does not have required role', { role: userData.role });
+        throw new Error('Insufficient permissions to view clients');
+      }
+
+      // Get all clients
+      logger.debug('Fetching all clients...');
+      const { data: clients, error: clientsError } = await supabase
         .from('clients')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('client_name', { ascending: true });
 
-      if (error) throw error;
+      if (clientsError) {
+        logger.error('Error fetching clients', { 
+          error: clientsError,
+          message: clientsError.message,
+          hint: clientsError.hint,
+          details: clientsError.details,
+        });
+        throw new Error(`Failed to fetch clients: ${clientsError.message}`);
+      }
 
+      if (!clients) {
+        logger.warn('No clients found in database');
+        return [];
+      }
+
+      logger.debug('Successfully fetched clients', { count: clients.length });
+
+      // Get doctors for each client
       const clientsWithDoctors = await Promise.all(
         clients.map(async (client) => {
-          const { data: doctors, error: doctorsError } = await supabase
-            .from('doctors')
-            .select('*')
-            .eq('client_id', client.id);
+          try {
+            const { data: doctors, error: doctorsError } = await supabase
+              .from('doctors')
+              .select('*')
+              .eq('client_id', client.id);
 
-          if (doctorsError) {
-            logger.error('Error fetching doctors for client', {
+            if (doctorsError) {
+              logger.error('Error fetching doctors for client', {
+                clientId: client.id,
+                error: doctorsError
+              });
+              // Continue with empty doctors array if there's an error
+              return this.transformClientFromDB(client, []);
+            }
+
+            return this.transformClientFromDB(client, doctors || []);
+          } catch (error) {
+            logger.error('Error processing client', {
               clientId: client.id,
-              error: doctorsError,
+              error
             });
+            // Continue with the client even if doctor fetch fails
             return this.transformClientFromDB(client, []);
           }
-
-          return this.transformClientFromDB(client, doctors);
         })
       );
 
+      logger.info('Successfully processed all clients', {
+        totalClients: clientsWithDoctors.length,
+        clientIds: clientsWithDoctors.map(c => c.id)
+      });
+
       return clientsWithDoctors;
     } catch (error) {
-      logger.error('Error fetching clients', { error });
+      logger.error('Error in getClients', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw error;
     }
   }
@@ -201,7 +278,7 @@ class ClientsService {
       if (doctorsError) {
         logger.error('Error fetching doctors for client', {
           clientId: id,
-          error: doctorsError,
+          error: doctorsError
         });
         return this.transformClientFromDB(client, []);
       }

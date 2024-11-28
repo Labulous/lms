@@ -1,32 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Case, CaseStatus, DeliveryMethod, addCase } from '../../data/mockCasesData';
-import { mockClients } from '../../data/mockClientsData';
-import { ProductCategory, PRODUCT_CATEGORIES } from '../../data/mockProductData';
+import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import OrderDetailsStep from '../../components/cases/wizard/steps/OrderDetailsStep';
+import ProductsServicesStep from '../../components/cases/wizard/steps/ProductsServicesStep';
 import FilesStep from '../../components/cases/wizard/steps/FilesStep';
 import NotesStep from '../../components/cases/wizard/steps/NotesStep';
-import ToothSelector from '../../components/cases/wizard/modals/ToothSelector';
-import ProductConfiguration from '../../components/cases/wizard/ProductConfiguration';
-import { SavedProduct } from '../../components/cases/wizard/modals/AddProductModal';
+import { Case, CaseStatus, DeliveryMethod, addCase } from '../../data/mockCasesData';
+import { Client, clientsService } from '../../services/clientsService';
+import { useAuth } from '../../contexts/AuthContext';
+
+const defaultEnclosedItems = {
+  impression: 0,
+  biteRegistration: 0,
+  photos: 0,
+  jig: 0,
+  opposingModel: 0,
+  articulator: 0,
+  returnArticulator: 0,
+  cadcamFiles: 0,
+  consultRequested: 0,
+};
 
 interface FormData {
   clientId: string;
-  patientFirstName?: string;
-  patientLastName?: string;
+  patientFirstName: string;
+  patientLastName: string;
   orderDate: string;
+  status: CaseStatus;
+  deliveryMethod: DeliveryMethod;
   dueDate?: string;
-  isDueDateTBD: boolean;
+  isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  status: CaseStatus;
-  assignedTechnicians: string[];
-  deliveryMethod: DeliveryMethod;
-  notes?: {
-    labNotes?: string;
-    technicianNotes?: string;
-  };
-  files?: File[];
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -39,96 +45,141 @@ interface FormData {
     consultRequested: number;
   };
   otherItems?: string;
+  clientName?: string;
 }
 
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
-    orderDate: new Date().toISOString().split('T')[0],
-    status: 'In Queue',
-    assignedTechnicians: [],
-    deliveryMethod: 'Local Delivery',
+    patientFirstName: '',
+    patientLastName: '',
+    orderDate: format(new Date(), 'yyyy-MM-dd'),
+    status: 'In Queue' as CaseStatus,
+    deliveryMethod: 'Pickup' as DeliveryMethod,
+    enclosedItems: defaultEnclosedItems,
+    otherItems: '',
     isDueDateTBD: false,
-    enclosedItems: {
-      impression: 0,
-      biteRegistration: 0,
-      photos: 0,
-      jig: 0,
-      opposingModel: 0,
-      articulator: 0,
-      returnArticulator: 0,
-      cadcamFiles: 0,
-      consultRequested: 0,
-    },
   });
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
-    if (!formData.clientId) newErrors.clientId = 'Client is required';
-    if (!formData.orderDate) newErrors.orderDate = 'Order date is required';
-    if (!formData.isDueDateTBD && !formData.dueDate) {
-      newErrors.dueDate = 'Due date is required when not TBD';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSave = () => {
-    if (!validateForm()) return;
-
-    const client = mockClients.find(c => c.id === formData.clientId);
-    if (!client) {
-      setErrors({ clientId: 'Invalid client selected' });
-      return;
-    }
-
-    const patientName = [formData.patientFirstName, formData.patientLastName]
-      .filter(Boolean)
-      .join(' ');
-
-    const newCase: Case = {
-      id: Date.now().toString(),
-      caseId: `CASE${Date.now().toString().slice(-6)}`,
-      clientId: formData.clientId,
-      clientName: client.clientName,
-      patientName: patientName || undefined,
-      caseType: 'Standard',
-      caseStatus: formData.status,
-      startDate: formData.orderDate,
-      dueDate: formData.isDueDateTBD ? formData.orderDate : formData.dueDate || formData.orderDate,
-      appointmentDate: formData.appointmentDate,
-      appointmentTime: formData.appointmentTime,
-      assignedTechnicians: formData.assignedTechnicians,
-      deliveryMethod: formData.deliveryMethod,
-      notes: formData.notes,
-      stages: [
-        { name: 'Initial Review', status: 'pending' },
-        { name: 'Production', status: 'pending' },
-        { name: 'Quality Check', status: 'pending' },
-        { name: 'Completion', status: 'pending' },
-      ],
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        setLoading(true);
+        const data = await clientsService.getClients();
+        if (Array.isArray(data)) {
+          setClients(data);
+        }
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+        toast.error('Failed to load clients');
+      } finally {
+        setLoading(false);
+      }
     };
 
-    addCase(newCase);
+    fetchClients();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      const newCase: Case = {
+        id: Math.random().toString(),
+        ...formData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: user?.id || '',
+        products: [],
+        files: [],
+        notes: [],
+      };
+
+      await addCase(newCase);
+      toast.success('Case created successfully');
+      navigate('/cases');
+    } catch (error) {
+      console.error('Error saving case:', error);
+      toast.error('Failed to create case');
+    }
+  };
+
+  const handleClose = () => {
     navigate('/cases');
   };
 
-  const handleProductSave = (product: SavedProduct) => {
-    setSelectedProducts(prev => [...prev, product]);
-  };
-
   return (
-    <div className="container mx-auto px-4">
-      <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Create New Case</h1>
-        <div className="flex space-x-4">
+    <div className="p-6">
+      <div className="space-y-4">
+        {/* Order Details Section */}
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+            <h2 className="text-sm font-medium text-white">Order Details</h2>
+          </div>
+          <div className="p-6">
+            <OrderDetailsStep
+              formData={formData}
+              onChange={setFormData}
+              errors={errors}
+              clients={clients}
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        {/* Products & Services Section */}
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+            <h2 className="text-sm font-medium text-white">Products & Services</h2>
+          </div>
+          <div className="p-6">
+            <ProductsServicesStep
+              formData={formData}
+              onChange={setFormData}
+              errors={errors}
+            />
+          </div>
+        </div>
+
+        {/* Files and Notes Section Grid */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Notes Section */}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h2 className="text-sm font-medium text-white">Notes</h2>
+            </div>
+            <div className="p-6">
+              <NotesStep
+                formData={formData}
+                onChange={setFormData}
+                errors={errors}
+              />
+            </div>
+          </div>
+
+          {/* Files Section */}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h2 className="text-sm font-medium text-white">Files</h2>
+            </div>
+            <div className="p-6">
+              <FilesStep
+                formData={formData}
+                onChange={setFormData}
+                errors={errors}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4">
           <button
-            onClick={() => navigate('/cases')}
+            onClick={handleClose}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             Cancel
@@ -139,71 +190,6 @@ const NewCase: React.FC = () => {
           >
             Save Case
           </button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        {/* Case Details Section */}
-        <div className="bg-white shadow-sm rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Case Details</h2>
-          <OrderDetailsStep
-            formData={formData}
-            onChange={setFormData}
-            errors={errors}
-          />
-        </div>
-
-        {/* Products Section */}
-        <div className="grid grid-cols-6 gap-6">
-          {/* Categories */}
-          <div className="col-span-1 bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Categories</h2>
-            <div className="space-y-1">
-              {PRODUCT_CATEGORIES.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`
-                    w-full px-3 py-2 text-left rounded-lg transition-colors
-                    ${selectedCategory === category
-                      ? 'bg-blue-50 border-l-4 border-blue-500'
-                      : 'bg-white border-gray-200 hover:bg-gray-50'
-                    }
-                    border text-sm
-                  `}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Product Configuration */}
-          <div className="col-span-5 bg-white shadow-sm rounded-lg p-6">
-            <ProductConfiguration
-              selectedCategory={selectedCategory}
-              onSave={handleProductSave}
-              selectedProducts={selectedProducts}
-              onProductsChange={setSelectedProducts}
-            />
-          </div>
-        </div>
-
-        {/* Files and Notes Section */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Files</h2>
-            <FilesStep
-              onFileUpload={(files) => setFormData({ ...formData, files })}
-            />
-          </div>
-          <div className="bg-white shadow-sm rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Notes</h2>
-            <NotesStep
-              notes={formData.notes}
-              onChange={(notes) => setFormData({ ...formData, notes })}
-            />
-          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserCircle, Bell, Menu, Search, LogOut, Settings } from 'lucide-react';
 import { getCurrentUser, logout } from '../../services/authService';
 import SettingsMenu from './SettingsMenu';
@@ -10,8 +10,22 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = getCurrentUser();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/') return 'Dashboard';
+    if (path.startsWith('/cases')) return 'Cases';
+    if (path.startsWith('/shipping')) return 'Shipping';
+    if (path.startsWith('/clients')) return 'Clients';
+    if (path.startsWith('/client-activity')) return 'Client Activity';
+    if (path.startsWith('/billing')) return 'Billing';
+    if (path.startsWith('/reports')) return 'Reports';
+    if (path.startsWith('/inventory')) return 'Inventory';
+    return '';
+  };
 
   const handleLogout = () => {
     logout();
@@ -19,52 +33,55 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   };
 
   return (
-    <header className="bg-white shadow-md">
+    <header className="bg-white border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center h-14">
           <div className="flex items-center">
             <button onClick={toggleSidebar} className="text-gray-500 focus:outline-none focus:text-gray-600 md:hidden">
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5" />
             </button>
-            <Link to="/" className="text-2xl font-bold text-gray-800 ml-2 md:ml-0">
-              Solaris Dental Design
-            </Link>
+            <h1 className="text-lg font-semibold text-gray-900 ml-2 md:ml-0">
+              {getPageTitle()}
+            </h1>
           </div>
-          <div className="flex-1 max-w-2xl px-4">
+
+          <div className="flex-1 max-w-lg px-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search for cases or clients..."
-                className="w-full py-2 pl-10 pr-4 text-gray-700 bg-gray-100 rounded-full focus:outline-none focus:bg-white focus:shadow-outline text-sm"
+                className="w-full py-1.5 pl-8 pr-4 text-sm text-gray-700 bg-slate-50 rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-slate-300"
               />
-              <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                <Search className="h-5 w-5 text-gray-500" />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-2.5">
+                <Search className="h-4 w-4 text-gray-500" />
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <button className="text-gray-600 hover:text-gray-800">
-              <Bell className="h-6 w-6" />
+
+          <div className="flex items-center space-x-3">
+            <button className="text-gray-500 hover:text-gray-600">
+              <Bell className="h-5 w-5" />
             </button>
-            <div className="relative">
-              <button 
+            <button className="text-gray-500 hover:text-gray-600">
+              <Settings className="h-5 w-5" />
+            </button>
+            <div className="relative flex items-center">
+              <button
                 onClick={() => setShowSettingsMenu(!showSettingsMenu)}
-                className="text-gray-600 hover:text-gray-800"
+                className="flex items-center space-x-2 text-gray-500 hover:text-gray-600"
               >
-                <Settings className="h-6 w-6" />
-              </button>
-              {showSettingsMenu && (
-                <SettingsMenu onClose={() => setShowSettingsMenu(false)} />
-              )}
-            </div>
-            <div className="relative">
-              <button className="flex items-center text-gray-600 hover:text-gray-800">
-                <UserCircle className="h-6 w-6 mr-2" />
+                <UserCircle className="h-5 w-5" />
                 <span className="text-sm font-medium">{currentUser?.name}</span>
               </button>
+              {showSettingsMenu && (
+                <SettingsMenu onLogout={handleLogout} />
+              )}
             </div>
-            <button onClick={handleLogout} className="text-gray-600 hover:text-gray-800">
-              <LogOut className="h-6 w-6" />
+            <button 
+              onClick={handleLogout}
+              className="text-gray-500 hover:text-gray-600"
+            >
+              <LogOut className="h-5 w-5" />
             </button>
           </div>
         </div>

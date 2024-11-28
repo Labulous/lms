@@ -52,11 +52,12 @@ ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE doctors ENABLE ROW LEVEL SECURITY;
 
 -- Policies for clients table
+DROP POLICY IF EXISTS "Users can view their own clients" ON clients;
 CREATE POLICY "Users can view their own clients"
     ON clients FOR SELECT
-    USING (auth.uid() IN (
-        SELECT id FROM users WHERE role IN ('admin', 'technician')
-    ));
+    USING (
+        (SELECT role FROM users WHERE id = auth.uid()) IN ('admin', 'technician')
+    );
 
 CREATE POLICY "Only admins can insert clients"
     ON clients FOR INSERT

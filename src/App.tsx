@@ -31,7 +31,7 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } />
           <Route path="/cases/*" element={
-            <ProtectedRoute requiredRole="technician">
+            <ProtectedRoute requiredRole={['admin', 'technician']}>
               <Layout>
                 <Cases />
               </Layout>

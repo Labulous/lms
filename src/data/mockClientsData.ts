@@ -156,4 +156,5 @@ export const deleteClient = (id: string): void => {
   saveClients(clients);
 };
 
-export { clients as mockClients };
+// Export the default clients directly
+export const mockClients = defaultClients;

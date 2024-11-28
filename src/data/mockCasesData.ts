@@ -27,7 +27,7 @@ export interface CaseStage {
 }
 
 export type CaseStatus = 'In Queue' | 'In Progress' | 'On Hold' | 'Completed' | 'Cancelled';
-export type DeliveryMethod = 'Local Delivery' | 'Shipping' | 'Pickup';
+export type DeliveryMethod = 'Pickup' | 'Local Delivery' | 'Shipping';
 
 export const CASE_STATUSES: CaseStatus[] = [
   'In Queue',
@@ -38,9 +38,9 @@ export const CASE_STATUSES: CaseStatus[] = [
 ];
 
 export const DELIVERY_METHODS: DeliveryMethod[] = [
+  'Pickup',
   'Local Delivery',
-  'Shipping',
-  'Pickup'
+  'Shipping'
 ];
 
 export const mockTechnicians = [

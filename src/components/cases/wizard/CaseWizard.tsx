@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import OrderDetailsStep from './steps/OrderDetailsStep';
@@ -6,45 +6,132 @@ import ProductsServicesStep from './steps/ProductsServicesStep';
 import FilesStep from './steps/FilesStep';
 import NotesStep from './steps/NotesStep';
 import { Case, CaseStatus, DeliveryMethod, addCase } from '../../../data/mockCasesData';
-import { mockClients } from '../../../data/mockClientsData';
+import { Client, clientsService } from '../../../services/clientsService';
+import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
+import { supabase } from '../../../config/supabase';
+import { useAuth } from '../../../contexts/AuthContext';
+import { createLogger } from '../../../utils/logger';
+
+const logger = createLogger({ module: 'CaseWizard' });
 
 type WizardStep = 'order' | 'products' | 'files' | 'notes';
 
 interface FormData {
   clientId: string;
-  patientName?: string;
+  patientFirstName: string;
+  patientLastName: string;
   orderDate: string;
+  status: CaseStatus;
+  deliveryMethod: DeliveryMethod;
   dueDate?: string;
-  isDueDateTBD: boolean;
+  isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  status: CaseStatus;
-  assignedTechnicians: string[];
-  deliveryMethod: DeliveryMethod;
-  notes?: {
-    labNotes?: string;
-    technicianNotes?: string;
+  enclosedItems: {
+    impression: number;
+    biteRegistration: number;
+    photos: number;
+    jig: number;
+    opposingModel: number;
+    articulator: number;
+    returnArticulator: number;
+    cadcamFiles: number;
+    consultRequested: number;
   };
-  files?: File[];
+  otherItems?: string;
+  clientName?: string;
 }
 
 interface CaseWizardProps {
   onClose: () => void;
   onSave: (caseData: Case) => void;
+  initialStep?: WizardStep;
 }
 
-const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
+const defaultEnclosedItems = {
+  impression: 0,
+  biteRegistration: 0,
+  photos: 0,
+  jig: 0,
+  opposingModel: 0,
+  articulator: 0,
+  returnArticulator: 0,
+  cadcamFiles: 0,
+  consultRequested: 0,
+};
+
+const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 'order' }) => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<WizardStep>('order');
+  const { user, loading: authLoading } = useAuth();
+  const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
-    orderDate: new Date().toISOString().split('T')[0],
-    status: 'In Queue',
-    assignedTechnicians: [],
-    deliveryMethod: 'Local Delivery',
+    patientFirstName: '',
+    patientLastName: '',
+    orderDate: format(new Date(), 'yyyy-MM-dd'),
+    status: 'In Queue' as CaseStatus,
+    deliveryMethod: 'Pickup' as DeliveryMethod,
+    enclosedItems: defaultEnclosedItems,
+    otherItems: '',
     isDueDateTBD: false,
   });
+
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+
+  console.log('CaseWizard rendering:', { user, authLoading, clients });
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      try {
+        console.log('Starting client fetch...');
+        setLoading(true);
+        const data = await clientsService.getClients();
+        console.log('Client fetch response:', data);
+        if (Array.isArray(data)) {
+          setClients(data);
+          console.log('Clients set in state:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching clients:', error);
+        toast.error('Failed to load clients');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user && !authLoading) {
+      console.log('Fetching clients for user:', user.id);
+      fetchClients();
+    }
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    logger.debug('CaseWizard state updated:', {
+      clientsCount: clients.length,
+      loading,
+      currentStep,
+      hasUser: !!user,
+      userRole: user?.role
+    });
+  }, [clients, loading, currentStep, user]);
+
+  // Log initial state
+  console.log('Initial Form Data:', formData);
+  console.log('Available Clients:', clients);
+
+  const handleFormChange = (newFormData: FormData) => {
+    console.log('Form Data Changed:', newFormData);
+    const client = clients.find(c => c.id === newFormData.clientId);
+    console.log('Found Client:', client);
+    if (client) {
+      setFormData({ ...newFormData, clientName: client.clientName });
+    } else {
+      setFormData(newFormData);
+    }
+  };
 
   const steps: { key: WizardStep; label: string }[] = [
     { key: 'order', label: 'Order Details' },
@@ -89,7 +176,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
   const handleSave = () => {
     if (!validateStep()) return;
 
-    const client = mockClients.find(c => c.id === formData.clientId);
+    const client = clients.find(c => c.id === formData.clientId);
     if (!client) {
       setErrors({ clientId: 'Invalid client selected' });
       return;
@@ -101,7 +188,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
       caseId: `CASE${Date.now().toString().slice(-6)}`,
       clientId: formData.clientId,
       clientName: client.clientName,
-      patientName: formData.patientName,
+      patientName: `${formData.patientFirstName} ${formData.patientLastName}`,
       caseType: 'Standard', // Default type
       caseStatus: formData.status,
       startDate: formData.orderDate,
@@ -136,8 +223,10 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
         return (
           <OrderDetailsStep
             formData={formData}
-            onChange={setFormData}
+            onChange={handleFormChange}
             errors={errors}
+            clients={clients}
+            loading={loading}
           />
         );
       case 'products':
@@ -148,6 +237,10 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
         return (
           <FilesStep
             onFileUpload={(files) => setFormData({ ...formData, files })}
+            enclosedItems={formData.enclosedItems || defaultEnclosedItems}
+            onEnclosedItemsChange={(items) => setFormData({ ...formData, enclosedItems: items })}
+            otherItems={formData.otherItems}
+            onOtherItemsChange={(value) => setFormData({ ...formData, otherItems: value })}
           />
         );
       case 'notes':
@@ -161,88 +254,87 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
-
-        <div className="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
-          {/* Header */}
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Create New Case</h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-500"
+    <div className="bg-white rounded-lg shadow">
+      <div className="px-6 py-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold text-gray-800">New Case</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-500"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+      <div className="px-6 py-4">
+        <div className="mb-8">
+          <nav className="flex">
+            {steps.map((step, index) => (
+              <div
+                key={step.key}
+                className={`flex-1 ${
+                  index > 0 ? 'ml-4' : ''
+                }`}
               >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            {/* Progress Steps */}
-            <div className="mt-4">
-              <div className="flex justify-between">
-                {steps.map((step, index) => (
-                  <div key={step.key} className="flex items-center">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      step.key === currentStep
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <span className="ml-2 text-sm font-medium text-gray-600">{step.label}</span>
-                    {index < steps.length - 1 && (
-                      <div className="w-12 h-1 mx-4 bg-gray-200"></div>
-                    )}
-                  </div>
-                ))}
+                <div
+                  className={`text-sm font-medium ${
+                    currentStep === step.key
+                      ? 'text-blue-600'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {step.label}
+                </div>
+                <div
+                  className={`mt-2 h-1 rounded-full ${
+                    currentStep === step.key
+                      ? 'bg-blue-600'
+                      : 'bg-gray-200'
+                  }`}
+                />
               </div>
-            </div>
-          </div>
+            ))}
+          </nav>
+        </div>
 
-          {/* Content */}
-          <div className="px-6 py-4">
-            {renderStep()}
-          </div>
+        {renderStep()}
 
-          {/* Footer */}
-          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-            <div className="flex justify-between">
+        <div className="mt-8 flex justify-between">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <div className="flex space-x-2">
+            {currentStep !== 'order' && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handlePrevious}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
               >
-                Cancel
+                Previous
               </button>
-              <div className="flex space-x-2">
-                {currentStep !== 'order' && (
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                )}
-                {currentStep !== 'notes' ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    Create Case
-                  </button>
-                )}
-              </div>
-            </div>
+            )}
+            {currentStep !== 'notes' ? (
+              <button
+                type="button"
+                onClick={handleNext}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSave}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
+              >
+                Create Case
+              </button>
+            )}
           </div>
         </div>
       </div>
