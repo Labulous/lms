@@ -113,12 +113,12 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   console.log('Available Clients:', clients);
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
+    <div className="bg-slate-50 rounded-lg shadow-sm">
       <div className="grid grid-cols-12 gap-6">
         {/* Column 1: Client Selection */}
         <div className="col-span-4">
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="clientId" className="text-xs">Client *</Label>
               <div className="mt-1">
                 {loading ? (
@@ -161,7 +161,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="patientFirstName" className="text-xs">Patient First Name *</Label>
               <Input
                 type="text"
@@ -176,7 +176,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="patientLastName" className="text-xs">Patient Last Name *</Label>
               <Input
                 type="text"
@@ -196,7 +196,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         {/* Column 2: Order Details */}
         <div className="col-span-4">
           <div className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="orderDate" className="text-xs">Order Date *</Label>
               <Input
                 type="date"
@@ -211,7 +211,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="status" className="text-xs">Status *</Label>
               <Select
                 name="status"
@@ -239,7 +239,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="deliveryMethod" className="text-xs">Delivery Method *</Label>
               <Select
                 name="deliveryMethod"
@@ -272,42 +272,47 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         {/* Column 3: Due Date & Appointment */}
         <div className="col-span-4">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isDueDateTBD"
-                  name="isDueDateTBD"
-                  checked={formData.isDueDateTBD}
-                  onCheckedChange={(checked) => {
-                    onChange({
-                      ...formData,
-                      isDueDateTBD: checked as boolean,
-                      ...(checked ? { dueDate: undefined } : {}),
-                    });
-                  }}
-                />
-                <Label htmlFor="isDueDateTBD" className="text-xs">Due Date TBD</Label>
+            <div className="space-y-0">
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="dueDate" className="text-xs">Due Date</Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="isDueDateTBD" className="text-xs">TBD</Label>
+                  <Checkbox
+                    id="isDueDateTBD"
+                    name="isDueDateTBD"
+                    checked={formData.isDueDateTBD}
+                    onCheckedChange={(checked) => {
+                      onChange({
+                        target: {
+                          name: 'isDueDateTBD',
+                          value: checked,
+                        },
+                      });
+                      onChange({
+                        isDueDateTBD: checked as boolean,
+                        ...(checked ? { dueDate: undefined } : {}),
+                      });
+                    }}
+                  />
+                </div>
               </div>
 
               {!formData.isDueDateTBD && (
-                <div className="space-y-2">
-                  <Label htmlFor="dueDate" className="text-xs">Due Date</Label>
-                  <Input
-                    type="date"
-                    id="dueDate"
-                    name="dueDate"
-                    value={formData.dueDate || ''}
-                    onChange={handleInputChange}
-                    className={errors.dueDate ? "border-red-500" : ""}
-                  />
-                  {errors.dueDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
-                  )}
-                </div>
+                <Input
+                  type="date"
+                  id="dueDate"
+                  name="dueDate"
+                  value={formData.dueDate || ''}
+                  onChange={onChange}
+                  className={errors.dueDate ? "border-red-500" : ""}
+                />
+              )}
+              {errors.dueDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="appointmentDate" className="text-xs">Appointment Date</Label>
               <Input
                 type="date"
@@ -322,7 +327,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-0">
               <Label htmlFor="appointmentTime" className="text-xs">Appointment Time</Label>
               <Input
                 type="time"

@@ -93,7 +93,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
   ] as const;
 
   return (
-    <div className="space-y-6">
+    <div className="bg-slate-50 rounded-lg shadow-sm space-y-6">
       {/* Files Upload Section */}
       <div
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"

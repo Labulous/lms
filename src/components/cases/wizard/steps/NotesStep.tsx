@@ -20,7 +20,7 @@ const NotesStep: React.FC<NotesStepProps> = ({ notes = {}, onChange }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="bg-slate-50 rounded-lg shadow-sm space-y-6">
       <div>
         <label htmlFor="labNotes" className="block text-sm font-medium text-gray-700">
           Lab Notes

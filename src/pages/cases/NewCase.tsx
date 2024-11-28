@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import OrderDetailsStep from '../../components/cases/wizard/steps/OrderDetailsStep';
-import ProductsServicesStep from '../../components/cases/wizard/steps/ProductsServicesStep';
+import ProductConfiguration from '../../components/cases/wizard/ProductConfiguration';
 import FilesStep from '../../components/cases/wizard/steps/FilesStep';
 import NotesStep from '../../components/cases/wizard/steps/NotesStep';
+import { SavedProduct, ProductWithShade } from '../../components/cases/wizard/types';
 import { Case, CaseStatus, DeliveryMethod, addCase } from '../../data/mockCasesData';
 import { Client, clientsService } from '../../services/clientsService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/button';
+import { ProductCategory } from '../../data/mockProductData';
 
 const defaultEnclosedItems = {
   impression: 0,
@@ -67,6 +69,17 @@ const NewCase: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<ProductWithShade[]>([]);
+
+  const handleSaveProduct = (product: SavedProduct) => {
+    setSelectedProducts(prev => [...prev, product]);
+  };
+
+  const handleCategoryChange = (category: ProductCategory | null) => {
+    setSelectedCategory(category);
+  };
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -132,18 +145,16 @@ const NewCase: React.FC = () => {
           </div>
         </div>
 
-        {/* Products & Services Section */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-            <h2 className="text-sm font-medium text-white">Products & Services</h2>
-          </div>
-          <div className="p-6">
-            <ProductsServicesStep
-              formData={formData}
-              onChange={setFormData}
-              errors={errors}
-            />
-          </div>
+        {/* Products & Services */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-gray-900">Products & Services</h2>
+          <ProductConfiguration
+            selectedCategory={selectedCategory}
+            onSave={handleSaveProduct}
+            selectedProducts={selectedProducts}
+            onProductsChange={setSelectedProducts}
+            onCategoryChange={handleCategoryChange}
+          />
         </div>
 
         {/* Files and Notes Section Grid */}

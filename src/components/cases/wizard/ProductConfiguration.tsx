@@ -1,25 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Product, mockProducts } from '../../../data/mockProductData';
+import { 
+  Product, 
+  mockProducts, 
+  PRODUCT_CATEGORIES,
+  ProductCategory,
+  VITA_CLASSICAL_SHADES 
+} from '../../../data/mockProductData';
 import ToothSelector from './modals/ToothSelector';
 import { ShadeData } from './modals/ShadeModal';
 import SelectedProductsModal from './modals/SelectedProductsModal';
-
-const VITA_CLASSICAL_SHADES = [
-  'A1', 'A2', 'A2.5', 'A3', 'A3.5', 'A4',
-  'B1', 'B1.5', 'B2', 'B3', 'B4',
-  'C1', 'C1.5', 'C2', 'C3', 'C4',
-  'D2', 'D3', 'D4'
-];
-
-interface ProductWithShade extends SavedProduct {
-  shade?: ShadeData;
-}
+import { SavedProduct, ProductWithShade } from './types';
 
 interface ProductConfigurationProps {
-  selectedCategory: string | null;
+  selectedCategory: ProductCategory | null;
   onSave: (product: SavedProduct) => void;
   selectedProducts: ProductWithShade[];
   onProductsChange: (products: ProductWithShade[]) => void;
+  onCategoryChange: (category: ProductCategory | null) => void;
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
@@ -27,92 +24,70 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   onSave,
   selectedProducts,
   onProductsChange,
+  onCategoryChange,
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [discount, setDiscount] = useState(0);
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [shadeType, setShadeType] = useState<'0' | '1' | '2' | '3'>('1');
-  const [shades, setShades] = useState({
+  const [shadeType, setShadeType] = useState<'1' | '2' | '3'>('1');
+  const [shades, setShades] = useState<ShadeData>({
     occlusal: '',
     middle: '',
-    gingival: ''
+    gingival: '',
   });
+  const [discount, setDiscount] = useState<number>(0);
+  const [errors, setErrors] = useState<{
+    product?: string;
+    teeth?: string;
+  }>({});
 
   useEffect(() => {
     setSelectedProduct(null);
-    resetForm();
-  }, [selectedCategory]);
-
-  const resetForm = () => {
-    setDiscount(0);
     setSelectedTeeth([]);
-    setErrors({});
-    setShadeType('1');
     setShades({ occlusal: '', middle: '', gingival: '' });
-  };
+    setDiscount(0);
+  }, [selectedCategory]);
 
   const handleProductSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const productId = e.target.value;
-    if (!productId) {
-      setSelectedProduct(null);
-      resetForm();
-      return;
-    }
-    
-    const product = mockProducts.find(p => p.id === productId);
-    setSelectedProduct(product || null);
-    resetForm();
-  };
-
-  const handleShadeChange = (position: 'occlusal' | 'middle' | 'gingival', value: string) => {
-    setShades(prev => ({
-      ...prev,
-      [position]: value
-    }));
-  };
-
-  const handleAddToCase = () => {
-    if (!selectedProduct) {
-      setErrors({ product: 'Please select a product' });
-      return;
-    }
-
-    if (selectedTeeth.length === 0 && selectedProduct.billingType !== 'generic') {
-      setErrors({ teeth: 'Please select at least one tooth' });
-      return;
-    }
-
-    const shadeData: ShadeData = {
-      type: shadeType,
-      shades: {
-        ...(shadeType === '1' && { occlusal: shades.occlusal }),
-        ...(shadeType === '2' && { middle: shades.middle }),
-        ...(shadeType === '3' && {
-          occlusal: shades.occlusal,
-          middle: shades.middle,
-          gingival: shades.gingival
-        })
-      }
-    };
-
-    const newProduct: ProductWithShade = {
-      productId: selectedProduct.id,
-      productName: selectedProduct.name,
-      price: selectedProduct.price,
-      discount,
-      teeth: selectedTeeth,
-      billingType: selectedProduct.billingType,
-      shade: shadeData,
-    };
-
-    onSave(newProduct);
-    resetForm();
+    const product = productId ? mockProducts.find(p => p.id === productId) || null : null;
+    setSelectedProduct(product);
+    setSelectedTeeth([]);
+    setShades({ occlusal: '', middle: '', gingival: '' });
   };
 
   const handleToothSelectionChange = (teeth: number[]) => {
     setSelectedTeeth(teeth);
-    setErrors(prev => ({ ...prev, teeth: '' }));
+  };
+
+  const handleShadeChange = (type: keyof ShadeData, value: string) => {
+    setShades(prev => ({ ...prev, [type]: value }));
+  };
+
+  const handleAddToCase = () => {
+    if (!selectedProduct) {
+      setErrors(prev => ({ ...prev, product: 'Please select a product' }));
+      return;
+    }
+
+    if (selectedProduct.billingType !== 'generic' && selectedTeeth.length === 0) {
+      setErrors(prev => ({ ...prev, teeth: 'Please select at least one tooth' }));
+      return;
+    }
+
+    const productToAdd: SavedProduct = {
+      ...selectedProduct,
+      teeth: selectedTeeth,
+      shades,
+      discount,
+    };
+
+    onSave(productToAdd);
+    
+    setSelectedProduct(null);
+    setSelectedTeeth([]);
+    setShades({ occlusal: '', middle: '', gingival: '' });
+    setDiscount(0);
+    setErrors({});
   };
 
   const handleRemoveProduct = (index: number) => {
@@ -120,38 +95,57 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleReviewAndCreate = () => {
-    // Implement the review and create logic here
     console.log('Review and create case');
   };
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-12 gap-3">
-        {/* Categories - 2 columns */}
         <div className="col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Product
+            Category
           </label>
           <select
             className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm"
-            value={selectedProduct?.id || ''}
-            onChange={handleProductSelect}
+            value={selectedCategory || ''}
+            onChange={(e) => onCategoryChange(e.target.value as ProductCategory || null)}
           >
-            <option value="">Select a product</option>
-            {mockProducts
-              .filter(product => product.category === selectedCategory)
-              .map(product => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
+            <option value="">Select a category</option>
+            {PRODUCT_CATEGORIES.map(category => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
           </select>
-          {errors.product && (
-            <p className="mt-1 text-xs text-red-600">{errors.product}</p>
-          )}
+        </div>
 
-          {/* Product Details */}
-          {selectedProduct && (
+        {selectedCategory && (
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Product
+            </label>
+            <select
+              className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm"
+              value={selectedProduct?.id || ''}
+              onChange={handleProductSelect}
+            >
+              <option value="">Select a product</option>
+              {mockProducts
+                .filter(product => product.category === selectedCategory)
+                .map(product => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+            </select>
+            {errors.product && (
+              <p className="mt-1 text-xs text-red-600">{errors.product}</p>
+            )}
+          </div>
+        )}
+
+        {selectedProduct && (
+          <div className="col-span-2">
             <div className="mt-2 space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Price:</span>
@@ -173,12 +167,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 />
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Teeth Selection - 5 columns */}
         {selectedProduct && selectedProduct.billingType !== 'generic' && (
-          <div className="col-span-5">
+          <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Teeth
             </label>
@@ -193,143 +186,68 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           </div>
         )}
 
-        {/* Shade Selection - 5 columns */}
         {selectedProduct && selectedTeeth.length > 0 && (
-          <div className="col-span-5">
+          <div className="col-span-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Shade Selection
             </label>
-            <div className="space-y-3 bg-gray-50 p-3 rounded-md">
-              <div className="flex flex-col space-y-3">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    className="form-radio"
-                    checked={shadeType === '0'}
-                    onChange={() => setShadeType('0')}
-                  />
-                  <span className="ml-2 text-sm">No Shade</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    className="form-radio"
-                    checked={shadeType === '1'}
-                    onChange={() => setShadeType('1')}
-                  />
-                  <span className="ml-2 text-sm">Single Shade</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    className="form-radio"
-                    checked={shadeType === '2'}
-                    onChange={() => setShadeType('2')}
-                  />
-                  <span className="ml-2 text-sm">Double Shade</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    className="form-radio"
-                    checked={shadeType === '3'}
-                    onChange={() => setShadeType('3')}
-                  />
-                  <span className="ml-2 text-sm">Triple Shade</span>
-                </label>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600">Type</label>
+                <select
+                  value={shadeType}
+                  onChange={(e) => setShadeType(e.target.value as '1' | '2' | '3')}
+                  className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                >
+                  <option value="1">Single Shade</option>
+                  <option value="2">Double Shade</option>
+                  <option value="3">Triple Shade</option>
+                </select>
               </div>
 
-              {shadeType !== '0' && (
-                <div className="space-y-2 mt-3">
-                  {shadeType === '1' && (
-                    <div>
-                      <select
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                        value={shades.occlusal}
-                        onChange={(e) => handleShadeChange('occlusal', e.target.value)}
-                      >
-                        <option value="">Select shade</option>
-                        {VITA_CLASSICAL_SHADES.map(shade => (
-                          <option key={shade} value={shade}>{shade}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
+              <div>
+                <label className="block text-sm text-gray-600">Occlusal</label>
+                <select
+                  value={shades.occlusal}
+                  onChange={(e) => handleShadeChange('occlusal', e.target.value)}
+                  className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                >
+                  <option value="">Select shade</option>
+                  {VITA_CLASSICAL_SHADES.map(shade => (
+                    <option key={shade} value={shade}>{shade}</option>
+                  ))}
+                </select>
+              </div>
 
-                  {shadeType === '2' && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-700">Occlusal/Incisal</label>
-                        <select
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                          value={shades.occlusal}
-                          onChange={(e) => handleShadeChange('occlusal', e.target.value)}
-                        >
-                          <option value="">Select shade</option>
-                          {VITA_CLASSICAL_SHADES.map(shade => (
-                            <option key={shade} value={shade}>{shade}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700">Gingival/Cervical</label>
-                        <select
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                          value={shades.middle}
-                          onChange={(e) => handleShadeChange('middle', e.target.value)}
-                        >
-                          <option value="">Select shade</option>
-                          {VITA_CLASSICAL_SHADES.map(shade => (
-                            <option key={shade} value={shade}>{shade}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  )}
+              {(shadeType === '2' || shadeType === '3') && (
+                <div>
+                  <label className="block text-sm text-gray-600">Middle</label>
+                  <select
+                    value={shades.middle}
+                    onChange={(e) => handleShadeChange('middle', e.target.value)}
+                    className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                  >
+                    <option value="">Select shade</option>
+                    {VITA_CLASSICAL_SHADES.map(shade => (
+                      <option key={shade} value={shade}>{shade}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-                  {shadeType === '3' && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-700">Occlusal</label>
-                        <select
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                          value={shades.occlusal}
-                          onChange={(e) => handleShadeChange('occlusal', e.target.value)}
-                        >
-                          <option value="">Select shade</option>
-                          {VITA_CLASSICAL_SHADES.map(shade => (
-                            <option key={shade} value={shade}>{shade}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700">Middle</label>
-                        <select
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                          value={shades.middle}
-                          onChange={(e) => handleShadeChange('middle', e.target.value)}
-                        >
-                          <option value="">Select shade</option>
-                          {VITA_CLASSICAL_SHADES.map(shade => (
-                            <option key={shade} value={shade}>{shade}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-700">Gingival</label>
-                        <select
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm text-sm"
-                          value={shades.gingival}
-                          onChange={(e) => handleShadeChange('gingival', e.target.value)}
-                        >
-                          <option value="">Select shade</option>
-                          {VITA_CLASSICAL_SHADES.map(shade => (
-                            <option key={shade} value={shade}>{shade}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </>
-                  )}
+              {shadeType === '3' && (
+                <div>
+                  <label className="block text-sm text-gray-600">Gingival</label>
+                  <select
+                    value={shades.gingival}
+                    onChange={(e) => handleShadeChange('gingival', e.target.value)}
+                    className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                  >
+                    <option value="">Select shade</option>
+                    {VITA_CLASSICAL_SHADES.map(shade => (
+                      <option key={shade} value={shade}>{shade}</option>
+                    ))}
+                  </select>
                 </div>
               )}
             </div>
@@ -337,23 +255,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         )}
       </div>
 
-      {/* Add to Case Button */}
-      <div className="flex justify-end mt-4">
-        <button
-          type="button"
-          onClick={handleAddToCase}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Add to Case
-        </button>
-      </div>
-
-      {/* Selected Products Modal */}
-      <SelectedProductsModal
-        products={selectedProducts}
-        onRemoveProduct={handleRemoveProduct}
-        onReviewAndCreate={handleReviewAndCreate}
-      />
+      {selectedProduct && (
+        <div className="flex justify-end mt-4">
+          <button
+            type="button"
+            onClick={handleAddToCase}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Add to Case
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -74,7 +74,7 @@ const ProductsServicesStep: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="bg-slate-50 rounded-lg shadow-sm space-y-6">
       <div className="flex justify-end space-x-4">
         <button
           type="button"
