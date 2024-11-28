@@ -2,9 +2,7 @@
 .calendar-wrapper {
   width: 100%;
   height: 100%;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: transparent;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -263,35 +261,35 @@
 /* Toolbar */
 .rbc-toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  margin-bottom: 0.5rem;
-  position: relative;
-  z-index: 2;
-  pointer-events: auto;
+  margin-bottom: 1rem;
+  font-size: 14px;
 }
 
-.rbc-toolbar-label {
-  font-weight: 600;
-  font-size: 1.25rem;
-  color: #1F2937;
+.rbc-toolbar .rbc-toolbar-label {
+  flex-grow: 1;
+  padding: 0 10px;
+  text-align: center;
+  font-weight: 500;
+  color: #374151;
 }
 
 .rbc-btn-group {
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  border: 1px solid #E5E7EB;
 }
 
 .rbc-toolbar button {
-  padding: 0.5rem 1rem;
+  padding: 0.375rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #374151;
-  background-color: white;
-  border: 1px solid #D1D5DB;
-  border-radius: 0.375rem;
-  cursor: pointer;
+  background: white;
+  border: none;
+  border-right: 1px solid #E5E7EB;
+  margin: 0;
   transition: all 150ms;
 }
 
@@ -299,10 +297,13 @@
   background-color: #F3F4F6;
 }
 
+.rbc-toolbar button:last-child {
+  border-right: none;
+}
+
 .rbc-toolbar button.rbc-active {
-  background-color: #3B82F6;
-  color: white;
-  border-color: #3B82F6;
+  background-color: #F3F4F6;
+  color: #1F2937;
 }
 
 /* Tooltip */

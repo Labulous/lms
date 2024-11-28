@@ -50,7 +50,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               <input
                 type="text"
                 placeholder="Search for cases or clients..."
-                className="w-full py-1.5 pl-8 pr-4 text-sm text-gray-700 bg-slate-50 rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-slate-300"
+                className="w-full py-1.5 pl-8 pr-4 text-sm text-gray-700 bg-slate-50 rounded-lg border border-slate-200 focus:outline-none focus:bg-white focus:ring-1 focus:ring-slate-300"
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-2.5">
                 <Search className="h-4 w-4 text-gray-500" />

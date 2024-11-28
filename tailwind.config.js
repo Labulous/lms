@@ -10,6 +10,9 @@ module.exports = {
         secondary: '#10B981',
         'gray-850': '#1f2937',
       },
+      fontFamily: {
+        sans: ['Manrope', 'sans-serif'],
+      },
     },
   },
   plugins: [],

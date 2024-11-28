@@ -8,12 +8,16 @@ import { getCases, Case } from '../data/mockCasesData';
 const Home: React.FC = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
+  const [greeting, setGreeting] = useState('');
   const { user } = useAuth();
   const userName = user ? user.name : "User";
-  const greeting = `Good ${getTimeOfDay()}, ${userName}!`;
 
   useEffect(() => {
     setCases(getCases());
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting(`Good morning, ${userName}!`);
+    else if (hour < 18) setGreeting(`Good afternoon, ${userName}!`);
+    else setGreeting(`Good evening, ${userName}!`);
   }, []);
 
   const keyMetrics = [
@@ -29,26 +33,58 @@ const Home: React.FC = () => {
     { client: 'Bright Teeth Clinic', patient: 'John Doe', dueDate: 'In 2 days', stage: 'Modeling', progress: 20 },
   ];
 
+  const formatCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-semibold text-gray-800 mb-8">{greeting}</h1>
+    <div className="container mx-auto px-5 py-4">
+      <h1 className="text-xl font-semibold text-gray-800 mb-1">{greeting}</h1>
+      <p className="text-sm text-gray-500 mb-6">{formatCurrentDate()}</p>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {keyMetrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-md p-6">
-            <div className={`inline-flex items-center justify-center p-3 ${metric.color} rounded-full mb-4`}>
-              <metric.icon className="h-6 w-6 text-white" />
+          <div key={index} className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+            <div className="flex items-center space-x-4">
+              <div className={`flex items-center justify-center p-3 ${metric.color} rounded-lg`}>
+                <metric.icon className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
+                <h3 className="text-sm font-medium text-gray-500 mt-0.5">{metric.label}</h3>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-700">{metric.label}</h3>
-            <p className="text-2xl font-bold text-gray-900">{metric.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col lg:flex-row gap-4">
         <div className="lg:w-3/5">
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Cases In Progress</h2>
+          <div className="bg-white p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">Due Dates Calendar</h2>
+              <button
+                onClick={() => setIsCalendarModalOpen(true)}
+                className="flex items-center gap-2 px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <Maximize2 className="w-4 h-4" />
+                Expand
+              </button>
+            </div>
+            <div className="h-[500px]">
+              <DueDatesCalendar events={cases} />
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:w-2/5">
+          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Cases In Progress</h2>
             <div className="space-y-4">
               {casesInProgress.map((caseItem, index) => (
                 <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
@@ -75,23 +111,6 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="lg:w-2/5">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold text-gray-800">Due Dates Calendar</h2>
-              <button
-                onClick={() => setIsCalendarModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <Maximize2 className="w-4 h-4" />
-                Expand
-              </button>
-            </div>
-            <div className="h-[500px]">
-              <DueDatesCalendar events={cases} />
-            </div>
-          </div>
-        </div>
       </div>
 
       {isCalendarModalOpen && (
@@ -104,12 +123,5 @@ const Home: React.FC = () => {
     </div>
   );
 };
-
-function getTimeOfDay() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'morning';
-  if (hour < 18) return 'afternoon';
-  return 'evening';
-}
 
 export default Home;
