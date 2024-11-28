@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { cn } from "@/lib/utils";
 
 const logger = createLogger({ module: 'OrderDetailsStep' });
 
@@ -106,6 +108,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   };
 
+  const handleDateChange = (field: keyof FormData) => (date: Date | undefined) => {
+    onChange({
+      ...formData,
+      [field]: date ? date.toISOString().split('T')[0] : '',
+    });
+  };
+
   // Find the selected client
   const selectedClient = (clients || []).find(client => client.id === formData.clientId);
   console.log('Selected Client:', selectedClient);
@@ -113,7 +122,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   console.log('Available Clients:', clients);
 
   return (
-    <div className="bg-slate-50 rounded-lg shadow-sm">
+    <div>
       <div className="grid grid-cols-12 gap-6">
         {/* Column 1: Client Selection */}
         <div className="col-span-4">
@@ -138,7 +147,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         });
                       }}
                     >
-                      <SelectTrigger className={errors.clientId ? "border-red-500" : ""}>
+                      <SelectTrigger className={cn(
+                        "bg-white",
+                        errors.clientId ? "border-red-500" : ""
+                      )}>
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -169,7 +181,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="patientFirstName"
                 value={formData.patientFirstName}
                 onChange={handleInputChange}
-                className={errors.patientFirstName ? "border-red-500" : ""}
+                className={cn(
+                  "bg-white",
+                  errors.patientFirstName ? "border-red-500" : ""
+                )}
               />
               {errors.patientFirstName && (
                 <p className="mt-1 text-sm text-red-600">{errors.patientFirstName}</p>
@@ -184,7 +199,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="patientLastName"
                 value={formData.patientLastName}
                 onChange={handleInputChange}
-                className={errors.patientLastName ? "border-red-500" : ""}
+                className={cn(
+                  "bg-white",
+                  errors.patientLastName ? "border-red-500" : ""
+                )}
               />
               {errors.patientLastName && (
                 <p className="mt-1 text-sm text-red-600">{errors.patientLastName}</p>
@@ -198,13 +216,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="orderDate" className="text-xs">Order Date *</Label>
-              <Input
-                type="date"
-                id="orderDate"
-                name="orderDate"
-                value={formData.orderDate}
-                onChange={handleInputChange}
-                className={errors.orderDate ? "border-red-500" : ""}
+              <DatePicker
+                date={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                onSelect={handleDateChange('orderDate')}
+                className={cn(
+                  "bg-white [&>button]:bg-white",
+                  errors.orderDate ? "border-red-500" : ""
+                )}
               />
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
@@ -223,7 +241,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   });
                 }}
               >
-                <SelectTrigger className={errors.status ? "border-red-500" : ""}>
+                <SelectTrigger className={cn(
+                  "bg-white [&>button]:bg-white",
+                  errors.status ? "border-red-500" : ""
+                )}>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,7 +272,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   });
                 }}
               >
-                <SelectTrigger className={errors.deliveryMethod ? "border-red-500" : ""}>
+                <SelectTrigger className={cn(
+                  "bg-white [&>button]:bg-white",
+                  errors.deliveryMethod ? "border-red-500" : ""
+                )}>
                   <SelectValue placeholder="Select delivery method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -298,13 +322,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               </div>
 
               {!formData.isDueDateTBD && (
-                <Input
-                  type="date"
-                  id="dueDate"
-                  name="dueDate"
-                  value={formData.dueDate || ''}
-                  onChange={onChange}
-                  className={errors.dueDate ? "border-red-500" : ""}
+                <DatePicker
+                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  onSelect={handleDateChange('dueDate')}
+                  className={cn(
+                    "bg-white [&>button]:bg-white",
+                    errors.dueDate ? "border-red-500" : ""
+                  )}
                 />
               )}
               {errors.dueDate && (
@@ -314,13 +338,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="appointmentDate" className="text-xs">Appointment Date</Label>
-              <Input
-                type="date"
-                id="appointmentDate"
-                name="appointmentDate"
-                value={formData.appointmentDate || ''}
-                onChange={handleInputChange}
-                className={errors.appointmentDate ? "border-red-500" : ""}
+              <DatePicker
+                date={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
+                onSelect={handleDateChange('appointmentDate')}
+                className={cn(
+                  "bg-white [&>button]:bg-white",
+                  errors.appointmentDate ? "border-red-500" : ""
+                )}
               />
               {errors.appointmentDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.appointmentDate}</p>
@@ -335,7 +359,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="appointmentTime"
                 value={formData.appointmentTime || ''}
                 onChange={handleInputChange}
-                className={errors.appointmentTime ? "border-red-500" : ""}
+                className={cn(
+                  "bg-white",
+                  errors.appointmentTime ? "border-red-500" : ""
+                )}
               />
               {errors.appointmentTime && (
                 <p className="mt-1 text-sm text-red-600">{errors.appointmentTime}</p>

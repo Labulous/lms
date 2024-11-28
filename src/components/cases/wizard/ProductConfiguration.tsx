@@ -10,6 +10,18 @@ import ToothSelector from './modals/ToothSelector';
 import { ShadeData } from './modals/ShadeModal';
 import SelectedProductsModal from './modals/SelectedProductsModal';
 import { SavedProduct, ProductWithShade } from './types';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { Stepper } from "@/components/ui/stepper";
 
 interface ProductConfigurationProps {
   selectedCategory: ProductCategory | null;
@@ -98,174 +110,261 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     console.log('Review and create case');
   };
 
+  // Determine step completion status
+  const steps = [
+    {
+      id: 1,
+      name: '1. Category',
+      isCompleted: !!selectedCategory,
+      isCurrent: !selectedCategory,
+      colSpan: 2
+    },
+    {
+      id: 2,
+      name: '2. Product',
+      isCompleted: !!selectedProduct,
+      isCurrent: !!selectedCategory && !selectedProduct,
+      colSpan: 3
+    },
+    {
+      id: 3,
+      name: '3. Teeth',
+      isCompleted: selectedTeeth.length > 0 || (selectedProduct?.billingType === 'generic'),
+      isCurrent: !!selectedProduct && (selectedTeeth.length === 0 && selectedProduct?.billingType !== 'generic'),
+      colSpan: 5
+    },
+    {
+      id: 4,
+      name: '4. Shade',
+      isCompleted: shades.occlusal !== '',
+      isCurrent: (selectedTeeth.length > 0 || selectedProduct?.billingType === 'generic') && shades.occlusal === '',
+      colSpan: 2
+    },
+  ];
+
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-12 gap-3">
-        <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category
-          </label>
-          <select
-            className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm"
-            value={selectedCategory || ''}
-            onChange={(e) => onCategoryChange(e.target.value as ProductCategory || null)}
-          >
-            <option value="">Select a category</option>
-            {PRODUCT_CATEGORIES.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
+    <div className="bg-white shadow overflow-hidden">
+      {/* Gradient Header */}
+      <div className="px-6 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+        <h3 className="text-sm font-medium text-white">Product Configuration</h3>
+      </div>
 
-        {selectedCategory && (
+      {/* Content */}
+      <div className="p-6 bg-slate-50">
+        {/* Stepper */}
+        <Stepper 
+          steps={steps} 
+        />
+
+        {/* Form Content */}
+        <div className="grid grid-cols-12 gap-9 mt-8">
+          {/* Category Selection */}
           <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Product
-            </label>
-            <select
-              className="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm"
-              value={selectedProduct?.id || ''}
-              onChange={handleProductSelect}
-            >
-              <option value="">Select a product</option>
-              {mockProducts
-                .filter(product => product.category === selectedCategory)
-                .map(product => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-            </select>
-            {errors.product && (
-              <p className="mt-1 text-xs text-red-600">{errors.product}</p>
-            )}
+            <Label>Select Category</Label>
+            <div className="flex flex-col space-y-1 mt-1.5">
+              {PRODUCT_CATEGORIES.map(category => (
+                <Button
+                  key={category}
+                  variant={selectedCategory === category ? "default" : "outline"}
+                  className={cn(
+                    "justify-start text-left h-auto py-2 px-3",
+                    selectedCategory === category ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-white"
+                  )}
+                  onClick={() => onCategoryChange(category)}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
           </div>
-        )}
 
-        {selectedProduct && (
-          <div className="col-span-2">
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Price:</span>
-                <span className="font-medium">${selectedProduct.price.toFixed(2)}</span>
+          {/* Product Selection and Details */}
+          <div className="col-span-3">
+            <div className="space-y-4">
+              {/* Product Selection */}
+              <div>
+                <Label>Select Product</Label>
+                <Select
+                  value={selectedProduct?.id || undefined}
+                  onValueChange={(value) => {
+                    const product = mockProducts.find(p => p.id === value) || null;
+                    setSelectedProduct(product);
+                    setSelectedTeeth([]);
+                    setShades({ occlusal: '', middle: '', gingival: '' });
+                  }}
+                  disabled={!selectedCategory}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select a product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mockProducts
+                      .filter(product => product.category === selectedCategory)
+                      .map(product => (
+                        <SelectItem key={product.id} value={product.id}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {errors.product && (
+                  <p className="mt-1 text-xs text-destructive">{errors.product}</p>
+                )}
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">Billing Type:</span>
-                <span className="font-medium capitalize">{selectedProduct.billingType}</span>
-              </div>
-              <div className="mt-2">
-                <label className="block text-sm text-gray-600">Discount (%)</label>
-                <input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                  min="0"
-                  max="100"
-                  className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
-                />
+
+              {/* Product Details */}
+              <div className={`space-y-2 ${!selectedProduct ? 'opacity-50' : ''}`}>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Price:</span>
+                  <span className="font-medium">
+                    ${selectedProduct ? selectedProduct.price.toFixed(2) : '0.00'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Billing Type:</span>
+                  <span className="font-medium capitalize">
+                    {selectedProduct ? selectedProduct.billingType : '-'}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <Label>Discount (%)</Label>
+                  <Input
+                    type="number"
+                    value={discount}
+                    onChange={(e) => setDiscount(Number(e.target.value))}
+                    min="0"
+                    max="100"
+                    disabled={!selectedProduct}
+                    className="mt-1.5"
+                  />
+                </div>
               </div>
             </div>
           </div>
-        )}
 
-        {selectedProduct && selectedProduct.billingType !== 'generic' && (
-          <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Select Teeth
-            </label>
-            <ToothSelector
-              billingType={selectedProduct.billingType}
-              selectedTeeth={selectedTeeth}
-              onSelectionChange={handleToothSelectionChange}
-            />
+          <div className="col-span-5">
+            <Label>Select Teeth</Label>
+            <div className={cn(
+              "mt-1.5",
+              (!selectedProduct || selectedProduct.billingType === 'generic') && "opacity-50"
+            )}>
+              <ToothSelector
+                billingType={selectedProduct?.billingType || 'generic'}
+                selectedTeeth={selectedTeeth}
+                onSelectionChange={handleToothSelectionChange}
+                disabled={!selectedProduct}
+              />
+            </div>
             {errors.teeth && (
-              <p className="mt-1 text-xs text-red-600">{errors.teeth}</p>
+              <p className="mt-1 text-xs text-destructive">{errors.teeth}</p>
             )}
           </div>
-        )}
 
-        {selectedProduct && selectedTeeth.length > 0 && (
-          <div className="col-span-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Shade Selection
-            </label>
-            <div className="space-y-3">
+          <div className="col-span-2">
+            <Label>Select Shade</Label>
+            <div className={`space-y-3 ${(!selectedProduct || selectedTeeth.length === 0) ? 'opacity-50' : ''}`}>
               <div>
-                <label className="block text-sm text-gray-600">Type</label>
-                <select
+                <Label>Type</Label>
+                <Select
                   value={shadeType}
-                  onChange={(e) => setShadeType(e.target.value as '1' | '2' | '3')}
-                  className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                  onValueChange={(value) => setShadeType(value as '1' | '2' | '3')}
+                  disabled={!selectedProduct || selectedTeeth.length === 0}
                 >
-                  <option value="1">Single Shade</option>
-                  <option value="2">Double Shade</option>
-                  <option value="3">Triple Shade</option>
-                </select>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Single Shade</SelectItem>
+                    <SelectItem value="2">Double Shade</SelectItem>
+                    <SelectItem value="3">Triple Shade</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <label className="block text-sm text-gray-600">Occlusal</label>
-                <select
-                  value={shades.occlusal}
-                  onChange={(e) => handleShadeChange('occlusal', e.target.value)}
-                  className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                <Label>Occlusal</Label>
+                <Select
+                  value={shades.occlusal || undefined}
+                  onValueChange={(value) => handleShadeChange('occlusal', value)}
+                  disabled={!selectedProduct || selectedTeeth.length === 0}
                 >
-                  <option value="">Select shade</option>
-                  {VITA_CLASSICAL_SHADES.map(shade => (
-                    <option key={shade} value={shade}>{shade}</option>
-                  ))}
-                </select>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select shade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VITA_CLASSICAL_SHADES.map(shade => (
+                      <SelectItem key={shade} value={shade}>{shade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {(shadeType === '2' || shadeType === '3') && (
                 <div>
-                  <label className="block text-sm text-gray-600">Middle</label>
-                  <select
-                    value={shades.middle}
-                    onChange={(e) => handleShadeChange('middle', e.target.value)}
-                    className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                  <Label>Middle</Label>
+                  <Select
+                    value={shades.middle || undefined}
+                    onValueChange={(value) => handleShadeChange('middle', value)}
+                    disabled={!selectedProduct || selectedTeeth.length === 0}
                   >
-                    <option value="">Select shade</option>
-                    {VITA_CLASSICAL_SHADES.map(shade => (
-                      <option key={shade} value={shade}>{shade}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Select shade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VITA_CLASSICAL_SHADES.map(shade => (
+                        <SelectItem key={shade} value={shade}>{shade}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
               {shadeType === '3' && (
                 <div>
-                  <label className="block text-sm text-gray-600">Gingival</label>
-                  <select
-                    value={shades.gingival}
-                    onChange={(e) => handleShadeChange('gingival', e.target.value)}
-                    className="mt-1 w-full border border-gray-300 rounded-md shadow-sm p-1 text-sm"
+                  <Label>Gingival</Label>
+                  <Select
+                    value={shades.gingival || undefined}
+                    onValueChange={(value) => handleShadeChange('gingival', value)}
+                    disabled={!selectedProduct || selectedTeeth.length === 0}
                   >
-                    <option value="">Select shade</option>
-                    {VITA_CLASSICAL_SHADES.map(shade => (
-                      <option key={shade} value={shade}>{shade}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Select shade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VITA_CLASSICAL_SHADES.map(shade => (
+                        <SelectItem key={shade} value={shade}>{shade}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      {selectedProduct && (
+        {/* Add to Case Button */}
         <div className="flex justify-end mt-4">
-          <button
-            type="button"
+          <Button
             onClick={handleAddToCase}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={!selectedProduct}
           >
             Add to Case
-          </button>
+          </Button>
         </div>
-      )}
+
+        {/* Selected Products Modal */}
+        <SelectedProductsModal
+          products={selectedProducts}
+          onRemoveProduct={(index) => {
+            const newProducts = [...selectedProducts];
+            newProducts.splice(index, 1);
+            onProductsChange(newProducts);
+          }}
+          onReviewAndCreate={() => {
+            // Handle review and create
+          }}
+        />
+      </div>
     </div>
   );
 };
