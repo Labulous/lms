@@ -1,4 +1,5 @@
 import React from 'react';
+import { Textarea } from "@/components/ui/textarea";
 
 interface Notes {
   labNotes?: string;
@@ -20,23 +21,23 @@ const NotesStep: React.FC<NotesStepProps> = ({ notes = {}, onChange }) => {
   };
 
   return (
-    <div className="bg-slate-50 rounded-lg shadow-sm space-y-6">
+    <div className="bg-slate-50 space-y-6">
       <div>
         <label htmlFor="labNotes" className="block text-sm font-medium text-gray-700">
           Lab Notes
         </label>
         <div className="mt-1">
-          <textarea
+          <Textarea
             id="labNotes"
             name="labNotes"
             rows={4}
             value={notes.labNotes || ''}
             onChange={handleInputChange}
-            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
             placeholder="Enter any lab-specific notes here..."
+            className="bg-white"
           />
         </div>
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-xs text-gray-500">
           Add any general notes about the case that are relevant for lab staff.
         </p>
       </div>
@@ -46,18 +47,18 @@ const NotesStep: React.FC<NotesStepProps> = ({ notes = {}, onChange }) => {
           Technician Notes
         </label>
         <div className="mt-1">
-          <textarea
+          <Textarea
             id="technicianNotes"
             name="technicianNotes"
             rows={4}
             value={notes.technicianNotes || ''}
             onChange={handleInputChange}
-            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
-            placeholder="Enter any technician-specific notes here..."
+            placeholder="Enter any notes specific to the technician..."
+            className="bg-white"
           />
         </div>
-        <p className="mt-2 text-sm text-gray-500">
-          Add any technical notes or special instructions for the assigned technicians.
+        <p className="mt-2 text-xs text-gray-500">
+          Add any specific instructions or notes for the technician.
         </p>
       </div>
     </div>

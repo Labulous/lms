@@ -12,6 +12,7 @@ import { Client, clientsService } from '../../services/clientsService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/button';
 import { ProductCategory } from '../../data/mockProductData';
+import { productsService } from '../../services/productsService';
 
 const defaultEnclosedItems = {
   impression: 0,
@@ -78,7 +79,13 @@ const NewCase: React.FC = () => {
   };
 
   const handleCategoryChange = (category: ProductCategory | null) => {
+    console.log('Category changed:', category);
     setSelectedCategory(category);
+  };
+
+  const handleProductsChange = (products: ProductWithShade[]) => {
+    console.log('Products changed:', products);
+    setSelectedProducts(products);
   };
 
   useEffect(() => {
@@ -100,37 +107,58 @@ const NewCase: React.FC = () => {
     fetchClients();
   }, []);
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({});
+
+    // Validation
+    const validationErrors: Partial<FormData> = {};
+    if (!formData.clientId) validationErrors.clientId = 'Client is required';
+    if (!formData.patientFirstName) validationErrors.patientFirstName = 'Patient first name is required';
+    if (!formData.patientLastName) validationErrors.patientLastName = 'Patient last name is required';
+    if (!formData.deliveryMethod) validationErrors.deliveryMethod = 'Delivery method is required';
+    if (!formData.isDueDateTBD && !formData.dueDate) validationErrors.dueDate = 'Due date is required';
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
     try {
-      const newCase: Case = {
-        id: Math.random().toString(),
-        ...formData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: user?.id || '',
-        products: [],
-        files: [],
-        notes: [],
+      // Create case object
+      const newCase: Omit<Case, 'id' | 'createdAt' | 'updatedAt'> = {
+        clientId: formData.clientId,
+        clientName: formData.clientName || '',
+        patientFirstName: formData.patientFirstName,
+        patientLastName: formData.patientLastName,
+        orderDate: formData.orderDate,
+        status: formData.status,
+        deliveryMethod: formData.deliveryMethod,
+        dueDate: formData.isDueDateTBD ? null : formData.dueDate,
+        isDueDateTBD: formData.isDueDateTBD || false,
+        appointmentDate: formData.appointmentDate,
+        appointmentTime: formData.appointmentTime,
+        enclosedItems: formData.enclosedItems,
+        otherItems: formData.otherItems || '',
+        products: selectedProducts,
+        labId: user?.labId || '',
       };
 
+      // Add case to database
       await addCase(newCase);
       toast.success('Case created successfully');
       navigate('/cases');
     } catch (error) {
-      console.error('Error saving case:', error);
+      console.error('Error creating case:', error);
       toast.error('Failed to create case');
     }
-  };
-
-  const handleClose = () => {
-    navigate('/cases');
   };
 
   return (
     <div className="p-6">
       <div className="space-y-4">
         {/* Page Heading */}
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">Adding a New Case</h1>
+        <h1 className="text-3xl font-semibold text-gray-800 mb-6">Create a New Case</h1>
 
         {/* Order Details Section */}
         <div className="bg-white shadow overflow-hidden">
@@ -154,7 +182,7 @@ const NewCase: React.FC = () => {
             selectedCategory={selectedCategory}
             onSave={handleSaveProduct}
             selectedProducts={selectedProducts}
-            onProductsChange={setSelectedProducts}
+            onProductsChange={handleProductsChange}
             onCategoryChange={handleCategoryChange}
           />
         </div>
@@ -194,12 +222,12 @@ const NewCase: React.FC = () => {
         <div className="flex justify-end space-x-4">
           <Button
             variant="outline"
-            onClick={handleClose}
+            onClick={() => navigate('/cases')}
           >
             Cancel
           </Button>
           <Button
-            onClick={handleSave}
+            onClick={handleSubmit}
           >
             Save Case
           </Button>

@@ -1,22 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import ProductWizard from '../../components/settings/ProductWizard';
 import ServiceModal from '../../components/settings/ServiceModal';
-import { mockProducts, Product, PRODUCT_CATEGORIES, ProductCategory } from '../../data/mockProductData';
+import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../data/mockProductData';
 import { mockServices, Service } from '../../data/mockServiceData';
 import CategoryList from '../../components/settings/CategoryList';
 import ProductList from '../../components/settings/ProductList';
+import { productsService } from '../../services/productsService';
+import { toast } from 'react-hot-toast';
 
 const ProductsServices: React.FC = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>(mockServices);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
+  const [loading, setLoading] = useState(true);
 
-  const handleAddProduct = (newProduct: Product) => {
-    setProducts([...products, newProduct]);
-    setIsWizardOpen(false);
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const fetchedProducts = await productsService.getProducts();
+      setProducts(fetchedProducts);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddProduct = async (newProduct: Product) => {
+    try {
+      await productsService.addProduct(newProduct);
+      await loadProducts();
+      setIsWizardOpen(false);
+      toast.success('Product added successfully');
+    } catch (error) {
+      console.error('Error adding product:', error);
+      toast.error('Failed to add product');
+    }
   };
 
   const handleAddService = (newService: Service) => {
@@ -31,6 +58,10 @@ const ProductsServices: React.FC = () => {
   const filteredServices = selectedCategory === 'all'
     ? services
     : services.filter(service => service.categories.includes(selectedCategory));
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">

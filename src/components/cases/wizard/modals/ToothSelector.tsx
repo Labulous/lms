@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { BillingType } from '../../../../data/mockProductData';
 
 interface ToothSelectorProps {
-  billingType: string;
+  billingType: BillingType;
   onSelectionChange: (selectedTeeth: number[]) => void;
   selectedTeeth: number[];
   disabled?: boolean;
@@ -34,98 +35,123 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   selectedTeeth,
   disabled = false,
 }) => {
+  const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
+
   const handleToothClick = (toothNumber: number) => {
-    let newSelection: number[];
+    if (disabled || billingType === 'generic') return;
 
-    if (billingType === 'perTooth' || billingType === 'teeth') {
-      // Individual tooth selection
-      newSelection = selectedTeeth.includes(toothNumber)
-        ? selectedTeeth.filter(t => t !== toothNumber)
-        : [...selectedTeeth, toothNumber];
-    } else if (billingType === 'perArch') {
-      // Select entire arch
-      const isUpper = toothNumber >= 11 && toothNumber <= 28;
-      const isLower = toothNumber >= 31 && toothNumber <= 48;
-      const upperTeeth = teethData.map(t => t.number);
-      const lowerTeeth = upperTeeth.map(t => t + 20);
-
-      if (isUpper) {
-        const isUpperArchSelected = upperTeeth.every(tooth => selectedTeeth.includes(tooth));
-        newSelection = isUpperArchSelected
-          ? selectedTeeth.filter(t => !upperTeeth.includes(t))
-          : [...selectedTeeth, ...upperTeeth.filter(t => !selectedTeeth.includes(t))];
-      } else if (isLower) {
-        const isLowerArchSelected = lowerTeeth.every(tooth => selectedTeeth.includes(tooth));
-        newSelection = isLowerArchSelected
-          ? selectedTeeth.filter(t => !lowerTeeth.includes(t))
-          : [...selectedTeeth, ...lowerTeeth.filter(t => !selectedTeeth.includes(t))];
+    let newSelectedTeeth: number[];
+    if (billingType === 'perArch') {
+      // For perArch, select all teeth in the same arch
+      const isUpperArch = toothNumber >= 11 && toothNumber <= 28;
+      const archTeeth = isUpperArch ? [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28] 
+                                  : [31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48];
+      
+      // Check if we're deselecting
+      const isArchSelected = archTeeth.every(t => selectedTeeth.includes(t));
+      if (isArchSelected) {
+        newSelectedTeeth = selectedTeeth.filter(t => !archTeeth.includes(t));
       } else {
-        newSelection = selectedTeeth;
+        // Remove any teeth from the other arch
+        const otherArchTeeth = !isUpperArch 
+          ? [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28]
+          : [31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48];
+        newSelectedTeeth = selectedTeeth.filter(t => !otherArchTeeth.includes(t));
+        // Add all teeth from this arch
+        newSelectedTeeth = [...newSelectedTeeth, ...archTeeth];
       }
     } else {
-      return;
+      // For perTooth, toggle individual tooth
+      newSelectedTeeth = selectedTeeth.includes(toothNumber)
+        ? selectedTeeth.filter(t => t !== toothNumber)
+        : [...selectedTeeth, toothNumber];
     }
-
-    onSelectionChange(newSelection);
+    onSelectionChange(newSelectedTeeth);
   };
 
-  const renderTooth = (tooth: typeof teethData[0], isLower: boolean) => {
-    const toothNumber = isLower ? (tooth.number <= 18 ? tooth.number + 30 : tooth.number + 10) : tooth.number;
-    const transformValue = isLower ? `scale(1,-1) translate(0,-345)` : '';
+  const isToothSelectable = (toothNumber: number) => {
+    if (disabled || billingType === 'generic') return false;
+    return true;
+  };
 
-    return (
-      <g key={toothNumber} transform={transformValue}>
-        <path
-          d={tooth.path}
-          className={cn(
-            "cursor-pointer transition-colors",
-            selectedTeeth.includes(toothNumber)
-              ? "fill-blue-500"
-              : "fill-gray-200 hover:fill-gray-300",
-            (disabled || billingType === 'generic') && "opacity-50 cursor-not-allowed"
-          )}
-          onClick={() => !disabled && billingType !== 'generic' && handleToothClick(toothNumber)}
-        />
-        <text
-          x="50%"
-          y="50%"
-          className="text-[6px] fill-gray-600 pointer-events-none select-none"
-          textAnchor="middle"
-          dominantBaseline="middle"
-          transform={isLower ? 'scale(1,-1)' : ''}
-        >
-          {toothNumber}
-        </text>
-      </g>
-    );
+  const getToothColor = (toothNumber: number) => {
+    if (disabled) return 'text-gray-300';
+    if (selectedTeeth.includes(toothNumber)) return 'text-blue-500 fill-blue-500';
+    
+    if (billingType === 'perArch') {
+      // Highlight all teeth in the arch on hover
+      const isUpperArch = toothNumber >= 11 && toothNumber <= 28;
+      const isHoveredArchUpper = hoveredTooth !== null && hoveredTooth >= 11 && hoveredTooth <= 28;
+      
+      if (hoveredTooth !== null && 
+          ((isUpperArch && isHoveredArchUpper) || (!isUpperArch && !isHoveredArchUpper))) {
+        return 'text-blue-300 fill-blue-300';
+      }
+    } else if (hoveredTooth === toothNumber) {
+      return 'text-blue-300 fill-blue-300';
+    }
+    
+    return 'text-gray-600 hover:text-blue-300';
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto p-4">
-      <svg viewBox="0 0 276.41 345" className="w-full h-auto">
-        <g>
-          {teethData.map((tooth) => (
-            <React.Fragment key={tooth.number}>
-              {renderTooth(tooth, false)}
-              {renderTooth(tooth, true)}
-            </React.Fragment>
-          ))}
-        </g>
-      </svg>
-      <div className="mt-4">
-        <h2 className="text-lg font-semibold mb-2">Selected Teeth:</h2>
-        <p>{selectedTeeth.length > 0 ? selectedTeeth.sort((a, b) => a - b).join(", ") : "None"}</p>
+    <div className="relative w-full max-w-3xl mx-auto">
+      <div className={cn(
+        "relative",
+        disabled && "opacity-50 pointer-events-none"
+      )}>
+        <svg
+          viewBox="0 0 300 300"
+          className="w-full h-full"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* Upper Teeth Group */}
+          <g>
+            {teethData.map(tooth => (
+              <path
+                key={`upper-${tooth.number}`}
+                d={tooth.path}
+                className={cn(
+                  "transition-colors cursor-pointer",
+                  getToothColor(tooth.number)
+                )}
+                onClick={() => handleToothClick(tooth.number)}
+                onMouseEnter={() => setHoveredTooth(tooth.number)}
+                onMouseLeave={() => setHoveredTooth(null)}
+              />
+            ))}
+          </g>
+          
+          {/* Lower Teeth Group - Mirrored */}
+          <g transform="translate(0,300) scale(1,-1)">
+            {teethData.map(tooth => {
+              const lowerToothNumber = tooth.number <= 18 
+                ? tooth.number + 30 
+                : tooth.number + 20;
+              return (
+                <path
+                  key={`lower-${lowerToothNumber}`}
+                  d={tooth.path}
+                  className={cn(
+                    "transition-colors cursor-pointer",
+                    getToothColor(lowerToothNumber)
+                  )}
+                  onClick={() => handleToothClick(lowerToothNumber)}
+                  onMouseEnter={() => setHoveredTooth(lowerToothNumber)}
+                  onMouseLeave={() => setHoveredTooth(null)}
+                />
+              );
+            })}
+          </g>
+        </svg>
       </div>
-      <button
-        onClick={() => onSelectionChange([])}
-        className={cn(
-          "mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors",
-          (disabled || billingType === 'generic') && "opacity-50 cursor-not-allowed"
-        )}
-        disabled={disabled || billingType === 'generic'}
-      >
-        Clear Selection
-      </button>
+      
+      {/* Selected Teeth Display */}
+      <div className="mt-4 text-sm text-gray-600">
+        Selected teeth: {selectedTeeth.length > 0 
+          ? selectedTeeth.sort((a, b) => a - b).join(', ') 
+          : 'None'}
+      </div>
     </div>
   );
 };

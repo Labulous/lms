@@ -7,6 +7,7 @@ export interface Product {
   isTaxable: boolean;
   billingType: BillingType;
   category: ProductCategory;
+  requiresShade?: boolean;
 }
 
 export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate';
@@ -49,6 +50,7 @@ export const mockProducts: Product[] = [
     isTaxable: true,
     billingType: 'perTooth',
     category: 'Zirconia',
+    requiresShade: true
   },
   {
     id: '2',

@@ -15,21 +15,26 @@ type WizardStep = 'product' | 'billing' | 'category';
 
 interface FormData {
   name: string;
-  price: number;
-  leadTime?: number;
+  price: string;
+  leadTime?: string;
   isClientVisible: boolean;
   isTaxable: boolean;
-  billingType?: BillingType;
-  category?: ProductCategory;
+  billingType?: string;
+  category?: string;
+  requiresShade: boolean;
 }
 
 const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave }) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('product');
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    price: 0,
+    price: '',
+    leadTime: '',
     isClientVisible: true,
     isTaxable: true,
+    billingType: '',
+    category: '',
+    requiresShade: false
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
@@ -39,7 +44,7 @@ const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave }
     switch (currentStep) {
       case 'product':
         if (!formData.name.trim()) newErrors.name = 'Product name is required';
-        if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
+        if (formData.price <= '0') newErrors.price = 'Price must be greater than 0';
         break;
       case 'billing':
         if (!formData.billingType) newErrors.billingType = 'Billing type is required';

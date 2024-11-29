@@ -1,75 +1,50 @@
 import { cn } from "@/lib/utils"
-import { Check } from "lucide-react"
-
-interface Step {
-  id: number
-  name: string
-  isCompleted: boolean
-  isCurrent: boolean
-  colSpan: number
-}
 
 interface StepperProps {
-  steps: Step[]
+  steps: string[]
+  currentStep: number
   className?: string
+  colSpans?: number[] 
 }
 
-export function Stepper({ steps, className }: StepperProps) {
+export function Stepper({ steps, currentStep, className, colSpans = [] }: StepperProps) {
   return (
-    <nav aria-label="Progress" className={cn("mb-8", className)}>
-      <ol role="list" className="grid grid-cols-12 gap-9 relative">
-        {steps.map((step, stepIdx) => (
-          <li
-            key={step.name}
+    <div className={cn("grid grid-cols-12 gap-9", className)}>
+      {steps.map((step, index) => {
+        const isCompleted = index < currentStep
+        const isCurrent = index === currentStep
+        const colSpan = colSpans[index] || 1
+
+        return (
+          <div 
+            key={step} 
             className={cn(
-              'relative',
-              `col-span-${step.colSpan}`,
-              'flex justify-start'
+              "flex items-center",
+              `col-span-${colSpan}`
             )}
           >
-            {stepIdx !== 0 && (
-              <div
-                className={cn(
-                  "absolute h-0.5 top-4 -left-9",
-                  step.isCompleted ? "bg-blue-600" : "bg-gray-200"
-                )}
-                style={{
-                  width: 'calc(100% + 2.25rem)',
-                  zIndex: 0
-                }}
-              />
-            )}
-            <div className="relative z-10">
-              {step.isCompleted ? (
-                <div
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 hover:bg-blue-900"
-                >
-                  <Check className="h-5 w-5 text-white" aria-hidden="true" />
-                  <span className="sr-only">{step.name}</span>
-                </div>
-              ) : step.isCurrent ? (
-                <div
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-blue-600 bg-white"
-                  aria-current="step"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-blue-600" aria-hidden="true" />
-                  <span className="sr-only">{step.name}</span>
-                </div>
-              ) : (
-                <div
-                  className="relative flex h-8 w-8 items-center justify-center rounded-full border-2 border-gray-300 bg-white"
-                >
-                  <span className="h-2.5 w-2.5 rounded-full bg-transparent" aria-hidden="true" />
-                  <span className="sr-only">{step.name}</span>
-                </div>
+            <div
+              className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
+                isCompleted && "bg-blue-600 text-white",
+                isCurrent && "bg-blue-600 text-white",
+                !isCompleted && !isCurrent && "bg-gray-200 text-gray-500"
               )}
-              <span className="absolute left-0 top-10 whitespace-nowrap text-sm font-semibold">
-                {step.name}
-              </span>
+            >
+              {index + 1}
             </div>
-          </li>
-        ))}
-      </ol>
-    </nav>
+            <span
+              className={cn(
+                "ml-2 text-xs font-medium tracking-[0.08em]",
+                (isCompleted || isCurrent) && "text-blue-600",
+                !isCompleted && !isCurrent && "text-gray-500"
+              )}
+            >
+              {step}
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
