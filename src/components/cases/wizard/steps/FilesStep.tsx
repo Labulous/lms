@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Upload, Camera, X } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EnclosedItems {
   impression: number;
@@ -13,32 +15,20 @@ interface EnclosedItems {
   consultRequested: number;
 }
 
-const defaultEnclosedItems: EnclosedItems = {
-  impression: 0,
-  biteRegistration: 0,
-  photos: 0,
-  jig: 0,
-  opposingModel: 0,
-  articulator: 0,
-  returnArticulator: 0,
-  cadcamFiles: 0,
-  consultRequested: 0,
-};
+interface FormData {
+  enclosedItems: EnclosedItems;
+  otherItems?: string;
+}
 
 interface FilesStepProps {
-  onFileUpload: (files: File[]) => void;
-  enclosedItems?: EnclosedItems;
-  onEnclosedItemsChange: (items: EnclosedItems) => void;
-  otherItems?: string;
-  onOtherItemsChange: (value: string) => void;
+  formData: FormData;
+  onChange: (data: FormData) => void;
+  errors?: any;
 }
 
 const FilesStep: React.FC<FilesStepProps> = ({ 
-  onFileUpload, 
-  enclosedItems = defaultEnclosedItems, 
-  onEnclosedItemsChange,
-  otherItems = '',
-  onOtherItemsChange
+  formData,
+  onChange
 }) => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,7 +37,6 @@ const FilesStep: React.FC<FilesStepProps> = ({
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
       setSelectedFiles(prev => [...prev, ...newFiles]);
-      onFileUpload([...selectedFiles, ...newFiles]);
     }
   };
 
@@ -55,7 +44,6 @@ const FilesStep: React.FC<FilesStepProps> = ({
     setSelectedFiles(prev => {
       const newFiles = [...prev];
       newFiles.splice(index, 1);
-      onFileUpload(newFiles);
       return newFiles;
     });
   };
@@ -69,14 +57,49 @@ const FilesStep: React.FC<FilesStepProps> = ({
     if (event.dataTransfer.files) {
       const newFiles = Array.from(event.dataTransfer.files);
       setSelectedFiles(prev => [...prev, ...newFiles]);
-      onFileUpload([...selectedFiles, ...newFiles]);
     }
   };
 
   const handleEnclosedItemChange = (key: keyof EnclosedItems, value: string) => {
-    onEnclosedItemsChange({
-      ...enclosedItems,
-      [key]: parseInt(value) || 0,
+    const numValue = parseInt(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      onChange({
+        ...formData,
+        enclosedItems: {
+          ...formData.enclosedItems,
+          [key]: numValue
+        }
+      });
+    }
+  };
+
+  const handleIncrement = (key: keyof EnclosedItems) => {
+    onChange({
+      ...formData,
+      enclosedItems: {
+        ...formData.enclosedItems,
+        [key]: (formData.enclosedItems[key] || 0) + 1
+      }
+    });
+  };
+
+  const handleDecrement = (key: keyof EnclosedItems) => {
+    const currentValue = formData.enclosedItems[key] || 0;
+    if (currentValue > 0) {
+      onChange({
+        ...formData,
+        enclosedItems: {
+          ...formData.enclosedItems,
+          [key]: currentValue - 1
+        }
+      });
+    }
+  };
+
+  const handleOtherItemsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onChange({
+      ...formData,
+      otherItems: e.target.value
     });
   };
 
@@ -93,7 +116,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
   ] as const;
 
   return (
-    <div className="bg-slate-50 space-y-6">
+    <div>
       {/* Files Upload Section */}
       <div
         className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
@@ -132,7 +155,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
       </div>
 
       {selectedFiles.length > 0 && (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="mt-4">
           <ul className="divide-y divide-gray-200">
             {selectedFiles.map((file, index) => (
               <li key={index} className="px-4 py-3 flex items-center justify-between">
@@ -154,24 +177,24 @@ const FilesStep: React.FC<FilesStepProps> = ({
       )}
 
       {/* Enclosed With Case Section */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Enclosed With Case</h3>
+      <div className="mt-6">
+        <h3 className="text-sm font-medium text-gray-900 mb-4">Enclosed With Case</h3>
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             {enclosedItemsList.map(({ key, label }) => (
-              <div key={key}>
-                <label htmlFor={key} className="block text-sm font-medium text-gray-700">
-                  {label}
-                </label>
-                <input
+              <div key={key} className="flex items-center space-x-2">
+                <Input
                   type="number"
                   id={key}
                   name={key}
                   min="0"
-                  value={enclosedItems[key]}
+                  value={formData.enclosedItems[key] || 0}
                   onChange={(e) => handleEnclosedItemChange(key, e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="w-16 bg-white text-center h-7 px-2"
                 />
+                <label htmlFor={key} className="text-sm text-gray-700">
+                  {label}
+                </label>
               </div>
             ))}
           </div>
@@ -181,13 +204,13 @@ const FilesStep: React.FC<FilesStepProps> = ({
             <label htmlFor="otherItems" className="block text-sm font-medium text-gray-700">
               Other items:
             </label>
-            <textarea
+            <Textarea
               id="otherItems"
               name="otherItems"
               rows={4}
-              value={otherItems}
-              onChange={(e) => onOtherItemsChange(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              value={formData.otherItems || ''}
+              onChange={handleOtherItemsChange}
+              className="mt-1 bg-white"
               placeholder="Enter any additional items..."
             />
           </div>
