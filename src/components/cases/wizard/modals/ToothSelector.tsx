@@ -9,6 +9,7 @@ interface ToothSelectorProps {
   onSelectionChange: (selectedTeeth: number[]) => void;
   selectedTeeth: number[];
   disabled?: boolean;
+  onAdd?: (teeth: number[]) => void;
 }
 
 const teethData = [
@@ -35,6 +36,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   onSelectionChange,
   selectedTeeth,
   disabled = false,
+  onAdd
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
 
@@ -141,6 +143,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 size="xs" 
                 className="mt-1 px-3 py-1"
                 disabled={selectedTeeth.length === 0}
+                onClick={() => onAdd?.(selectedTeeth)}
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Add

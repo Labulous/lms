@@ -20,10 +20,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from 'react-hot-toast';
 import { Separator } from "@/components/ui/separator";
+import { Plus, X } from 'lucide-react';
 
 interface ProductConfigurationProps {
   selectedCategory: ProductCategory | null;
@@ -31,6 +40,12 @@ interface ProductConfigurationProps {
   selectedProducts: ProductWithShade[];
   onProductsChange: (products: ProductWithShade[]) => void;
   onCategoryChange: (category: ProductCategory | null) => void;
+}
+
+interface ToothItem {
+  tooth: number;
+  productName: string;
+  shade?: ShadeData;
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
@@ -48,6 +63,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     middle: '',
     gingival: '',
   });
+  const [toothItems, setToothItems] = useState<ToothItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
   const [errors, setErrors] = useState<{
     product?: string;
@@ -182,6 +198,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     console.log('Review and create case');
   };
 
+  const handleAddToothItems = (teeth: number[]) => {
+    if (selectedProduct && teeth.length > 0) {
+      const newItems = teeth.map(tooth => ({
+        tooth,
+        productName: selectedProduct.name,
+        shade: undefined
+      }));
+      setToothItems(prev => [...prev, ...newItems]);
+    }
+  };
+
+  const handleRemoveToothItem = (tooth: number) => {
+    setToothItems(prev => prev.filter(item => item.tooth !== tooth));
+  };
+
+  const handleAddShade = (tooth: number) => {
+    // TODO: Open shade modal
+    console.log('Add shade for tooth:', tooth);
+  };
+
   const steps = [
     "CATEGORY",
     "PRODUCT/SERVICE",
@@ -286,22 +322,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </div>
                       <Separator orientation="vertical" className="h-8" />
                       <div>
-                        <Label className="text-xs text-gray-500">Billing Type</Label>
-                        <p className="text-sm font-medium capitalize">
-                          {selectedProduct.billingType === 'perArch' ? 'Per Arch' :
-                           selectedProduct.billingType === 'perTooth' ? 'Per Tooth' :
-                           'Generic'}
-                        </p>
+                        <Label className="text-xs text-gray-500">Discount (%)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={discount}
+                          onChange={(e) => setDiscount(Number(e.target.value))}
+                          className="w-20 h-7 text-sm bg-white"
+                        />
                       </div>
                       <Separator orientation="vertical" className="h-8" />
-                      {selectedProduct.leadTime && (
-                        <div>
-                          <Label className="text-xs text-gray-500">Lead Time</Label>
-                          <p className="text-sm font-medium">
-                            {selectedProduct.leadTime} {selectedProduct.leadTime === 1 ? 'day' : 'days'}
-                          </p>
-                        </div>
-                      )}
+                      <div>
+                        <Label className="text-xs text-gray-500">Total</Label>
+                        <p className="text-sm font-extrabold text-blue-500">
+                          ${(selectedProduct.price * (1 - discount / 100)).toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   </>
                 )}
@@ -331,6 +368,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     billingType={selectedProduct?.billingType || 'generic'}
                     selectedTeeth={selectedTeeth}
                     onSelectionChange={handleToothSelectionChange}
+                    onAdd={handleAddToothItems}
                     disabled={!selectedProduct || selectedProduct.billingType === 'generic'}
                   />
                 </div>
@@ -348,84 +386,66 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             {/* Shade Selection - 3 columns */}
             {selectedProduct?.requiresShade && (
               <div className="col-span-3 pl-4">
-                <Label>Select Shade</Label>
+                <Label>Add Shade</Label>
                 <p className="text-sm text-gray-500 mb-2">
-                  Choose shades for the selected teeth
+                  Add shades for the selected teeth
                 </p>
-                <div className={cn(
-                  "space-y-3",
-                  (!selectedProduct || selectedTeeth.length === 0) && "opacity-50 pointer-events-none"
-                )}>
-                  <div>
-                    <Label className="text-xs text-gray-500">Occlusal</Label>
-                    <Select
-                      value={shades.occlusal}
-                      onValueChange={(value) => handleShadeChange('occlusal', value)}
-                      disabled={!selectedProduct || selectedTeeth.length === 0}
-                    >
-                      <SelectTrigger className={cn(
-                        "mt-1",
-                        (!selectedProduct || selectedTeeth.length === 0) ? "bg-transparent" : "bg-white"
-                      )}>
-                        <SelectValue placeholder="Select shade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VITA_CLASSICAL_SHADES.map(shade => (
-                          <SelectItem key={shade} value={shade}>
-                            {shade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500">Body</Label>
-                    <Select
-                      value={shades.middle}
-                      onValueChange={(value) => handleShadeChange('middle', value)}
-                      disabled={!selectedProduct || selectedTeeth.length === 0}
-                    >
-                      <SelectTrigger className={cn(
-                        "mt-1",
-                        (!selectedProduct || selectedTeeth.length === 0) ? "bg-transparent" : "bg-white"
-                      )}>
-                        <SelectValue placeholder="Select shade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VITA_CLASSICAL_SHADES.map(shade => (
-                          <SelectItem key={shade} value={shade}>
-                            {shade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500">Gingival</Label>
-                    <Select
-                      value={shades.gingival}
-                      onValueChange={(value) => handleShadeChange('gingival', value)}
-                      disabled={!selectedProduct || selectedTeeth.length === 0}
-                    >
-                      <SelectTrigger className={cn(
-                        "mt-1",
-                        (!selectedProduct || selectedTeeth.length === 0) ? "bg-transparent" : "bg-white"
-                      )}>
-                        <SelectValue placeholder="Select shade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {VITA_CLASSICAL_SHADES.map(shade => (
-                          <SelectItem key={shade} value={shade}>
-                            {shade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-24 text-xs">Tooth</TableHead>
+                        <TableHead className="text-xs">Item</TableHead>
+                        <TableHead className="text-xs">Shade</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {toothItems.map((item) => (
+                        <TableRow key={item.tooth}>
+                          <TableCell className="text-xs py-2">{item.tooth}</TableCell>
+                          <TableCell className="text-xs py-2">{item.productName}</TableCell>
+                          <TableCell className="py-2">
+                            {item.shade ? (
+                              <span className="text-xs">
+                                {item.shade.occlusal && `O: ${item.shade.occlusal} `}
+                                {item.shade.middle && `B: ${item.shade.middle} `}
+                                {item.shade.gingival && `G: ${item.shade.gingival}`}
+                              </span>
+                            ) : (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 text-xs"
+                                onClick={() => handleAddShade(item.tooth)}
+                              >
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 p-1 hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => handleRemoveToothItem(item.tooth)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {toothItems.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-4 text-xs text-gray-500">
+                            No teeth added yet
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
-                {errors.shade && (
-                  <p className="mt-2 text-sm text-red-500">{errors.shade}</p>
-                )}
               </div>
             )}
           </div>
