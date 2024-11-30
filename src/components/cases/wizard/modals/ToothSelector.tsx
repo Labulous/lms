@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
+import { Button } from '@/components/ui/button';
+import { Plus, RotateCcw } from 'lucide-react';
 
 interface ToothSelectorProps {
   billingType: BillingType;
@@ -68,6 +70,10 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     onSelectionChange(newSelectedTeeth);
   };
 
+  const handleReset = () => {
+    onSelectionChange([]);
+  };
+
   const isToothSelectable = (toothNumber: number) => {
     if (disabled || billingType === 'generic') return false;
     return true;
@@ -95,6 +101,23 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   return (
     <div className="relative w-full max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-gray-700">Crown and Bridge</span>
+          <span className="text-xs text-gray-500 mt-0.5">{billingType === 'perTooth' ? 'Per Tooth' : billingType === 'perArch' ? 'Per Arch' : 'Generic'}</span>
+        </div>
+        {selectedTeeth.length > 0 && (
+          <Button 
+            variant="ghost" 
+            size="xs" 
+            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+            onClick={handleReset}
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </div>
       <div className={cn(
         "relative",
         disabled && "opacity-50 pointer-events-none"
@@ -104,6 +127,27 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         >
+          {/* Selected Teeth Text */}
+          <foreignObject x="65" y="100" width="136" height="120">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ transform: 'scale(0.75)' }}>
+              <div className="text-gray-400 text-xs text-center">
+                Selected Teeth
+              </div>
+              <div className="text-gray-600 text-xs font-semibold text-center break-words max-w-[272px]">
+                {selectedTeeth.length === 0 ? 'None' : selectedTeeth.join(', ')}
+              </div>
+              <Button 
+                variant="default" 
+                size="xs" 
+                className="mt-1 px-3 py-1"
+                disabled={selectedTeeth.length === 0}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add
+              </Button>
+            </div>
+          </foreignObject>
+
           {/* Upper Teeth Group */}
           <g>
             {teethData.map(tooth => (
@@ -174,13 +218,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
             })}
           </g>
         </svg>
-      </div>
-      
-      {/* Selected Teeth Display */}
-      <div className="mt-4 text-sm text-gray-600">
-        Selected teeth: {selectedTeeth.length > 0 
-          ? selectedTeeth.sort((a, b) => a - b).join(', ') 
-          : 'None'}
       </div>
     </div>
   );
