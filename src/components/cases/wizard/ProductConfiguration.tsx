@@ -189,7 +189,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     "SHADE"
   ];
 
-  const stepColSpans = [2, 3, 5, 2]; 
+  const stepColSpans = [2, 3, 4, 3]; 
 
   const getCurrentStep = () => {
     if (!selectedProduct) return 0;
@@ -313,10 +313,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               <Separator orientation="vertical" className="h-full" />
             </div>
 
-            {/* Tooth Selection - 5 columns */}
+            {/* Tooth Selection - 4 columns */}
             {selectedProduct && selectedProduct.billingType !== 'generic' && (
               <div className={cn(
-                "col-span-5 px-4",
+                "col-span-4 px-4",
                 (!selectedProduct || selectedProduct.billingType === 'generic') && "opacity-50 pointer-events-none"
               )}>
                 <Label>Select Teeth</Label>
@@ -326,7 +326,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                    selectedProduct.billingType === 'perArch' ? 'Click any tooth to select the entire arch. You can only select one arch at a time.' :
                    'Click individual teeth to select them.'}
                 </p>
-                <div className="border rounded-lg p-6 bg-white min-h-[400px]">
+                <div className="border rounded-lg p-3 bg-white min-h-[400px]">
                   <ToothSelector
                     billingType={selectedProduct?.billingType || 'generic'}
                     selectedTeeth={selectedTeeth}
@@ -341,13 +341,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             )}
 
             {/* Vertical Separator */}
-            <div className="absolute left-[calc(83.333%-1px)] top-0 h-full">
+            <div className="absolute left-[calc(75%-1px)] top-0 h-full">
               <Separator orientation="vertical" className="h-full" />
             </div>
 
-            {/* Shade Selection - 2 columns */}
+            {/* Shade Selection - 3 columns */}
             {selectedProduct?.requiresShade && (
-              <div className="col-span-2 pl-4">
+              <div className="col-span-3 pl-4">
                 <Label>Select Shade</Label>
                 <p className="text-sm text-gray-500 mb-2">
                   Choose shades for the selected teeth
