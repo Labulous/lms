@@ -75,6 +75,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
+  const [addedTeethMap, setAddedTeethMap] = useState<Map<number, boolean>>(new Map());
   const [shadeType, setShadeType] = useState<'1' | '2' | '3'>('1');
   const [shades, setShades] = useState<ShadeData>({
     occlusal: '',
@@ -224,6 +225,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const sortedTeeth = [...teeth].sort((a, b) => a - b);
     const isRange = teeth.length > 1;
     
+    // Update addedTeethMap
+    const newMap = new Map(addedTeethMap);
+    sortedTeeth.forEach(tooth => {
+      newMap.set(tooth, isRange);
+    });
+    setAddedTeethMap(newMap);
+    
     if (isRange) {
       const newItem: ToothItem = {
         id: uuidv4(),
@@ -266,36 +274,39 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleRemoveToothItem = (tooth: number) => {
-    setToothItems(prev => prev.filter(item => item.teeth[0] !== tooth));
+    // Find the item being removed
+    const itemToRemove = toothItems.find(item => item.teeth.includes(tooth));
+    
+    if (itemToRemove) {
+      // Remove all teeth associated with this item from the map
+      const newMap = new Map(addedTeethMap);
+      itemToRemove.teeth.forEach(t => {
+        newMap.delete(t);
+      });
+      setAddedTeethMap(newMap);
+      
+      // Remove the item from toothItems
+      setToothItems(prev => prev.filter(item => !item.teeth.includes(tooth)));
+    }
   };
 
-  const handleAddShade = (tooth: number, shade: string, position: 'occlusal' | 'body' | 'gingival') => {
-    const existingItem = toothItems.find(item => item.teeth[0] === tooth);
-    if (existingItem) {
-      const updatedShades = {
-        ...existingItem.shades,
-        [position]: shade
-      };
-      const updatedItem = { 
-        ...existingItem, 
-        shades: updatedShades 
-      };
-      setToothItems(prev => prev.map(item => 
-        item.id === existingItem.id ? updatedItem : item
-      ));
-    } else {
-      const newItem: ToothItem = {
-        id: uuidv4(),
-        teeth: [tooth],
-        shades: {
-          [position]: shade
-        },
-        isRange: false,
-        productName: selectedProduct?.name || '',
-        highlightColor: 'bg-blue-50'
-      };
-      setToothItems(prev => [...prev, newItem]);
-    }
+  const handleShadeSelect = (itemId: string, type: 'occlusal' | 'body' | 'gingival', shade: string) => {
+    setToothItems(prevItems => {
+      return prevItems.map(item => {
+        if (item.id === itemId) {
+          const currentShades = item.shades || {};
+          const newShades = {
+            ...currentShades,
+            [type]: currentShades[type] === shade ? undefined : shade // Toggle shade if it's the same value
+          };
+          return {
+            ...item,
+            shades: newShades
+          };
+        }
+        return item;
+      });
+    });
   };
 
   const handlePopoverOpenChange = (id: string, open: boolean) => {
@@ -310,12 +321,42 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  const formatShades = (shades?: { occlusal?: string; body?: string; gingival?: string }) => {
-    if (!shades) return '';
-    return Object.entries(shades)
-      .filter(([_, value]) => value)
-      .map(([_, value]) => value)
-      .join(' / ');
+  const formatShades = (shades: { occlusal?: string; body?: string; gingival?: string }) => {
+    const orderedShades = [
+      shades.occlusal || '-',
+      shades.body || '-',
+      shades.gingival || '-'
+    ];
+    return orderedShades.join(' / ');
+  };
+
+  const formatTeethRange = (teeth: number[]): string => {
+    if (!teeth.length) return '';
+    if (teeth.length === 1) return teeth[0].toString();
+    
+    // Sort teeth numbers
+    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+    
+    // Find continuous ranges
+    let ranges: string[] = [];
+    let rangeStart = sortedTeeth[0];
+    let prev = sortedTeeth[0];
+    
+    for (let i = 1; i <= sortedTeeth.length; i++) {
+      const current = sortedTeeth[i];
+      if (current !== prev + 1) {
+        // End of a range
+        if (rangeStart === prev) {
+          ranges.push(rangeStart.toString());
+        } else {
+          ranges.push(`${rangeStart}-${prev}`);
+        }
+        rangeStart = current;
+      }
+      prev = current;
+    }
+    
+    return ranges.join(', ');
   };
 
   const steps = [
@@ -333,29 +374,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (selectedProduct.requiresShade && !shades.occlusal) return 2;
     if (selectedProduct.requiresShade && !shades.middle) return 3;
     return 3;
-  };
-
-  const formatTeethRange = (teeth: number[]) => {
-    if (teeth.length === 0) return "";
-    if (teeth.length === 1) return teeth[0].toString();
-    
-    // Check if it's a continuous range
-    const isContinuous = teeth.every((tooth, i) => {
-      if (i === 0) return true;
-      const prevTooth = teeth[i - 1];
-      // Handle quadrant transitions (e.g., 18->21)
-      if (Math.floor(tooth / 10) !== Math.floor(prevTooth / 10)) {
-        return (Math.floor(tooth / 10) - Math.floor(prevTooth / 10) === 1) &&
-               (tooth % 10 === 1) && (prevTooth % 10 === 8);
-      }
-      return tooth - prevTooth === 1;
-    });
-
-    if (isContinuous) {
-      return `${teeth[0]}-${teeth[teeth.length - 1]}`;
-    } else {
-      return teeth.join(", ");
-    }
   };
 
   return (
@@ -492,6 +510,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     selectedTeeth={selectedTeeth}
                     onSelectionChange={handleToothSelectionChange}
                     onAdd={handleAddToothItems}
+                    addedTeethMap={addedTeethMap}
                     disabled={!selectedProduct || selectedProduct.billingType === 'generic'}
                   />
                 </div>
@@ -518,7 +537,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     <TableHeader className="bg-slate-100 border-b border-slate-200">
                       <TableRow>
                         <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">Tooth</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
                         <TableHead className="text-xs py-0.5 pl-4 pr-0">Item</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
                         <TableHead className="text-xs py-0.5 pl-4 pr-0">Shade</TableHead>
                         <TableHead className="w-8 py-0.5 pr-0"></TableHead>
                       </TableRow>
@@ -528,20 +553,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         <TableRow 
                           key={item.id}
                           className={cn(
-                            "transition-all duration-300 ease-in-out",
+                            "transition-all duration-300 ease-in-out relative",
                             highlightedItems.has(item.id) 
                               ? "bg-blue-50 translate-x-4 shadow-md" 
                               : "bg-transparent translate-x-0"
                           )}
                         >
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {item.isRange 
-                              ? formatTeethRange(item.teeth)
-                              : item.teeth[0]
-                            }
+                            {formatTeethRange(item.teeth)}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator orientation="vertical" className="h-full" />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {item.productName}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator orientation="vertical" className="h-full" />
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0">
                             {item.shades && Object.keys(item.shades).length > 0 ? (
@@ -566,16 +594,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`occlusal-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.occlusal === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.occlusal === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.occlusal === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'occlusal');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'occlusal', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -589,16 +614,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`body-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.body === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.body === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.body === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'body');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'body', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -612,16 +634,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`gingival-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.gingival === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.gingival === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.gingival === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'gingival');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'gingival', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -663,16 +682,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`occlusal-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.occlusal === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.occlusal === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.occlusal === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'occlusal');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'occlusal', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -686,16 +702,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`body-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.body === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.body === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.body === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'body');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'body', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -709,16 +722,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         {VITA_CLASSICAL_SHADES.map((shade) => (
                                           <Button
                                             key={`gingival-${shade}`}
-                                            variant="outline"
+                                            variant={item.shades?.gingival === shade ? "default" : "outline"}
                                             size="sm"
                                             className={cn(
                                               "h-6 text-xs",
-                                              item.shades?.gingival === shade && "bg-primary text-primary-foreground"
+                                              item.shades?.gingival === shade && "bg-blue-500 text-white hover:bg-blue-600"
                                             )}
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              handleAddShade(item.teeth[0], shade, 'gingival');
-                                            }}
+                                            onClick={() => handleShadeSelect(item.id, 'gingival', shade)}
                                           >
                                             {shade}
                                           </Button>
@@ -766,16 +776,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Add to Case Button in new row */}
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              onClick={handleAddToCase}
-              disabled={!selectedProduct}
-            >
-              Add to Case
-            </Button>
           </div>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Camera, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 
 interface EnclosedItems {
   impression: number;
@@ -176,9 +177,11 @@ const FilesStep: React.FC<FilesStepProps> = ({
         </div>
       )}
 
+      <Separator className="my-6" />
+
       {/* Enclosed With Case Section */}
-      <div className="mt-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Enclosed With Case</h3>
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">Enclosed with Case</h3>
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-2">
             {enclosedItemsList.map(({ key, label }) => (

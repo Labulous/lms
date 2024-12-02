@@ -7,12 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
+import { Separator } from "@/components/ui/separator"; // Import Separator component
+import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
 
 const logger = createLogger({ module: 'OrderDetailsStep' });
 
 interface FormData {
   clientId: string;
+  doctorId?: string;
   patientFirstName: string;
   patientLastName: string;
   orderDate: string;
@@ -22,6 +25,8 @@ interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
+  workingPanName?: string;
+  workingPanColor?: string;
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -123,7 +128,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
   return (
     <div>
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-6 relative">
         {/* Column 1: Client Selection */}
         <div className="col-span-4">
           <div className="space-y-4">
@@ -144,6 +149,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         onChange({
                           ...formData,
                           clientId: value,
+                          doctorId: undefined, // Reset doctor when client changes
                         });
                       }}
                     >
@@ -161,7 +167,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="" disabled>No clients available</SelectItem>
+                          <SelectItem value="_no_clients" disabled>No clients available</SelectItem>
                         )}
                       </SelectContent>
                     </Select>
@@ -174,45 +180,91 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0">
-              <Label htmlFor="patientFirstName" className="text-xs">Patient First Name *</Label>
-              <Input
-                type="text"
-                id="patientFirstName"
-                name="patientFirstName"
-                value={formData.patientFirstName}
-                onChange={handleInputChange}
-                className={cn(
+              <Label htmlFor="doctorId" className="text-xs">Doctor *</Label>
+              <Select
+                name="doctorId"
+                value={formData.doctorId}
+                onValueChange={(value) => {
+                  onChange({
+                    ...formData,
+                    doctorId: value,
+                  });
+                }}
+                disabled={!selectedClient}
+              >
+                <SelectTrigger className={cn(
                   "bg-white",
-                  errors.patientFirstName ? "border-red-500" : ""
-                )}
-              />
-              {errors.patientFirstName && (
-                <p className="mt-1 text-sm text-red-600">{errors.patientFirstName}</p>
+                  errors.doctorId ? "border-red-500" : "",
+                  !selectedClient && "opacity-50"
+                )}>
+                  <SelectValue placeholder="Select a doctor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectedClient?.doctors && selectedClient.doctors.length > 0 ? (
+                    selectedClient.doctors.map((doctor) => (
+                      <SelectItem key={doctor.id} value={doctor.id || '_no_id'}>
+                        {doctor.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="_no_doctors" disabled>No doctors available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.doctorId && (
+                <p className="mt-1 text-sm text-red-600">{errors.doctorId}</p>
               )}
             </div>
 
             <div className="space-y-0">
-              <Label htmlFor="patientLastName" className="text-xs">Patient Last Name *</Label>
-              <Input
-                type="text"
-                id="patientLastName"
-                name="patientLastName"
-                value={formData.patientLastName}
-                onChange={handleInputChange}
-                className={cn(
-                  "bg-white",
-                  errors.patientLastName ? "border-red-500" : ""
-                )}
-              />
-              {errors.patientLastName && (
-                <p className="mt-1 text-sm text-red-600">{errors.patientLastName}</p>
-              )}
+              <Label htmlFor="patientFirstName" className="text-xs">Patient Name *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Input
+                    type="text"
+                    id="patientFirstName"
+                    name="patientFirstName"
+                    placeholder="First Name"
+                    value={formData.patientFirstName}
+                    onChange={handleInputChange}
+                    className={cn(
+                      "bg-white",
+                      errors.patientFirstName ? "border-red-500" : ""
+                    )}
+                  />
+                  {errors.patientFirstName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.patientFirstName}</p>
+                  )}
+                </div>
+                <div>
+                  <Input
+                    type="text"
+                    id="patientLastName"
+                    name="patientLastName"
+                    placeholder="Last Name"
+                    value={formData.patientLastName}
+                    onChange={handleInputChange}
+                    className={cn(
+                      "bg-white",
+                      errors.patientLastName ? "border-red-500" : ""
+                    )}
+                  />
+                  {errors.patientLastName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.patientLastName}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Separator between columns 1 and 2 */}
+        <div className="absolute left-[33.33%] top-0 h-full">
+          <Separator orientation="vertical" className="h-full" />
+        </div>
+
         {/* Column 2: Order Details */}
-        <div className="col-span-4">
+        <div className="col-span-4 px-4">
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="orderDate" className="text-xs">Order Date *</Label>
@@ -229,6 +281,69 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
+            <div className="space-y-0">
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="dueDate" className="text-xs">Due Date</Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="isDueDateTBD" className="text-xs">TBD</Label>
+                  <Checkbox
+                    id="isDueDateTBD"
+                    name="isDueDateTBD"
+                    checked={formData.isDueDateTBD}
+                    onCheckedChange={(checked) => {
+                      onChange({
+                        ...formData,
+                        isDueDateTBD: checked as boolean,
+                        dueDate: checked ? undefined : formData.dueDate,
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+              {!formData.isDueDateTBD && (
+                <DatePicker
+                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  onSelect={handleDateChange('dueDate')}
+                  className={cn(
+                    "bg-white [&>button]:bg-white",
+                    errors.dueDate ? "border-red-500" : ""
+                  )}
+                />
+              )}
+              {errors.dueDate && (
+                <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
+              )}
+            </div>
+
+            <div className="space-y-0">
+              <Label htmlFor="appointmentDate" className="text-xs">Appointment Date & Time</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <DatePicker
+                  date={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
+                  onSelect={handleDateChange('appointmentDate')}
+                  className="bg-white [&>button]:bg-white"
+                />
+                <Input
+                  type="time"
+                  id="appointmentTime"
+                  name="appointmentTime"
+                  value={formData.appointmentTime || ''}
+                  onChange={handleInputChange}
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Separator between columns 2 and 3 */}
+        <div className="absolute left-[66.66%] top-0 h-full">
+          <Separator orientation="vertical" className="h-full" />
+        </div>
+
+        {/* Column 3: Status & Delivery */}
+        <div className="col-span-4">
+          <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="status" className="text-xs">Status *</Label>
               <Select
@@ -290,82 +405,36 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 <p className="mt-1 text-sm text-red-600">{errors.deliveryMethod}</p>
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Column 3: Due Date & Appointment */}
-        <div className="col-span-4">
-          <div className="space-y-4">
             <div className="space-y-0">
-              <div className="flex items-center justify-between mb-1">
-                <Label htmlFor="dueDate" className="text-xs">Due Date</Label>
-                <div className="flex items-center space-x-2">
-                  <Label htmlFor="isDueDateTBD" className="text-xs">TBD</Label>
-                  <Checkbox
-                    id="isDueDateTBD"
-                    name="isDueDateTBD"
-                    checked={formData.isDueDateTBD}
-                    onCheckedChange={(checked) => {
-                      onChange({
-                        target: {
-                          name: 'isDueDateTBD',
-                          value: checked,
-                        },
-                      });
-                      onChange({
-                        isDueDateTBD: checked as boolean,
-                        ...(checked ? { dueDate: undefined } : {}),
-                      });
-                    }}
-                  />
-                </div>
-              </div>
-
-              {!formData.isDueDateTBD && (
-                <DatePicker
-                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
-                  onSelect={handleDateChange('dueDate')}
+              <Label htmlFor="workingPanName" className="text-xs">Working Pan</Label>
+              <div className="flex items-center gap-2 mt-1.5">
+                <Input
+                  type="text"
+                  id="workingPanName"
+                  name="workingPanName"
+                  placeholder="Pan Name"
+                  value={formData.workingPanName || ''}
+                  onChange={handleInputChange}
                   className={cn(
-                    "bg-white [&>button]:bg-white",
-                    errors.dueDate ? "border-red-500" : ""
+                    "bg-white flex-1",
+                    errors.workingPanName ? "border-red-500" : ""
                   )}
                 />
-              )}
-              {errors.dueDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.dueDate}</p>
-              )}
-            </div>
-
-            <div className="space-y-0">
-              <Label htmlFor="appointmentDate" className="text-xs">Appointment Date</Label>
-              <DatePicker
-                date={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
-                onSelect={handleDateChange('appointmentDate')}
-                className={cn(
-                  "bg-white [&>button]:bg-white",
-                  errors.appointmentDate ? "border-red-500" : ""
-                )}
-              />
-              {errors.appointmentDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.appointmentDate}</p>
-              )}
-            </div>
-
-            <div className="space-y-0">
-              <Label htmlFor="appointmentTime" className="text-xs">Appointment Time</Label>
-              <Input
-                type="time"
-                id="appointmentTime"
-                name="appointmentTime"
-                value={formData.appointmentTime || ''}
-                onChange={handleInputChange}
-                className={cn(
-                  "bg-white",
-                  errors.appointmentTime ? "border-red-500" : ""
-                )}
-              />
-              {errors.appointmentTime && (
-                <p className="mt-1 text-sm text-red-600">{errors.appointmentTime}</p>
+                <ColorPicker
+                  id="workingPanColor"
+                  value={formData.workingPanColor || '#FF0000'}
+                  onChange={(color) => {
+                    onChange({
+                      ...formData,
+                      workingPanColor: color,
+                    });
+                  }}
+                  className="flex-shrink-0"
+                />
+              </div>
+              {errors.workingPanName && (
+                <p className="mt-1 text-sm text-red-600">{errors.workingPanName}</p>
               )}
             </div>
           </div>

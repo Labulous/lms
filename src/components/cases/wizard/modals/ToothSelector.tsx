@@ -10,6 +10,7 @@ interface ToothSelectorProps {
   selectedTeeth: number[];
   disabled?: boolean;
   onAdd?: (teeth: number[]) => void;
+  addedTeethMap?: Map<number, boolean>;
 }
 
 const teethData = [
@@ -36,113 +37,122 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   onSelectionChange,
   selectedTeeth,
   disabled = false,
-  onAdd
+  onAdd,
+  addedTeethMap = new Map()
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
   const [rangeSelections, setRangeSelections] = useState<Set<number>>(new Set());
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const getTeethInRange = (start: number, end: number): number[] => {
-    const startQuadrant = Math.floor(start / 10);
-    const endQuadrant = Math.floor(end / 10);
-    
-    // Check if teeth are in the same arch
-    const isStartUpper = startQuadrant <= 2;
-    const isEndUpper = endQuadrant <= 2;
-    
-    if (isStartUpper !== isEndUpper) {
-      // Don't allow selection across upper and lower arch
-      return [start];
+  // Helper function to get visual position index of a tooth
+  const getVisualIndex = (toothNumber: number) => {
+    // Upper right quadrant (18-11)
+    if (toothNumber >= 11 && toothNumber <= 18) {
+      return 18 - toothNumber; // 18->0, 17->1, ..., 11->7
     }
-    
-    // Get the range boundaries
-    let minTooth, maxTooth;
-    if (start <= end) {
-      minTooth = start;
-      maxTooth = end;
-    } else {
-      minTooth = end;
-      maxTooth = start;
+    // Upper left quadrant (21-28)
+    if (toothNumber >= 21 && toothNumber <= 28) {
+      return toothNumber - 21; // 21->0, 22->1, ..., 28->7
     }
-    
-    // Generate all teeth numbers in the range
-    const teeth: number[] = [];
-    let currentTooth = minTooth;
-    
-    while (currentTooth <= maxTooth) {
-      const currentQuadrant = Math.floor(currentTooth / 10);
-      // Check if we're still in the same arch
-      if ((isStartUpper && currentQuadrant <= 2) || (!isStartUpper && currentQuadrant >= 3)) {
-        teeth.push(currentTooth);
-      }
-      
-      // Move to next tooth
-      currentTooth++;
-      // If we reach the end of a quadrant, jump to the next one
-      if (currentTooth % 10 === 9) {
-        currentTooth = (Math.floor(currentTooth / 10) + 1) * 10 + 1;
-      }
+    // Lower right quadrant (48-41)
+    if (toothNumber >= 41 && toothNumber <= 48) {
+      return 48 - toothNumber; // 48->0, 47->1, ..., 41->7
     }
-    
-    return teeth;
+    // Lower left quadrant (31-38)
+    if (toothNumber >= 31 && toothNumber <= 38) {
+      return toothNumber - 31; // 31->0, 32->1, ..., 38->7
+    }
+    return -1;
   };
 
-  const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
-    if (disabled || billingType === 'generic') return;
-
-    if (billingType === 'perTooth' && event.shiftKey && !event.ctrlKey && !event.altKey) {
-      if (rangeStartTooth === null) {
-        // Start range selection
-        setRangeStartTooth(toothNumber);
-        onSelectionChange([toothNumber]);
-      } else {
-        // Complete range selection
-        const teethInRange = getTeethInRange(rangeStartTooth, toothNumber);
-        setRangeStartTooth(null);
-        // Add all teeth in range to rangeSelections
-        setRangeSelections(prev => {
-          const newSet = new Set(prev);
-          teethInRange.forEach(tooth => newSet.add(tooth));
-          return newSet;
-        });
-        onSelectionChange(teethInRange);
-      }
-      return;
+  // Helper function to get tooth numbers between two visual positions
+  const getTeethInVisualRange = (start: number, end: number) => {
+    // If teeth are in the same quadrant
+    if (Math.floor(start / 10) === Math.floor(end / 10)) {
+      const min = Math.min(start, end);
+      const max = Math.max(start, end);
+      return Array.from({length: max - min + 1}, (_, i) => min + i);
     }
-
-    // Reset range selection if clicking without shift
-    setRangeStartTooth(null);
-
-    // Clear range selections when clicking individual teeth
-    if (!event.shiftKey) {
-      setRangeSelections(new Set());
-    }
-
-    let newSelectedTeeth: number[];
-    if (billingType === 'perArch') {
-      // Original per-arch logic
-      const clickedToothQuadrant = Math.floor(toothNumber / 10);
-      const isUpper = clickedToothQuadrant <= 2;
-      const archTeeth = Array.from({ length: 16 }, (_, i) => {
-        const quadrant = isUpper ? (i < 8 ? 1 : 2) : (i < 8 ? 4 : 3);
-        const toothNum = (i % 8) + 1;
-        return quadrant * 10 + toothNum;
-      });
+    
+    // For cross-quadrant selection in upper arch (11-28)
+    if ((start >= 11 && start <= 18 && end >= 21 && end <= 28) ||
+        (end >= 11 && end <= 18 && start >= 21 && start <= 28)) {
+      let result = [];
       
-      const hasTeethFromArch = selectedTeeth.some(t => {
-        const quadrant = Math.floor(t / 10);
-        return (isUpper && quadrant <= 2) || (!isUpper && quadrant >= 3);
-      });
-
-      newSelectedTeeth = hasTeethFromArch ? [] : archTeeth;
-    } else {
-      newSelectedTeeth = selectedTeeth.includes(toothNumber)
-        ? selectedTeeth.filter(t => t !== toothNumber)
-        : [...selectedTeeth, toothNumber];
+      // Determine the direction (right to left or left to right)
+      const isRightToLeft = (start >= 11 && start <= 18);
+      const firstTooth = isRightToLeft ? start : end;
+      const secondTooth = isRightToLeft ? end : start;
+      
+      // Add teeth from the right quadrant (18-11)
+      for (let tooth = firstTooth; tooth >= 11; tooth--) {
+        result.push(tooth);
+      }
+      
+      // Add teeth from the left quadrant (21-28)
+      for (let tooth = 21; tooth <= secondTooth; tooth++) {
+        result.push(tooth);
+      }
+      
+      // If selection was left to right, reverse the array
+      return isRightToLeft ? result : result.reverse();
     }
+    
+    // For cross-quadrant selection in lower arch (31-48)
+    if ((start >= 41 && start <= 48 && end >= 31 && end <= 38) ||
+        (end >= 41 && end <= 48 && start >= 31 && start <= 38)) {
+      let result = [];
+      
+      // Determine the direction (right to left or left to right)
+      const isRightToLeft = (start >= 41 && start <= 48);
+      const firstTooth = isRightToLeft ? start : end;
+      const secondTooth = isRightToLeft ? end : start;
+      
+      // Add teeth from the right quadrant (48-41)
+      for (let tooth = firstTooth; tooth >= 41; tooth--) {
+        result.push(tooth);
+      }
+      
+      // Add teeth from the left quadrant (31-38)
+      for (let tooth = 31; tooth <= secondTooth; tooth++) {
+        result.push(tooth);
+      }
+      
+      // If selection was left to right, reverse the array
+      return isRightToLeft ? result : result.reverse();
+    }
+    
+    // Default to empty array for invalid cross-arch selections
+    return [];
+  };
 
-    onSelectionChange(newSelectedTeeth);
+  const handleToothClick = (tooth: number, event: React.MouseEvent) => {
+    if (disabled) return;
+
+    if (event.shiftKey && billingType === 'perTooth') {
+      if (rangeStartTooth === null) {
+        setRangeStartTooth(tooth);
+        onSelectionChange([tooth]);
+      } else {
+        const teethInRange = getTeethInVisualRange(rangeStartTooth, tooth);
+        if (teethInRange.length > 0) {
+          const newRangeSelections = new Set(rangeSelections);
+          teethInRange.forEach(t => newRangeSelections.add(t));
+          setRangeSelections(newRangeSelections);
+          onSelectionChange(teethInRange);
+        }
+        setRangeStartTooth(null);
+      }
+    } else {
+      setRangeStartTooth(null);
+      setRangeSelections(new Set());
+      if (selectedTeeth.includes(tooth)) {
+        onSelectionChange(selectedTeeth.filter((t) => t !== tooth));
+      } else {
+        onSelectionChange([...selectedTeeth, tooth]);
+      }
+    }
   };
 
   const getToothColor = (toothNumber: number) => {
@@ -185,6 +195,12 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
   };
 
+  const handleReset = () => {
+    onSelectionChange([]);
+    setRangeStartTooth(null);
+    setRangeSelections(new Set());
+  };
+
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       {billingType === 'perTooth' && (
@@ -217,7 +233,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
             variant="ghost" 
             size="xs" 
             className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
-            onClick={() => onSelectionChange([])}
+            onClick={handleReset}
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             Reset
@@ -280,6 +296,18 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 >
                   {tooth.number}
                 </text>
+                {/* Corner Marker */}
+                {addedTeethMap.has(tooth.number) && (
+                  <circle
+                    cx={tooth.number >= 11 && tooth.number <= 18 ? tooth.x - 8 : tooth.x + 8}
+                    cy={tooth.y - 8}
+                    r="2"
+                    className={cn(
+                      "pointer-events-none",
+                      addedTeethMap.get(tooth.number) ? "fill-purple-500" : "fill-blue-500"
+                    )}
+                  />
+                )}
               </g>
             ))}
           </g>
@@ -320,6 +348,20 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                   >
                     {lowerToothNumber}
                   </text>
+                  {/* Corner Marker - Now positioned at bottom and in front */}
+                  {addedTeethMap.has(lowerToothNumber) && (
+                    <g transform="scale(1,-1)">
+                      <circle
+                        cx={lowerToothNumber >= 41 && lowerToothNumber <= 48 ? tooth.x - 8 : tooth.x + 8}
+                        cy={-tooth.y + 8}
+                        r="2"
+                        className={cn(
+                          "pointer-events-none",
+                          addedTeethMap.get(lowerToothNumber) ? "fill-purple-500" : "fill-blue-500"
+                        )}
+                      />
+                    </g>
+                  )}
                 </g>
               );
             })}
