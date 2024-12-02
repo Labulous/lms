@@ -33,6 +33,17 @@ import { Stepper } from "@/components/ui/stepper";
 import { toast } from 'react-hot-toast';
 import { Separator } from "@/components/ui/separator";
 import { Plus, X } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "@radix-ui/react-hover-card";
 
 interface ProductConfigurationProps {
   selectedCategory: ProductCategory | null;
@@ -43,9 +54,16 @@ interface ProductConfigurationProps {
 }
 
 interface ToothItem {
-  tooth: number;
+  id: string;
+  teeth: number[];
+  isRange: boolean;
   productName: string;
-  shade?: ShadeData;
+  highlightColor?: string;
+  shades?: {
+    occlusal?: string;
+    body?: string;
+    gingival?: string;
+  };
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
@@ -72,6 +90,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   }>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [highlightedItems, setHighlightedItems] = useState<Set<string>>(new Set());
+  const [openPopoverIds, setOpenPopoverIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -199,23 +219,103 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleAddToothItems = (teeth: number[]) => {
-    if (selectedProduct && teeth.length > 0) {
-      const newItems = teeth.map(tooth => ({
-        tooth,
+    if (!selectedProduct) return;
+
+    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+    const isRange = teeth.length > 1;
+    
+    if (isRange) {
+      const newItem: ToothItem = {
+        id: uuidv4(),
+        teeth: sortedTeeth,
+        isRange: true,
         productName: selectedProduct.name,
-        shade: undefined
+        highlightColor: 'bg-blue-50'
+      };
+      setToothItems(prev => [...prev, newItem]);
+      setHighlightedItems(prev => new Set([...prev, newItem.id]));
+      
+      setTimeout(() => {
+        setHighlightedItems(prev => {
+          const next = new Set(prev);
+          next.delete(newItem.id);
+          return next;
+        });
+      }, 800);
+    } else {
+      const newItems: ToothItem[] = teeth.map(tooth => ({
+        id: uuidv4(),
+        teeth: [tooth],
+        isRange: false,
+        productName: selectedProduct.name,
+        highlightColor: 'bg-blue-50'
       }));
       setToothItems(prev => [...prev, ...newItems]);
+      setHighlightedItems(prev => new Set([...prev, ...newItems.map(item => item.id)]));
+      
+      setTimeout(() => {
+        setHighlightedItems(prev => {
+          const next = new Set(prev);
+          newItems.forEach(item => next.delete(item.id));
+          return next;
+        });
+      }, 800);
     }
+
+    setSelectedTeeth([]);
   };
 
   const handleRemoveToothItem = (tooth: number) => {
-    setToothItems(prev => prev.filter(item => item.tooth !== tooth));
+    setToothItems(prev => prev.filter(item => item.teeth[0] !== tooth));
   };
 
-  const handleAddShade = (tooth: number) => {
-    // TODO: Open shade modal
-    console.log('Add shade for tooth:', tooth);
+  const handleAddShade = (tooth: number, shade: string, position: 'occlusal' | 'body' | 'gingival') => {
+    const existingItem = toothItems.find(item => item.teeth[0] === tooth);
+    if (existingItem) {
+      const updatedShades = {
+        ...existingItem.shades,
+        [position]: shade
+      };
+      const updatedItem = { 
+        ...existingItem, 
+        shades: updatedShades 
+      };
+      setToothItems(prev => prev.map(item => 
+        item.id === existingItem.id ? updatedItem : item
+      ));
+    } else {
+      const newItem: ToothItem = {
+        id: uuidv4(),
+        teeth: [tooth],
+        shades: {
+          [position]: shade
+        },
+        isRange: false,
+        productName: selectedProduct?.name || '',
+        highlightColor: 'bg-blue-50'
+      };
+      setToothItems(prev => [...prev, newItem]);
+    }
+  };
+
+  const handlePopoverOpenChange = (id: string, open: boolean) => {
+    setOpenPopoverIds(prev => {
+      const newSet = new Set(prev);
+      if (open) {
+        newSet.add(id);
+      } else {
+        newSet.delete(id);
+      }
+      return newSet;
+    });
+  };
+
+  const formatShades = (shades?: { occlusal?: string; body?: string; gingival?: string }) => {
+    if (!shades) return '';
+    return Object.entries(shades)
+      .filter(([_, value]) => value)
+      .map(([_, value]) => value)
+      .join(' / ');
   };
 
   const steps = [
@@ -233,6 +333,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (selectedProduct.requiresShade && !shades.occlusal) return 2;
     if (selectedProduct.requiresShade && !shades.middle) return 3;
     return 3;
+  };
+
+  const formatTeethRange = (teeth: number[]) => {
+    if (teeth.length === 0) return "";
+    if (teeth.length === 1) return teeth[0].toString();
+    
+    // Check if it's a continuous range
+    const isContinuous = teeth.every((tooth, i) => {
+      if (i === 0) return true;
+      const prevTooth = teeth[i - 1];
+      // Handle quadrant transitions (e.g., 18->21)
+      if (Math.floor(tooth / 10) !== Math.floor(prevTooth / 10)) {
+        return (Math.floor(tooth / 10) - Math.floor(prevTooth / 10) === 1) &&
+               (tooth % 10 === 1) && (prevTooth % 10 === 8);
+      }
+      return tooth - prevTooth === 1;
+    });
+
+    if (isContinuous) {
+      return `${teeth[0]}-${teeth[teeth.length - 1]}`;
+    } else {
+      return teeth.join(", ");
+    }
   };
 
   return (
@@ -392,44 +515,236 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 </p>
                 <div className="border rounded-lg bg-white">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
                       <TableRow>
-                        <TableHead className="w-24 text-xs">Tooth</TableHead>
-                        <TableHead className="text-xs">Item</TableHead>
-                        <TableHead className="text-xs">Shade</TableHead>
-                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">Tooth</TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Item</TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Shade</TableHead>
+                        <TableHead className="w-8 py-0.5 pr-0"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {toothItems.map((item) => (
-                        <TableRow key={item.tooth}>
-                          <TableCell className="text-xs py-2">{item.tooth}</TableCell>
-                          <TableCell className="text-xs py-2">{item.productName}</TableCell>
-                          <TableCell className="py-2">
-                            {item.shade ? (
-                              <span className="text-xs">
-                                {item.shade.occlusal && `O: ${item.shade.occlusal} `}
-                                {item.shade.middle && `B: ${item.shade.middle} `}
-                                {item.shade.gingival && `G: ${item.shade.gingival}`}
-                              </span>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 text-xs"
-                                onClick={() => handleAddShade(item.tooth)}
+                        <TableRow 
+                          key={item.id}
+                          className={cn(
+                            "transition-all duration-300 ease-in-out",
+                            highlightedItems.has(item.id) 
+                              ? "bg-blue-50 translate-x-4 shadow-md" 
+                              : "bg-transparent translate-x-0"
+                          )}
+                        >
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {item.isRange 
+                              ? formatTeethRange(item.teeth)
+                              : item.teeth[0]
+                            }
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {item.productName}
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0">
+                            {item.shades && Object.keys(item.shades).length > 0 ? (
+                              <Popover 
+                                open={openPopoverIds.has(item.id)}
+                                onOpenChange={(open) => handlePopoverOpenChange(item.id, open)}
                               >
-                                <Plus className="h-3 w-3 mr-1" />
-                                Add
-                              </Button>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 text-xs px-2"
+                                  >
+                                    <span className="text-xs">{formatShades(item.shades)}</span>
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-0" align="start">
+                                  <div className="p-4 space-y-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Occlusal</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`occlusal-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.occlusal === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'occlusal');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <Separator className="my-2" />
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Body</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`body-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.body === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'body');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <Separator className="my-2" />
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Gingival</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`gingival-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.gingival === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'gingival');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end pt-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePopoverOpenChange(item.id, false)}
+                                      >
+                                        Done
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <Popover
+                                open={openPopoverIds.has(item.id)}
+                                onOpenChange={(open) => handlePopoverOpenChange(item.id, open)}
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="h-6 text-xs px-2"
+                                  >
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add Shade
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-0" align="start">
+                                  <div className="p-4 space-y-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Occlusal</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`occlusal-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.occlusal === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'occlusal');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <Separator className="my-2" />
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Body</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`body-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.body === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'body');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <Separator className="my-2" />
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">Gingival</h4>
+                                      <div className="grid grid-cols-6 gap-1">
+                                        {VITA_CLASSICAL_SHADES.map((shade) => (
+                                          <Button
+                                            key={`gingival-${shade}`}
+                                            variant="outline"
+                                            size="sm"
+                                            className={cn(
+                                              "h-6 text-xs",
+                                              item.shades?.gingival === shade && "bg-primary text-primary-foreground"
+                                            )}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              handleAddShade(item.teeth[0], shade, 'gingival');
+                                            }}
+                                          >
+                                            {shade}
+                                          </Button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-end pt-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePopoverOpenChange(item.id, false)}
+                                      >
+                                        Done
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             )}
                           </TableCell>
-                          <TableCell className="py-2">
+                          <TableCell className="py-1.5 pl-4 pr-2">
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 p-1 hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() => handleRemoveToothItem(item.tooth)}
+                              onClick={() => handleRemoveToothItem(item.teeth[0])}
                             >
                               <X className="h-3 w-3" />
                             </Button>
@@ -438,7 +753,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       ))}
                       {toothItems.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-4 text-xs text-gray-500">
+                          <TableCell 
+                            colSpan={4} 
+                            className="text-center py-3 text-xs text-gray-500"
+                          >
                             No teeth added yet
                           </TableCell>
                         </TableRow>

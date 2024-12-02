@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
 import { Button } from '@/components/ui/button';
-import { Plus, RotateCcw } from 'lucide-react';
+import { Plus, RotateCcw, HelpCircle } from 'lucide-react';
 
 interface ToothSelectorProps {
   billingType: BillingType;
@@ -39,70 +39,174 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   onAdd
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
+  const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
+  const [rangeSelections, setRangeSelections] = useState<Set<number>>(new Set());
+  const [showTooltip, setShowTooltip] = useState(false);
 
-  const handleToothClick = (toothNumber: number) => {
+  const getTeethInRange = (start: number, end: number): number[] => {
+    const startQuadrant = Math.floor(start / 10);
+    const endQuadrant = Math.floor(end / 10);
+    
+    // Check if teeth are in the same arch
+    const isStartUpper = startQuadrant <= 2;
+    const isEndUpper = endQuadrant <= 2;
+    
+    if (isStartUpper !== isEndUpper) {
+      // Don't allow selection across upper and lower arch
+      return [start];
+    }
+    
+    // Get the range boundaries
+    let minTooth, maxTooth;
+    if (start <= end) {
+      minTooth = start;
+      maxTooth = end;
+    } else {
+      minTooth = end;
+      maxTooth = start;
+    }
+    
+    // Generate all teeth numbers in the range
+    const teeth: number[] = [];
+    let currentTooth = minTooth;
+    
+    while (currentTooth <= maxTooth) {
+      const currentQuadrant = Math.floor(currentTooth / 10);
+      // Check if we're still in the same arch
+      if ((isStartUpper && currentQuadrant <= 2) || (!isStartUpper && currentQuadrant >= 3)) {
+        teeth.push(currentTooth);
+      }
+      
+      // Move to next tooth
+      currentTooth++;
+      // If we reach the end of a quadrant, jump to the next one
+      if (currentTooth % 10 === 9) {
+        currentTooth = (Math.floor(currentTooth / 10) + 1) * 10 + 1;
+      }
+    }
+    
+    return teeth;
+  };
+
+  const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled || billingType === 'generic') return;
+
+    if (billingType === 'perTooth' && event.shiftKey && !event.ctrlKey && !event.altKey) {
+      if (rangeStartTooth === null) {
+        // Start range selection
+        setRangeStartTooth(toothNumber);
+        onSelectionChange([toothNumber]);
+      } else {
+        // Complete range selection
+        const teethInRange = getTeethInRange(rangeStartTooth, toothNumber);
+        setRangeStartTooth(null);
+        // Add all teeth in range to rangeSelections
+        setRangeSelections(prev => {
+          const newSet = new Set(prev);
+          teethInRange.forEach(tooth => newSet.add(tooth));
+          return newSet;
+        });
+        onSelectionChange(teethInRange);
+      }
+      return;
+    }
+
+    // Reset range selection if clicking without shift
+    setRangeStartTooth(null);
+
+    // Clear range selections when clicking individual teeth
+    if (!event.shiftKey) {
+      setRangeSelections(new Set());
+    }
 
     let newSelectedTeeth: number[];
     if (billingType === 'perArch') {
-      // For perArch, select all teeth in the same arch
-      const isUpperArch = toothNumber >= 11 && toothNumber <= 28;
-      const archTeeth = isUpperArch ? [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28] 
-                                  : [31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48];
+      // Original per-arch logic
+      const clickedToothQuadrant = Math.floor(toothNumber / 10);
+      const isUpper = clickedToothQuadrant <= 2;
+      const archTeeth = Array.from({ length: 16 }, (_, i) => {
+        const quadrant = isUpper ? (i < 8 ? 1 : 2) : (i < 8 ? 4 : 3);
+        const toothNum = (i % 8) + 1;
+        return quadrant * 10 + toothNum;
+      });
       
-      // Check if we're deselecting
-      const isArchSelected = archTeeth.every(t => selectedTeeth.includes(t));
-      if (isArchSelected) {
-        newSelectedTeeth = selectedTeeth.filter(t => !archTeeth.includes(t));
-      } else {
-        // Remove any teeth from the other arch
-        const otherArchTeeth = !isUpperArch 
-          ? [11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28]
-          : [31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48];
-        newSelectedTeeth = selectedTeeth.filter(t => !otherArchTeeth.includes(t));
-        // Add all teeth from this arch
-        newSelectedTeeth = [...newSelectedTeeth, ...archTeeth];
-      }
+      const hasTeethFromArch = selectedTeeth.some(t => {
+        const quadrant = Math.floor(t / 10);
+        return (isUpper && quadrant <= 2) || (!isUpper && quadrant >= 3);
+      });
+
+      newSelectedTeeth = hasTeethFromArch ? [] : archTeeth;
     } else {
-      // For perTooth, toggle individual tooth
       newSelectedTeeth = selectedTeeth.includes(toothNumber)
         ? selectedTeeth.filter(t => t !== toothNumber)
         : [...selectedTeeth, toothNumber];
     }
+
     onSelectionChange(newSelectedTeeth);
   };
 
-  const handleReset = () => {
-    onSelectionChange([]);
-  };
-
-  const isToothSelectable = (toothNumber: number) => {
-    if (disabled || billingType === 'generic') return false;
-    return true;
-  };
-
   const getToothColor = (toothNumber: number) => {
-    if (disabled) return 'text-gray-300 fill-gray-300';
-    if (selectedTeeth.includes(toothNumber)) return 'text-blue-500 fill-blue-500';
+    if (disabled) return "fill-gray-200 cursor-not-allowed";
     
-    if (billingType === 'perArch') {
-      // Highlight all teeth in the arch on hover
-      const isUpperArch = toothNumber >= 11 && toothNumber <= 28;
-      const isHoveredArchUpper = hoveredTooth !== null && hoveredTooth >= 11 && hoveredTooth <= 28;
-      
-      if (hoveredTooth !== null && 
-          ((isUpperArch && isHoveredArchUpper) || (!isUpperArch && !isHoveredArchUpper))) {
-        return 'text-blue-300 fill-blue-300';
-      }
-    } else if (hoveredTooth === toothNumber) {
-      return 'text-blue-300 fill-blue-300';
+    // Check if tooth is part of a completed range selection
+    if (rangeSelections.has(toothNumber)) {
+      return "fill-purple-500 hover:fill-purple-600";
     }
     
-    return 'text-gray-600 fill-gray-300 hover:text-blue-300 hover:fill-blue-300';
+    if (selectedTeeth.includes(toothNumber)) {
+      // For teeth being selected as part of a new range
+      if (rangeStartTooth !== null) {
+        return "fill-purple-500 hover:fill-purple-600";
+      }
+      // For individually selected teeth
+      return "fill-blue-500 hover:fill-blue-600";
+    }
+    
+    if (hoveredTooth === toothNumber) return "fill-blue-200";
+    
+    // For potential range selection
+    if (rangeStartTooth !== null && billingType === 'perTooth') {
+      const isStartUpper = Math.floor(rangeStartTooth / 10) <= 2;
+      const isCurrentUpper = Math.floor(toothNumber / 10) <= 2;
+      if (isStartUpper === isCurrentUpper) {
+        return "fill-purple-100 hover:fill-purple-200";
+      }
+    }
+    
+    return "fill-gray-100 hover:fill-gray-200";
+  };
+
+  const handleAdd = () => {
+    if (onAdd) {
+      onAdd(selectedTeeth);
+      // Clear range selections after adding
+      setRangeSelections(new Set());
+      setRangeStartTooth(null);
+    }
   };
 
   return (
     <div className="relative w-full max-w-3xl mx-auto">
+      {billingType === 'perTooth' && (
+        <div className="absolute top-0 right-0 text-xs text-gray-500">
+          <div 
+            className="relative inline-block"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+          >
+            <span className="cursor-help underline decoration-dotted text-purple-500 flex items-center gap-1">
+              <HelpCircle className="w-3 h-3" />
+              Range Selection
+            </span>
+            {showTooltip && (
+              <div className="absolute right-0 mt-1 p-2 bg-white border rounded-md shadow-lg z-50 w-48">
+                <p className="text-xs mb-1">Hold Shift and click two teeth to select a range.</p>
+                <p className="text-xs">Works within upper or lower arch.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-700">Crown and Bridge</span>
@@ -112,8 +216,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           <Button 
             variant="ghost" 
             size="xs" 
-            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50"
-            onClick={handleReset}
+            className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
+            onClick={() => onSelectionChange([])}
           >
             <RotateCcw className="w-3 h-3 mr-1" />
             Reset
@@ -143,7 +247,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 size="xs" 
                 className="mt-1 px-3 py-1"
                 disabled={selectedTeeth.length === 0}
-                onClick={() => onAdd?.(selectedTeeth)}
+                onClick={handleAdd}
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Add
@@ -161,7 +265,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                     "transition-colors cursor-pointer",
                     getToothColor(tooth.number)
                   )}
-                  onClick={() => handleToothClick(tooth.number)}
+                  onClick={(event) => handleToothClick(tooth.number, event)}
                   onMouseEnter={() => setHoveredTooth(tooth.number)}
                   onMouseLeave={() => setHoveredTooth(null)}
                 />
@@ -200,7 +304,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                       "transition-colors cursor-pointer",
                       getToothColor(lowerToothNumber)
                     )}
-                    onClick={() => handleToothClick(lowerToothNumber)}
+                    onClick={(event) => handleToothClick(lowerToothNumber, event)}
                     onMouseEnter={() => setHoveredTooth(lowerToothNumber)}
                     onMouseLeave={() => setHoveredTooth(null)}
                   />
