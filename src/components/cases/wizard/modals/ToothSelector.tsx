@@ -43,6 +43,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
   const [rangeSelections, setRangeSelections] = useState<Set<number>>(new Set());
+  const [individualSelections, setIndividualSelections] = useState<Set<number>>(new Set());
   const [showTooltip, setShowTooltip] = useState(false);
 
   // Helper function to get visual position index of a tooth
@@ -130,6 +131,25 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled) return;
 
+    // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux) key
+    if ((event.metaKey || event.ctrlKey) && billingType === 'perTooth') {
+      const newIndividualSelections = new Set([...selectedTeeth]);
+      
+      if (newIndividualSelections.has(toothNumber)) {
+        newIndividualSelections.delete(toothNumber);
+      } else {
+        newIndividualSelections.add(toothNumber);
+      }
+      
+      // Clear any range-related states
+      setRangeStartTooth(null);
+      setRangeSelections(new Set());
+      
+      // Update selections
+      onSelectionChange(Array.from(newIndividualSelections));
+      return;
+    }
+
     if (billingType === 'perArch') {
       const isUpper = toothNumber >= 11 && toothNumber <= 28;
       const upperTeeth = Array.from({ length: 18 }, (_, i) => i + 11);
@@ -141,18 +161,14 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
       if (isUpper) {
         if (hasUpper) {
-          // Deselect upper
           newSelection = selectedTeeth.filter(t => t >= 31 && t <= 48);
         } else {
-          // Select upper
           newSelection = [...selectedTeeth, ...upperTeeth];
         }
       } else {
         if (hasLower) {
-          // Deselect lower
           newSelection = selectedTeeth.filter(t => t >= 11 && t <= 28);
         } else {
-          // Select lower
           newSelection = [...selectedTeeth, ...lowerTeeth];
         }
       }
@@ -161,52 +177,55 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       return;
     }
 
+    // Range selection with shift key
     if (event.shiftKey && billingType === 'perTooth') {
-      if (rangeStartTooth === null) {
+      // If no previous tooth is selected, start range from this tooth
+      if (selectedTeeth.length === 0) {
         setRangeStartTooth(toothNumber);
         onSelectionChange([toothNumber]);
-      } else {
-        const teethInRange = getTeethInVisualRange(rangeStartTooth, toothNumber);
-        if (teethInRange.length > 0) {
-          const newRangeSelections = new Set(rangeSelections);
-          teethInRange.forEach(t => newRangeSelections.add(t));
-          setRangeSelections(newRangeSelections);
-          onSelectionChange(teethInRange);
-        }
-        setRangeStartTooth(null);
+        return;
       }
-    } else {
+
+      // If there's a range start tooth, calculate the range
+      const lastSelectedTooth = selectedTeeth[selectedTeeth.length - 1];
+      const teethInRange = getTeethInVisualRange(lastSelectedTooth, toothNumber);
+      
+      if (teethInRange.length > 0) {
+        const newRangeSelections = new Set(teethInRange);
+        setRangeSelections(newRangeSelections);
+        onSelectionChange(teethInRange);
+      }
+      return;
+    }
+
+    // Regular click (no modifier keys)
+    if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
       setRangeStartTooth(null);
       setRangeSelections(new Set());
-      if (selectedTeeth.includes(toothNumber)) {
-        onSelectionChange(selectedTeeth.filter((t) => t !== toothNumber));
-      } else {
-        onSelectionChange([...selectedTeeth, toothNumber]);
-      }
+      onSelectionChange([toothNumber]);
     }
   };
 
   const getToothColor = (toothNumber: number) => {
     if (disabled) return "fill-gray-200 cursor-not-allowed";
     
-    // Check if tooth is part of a completed range selection
-    if (rangeSelections.has(toothNumber)) {
-      return "fill-purple-500 hover:fill-purple-600";
-    }
-    
+    // Selected teeth
     if (selectedTeeth.includes(toothNumber)) {
-      // For teeth being selected as part of a new range
-      if (rangeStartTooth !== null) {
+      // If it's part of a range selection
+      if (rangeSelections.has(toothNumber)) {
         return "fill-purple-500 hover:fill-purple-600";
       }
-      // For individually selected teeth
+      // Individual selection (including ctrl+click)
       return "fill-blue-500 hover:fill-blue-600";
     }
     
-    if (hoveredTooth === toothNumber) return "fill-blue-200";
+    // Hover state
+    if (hoveredTooth === toothNumber) {
+      return "fill-blue-200";
+    }
     
-    // For potential range selection
-    if (rangeStartTooth !== null && billingType === 'perTooth') {
+    // For potential range selection preview
+    if (rangeStartTooth !== null && billingType === 'perTooth' && event?.shiftKey && !(event?.metaKey || event?.ctrlKey)) {
       const isStartUpper = Math.floor(rangeStartTooth / 10) <= 2;
       const isCurrentUpper = Math.floor(toothNumber / 10) <= 2;
       if (isStartUpper === isCurrentUpper) {
@@ -214,6 +233,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       }
     }
     
+    // Default unselected state
     return "fill-gray-100 hover:fill-gray-200";
   };
 
@@ -242,6 +262,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     onSelectionChange([]);
     setRangeStartTooth(null);
     setRangeSelections(new Set());
+    setIndividualSelections(new Set());
   };
 
   return (
@@ -269,7 +290,9 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-col">
           <span className="text-sm font-medium text-gray-700">Crown and Bridge</span>
-          <span className="text-xs text-gray-500 mt-0.5">{billingType === 'perTooth' ? 'Per Tooth' : billingType === 'perArch' ? 'Per Arch' : 'Generic'}</span>
+          <span className="text-xs text-gray-500 mt-0.5">{billingType === 'perTooth' ? 'Per Tooth' : 
+           billingType === 'perArch' ? 'Click any tooth to select/deselect an arch' : 
+           'Generic'}</span>
         </div>
         {selectedTeeth.length > 0 && (
           <Button 

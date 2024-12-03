@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, HelpCircle } from 'lucide-react';
 import { Service } from '../../data/mockServiceData';
-import { PRODUCT_CATEGORIES } from '../../data/mockProductData';
+import { PRODUCT_TYPES } from '../../data/mockProductData';
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -167,24 +167,18 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                 </span>
               </label>
               <div className="grid grid-cols-2 gap-4">
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <div
-                    key={category}
-                    className={`relative flex items-center p-4 border rounded-lg cursor-pointer ${
-                      formData.categories.includes(category)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-200'
-                    }`}
-                    onClick={() => handleCategoryChange(category)}
-                  >
+                {PRODUCT_TYPES.map((type) => (
+                  <div key={type} className="flex items-center">
                     <input
                       type="checkbox"
-                      checked={formData.categories.includes(category)}
-                      onChange={() => handleCategoryChange(category)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      id={type}
+                      value={type}
+                      checked={formData.categories.includes(type)}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label className="ml-3 block text-sm font-medium text-gray-900">
-                      {category}
+                    <label htmlFor={type} className="ml-2 block text-sm text-gray-900">
+                      {type}
                     </label>
                   </div>
                 ))}

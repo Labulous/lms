@@ -1,18 +1,22 @@
 export interface Product {
   id: string;
   name: string;
+  description: string;
   price: number;
   leadTime?: number;
   isClientVisible: boolean;
   isTaxable: boolean;
-  billingType: BillingType;
-  category: ProductCategory;
   requiresShade?: boolean;
+  type: ProductType[];
+  billingType: BillingType;
+  material: MaterialType;
 }
 
-export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate';
+export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate' | 'per_unit';
 
-export type ProductCategory = 'Acrylic' | 'Denture' | 'E.Max' | 'Full Cast' | 'Implants' | 'PFM' | 'Zirconia' | 'Misc';
+export type MaterialType = 'Acrylic' | 'Denture' | 'E.Max' | 'Full Cast' | 'Implants' | 'PFM' | 'Zirconia' | 'Misc';
+
+export type ProductType = 'crown' | 'bridge' | 'removable' | 'implant' | 'coping' | 'appliance';
 
 export const BILLING_TYPES = [
   { value: 'perTooth', label: 'Per Tooth', description: 'Price calculated per tooth (e.g., crowns and bridges)' },
@@ -20,9 +24,10 @@ export const BILLING_TYPES = [
   { value: 'teeth', label: 'Teeth', description: 'Selection without charging per tooth' },
   { value: 'generic', label: 'Generic', description: 'No specific teeth selection required' },
   { value: 'calculate', label: 'Calculate', description: 'Price calculation based on entered amount' },
+  { value: 'per_unit', label: 'Per Unit', description: 'Price calculated per unit' },
 ];
 
-export const PRODUCT_CATEGORIES: ProductCategory[] = [
+export const MATERIALS: MaterialType[] = [
   'Acrylic',
   'Denture',
   'E.Max',
@@ -31,6 +36,15 @@ export const PRODUCT_CATEGORIES: ProductCategory[] = [
   'PFM',
   'Zirconia',
   'Misc',
+];
+
+export const PRODUCT_TYPES: ProductType[] = [
+  'crown',
+  'bridge',
+  'removable',
+  'implant',
+  'coping',
+  'appliance'
 ];
 
 export const VITA_CLASSICAL_SHADES = [
@@ -43,23 +57,28 @@ export const VITA_CLASSICAL_SHADES = [
 export const mockProducts: Product[] = [
   {
     id: '1',
-    name: 'Zirconia Crown',
+    name: 'PFM Crown',
+    description: 'Porcelain Fused to Metal Crown',
     price: 299.99,
     leadTime: 5,
     isClientVisible: true,
     isTaxable: true,
-    billingType: 'perTooth',
-    category: 'Zirconia',
-    requiresShade: true
+    requiresShade: true,
+    type: ['crown'],
+    billingType: 'per_unit',
+    material: 'PFM'
   },
   {
     id: '2',
     name: 'Full Denture',
+    description: 'Full Denture',
     price: 899.99,
     leadTime: 7,
     isClientVisible: true,
     isTaxable: true,
+    requiresShade: false,
+    type: ['removable'],
     billingType: 'perArch',
-    category: 'Denture',
+    material: 'Denture'
   },
 ];

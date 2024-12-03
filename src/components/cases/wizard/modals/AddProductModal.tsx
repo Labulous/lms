@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ArrowLeft } from 'lucide-react';
-import { ProductCategory, PRODUCT_CATEGORIES, Product, mockProducts } from '../../../../data/mockProductData';
+import { ProductType, PRODUCT_TYPES, Product, mockProducts } from '../../../../data/mockProductData';
 import ToothSelector from './ToothSelector';
 
 export interface SavedProduct {
@@ -30,7 +30,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   onSaveAndAddAnother,
 }) => {
   const [step, setStep] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | null>(null);
+  const [selectedType, setSelectedType] = useState<ProductType | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
@@ -41,8 +41,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     return price * (1 - discountPercent / 100);
   };
 
-  const handleCategorySelect = (category: ProductCategory) => {
-    setSelectedCategory(category);
+  const handleTypeSelect = (type: ProductType) => {
+    setSelectedType(type);
     setStep(2);
   };
 
@@ -127,7 +127,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                   </button>
                 )}
                 <h3 className="text-lg font-medium text-gray-900">
-                  {step === 1 ? 'Select Category' : 'Configure Product'}
+                  {step === 1 ? 'Select Type' : 'Configure Product'}
                 </h3>
               </div>
               <button
@@ -143,20 +143,20 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
           <div className="px-6 py-4">
             {step === 1 ? (
               <div className="grid grid-cols-2 gap-4">
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => handleCategorySelect(category)}
-                    className={`
-                      p-4 text-left border rounded-lg transition-colors
-                      ${selectedCategory === category
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-blue-200'
-                      }
-                    `}
-                  >
-                    <h4 className="font-medium text-gray-900">{category}</h4>
-                  </button>
+                {PRODUCT_TYPES.map((type) => (
+                  <div key={type} className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id={type}
+                      value={type}
+                      checked={selectedType === type}
+                      onChange={(e) => handleTypeSelect(e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor={type} className="ml-2 block text-sm text-gray-900">
+                      {type}
+                    </label>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -193,7 +193,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                     >
                       <option value="">Select a product</option>
                       {mockProducts
-                        .filter(product => product.category === selectedCategory)
+                        .filter(product => product.type === selectedType)
                         .map(product => (
                           <option key={product.id} value={product.id}>
                             {product.name} - ${product.price}

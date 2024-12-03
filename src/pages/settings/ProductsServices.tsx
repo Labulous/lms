@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import ProductWizard from '../../components/settings/ProductWizard';
 import ServiceModal from '../../components/settings/ServiceModal';
-import { Product, PRODUCT_CATEGORIES, ProductCategory } from '../../data/mockProductData';
+import { Product, PRODUCT_TYPES, ProductType } from '../../data/mockProductData';
 import { mockServices, Service } from '../../data/mockServiceData';
 import CategoryList from '../../components/settings/CategoryList';
 import ProductList from '../../components/settings/ProductList';
@@ -14,7 +14,7 @@ const ProductsServices: React.FC = () => {
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>(mockServices);
-  const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'all'>('all');
+  const [selectedType, setSelectedType] = useState<ProductType | 'all'>('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,13 +51,13 @@ const ProductsServices: React.FC = () => {
     setIsServiceModalOpen(false);
   };
 
-  const filteredProducts = selectedCategory === 'all' 
+  const filteredProducts = selectedType === 'all' 
     ? products 
-    : products.filter(product => product.category === selectedCategory);
+    : products.filter(product => product.type === selectedType);
 
-  const filteredServices = selectedCategory === 'all'
+  const filteredServices = selectedType === 'all'
     ? services
-    : services.filter(service => service.categories.includes(selectedCategory));
+    : services.filter(service => service.types.includes(selectedType));
 
   if (loading) {
     return <div className="flex justify-center items-center h-64">Loading...</div>;
@@ -89,9 +89,9 @@ const ProductsServices: React.FC = () => {
         {/* Categories Column */}
         <div className="w-1/4">
           <CategoryList
-            categories={PRODUCT_CATEGORIES}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
+            categories={PRODUCT_TYPES}
+            selectedType={selectedType}
+            onSelectType={setSelectedType}
           />
         </div>
 
@@ -110,7 +110,7 @@ const ProductsServices: React.FC = () => {
               price: service.price,
               isClientVisible: service.isClientVisible,
               isTaxable: service.isTaxable,
-              category: service.categories[0], // Using first category for display
+              type: service.types[0], // Using first type for display
               billingType: 'generic',
             }))} />
           </div>
