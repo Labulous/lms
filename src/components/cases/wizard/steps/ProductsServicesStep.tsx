@@ -91,6 +91,23 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
     return `${shades.occlusal || ''} / ${shades.middle || ''} / ${shades.gingival || ''}`;
   };
 
+  const formatTeethDisplay = (product: any) => {
+    if (!product.selectedTeeth || product.selectedTeeth.length === 0) return '-';
+    
+    if (product.billingType === 'perArch') {
+      const hasUpper = product.selectedTeeth.some((t: number) => t >= 11 && t <= 28);
+      const hasLower = product.selectedTeeth.some((t: number) => t >= 31 && t <= 48);
+      
+      if (hasUpper && hasLower) return 'All';
+      if (hasUpper) return 'Upper';
+      if (hasLower) return 'Lower';
+      return '-';
+    }
+
+    // For non-arch selections, use the original formatting
+    return product.selectedTeeth.length === 1 ? `Tooth ${product.selectedTeeth[0]}` : `${product.selectedTeeth[0]}-${product.selectedTeeth[product.selectedTeeth.length - 1]}`;
+  };
+
   return (
     <div className="flex">
       {/* Category Selection in a Vertical Row */}
@@ -169,6 +186,9 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
                     Product
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Teeth
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Shade
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -203,6 +223,9 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
                       {product.notes && (
                         <p className="text-xs text-gray-500 mt-1">{product.notes}</p>
                       )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatTeethDisplay(product)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatShadeDisplay(product.shade)}

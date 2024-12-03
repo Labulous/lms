@@ -332,6 +332,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return '';
+    
+    // Check if it's an arch selection
+    const hasUpper = teeth.some(t => t >= 11 && t <= 28);
+    const hasLower = teeth.some(t => t >= 31 && t <= 48);
+    const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+
+    if (isFullArch) {
+      if (hasUpper && hasLower) return 'All';
+      if (hasUpper) return 'Upper';
+      if (hasLower) return 'Lower';
+    }
+
+    // For non-arch selections, use the original range formatting
     if (teeth.length === 1) return teeth[0].toString();
     
     // Sort teeth numbers
