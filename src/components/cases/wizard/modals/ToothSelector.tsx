@@ -131,7 +131,23 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   // Get abutment teeth (first and last teeth in the range)
   const getAbutmentTeeth = () => {
     if (selectedTeeth.length < 2) return [];
+    
+    // If teeth were selected using Cmd/Ctrl click (individual selections)
+    if (individualSelections.size > 0) {
+      return []; // Individual selections don't have abutment teeth
+    }
+
+    // For range selections, get the first and last teeth
     const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+    
+    // Check if it's a continuous range
+    for (let i = 1; i < sortedTeeth.length; i++) {
+      // If there's a gap in the sequence, it's not a continuous range
+      if (sortedTeeth[i] - sortedTeeth[i-1] > 1) {
+        return [];
+      }
+    }
+    
     return [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
   };
 
@@ -165,13 +181,15 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux) key
     if ((event.metaKey || event.ctrlKey) && billingType === 'perTooth') {
-      const newIndividualSelections = new Set([...selectedTeeth]);
+      const newIndividualSelections = new Set(individualSelections);
       
       if (newIndividualSelections.has(toothNumber)) {
         newIndividualSelections.delete(toothNumber);
       } else {
         newIndividualSelections.add(toothNumber);
       }
+      
+      setIndividualSelections(newIndividualSelections);
       
       // Clear any range-related states
       setRangeStartTooth(null);
@@ -234,6 +252,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
       setRangeStartTooth(null);
       setRangeSelections(new Set());
+      setIndividualSelections(new Set([toothNumber]));
       onSelectionChange([toothNumber]);
     }
   };
@@ -243,27 +262,15 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     
     // Selected teeth
     if (selectedTeeth.includes(toothNumber)) {
-      // If it's an abutment tooth
+      // If it's an abutment tooth in a continuous range
       if (selectedTeeth.length >= 2 && getAbutmentTeeth().includes(toothNumber)) {
         return "fill-purple-500 hover:fill-purple-600";
-      }
-      // If it's a pontic tooth
-      if (ponticTeeth.has(toothNumber)) {
-        return "fill-green-500 hover:fill-green-600";
       }
       // Regular selection
       return "fill-blue-500 hover:fill-blue-600";
     }
     
-    // Hover state for pontic-selectable teeth
-    if (ponticMode && isPonticSelectable(toothNumber)) {
-      if (hoveredTooth === toothNumber) {
-        return "fill-green-200 cursor-pointer";
-      }
-      return "fill-gray-100 cursor-pointer";
-    }
-    
-    // Regular hover state
+    // Hover state
     if (hoveredTooth === toothNumber) {
       return "fill-blue-200";
     }
