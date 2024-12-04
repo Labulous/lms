@@ -650,6 +650,21 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setShadePopoverOpen(false);
   };
 
+  const handleRemoveToothItem = (itemId: string) => {
+    // Remove the item from toothItems
+    setToothItems(prev => prev.filter(item => item.id !== itemId));
+    
+    // Remove the teeth from addedTeethMap
+    const itemToRemove = toothItems.find(item => item.id === itemId);
+    if (itemToRemove) {
+      const newMap = new Map(addedTeethMap);
+      itemToRemove.teeth.forEach(tooth => {
+        newMap.delete(tooth);
+      });
+      setAddedTeethMap(newMap);
+    }
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -784,26 +799,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {selectedProduct && (
                               <div className="flex flex-col space-y-0.5">
                                 <Popover open={shadePopoverOpen} onOpenChange={setShadePopoverOpen}>
-                                  {previewProduct?.shades ? (
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900"
-                                      >
-                                        {formatShades(previewProduct.shades)}
-                                      </Button>
-                                    </PopoverTrigger>
-                                  ) : (
-                                    <PopoverTrigger asChild>
+                                  <PopoverTrigger asChild>
+                                    {previewProduct?.requiresShade ? (
                                       <Button
                                         variant="outline"
                                         size="sm"
+                                        className="h-7 text-xs"
                                         disabled={selectedTeeth.length === 0 || !selectedProduct}
                                       >
                                         Add Shade
                                       </Button>
-                                    </PopoverTrigger>
-                                  )}
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs text-gray-400"
+                                        disabled={selectedTeeth.length === 0 || !selectedProduct}
+                                      >
+                                        -/-/-/-
+                                      </Button>
+                                    )}
+                                  </PopoverTrigger>
                                   <PopoverContent className="w-80" align="start">
                                     <div className="grid gap-4">
                                       <div className="space-y-2">
@@ -908,15 +924,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             )}
                           </TableCell>
                           <TableCell className="py-1.5 pr-4">
-                            {selectedTeeth.length > 0 && selectedProduct && previewProduct?.shades && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={handleAddPreviewToTable}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
+                            {selectedTeeth.length > 0 && selectedProduct && (
+                              // Only require shades if the product requires them
+                              (!selectedProduct.requiresShade || previewProduct?.shades) ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                  onClick={handleAddPreviewToTable}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              ) : null
                             )}
                           </TableCell>
                         </TableRow>
@@ -952,28 +971,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </TableCell>
                             <TableCell className="py-1.5 pl-4 pr-0">
                               <div className="flex flex-col space-y-0.5">
-                                {item.shades?.occlusal && (
-                                  <div className="text-xs">
-                                    <span className="text-gray-500">O:</span> {item.shades.occlusal}
-                                  </div>
-                                )}
-                                {item.shades?.body && (
-                                  <div className="text-xs">
-                                    <span className="text-gray-500">B:</span> {item.shades.body}
-                                  </div>
-                                )}
-                                {item.shades?.gingival && (
-                                  <div className="text-xs">
-                                    <span className="text-gray-500">G:</span> {item.shades.gingival}
-                                  </div>
-                                )}
-                                {item.shades?.stump && (
-                                  <div className="text-xs">
-                                    <span className="text-gray-500">S:</span> {item.shades.stump}
-                                  </div>
-                                )}
-                                {!item.shades?.occlusal && !item.shades?.body && !item.shades?.gingival && !item.shades?.stump && (
-                                  <span className="text-gray-400 text-xs">No shade selected</span>
+                                {item.shades ? (
+                                  <>
+                                    {item.shades.occlusal && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">O:</span> {item.shades.occlusal}
+                                      </div>
+                                    )}
+                                    {item.shades.body && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">B:</span> {item.shades.body}
+                                      </div>
+                                    )}
+                                    {item.shades.gingival && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">G:</span> {item.shades.gingival}
+                                      </div>
+                                    )}
+                                    {item.shades.stump && (
+                                      <div className="text-xs">
+                                        <span className="text-gray-500">S:</span> {item.shades.stump}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-gray-400 text-xs">-/-/-/-</span>
                                 )}
                               </div>
                             </TableCell>
@@ -982,7 +1004,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => handleRemoveToothItem(item.teeth[0])}
+                                onClick={() => handleRemoveToothItem(item.id)}
                               >
                                 <X className="h-4 w-4" />
                               </Button>
