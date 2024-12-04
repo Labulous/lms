@@ -13,7 +13,7 @@ interface ToothSelectorProps {
 }
 
 const teethData = [
-  { number: 12, path: "M104.04,15.85c-4.53,0.15-10.17,2.75-12.78,6.3c-3.03,4.13-1.28,9.04,2.42,10.69 c3.89,1.73,16.62,13.27,20.44,5.58c2.02-4.07-1.88-15.5-3.34-18.55c-0.68-1.43-1.55-2.84-3.23-3.5 C106.54,15.97,105.33,15.81,104.04,15.85z", x: 102, y: 30 },
+  { number: 12, path: "M104.04,15.85c-4.53,0.15-10.17,2.75-12.78,6.3c-3.03,4.13-1.28,9.04,2.42,10.69 c3.89,1.73,16.62,13.27,20.44,5.58c2.02-4.07-1.88-15.5,3.34-18.55c0.68-1.43,1.55-2.84,3.23-3.5 C106.54,15.97,105.33,15.81,104.04,15.85z", x: 102, y: 30 },
   { number: 13, path: "M90.09,30.89c-3.04-2.15-6.49-3.39-9.6-2.95c-3.11,0.43-5.61,2.76-7.01,5.4c-1.91,3.59-2.09,8.06-0.07,11.6 c1.93,3.39,5.62,5.62,9.47,6.9c2.48,0.82,5.14,1.3,7.74,0.94c2.6-0.36,5.13-1.64,6.51-3.73C101.28,42.73,95.46,34.7,90.09,30.89z", x: 84, y: 43 },
   { number: 14, path: "M73.97,45.93c-3.04-2.15-6.49-3.39-9.6-2.95c-3.11,0.43-5.61,2.76-7.01,5.4c-1.91,3.59-2.09,8.06-0.07,11.6 c1.93,3.39,5.62,5.62,9.47,6.9c2.48,0.82,5.14,1.3,7.74,0.94c2.6-0.36,5.13-1.64,6.51-3.73C85.17,57.77,79.35,49.73,73.97,45.93z", x: 68, y: 58 },
   { number: 15, path: "M63.54,65.56c-2.52-1.09-5.26-1.98-8-1.63c-10.43,1.33-11.03,18.06-2.55,22.02 c4.37,2.04,11.87,3.86,16.13,0.47c5.6-4.45,3.43-14.58-1.69-18.45L63.54,65.56z", x: 59, y: 79 },
@@ -43,6 +43,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const [rangeSelections, setRangeSelections] = useState<Set<number>>(new Set());
   const [individualSelections, setIndividualSelections] = useState<Set<number>>(new Set());
   const [showTooltip, setShowTooltip] = useState(false);
+  const [ponticMode, setPonticMode] = useState(false);
+  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
 
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
@@ -126,8 +128,40 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return [];
   };
 
+  // Get abutment teeth (first and last teeth in the range)
+  const getAbutmentTeeth = () => {
+    if (selectedTeeth.length < 2) return [];
+    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+    return [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
+  };
+
+  // Check if a tooth can be selected as pontic
+  const isPonticSelectable = (toothNumber: number) => {
+    if (!ponticMode || selectedTeeth.length < 2) return false;
+    const [start, end] = getAbutmentTeeth();
+    return toothNumber > start && toothNumber < end;
+  };
+
+  // Handle pontic tooth selection
+  const handlePonticSelect = (toothNumber: number) => {
+    if (!isPonticSelectable(toothNumber)) return;
+    
+    const newPonticTeeth = new Set(ponticTeeth);
+    if (newPonticTeeth.has(toothNumber)) {
+      newPonticTeeth.delete(toothNumber);
+    } else {
+      newPonticTeeth.add(toothNumber);
+    }
+    setPonticTeeth(newPonticTeeth);
+  };
+
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled) return;
+
+    if (ponticMode) {
+      handlePonticSelect(toothNumber);
+      return;
+    }
 
     // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux) key
     if ((event.metaKey || event.ctrlKey) && billingType === 'perTooth') {
@@ -209,26 +243,29 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     
     // Selected teeth
     if (selectedTeeth.includes(toothNumber)) {
-      // If it's part of a range selection
-      if (rangeSelections.has(toothNumber)) {
+      // If it's an abutment tooth
+      if (selectedTeeth.length >= 2 && getAbutmentTeeth().includes(toothNumber)) {
         return "fill-purple-500 hover:fill-purple-600";
       }
-      // Individual selection (including ctrl+click)
+      // If it's a pontic tooth
+      if (ponticTeeth.has(toothNumber)) {
+        return "fill-green-500 hover:fill-green-600";
+      }
+      // Regular selection
       return "fill-blue-500 hover:fill-blue-600";
     }
     
-    // Hover state
-    if (hoveredTooth === toothNumber) {
-      return "fill-blue-200";
+    // Hover state for pontic-selectable teeth
+    if (ponticMode && isPonticSelectable(toothNumber)) {
+      if (hoveredTooth === toothNumber) {
+        return "fill-green-200 cursor-pointer";
+      }
+      return "fill-gray-100 cursor-pointer";
     }
     
-    // For potential range selection preview
-    if (rangeStartTooth !== null && billingType === 'perTooth' && event?.shiftKey && !(event?.metaKey || event?.ctrlKey)) {
-      const isStartUpper = Math.floor(rangeStartTooth / 10) <= 2;
-      const isCurrentUpper = Math.floor(toothNumber / 10) <= 2;
-      if (isStartUpper === isCurrentUpper) {
-        return "fill-purple-100 hover:fill-purple-200";
-      }
+    // Regular hover state
+    if (hoveredTooth === toothNumber) {
+      return "fill-blue-200";
     }
     
     // Default unselected state
@@ -252,6 +289,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     setRangeStartTooth(null);
     setRangeSelections(new Set());
     setIndividualSelections(new Set());
+    setPonticMode(false);
+    setPonticTeeth(new Set());
   };
 
   return (
@@ -313,6 +352,32 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               <div className="text-gray-600 text-xs font-semibold text-center break-words max-w-[272px]">
                 {billingType === 'perArch' ? getArchSelectionText() : selectedTeeth.length === 0 ? 'None' : selectedTeeth.join(', ')}
               </div>
+
+              {/* Display Abutment teeth */}
+              {selectedTeeth.length >= 2 && (
+                <div className="text-purple-500 text-xs font-semibold mt-1">
+                  Abutment: {getAbutmentTeeth().join(', ')}
+                </div>
+              )}
+
+              {/* Display Pontic teeth */}
+              {ponticTeeth.size > 0 && (
+                <div className="text-green-500 text-xs font-semibold mt-1">
+                  Pontic: {Array.from(ponticTeeth).sort((a, b) => a - b).join(', ')}
+                </div>
+              )}
+
+              {/* Show Select Pontic button */}
+              {selectedTeeth.length >= 2 && !ponticMode && (
+                <Button
+                  variant="outline"
+                  size="xs"
+                  className="mt-1 px-3 py-1 bg-green-500 text-white hover:bg-green-600"
+                  onClick={() => setPonticMode(true)}
+                >
+                  Select Pontic
+                </Button>
+              )}
             </div>
           </foreignObject>
 
