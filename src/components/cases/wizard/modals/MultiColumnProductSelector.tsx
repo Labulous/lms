@@ -1,14 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MaterialType, Product } from '../../../../data/mockProductData';
+import { MaterialType } from '../../../../data/mockProductData';
+import { Product } from '../../../../services/productsService';
 import { cn } from '@/lib/utils';
 
 interface MultiColumnProductSelectorProps {
@@ -17,6 +18,7 @@ interface MultiColumnProductSelectorProps {
   selectedProduct: Product | null;
   onProductSelect: (product: Product) => void;
   disabled?: boolean;
+  size?: 'default' | 'xs';
 }
 
 const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
@@ -25,9 +27,24 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   selectedProduct,
   onProductSelect,
   disabled = false,
+  size = 'default'
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [open, setOpen] = useState(false);
+
+  // Log props when they change
+  useEffect(() => {
+    console.log('MultiColumnProductSelector props:', {
+      materials,
+      productsCount: products.length,
+      products: products.map(p => ({
+        id: p.id,
+        name: p.name,
+        material: p.material,
+        type: p.type
+      }))
+    });
+  }, [materials, products]);
 
   // Filter products based on search query
   const filteredProducts = useMemo(() => {
@@ -36,17 +53,43 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
     
     return products.filter(product => 
       product.name.toLowerCase().includes(query) || 
-      product.material.toLowerCase().includes(query) ||
-      product.category.some(cat => cat.toLowerCase().includes(query))
+      product.material?.toLowerCase().includes(query) ||
+      (Array.isArray(product.type) && product.type.some(t => t.toLowerCase().includes(query)))
     );
   }, [products, searchQuery]);
 
   // Group filtered products by material
   const productsByMaterial = useMemo(() => {
-    return materials.reduce((acc, material) => {
-      acc[material] = filteredProducts.filter(product => product.material === material);
+    console.log('Grouping products by material:', {
+      materials,
+      filteredProducts: filteredProducts.map(p => ({
+        name: p.name,
+        material: p.material
+      }))
+    });
+    
+    const grouped = materials.reduce((acc, material) => {
+      const materialProducts = filteredProducts.filter(product => {
+        const matches = product.material === material;
+        console.log(`Material matching for ${product.name}:`, {
+          productMaterial: product.material,
+          expectedMaterial: material,
+          matches
+        });
+        return matches;
+      });
+      acc[material] = materialProducts;
       return acc;
     }, {} as Record<MaterialType, Product[]>);
+
+    console.log('Products grouped by material:', 
+      Object.fromEntries(
+        Object.entries(grouped).map(([material, products]) => 
+          [material, products.map(p => p.name)]
+        )
+      )
+    );
+    return grouped;
   }, [materials, filteredProducts]);
 
   // Check if any products are found in the search
@@ -57,13 +100,17 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          role="combobox"
+          aria-expanded={open}
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !selectedProduct && "text-muted-foreground"
+            "w-full justify-between",
+            size === 'xs' ? "h-7 text-xs" : "",
+            disabled ? "opacity-50 cursor-not-allowed" : ""
           )}
           disabled={disabled}
         >
           {selectedProduct ? selectedProduct.name : "Select product..."}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[800px] p-0" align="start">

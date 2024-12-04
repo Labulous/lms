@@ -24,24 +24,28 @@ export interface Product {
   billingType: BillingType;
   category: ProductCategory;
   requiresShade: boolean;
+  material: string;
+  type?: string[];
 }
 
 class ProductsService {
   async getProducts(): Promise<Product[]> {
     try {
-      logger.debug('Fetching products');
+      logger.debug('Starting to fetch products from Supabase');
       const { data: products, error } = await supabase
         .from('products')
         .select('*')
         .order('name');
 
       if (error) {
-        logger.error('Error fetching products', { error });
+        logger.error('Error fetching products from Supabase', { error });
         throw error;
       }
 
+      logger.debug('Raw products from Supabase:', { products });
+
       // Transform the data from database format to application format
-      return (products || []).map(product => {
+      const transformedProducts = (products || []).map(product => {
         // Validate billing type
         const billingType = product.billing_type;
         if (!['perTooth', 'perArch', 'teeth', 'generic', 'calculate'].includes(billingType)) {
@@ -52,7 +56,7 @@ class ProductsService {
           });
         }
 
-        return {
+        const transformed = {
           id: product.id,
           name: product.name,
           price: product.price,
@@ -62,8 +66,16 @@ class ProductsService {
           billingType: billingType as BillingType,
           category: product.category as ProductCategory,
           requiresShade: product.requires_shade,
+          material: product.material,
+          type: product.type || [], // Ensure type is always an array
         };
+
+        logger.debug('Transformed product:', transformed);
+        return transformed;
       });
+
+      logger.debug('Final transformed products:', { count: transformedProducts.length });
+      return transformedProducts;
     } catch (error) {
       logger.error('Error in getProducts', { error });
       throw error;
@@ -155,6 +167,7 @@ class ProductsService {
       billingType: dbProduct.billing_type,
       category: dbProduct.category,
       requiresShade: dbProduct.requires_shade,
+      material: dbProduct.material,
     };
   }
 }

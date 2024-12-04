@@ -6,10 +6,9 @@ import { Plus, RotateCcw, HelpCircle } from 'lucide-react';
 
 interface ToothSelectorProps {
   billingType: BillingType;
-  onSelectionChange: (selectedTeeth: number[]) => void;
+  onSelectionChange: (teeth: number[]) => void;
   selectedTeeth: number[];
   disabled?: boolean;
-  onAdd?: (teeth: number[]) => void;
   addedTeethMap?: Map<number, boolean>;
 }
 
@@ -37,7 +36,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   onSelectionChange,
   selectedTeeth,
   disabled = false,
-  onAdd,
   addedTeethMap = new Map()
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
@@ -249,15 +247,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return '';
   };
 
-  const handleAdd = () => {
-    if (onAdd) {
-      onAdd(selectedTeeth);
-      // Clear range selections after adding
-      setRangeSelections(new Set());
-      setRangeStartTooth(null);
-    }
-  };
-
   const handleReset = () => {
     onSelectionChange([]);
     setRangeStartTooth(null);
@@ -324,16 +313,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               <div className="text-gray-600 text-xs font-semibold text-center break-words max-w-[272px]">
                 {billingType === 'perArch' ? getArchSelectionText() : selectedTeeth.length === 0 ? 'None' : selectedTeeth.join(', ')}
               </div>
-              <Button 
-                variant="default" 
-                size="xs" 
-                className="mt-1 px-3 py-1"
-                disabled={selectedTeeth.length === 0}
-                onClick={handleAdd}
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Add
-              </Button>
             </div>
           </foreignObject>
 

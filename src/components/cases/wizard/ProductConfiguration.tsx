@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Product, 
   MATERIALS,
   ProductMaterial,
   MaterialType,
   VITA_CLASSICAL_SHADES,
-  PRODUCT_TYPES
+  PRODUCT_TYPES,
+  ProductType
 } from '../../../data/mockProductData';
-import { productsService } from '../../../services/productsService';
+import { Product, productsService } from '../../../services/productsService';
 import ToothSelector from './modals/ToothSelector';
 import { ShadeData } from './modals/ShadeModal';
 import SelectedProductsModal from './modals/SelectedProductsModal';
@@ -70,6 +70,7 @@ interface ToothItem {
     occlusal?: string;
     body?: string;
     gingival?: string;
+    stump?: string;
   };
 }
 
@@ -90,6 +91,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     occlusal: '',
     middle: '',
     gingival: '',
+    stump: ''
   });
   const [toothItems, setToothItems] = useState<ToothItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
@@ -105,6 +107,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [selectedMaterialState, setSelectedMaterialState] = useState<ProductMaterial | null>(selectedMaterial);
   const [selectedType, setSelectedType] = useState<string | null>(null);
 
+  // Preview state for the Add Shade table
+  const [previewItem, setPreviewItem] = useState<ToothItem | null>(null);
+  const [previewProduct, setPreviewProduct] = useState<ProductWithShade | null>(null);
+  const [isReadyToAdd, setIsReadyToAdd] = useState(false);
+
+  const [shadePopoverOpen, setShadePopoverOpen] = useState(false);
+
   useEffect(() => {
     if (selectedMaterial !== selectedMaterialState) {
       setSelectedMaterialState(selectedMaterial);
@@ -116,12 +125,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        console.log('Fetching products...');
         const fetchedProducts = await productsService.getProducts();
-        // Filter products by selected material if one is selected
-        const filteredProducts = selectedMaterial 
-          ? fetchedProducts.filter(p => p.material === selectedMaterial)
-          : fetchedProducts;
-        setProducts(filteredProducts);
+        console.log('Fetched products:', fetchedProducts.map(p => ({
+          id: p.id,
+          name: p.name,
+          material: p.material,
+          type: p.type
+        })));
+        setProducts(fetchedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);
         toast.error('Failed to load products');
@@ -131,18 +143,48 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     };
 
     fetchProducts();
-  }, [selectedMaterial]);
+  }, []);  // Only fetch on mount, we'll filter in useMemo
 
-  // Reset selected product when material changes
-  useEffect(() => {
-    setSelectedProduct(null);
-  }, [selectedMaterial]);
+  const filteredProducts = useMemo(() => {
+    console.log('Filtering products:', { 
+      totalProducts: products.length,
+      selectedMaterial,
+      selectedType,
+      materials: MATERIALS 
+    });
+    
+    if (!products) return [];
+    
+    return products.filter(product => {
+      // First filter by material if selected
+      const materialMatches = !selectedMaterial || product.material === selectedMaterial;
+      
+      // Then filter by type if selected
+      const typeMatches = !selectedType || 
+        (product.type && Array.isArray(product.type) && 
+         product.type.includes(selectedType.toLowerCase() as ProductType));
+      
+      const result = materialMatches && typeMatches;
+      
+      if (result) {
+        console.log('Product matched filters:', {
+          name: product.name,
+          material: product.material,
+          type: product.type,
+          materialMatches,
+          typeMatches
+        });
+      }
+      
+      return result;
+    });
+  }, [products, selectedMaterial, selectedType]);
 
   useEffect(() => {
     console.log('Selected material changed:', selectedMaterial);
     setSelectedProduct(null);
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '' });
+    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
     setDiscount(0);
     setErrors({});
     if (selectedMaterial) {
@@ -153,13 +195,55 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   }, [selectedMaterial]);
 
-  const handleProductSelect = (value: string) => {
+  useEffect(() => {
+    if (selectedType) {
+      const newPreviewItem: ToothItem = {
+        id: 'preview',
+        teeth: [],
+        isRange: false,
+        type: selectedType,
+        productName: selectedType,
+        shades: {
+          occlusal: '',
+          body: '',
+          gingival: '',
+          stump: ''
+        }
+      };
+      setPreviewItem(newPreviewItem);
+      
+      const newPreviewProduct: ProductWithShade = {
+        id: 'preview',
+        name: selectedType,
+        type: selectedType,
+        teeth: [],
+        material: '',
+        shades: {
+          occlusal: '',
+          body: '',
+          gingival: '',
+          stump: ''
+        },
+        price: 0,
+        discount: 0,
+        notes: ''
+      };
+      setPreviewProduct(newPreviewProduct);
+    } else {
+      setPreviewItem(null);
+      setPreviewProduct(null);
+    }
+  }, [selectedType]);
+
+  const handleProductSelect = (value: string, keepTeeth = false, itemId?: string) => {
     const product = products.find(p => p.id === value) || null;
-    console.log('Product selected:', {
-      id: product?.id,
-      name: product?.name,
-      billingType: product?.billingType,
-      rawProduct: product
+    console.log('handleProductSelect called:', {
+      productId: value,
+      keepTeeth,
+      itemId,
+      foundProduct: product?.name,
+      currentTeeth: selectedTeeth,
+      currentProduct: selectedProduct?.name
     });
     
     if (product && !['perTooth', 'perArch', 'teeth', 'generic', 'calculate'].includes(product.billingType)) {
@@ -167,12 +251,38 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       toast.error('Invalid product configuration');
       return;
     }
-    
+
+    // Always update the selected product first
     setSelectedProduct(product);
-    setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '' });
-    setDiscount(0);
+    
+    // If we're updating a specific tooth item, update its product name
+    if (itemId) {
+      console.log('Updating tooth item:', itemId);
+      setToothItems(prev => prev.map(prevItem => 
+        prevItem.id === itemId 
+          ? { ...prevItem, productName: product?.name || prevItem.productName }
+          : prevItem
+      ));
+    }
+    
+    // Only clear teeth if we're not keeping them and there's no specific item being updated
+    if (!keepTeeth && !itemId) {
+      console.log('Clearing teeth selection');
+      setSelectedTeeth([]);
+    }
+    
+    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
     setErrors({});
+    
+    if (previewProduct && product) {
+      setPreviewProduct(prev => ({
+        ...prev!,
+        material: product.material || '',
+        name: product.name
+      }));
+    }
+
+    checkIfReadyToAdd();
   };
 
   const handleMaterialSelect = (value: string) => {
@@ -183,21 +293,48 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   };
 
-  const filteredProducts = useMemo(() => {
-    if (!selectedType || !products) return [];
-    return products.filter(product => 
-      product.type && Array.isArray(product.type) && product.type.includes(selectedType)
-    );
-  }, [products, selectedType]);
-
   const handleToothSelectionChange = (teeth: number[]) => {
     console.log('Teeth selection changed:', teeth);
     setSelectedTeeth(teeth);
     setErrors(prev => ({ ...prev, teeth: undefined }));
+
+    if (previewItem && previewProduct) {
+      const sortedTeeth = [...teeth].sort((a, b) => a - b);
+      setPreviewItem(prev => ({
+        ...prev!,
+        teeth: sortedTeeth,
+        isRange: teeth.length > 1
+      }));
+      setPreviewProduct(prev => ({
+        ...prev!,
+        teeth: sortedTeeth
+      }));
+    }
+
+    checkIfReadyToAdd();
   };
 
   const handleShadeChange = (type: keyof ShadeData, value: string) => {
     setShades(prev => ({ ...prev, [type]: value }));
+    
+    if (previewItem) {
+      setPreviewItem(prev => ({
+        ...prev!,
+        shades: {
+          ...prev!.shades!,
+          [type]: value
+        }
+      }));
+      setPreviewProduct(prev => ({
+        ...prev!,
+        shades: {
+          ...prev!.shades,
+          [type]: value
+        }
+      }));
+    }
+
+    checkIfReadyToAdd();
   };
 
   const validateForm = () => {
@@ -233,7 +370,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Reset form
     setSelectedProduct(null);
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '' });
+    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
     setDiscount(0);
     setErrors({});
   };
@@ -273,7 +410,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       shades: {
         occlusal: shades.occlusal || '',
         body: shades.middle || '',
-        gingival: shades.gingival || ''
+        gingival: shades.gingival || '',
+        stump: shades.stump || ''
       }
     };
 
@@ -287,7 +425,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       shades: {
         occlusal: shades.occlusal || '',
         body: shades.middle || '',
-        gingival: shades.gingival || ''
+        gingival: shades.gingival || '',
+        stump: shades.stump || ''
       },
       price: 0,
       discount: 0,
@@ -316,10 +455,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Reset selections
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '' });
+    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
   };
 
-  const handleShadeSelect = (itemId: string, type: 'occlusal' | 'body' | 'gingival', shade: string) => {
+  const handleShadeSelect = (itemId: string, type: 'occlusal' | 'body' | 'gingival' | 'stump', shade: string) => {
     setToothItems(prevItems => {
       return prevItems.map(item => {
         if (item.id === itemId) {
@@ -350,13 +489,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  const formatShades = (shades: { occlusal?: string; body?: string; gingival?: string }) => {
-    const orderedShades = [
-      shades.occlusal || '-',
-      shades.body || '-',
-      shades.gingival || '-'
-    ];
-    return orderedShades.join(' / ');
+  const formatShades = (shades?: { occlusal?: string, body?: string, gingival?: string, stump?: string }) => {
+    if (!shades) return '';
+    const values = [shades.occlusal || '-', shades.body || '-', shades.gingival || '-', shades.stump || '-'];
+    return values.join('/');
   };
 
   const formatTeethRange = (teeth: number[]): string => {
@@ -444,6 +580,90 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedTeeth([]); // Reset selected teeth
   };
 
+  const checkIfReadyToAdd = () => {
+    const hasTeeth = selectedTeeth.length > 0;
+    const hasProduct = selectedProduct !== null;
+    const hasShades = selectedProduct?.requiresShade 
+      ? Object.values(shades).some(shade => shade !== '')
+      : true;
+    
+    setIsReadyToAdd(hasTeeth && hasProduct && hasShades);
+  };
+
+  const handleAddPreviewToTable = () => {
+    if (!previewProduct || !selectedTeeth.length) return;
+
+    const newItem: ToothItem = {
+      id: uuidv4(),
+      teeth: [...selectedTeeth],
+      type: selectedType || '',
+      productName: selectedProduct?.name || '',
+      isRange: false,
+      shades: {
+        occlusal: shades.occlusal || undefined,
+        body: shades.middle || undefined,
+        gingival: shades.gingival || undefined,
+        stump: shades.stump || undefined
+      }
+    };
+
+    setToothItems(prev => [...prev, newItem]);
+    setHighlightedItems(prev => new Set([...prev, newItem.id]));
+
+    // Clear preview state
+    setSelectedTeeth([]);
+    setSelectedProduct(null);
+    setPreviewProduct(null);
+    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setErrors({});
+
+    // Remove highlight after animation
+    setTimeout(() => {
+      setHighlightedItems(prev => {
+        const next = new Set(prev);
+        next.delete(newItem.id);
+        return next;
+      });
+    }, 2000);
+  };
+
+  const handleSaveShades = () => {
+    if (!previewProduct || !selectedProduct) return;
+
+    // Update preview product with shades
+    const updatedShades = {
+      occlusal: shades.occlusal || undefined,
+      body: shades.middle || undefined,
+      gingival: shades.gingival || undefined,
+      stump: shades.stump || undefined
+    };
+
+    setPreviewProduct(prev => ({
+      ...prev!,
+      shades: updatedShades
+    }));
+
+    // Also update the preview item for immediate display
+    setPreviewItem(prev => prev ? {
+      ...prev,
+      shades: updatedShades
+    } : null);
+
+    // Close popover
+    setShadePopoverOpen(false);
+  };
+
+  const handleCancelShades = () => {
+    // Reset shades to preview product's shades or empty
+    setShades({
+      occlusal: previewProduct?.shades?.occlusal || '',
+      middle: previewProduct?.shades?.body || '',
+      gingival: previewProduct?.shades?.gingival || '',
+      stump: previewProduct?.shades?.stump || ''
+    });
+    setShadePopoverOpen(false);
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -501,7 +721,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   billingType={selectedProduct?.billingType || 'perTooth'}
                   selectedTeeth={selectedTeeth}
                   onSelectionChange={handleToothSelectionChange}
-                  onAdd={handleAddToothItems}
                   addedTeethMap={addedTeethMap}
                   disabled={false}
                 />
@@ -546,6 +765,177 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
+                        {/* Preview Row */}
+                        <TableRow>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {selectedType || '-'}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator orientation="vertical" className="h-full" />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {selectedTeeth.length > 0 ? formatTeethRange(selectedTeeth) : '-'}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator orientation="vertical" className="h-full" />
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0">
+                            <MultiColumnProductSelector
+                              materials={MATERIALS}
+                              products={filteredProducts}
+                              selectedProduct={selectedProduct}
+                              onProductSelect={(product) => {
+                                handleProductSelect(product.id, true);
+                              }}
+                              disabled={loading || selectedTeeth.length === 0}
+                              size="xs"
+                            />
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator orientation="vertical" className="h-full" />
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0">
+                            {selectedProduct && (
+                              <div className="flex flex-col space-y-0.5">
+                                <Popover open={shadePopoverOpen} onOpenChange={setShadePopoverOpen}>
+                                  {previewProduct?.shades ? (
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        className="h-6 px-2 text-xs text-gray-600 hover:text-gray-900"
+                                      >
+                                        {formatShades(previewProduct.shades)}
+                                      </Button>
+                                    </PopoverTrigger>
+                                  ) : (
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={selectedTeeth.length === 0 || !selectedProduct}
+                                      >
+                                        Add Shade
+                                      </Button>
+                                    </PopoverTrigger>
+                                  )}
+                                  <PopoverContent className="w-80" align="start">
+                                    <div className="grid gap-4">
+                                      <div className="space-y-2">
+                                        <h4 className="font-medium leading-none">Shades</h4>
+                                        <p className="text-sm text-muted-foreground">
+                                          Set the shades for different areas
+                                        </p>
+                                      </div>
+                                      <div className="grid gap-2">
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                          <Label htmlFor="occlusal">Occlusal</Label>
+                                          <Select
+                                            value={shades.occlusal}
+                                            onValueChange={(value) => setShades(prev => ({ ...prev, occlusal: value }))}
+                                          >
+                                            <SelectTrigger className="col-span-2">
+                                              <SelectValue placeholder="Select shade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                <SelectItem key={shade} value={shade}>
+                                                  {shade}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                          <Label htmlFor="body">Body</Label>
+                                          <Select
+                                            value={shades.middle}
+                                            onValueChange={(value) => setShades(prev => ({ ...prev, middle: value }))}
+                                          >
+                                            <SelectTrigger className="col-span-2">
+                                              <SelectValue placeholder="Select shade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                <SelectItem key={shade} value={shade}>
+                                                  {shade}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                          <Label htmlFor="gingival">Gingival</Label>
+                                          <Select
+                                            value={shades.gingival}
+                                            onValueChange={(value) => setShades(prev => ({ ...prev, gingival: value }))}
+                                          >
+                                            <SelectTrigger className="col-span-2">
+                                              <SelectValue placeholder="Select shade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                <SelectItem key={shade} value={shade}>
+                                                  {shade}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div className="grid grid-cols-3 items-center gap-4">
+                                          <Label htmlFor="stump">Stump</Label>
+                                          <Select
+                                            value={shades.stump}
+                                            onValueChange={(value) => setShades(prev => ({ ...prev, stump: value }))}
+                                          >
+                                            <SelectTrigger className="col-span-2">
+                                              <SelectValue placeholder="Select shade" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                <SelectItem key={shade} value={shade}>
+                                                  {shade}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end space-x-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={handleCancelShades}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={handleSaveShades}
+                                        >
+                                          Save
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="py-1.5 pr-4">
+                            {selectedTeeth.length > 0 && selectedProduct && previewProduct?.shades && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={handleAddPreviewToTable}
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                        
+                        {/* Existing Items */}
                         {toothItems.map((item) => (
                           <TableRow 
                             key={item.id}
@@ -569,21 +959,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <Separator orientation="vertical" className="h-full" />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              <MultiColumnProductSelector
-                                materials={MATERIALS}
-                                products={products}
-                                selectedProduct={selectedProduct}
-                                onProductSelect={(product) => {
-                                  setSelectedProduct(product);
-                                  // Update the item's product name
-                                  setToothItems(prev => prev.map(prevItem => 
-                                    prevItem.id === item.id 
-                                      ? { ...prevItem, productName: product.name }
-                                      : prevItem
-                                  ));
-                                }}
-                                disabled={loading}
-                              />
+                              <span className="text-xs">{item.productName}</span>
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
                               <Separator orientation="vertical" className="h-full" />
@@ -605,7 +981,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     <span className="text-gray-500">G:</span> {item.shades.gingival}
                                   </div>
                                 )}
-                                {!item.shades?.occlusal && !item.shades?.body && !item.shades?.gingival && (
+                                {item.shades?.stump && (
+                                  <div className="text-xs">
+                                    <span className="text-gray-500">S:</span> {item.shades.stump}
+                                  </div>
+                                )}
+                                {!item.shades?.occlusal && !item.shades?.body && !item.shades?.gingival && !item.shades?.stump && (
                                   <span className="text-gray-400 text-xs">No shade selected</span>
                                 )}
                               </div>
@@ -635,53 +1016,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </TableBody>
                     </Table>
                   </div>
-                </div>
-
-                {/* Material Selection */}
-                <div>
-                  <Label>Material</Label>
-                  <Select 
-                    value={selectedMaterialState || ''} 
-                    onValueChange={handleMaterialSelect}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MATERIALS.map((material) => (
-                        <SelectItem key={material} value={material}>
-                          {material}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Product Selection */}
-                <div>
-                  <Label>Select Product</Label>
-                  <Select
-                    value={selectedProduct?.id || ''}
-                    onValueChange={handleProductSelect}
-                    disabled={!selectedType}
-                  >
-                    <SelectTrigger className={cn(
-                      "mt-1",
-                      !selectedType ? "bg-transparent" : "bg-white"
-                    )}>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.product && (
-                    <p className="mt-1 text-xs text-destructive">{errors.product}</p>
-                  )}
                 </div>
 
                 {/* Product Details */}
