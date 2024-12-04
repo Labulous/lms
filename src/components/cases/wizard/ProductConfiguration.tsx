@@ -600,17 +600,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       productName: selectedProduct?.name || '',
       isRange: false,
       shades: {
-        occlusal: shades.occlusal || undefined,
-        body: shades.middle || undefined,
-        gingival: shades.gingival || undefined,
-        stump: shades.stump || undefined
+        occlusal: shades.occlusal || '',
+        body: shades.middle || '',
+        gingival: shades.gingival || '',
+        stump: shades.stump || ''
       }
     };
 
+    // Update the teeth map
+    const newMap = new Map(addedTeethMap);
+    selectedTeeth.forEach(tooth => {
+      newMap.set(tooth, true);
+    });
+
+    setAddedTeethMap(newMap);
     setToothItems(prev => [...prev, newItem]);
     setHighlightedItems(prev => new Set([...prev, newItem.id]));
 
-    // Clear preview state
+    // Reset states
     setSelectedTeeth([]);
     setSelectedProduct(null);
     setPreviewProduct(null);
@@ -628,29 +635,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleSaveShades = () => {
-    if (!previewProduct || !selectedProduct) return;
-
-    // Update preview product with shades
-    const updatedShades = {
-      occlusal: shades.occlusal || undefined,
-      body: shades.middle || undefined,
-      gingival: shades.gingival || undefined,
-      stump: shades.stump || undefined
-    };
-
-    setPreviewProduct(prev => ({
-      ...prev!,
-      shades: updatedShades
-    }));
-
-    // Also update the preview item for immediate display
-    setPreviewItem(prev => prev ? {
-      ...prev,
-      shades: updatedShades
-    } : null);
-
-    // Close popover
     setShadePopoverOpen(false);
+    handleAddPreviewToTable();
   };
 
   const handleCancelShades = () => {
