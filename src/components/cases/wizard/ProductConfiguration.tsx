@@ -289,6 +289,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const handleToothSelectionChange = (teeth: number[]) => {
     console.log('Teeth selection changed:', teeth);
+    
+    // Validate that teeth are in the same arch
+    const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
+    const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
+    
+    if (teeth.length > 0 && !isUpperArch && !isLowerArch) {
+      toast.error('Please select teeth from the same arch');
+      return;
+    }
+    
+    // Check for overlapping teeth
+    const hasOverlap = teeth.some(tooth => addedTeethMap.has(tooth));
+    if (hasOverlap) {
+      toast.error('Some teeth are already added to another product');
+      return;
+    }
+    
     setSelectedTeeth(teeth);
     setErrors(prev => ({ ...prev, teeth: undefined }));
 
@@ -299,12 +316,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         teeth: sortedTeeth,
         isRange: teeth.length > 1
       }));
+      
+      // Update preview product with new teeth
       setPreviewProduct(prev => ({
         ...prev!,
         teeth: sortedTeeth
       }));
     }
-
+    
     checkIfReadyToAdd();
   };
 

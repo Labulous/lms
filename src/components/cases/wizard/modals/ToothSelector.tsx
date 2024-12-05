@@ -70,65 +70,162 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return -1;
   };
 
+  // Helper function to get teeth in visual order for upper arch (always left to right)
+  const getUpperArchTeeth = (fromTooth: number, toTooth: number): number[] => {
+    const result: number[] = [];
+    
+    // Determine the leftmost and rightmost teeth
+    let leftTooth: number, rightTooth: number;
+    
+    // For teeth in right quadrant (11-18)
+    if (fromTooth >= 11 && fromTooth <= 18) {
+      leftTooth = fromTooth;
+    } else {
+      leftTooth = toTooth;
+    }
+    
+    // For teeth in left quadrant (21-28)
+    if (fromTooth >= 21 && fromTooth <= 28) {
+      rightTooth = fromTooth;
+    } else {
+      rightTooth = toTooth;
+    }
+    
+    // If both teeth are in right quadrant (11-18)
+    if (leftTooth >= 11 && leftTooth <= 18 && rightTooth >= 11 && rightTooth <= 18) {
+      const min = Math.min(leftTooth, rightTooth);
+      const max = Math.max(leftTooth, rightTooth);
+      for (let t = min; t <= max; t++) result.push(t);
+      return result;
+    }
+    
+    // If both teeth are in left quadrant (21-28)
+    if (leftTooth >= 21 && leftTooth <= 28 && rightTooth >= 21 && rightTooth <= 28) {
+      const min = Math.min(leftTooth, rightTooth);
+      const max = Math.max(leftTooth, rightTooth);
+      for (let t = min; t <= max; t++) result.push(t);
+      return result;
+    }
+    
+    // If selection crosses quadrants, always go left to right visually
+    if ((leftTooth >= 11 && leftTooth <= 18) && (rightTooth >= 21 && rightTooth <= 28)) {
+      // Start from the leftmost tooth
+      for (let t = leftTooth; t >= 11; t--) result.push(t);
+      // Then add teeth from left quadrant
+      for (let t = 21; t <= rightTooth; t++) result.push(t);
+      return result;
+    }
+    
+    return result;
+  };
+
+  // Helper function to get teeth in visual order for lower arch (always right to left)
+  const getLowerArchTeeth = (fromTooth: number, toTooth: number): number[] => {
+    const result: number[] = [];
+    
+    // Determine the rightmost and leftmost teeth
+    let rightTooth: number, leftTooth: number;
+    
+    // For teeth in left quadrant (31-38)
+    if (fromTooth >= 31 && fromTooth <= 38) {
+      rightTooth = fromTooth;
+    } else {
+      rightTooth = toTooth;
+    }
+    
+    // For teeth in right quadrant (41-48)
+    if (fromTooth >= 41 && fromTooth <= 48) {
+      leftTooth = fromTooth;
+    } else {
+      leftTooth = toTooth;
+    }
+    
+    // If both teeth are in left quadrant (31-38)
+    if (rightTooth >= 31 && rightTooth <= 38 && leftTooth >= 31 && leftTooth <= 38) {
+      const min = Math.min(rightTooth, leftTooth);
+      const max = Math.max(rightTooth, leftTooth);
+      for (let t = min; t <= max; t++) result.push(t);
+      return result;
+    }
+    
+    // If both teeth are in right quadrant (41-48)
+    if (rightTooth >= 41 && rightTooth <= 48 && leftTooth >= 41 && leftTooth <= 48) {
+      const min = Math.min(rightTooth, leftTooth);
+      const max = Math.max(rightTooth, leftTooth);
+      for (let t = min; t <= max; t++) result.push(t);
+      return result;
+    }
+    
+    // If selection crosses quadrants, always go right to left visually
+    if ((rightTooth >= 31 && rightTooth <= 38) && (leftTooth >= 41 && leftTooth <= 48)) {
+      // Start from the rightmost tooth
+      for (let t = rightTooth; t >= 31; t--) result.push(t);
+      // Then add teeth from right quadrant
+      for (let t = 41; t <= leftTooth; t++) result.push(t);
+      return result;
+    }
+    
+    return result;
+  };
+
   // Helper function to get tooth numbers between two visual positions
   const getTeethInVisualRange = (start: number, end: number) => {
-    // If teeth are in the same quadrant
-    if (Math.floor(start / 10) === Math.floor(end / 10)) {
-      const min = Math.min(start, end);
-      const max = Math.max(start, end);
-      return Array.from({length: max - min + 1}, (_, i) => min + i);
+    console.log('getTeethInVisualRange called with:', { start, end });
+
+    // Check if teeth are in the same arch
+    const isUpperArch = (tooth: number) => tooth >= 11 && tooth <= 28;
+    const isLowerArch = (tooth: number) => tooth >= 31 && tooth <= 48;
+
+    // Prevent selection across upper/lower arch boundary
+    if ((isUpperArch(start) && isLowerArch(end)) || 
+        (isLowerArch(start) && isUpperArch(end))) {
+      console.log('Selection crosses upper/lower arch boundary');
+      return [];
     }
-    
-    // For cross-quadrant selection in upper arch (11-28)
-    if ((start >= 11 && start <= 18 && end >= 21 && end <= 28) ||
-        (end >= 11 && end <= 18 && start >= 21 && start <= 28)) {
-      let result = [];
-      
-      // Determine the direction (right to left or left to right)
-      const isRightToLeft = (start >= 11 && start <= 18);
-      const firstTooth = isRightToLeft ? start : end;
-      const secondTooth = isRightToLeft ? end : start;
-      
-      // Add teeth from the right quadrant (18-11)
-      for (let tooth = firstTooth; tooth >= 11; tooth--) {
-        result.push(tooth);
-      }
-      
-      // Add teeth from the left quadrant (21-28)
-      for (let tooth = 21; tooth <= secondTooth; tooth++) {
-        result.push(tooth);
-      }
-      
-      // If selection was left to right, reverse the array
-      return isRightToLeft ? result : result.reverse();
+
+    // Get teeth based on arch
+    if (isUpperArch(start) && isUpperArch(end)) {
+      const result = getUpperArchTeeth(start, end);
+      console.log('Upper arch selection:', result);
+      return result;
     }
-    
-    // For cross-quadrant selection in lower arch (31-48)
-    if ((start >= 41 && start <= 48 && end >= 31 && end <= 38) ||
-        (end >= 41 && end <= 48 && start >= 31 && start <= 38)) {
-      let result = [];
-      
-      // Determine the direction (right to left or left to right)
-      const isRightToLeft = (start >= 41 && start <= 48);
-      const firstTooth = isRightToLeft ? start : end;
-      const secondTooth = isRightToLeft ? end : start;
-      
-      // Add teeth from the right quadrant (48-41)
-      for (let tooth = firstTooth; tooth >= 41; tooth--) {
-        result.push(tooth);
-      }
-      
-      // Add teeth from the left quadrant (31-38)
-      for (let tooth = 31; tooth <= secondTooth; tooth++) {
-        result.push(tooth);
-      }
-      
-      // If selection was left to right, reverse the array
-      return isRightToLeft ? result : result.reverse();
+
+    if (isLowerArch(start) && isLowerArch(end)) {
+      const result = getLowerArchTeeth(start, end);
+      console.log('Lower arch selection:', result);
+      return result;
     }
-    
-    // Default to empty array for invalid cross-arch selections
+
+    console.log('Invalid selection');
     return [];
+  };
+
+  // Helper function to get abutment teeth based on visual order
+  const getAbutmentTeeth = (): number[] => {
+    if (selectedTeeth.length < 2) return [];
+    
+    const isUpperArch = selectedTeeth[0] >= 11 && selectedTeeth[0] <= 28;
+    const isLowerArch = selectedTeeth[0] >= 31 && selectedTeeth[0] <= 48;
+    
+    if (!isUpperArch && !isLowerArch) return [];
+    
+    // Get teeth in visual order
+    const visualOrderTeeth = isUpperArch ? 
+      getUpperArchTeeth(selectedTeeth[0], selectedTeeth[selectedTeeth.length - 1]) :
+      getLowerArchTeeth(selectedTeeth[0], selectedTeeth[selectedTeeth.length - 1]);
+    
+    // Return first and last teeth in the visual order if they are in the selected teeth
+    const selectedSet = new Set(selectedTeeth);
+    const abutments = [];
+    
+    if (selectedSet.has(visualOrderTeeth[0])) {
+      abutments.push(visualOrderTeeth[0]);
+    }
+    if (selectedSet.has(visualOrderTeeth[visualOrderTeeth.length - 1])) {
+      abutments.push(visualOrderTeeth[visualOrderTeeth.length - 1]);
+    }
+    
+    return abutments;
   };
 
   // Add this helper function to check if teeth are in same arch
@@ -172,113 +269,54 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       return false;
     }
 
-    // Sort teeth in ascending order
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
-    console.log('Sorted teeth:', sortedTeeth);
+    // Get teeth in visual order
+    const visualOrderTeeth = isUpperArch ? 
+      getUpperArchTeeth(teeth[0], teeth[teeth.length - 1]) :
+      getLowerArchTeeth(teeth[0], teeth[teeth.length - 1]);
 
-    // For upper arch (11-28)
-    if (isUpperArch) {
-      // Convert tooth numbers to a continuous sequence that works across quadrants
-      const normalizedTeeth = sortedTeeth.map(t => {
-        if (t >= 11 && t <= 18) {
-          // Right quadrant: normalize 11-18 to 1-8
-          const normalized = t - 10;
-          console.log(`Normalized upper right tooth ${t} -> ${normalized}`);
-          return normalized;
-        }
-        if (t >= 21 && t <= 28) {
-          // Left quadrant: normalize 21-28 to continue from right quadrant
-          const normalized = t - 20 + 3; // Add offset to make it continuous
-          console.log(`Normalized upper left tooth ${t} -> ${normalized}`);
-          return normalized;
-        }
-        return 0;
-      });
-      console.log('Final normalized upper teeth:', normalizedTeeth);
-
-      // Check if the sequence is continuous
-      for (let i = 1; i < normalizedTeeth.length; i++) {
-        const diff = Math.abs(normalizedTeeth[i] - normalizedTeeth[i - 1]);
-        console.log(`Checking continuity between ${sortedTeeth[i-1]}(${normalizedTeeth[i-1]}) and ${sortedTeeth[i]}(${normalizedTeeth[i]}), diff: ${diff}`);
-        if (diff !== 1) {
-          console.log('Gap found in upper teeth');
-          return false;
-        }
-      }
-      console.log('Upper teeth are continuous');
-      return true;
-    }
-
-    // For lower arch (31-48)
-    if (isLowerArch) {
-      // Convert tooth numbers to a continuous sequence that works across quadrants
-      const normalizedTeeth = sortedTeeth.map(t => {
-        if (t >= 31 && t <= 38) {
-          // Left quadrant: normalize 31-38 to 1-8
-          const normalized = t - 30;
-          console.log(`Normalized lower left tooth ${t} -> ${normalized}`);
-          return normalized;
-        }
-        if (t >= 41 && t <= 48) {
-          // Right quadrant: normalize 41-48 to continue from left quadrant
-          const normalized = t - 40 + 3; // Add offset to make it continuous
-          console.log(`Normalized lower right tooth ${t} -> ${normalized}`);
-          return normalized;
-        }
-        return 0;
-      });
-      console.log('Final normalized lower teeth:', normalizedTeeth);
-
-      // Check if the sequence is continuous
-      for (let i = 1; i < normalizedTeeth.length; i++) {
-        const diff = Math.abs(normalizedTeeth[i] - normalizedTeeth[i - 1]);
-        console.log(`Checking continuity between ${sortedTeeth[i-1]}(${normalizedTeeth[i-1]}) and ${sortedTeeth[i]}(${normalizedTeeth[i]}), diff: ${diff}`);
-        if (diff !== 1) {
-          console.log('Gap found in lower teeth');
-          return false;
-        }
-      }
-      console.log('Lower teeth are continuous');
-      return true;
-    }
-
-    console.log('No valid arch found');
-    return false;
+    // Check if selected teeth match the visual order
+    const selectedSet = new Set(teeth);
+    return visualOrderTeeth.every(tooth => selectedSet.has(tooth)) &&
+           teeth.length === visualOrderTeeth.length;
   };
 
-  // Get abutment teeth (first and last teeth in the range)
-  const getAbutmentTeeth = () => {
-    console.log('getAbutmentTeeth called with selectedTeeth:', selectedTeeth);
-    
-    if (selectedTeeth.length < 2) {
-      console.log('Less than 2 teeth selected');
-      return [];
+  const getToothColor = (toothNumber: number): string => {
+    if (!selectedTeeth.includes(toothNumber)) {
+      return hoveredTooth === toothNumber ? "fill-gray-300" : "fill-gray-200";
     }
-    
-    // Check if it's a continuous range
-    const isContinuous = isTeethRangeContinuous(selectedTeeth);
-    console.log('Range continuity check:', isContinuous);
-    
-    if (!isContinuous) {
-      console.log('Not a continuous range');
-      return [];
+
+    const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
+    if (isBridge && selectedTeeth.length >= 2) {
+      const abutmentTeeth = getAbutmentTeeth();
+      if (abutmentTeeth.includes(toothNumber)) {
+        return "fill-purple-500"; // Abutment teeth
+      }
     }
-    
-    // For range selections, get the first and last teeth
-    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
-    const abutmentTeeth = [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
-    console.log('Selected abutment teeth:', abutmentTeeth);
-    return abutmentTeeth;
+
+    if (ponticTeeth.has(toothNumber)) {
+      return "fill-green-500"; // Pontic teeth
+    }
+
+    return "fill-blue-500"; // Regular selected teeth
   };
 
   // Check if a tooth can be selected as pontic
   const isPonticSelectable = (toothNumber: number) => {
-    if (!ponticMode || selectedTeeth.length < 2) return false;
-    const [start, end] = getAbutmentTeeth();
-    return toothNumber > start && toothNumber < end;
+    console.log('isPonticSelectable called for tooth:', toothNumber);
+    
+    if (!ponticMode || selectedTeeth.length < 2) {
+      console.log('Not in pontic mode or insufficient teeth selected');
+      return false;
+    }
+    
+    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+    const [start, end] = [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
+    
+    const isSelectable = toothNumber > start && toothNumber < end;
+    console.log('Pontic selectability:', { toothNumber, start, end, isSelectable });
+    return isSelectable;
   };
 
-  // Handle pontic tooth selection
   const handlePonticSelect = (toothNumber: number) => {
     if (!isPonticSelectable(toothNumber)) return;
     
@@ -377,28 +415,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
   };
 
-  const getToothColor = (toothNumber: number) => {
-    if (disabled) return "fill-gray-200 cursor-not-allowed";
-    
-    // Selected teeth
-    if (selectedTeeth.includes(toothNumber)) {
-      // If it's an abutment tooth in a continuous range
-      if (selectedTeeth.length >= 2 && getAbutmentTeeth().includes(toothNumber)) {
-        return "fill-purple-500 hover:fill-purple-600";
-      }
-      // Regular selection
-      return "fill-blue-500 hover:fill-blue-600";
-    }
-    
-    // Hover state
-    if (hoveredTooth === toothNumber) {
-      return "fill-blue-200";
-    }
-    
-    // Default unselected state
-    return "fill-gray-100 hover:fill-gray-200";
-  };
-
   const getArchSelectionText = () => {
     if (billingType !== 'perArch') return '';
     
@@ -482,11 +498,26 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               </div>
 
               {/* Display Abutment teeth */}
-              {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && selectedTeeth.length >= 2 && isTeethRangeContinuous(selectedTeeth) && (
-                <div className="text-purple-500 text-xs font-semibold mt-1">
-                  Abutment: {getAbutmentTeeth().join(', ')}
-                </div>
-              )}
+              {(() => {
+                const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
+                const hasEnoughTeeth = selectedTeeth.length >= 2;
+                const isRange = isTeethRangeContinuous(selectedTeeth);
+                
+                console.log('Abutment display conditions:', {
+                  isBridge,
+                  hasEnoughTeeth,
+                  isRange,
+                  selectedTeeth,
+                  productType: selectedProduct?.type,
+                  abutmentTeeth: getAbutmentTeeth()
+                });
+
+                return isBridge && hasEnoughTeeth && isRange && (
+                  <div className="text-purple-500 text-xs font-semibold mt-1">
+                    Abutment: {getAbutmentTeeth().join(', ')}
+                  </div>
+                );
+              })()}
 
               {/* Display Pontic teeth */}
               {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && ponticTeeth.size > 0 && (
@@ -504,18 +535,18 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
                 const hasEnoughTeeth = selectedTeeth.length >= 2;
                 const notInPonticMode = !ponticMode;
-                const isRangeContinuous = isTeethRangeContinuous(selectedTeeth);
+                const isRange = isTeethRangeContinuous(selectedTeeth);
                 
-                console.log('Button visibility conditions:', {
+                console.log('Pontic button visibility conditions:', {
                   isBridge,
                   hasEnoughTeeth,
                   notInPonticMode,
-                  isRangeContinuous,
+                  isRange,
                   selectedTeeth,
                   productType: selectedProduct?.type
                 });
 
-                return isBridge && hasEnoughTeeth && notInPonticMode && isRangeContinuous && (
+                return isBridge && hasEnoughTeeth && notInPonticMode && isRange && (
                   <Button
                     variant="outline"
                     size="xs"
