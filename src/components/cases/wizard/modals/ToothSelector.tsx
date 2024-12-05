@@ -254,25 +254,29 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const isTeethRangeContinuous = (teeth: number[]): boolean => {
     console.log('isTeethRangeContinuous called with teeth:', teeth);
     
-    if (teeth.length <= 1) {
+    if (teeth.length < 2) {
       console.log('Less than 2 teeth selected');
       return false;
     }
     
-    // Must be in same arch
-    const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
-    const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
-    console.log('Arch check:', { isUpperArch, isLowerArch });
-    
-    if (!isUpperArch && !isLowerArch) {
-      console.log('Teeth not in same arch');
-      return false;
+    // Only check same arch requirement for Bridge products
+    if (selectedProduct?.type?.includes('Bridge')) {
+      const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
+      const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
+      console.log('Arch check for Bridge:', { isUpperArch, isLowerArch });
+      
+      if (!isUpperArch && !isLowerArch) {
+        console.log('Bridge teeth not in same arch');
+        return false;
+      }
     }
 
     // Get teeth in visual order
-    const visualOrderTeeth = isUpperArch ? 
-      getUpperArchTeeth(teeth[0], teeth[teeth.length - 1]) :
-      getLowerArchTeeth(teeth[0], teeth[teeth.length - 1]);
+    const visualOrderTeeth = areTeethInSameArch(teeth) ? 
+      (teeth[0] >= 11 && teeth[0] <= 28) ? 
+        getUpperArchTeeth(teeth[0], teeth[teeth.length - 1]) :
+        getLowerArchTeeth(teeth[0], teeth[teeth.length - 1]) :
+        [];
 
     // Check if selected teeth match the visual order
     const selectedSet = new Set(teeth);

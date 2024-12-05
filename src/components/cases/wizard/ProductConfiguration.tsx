@@ -287,28 +287,39 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   };
 
+  // Helper function to check if teeth overlap with existing bridge products
+  const checkBridgeOverlap = (teeth: number[]): boolean => {
+    // Find all bridge items
+    const bridgeItems = toothItems.filter(item => item.type === 'Bridge');
+    
+    // Check if any of the selected teeth overlap with bridge items
+    return bridgeItems.some(bridge => 
+      teeth.some(tooth => bridge.teeth.includes(tooth))
+    );
+  };
+
   const handleToothSelectionChange = (teeth: number[]) => {
     console.log('Teeth selection changed:', teeth);
     
-    // Validate that teeth are in the same arch
-    const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
-    const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
-    
-    if (teeth.length > 0 && !isUpperArch && !isLowerArch) {
-      toast.error('Please select teeth from the same arch');
-      return;
-    }
-    
-    // Check for overlapping teeth
-    const hasOverlap = teeth.some(tooth => addedTeethMap.has(tooth));
-    if (hasOverlap) {
-      toast.error('Some teeth are already added to another product');
-      return;
+    // Only validate same arch for Bridge products
+    if (selectedType === 'Bridge') {
+      const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
+      const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
+      
+      if (teeth.length > 0 && !isUpperArch && !isLowerArch) {
+        toast.error('For bridges, please select teeth from the same arch');
+        return;
+      }
+
+      const hasBridgeOverlap = checkBridgeOverlap(teeth);
+      if (hasBridgeOverlap) {
+        toast.error('Selected teeth overlap with an existing bridge');
+        return;
+      }
     }
     
     setSelectedTeeth(teeth);
     setErrors(prev => ({ ...prev, teeth: undefined }));
-
     if (previewItem && previewProduct) {
       const sortedTeeth = [...teeth].sort((a, b) => a - b);
       setPreviewItem(prev => ({
@@ -574,29 +585,33 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return;
     }
 
-    // Check for duplicate teeth
-    const hasOverlap = selectedTeeth.some(tooth => addedTeethMap.has(tooth));
-    if (hasOverlap) {
-      toast.error('Some teeth are already added');
-      return;
+    // For Bridge products, check overlap
+    if (selectedType === 'Bridge') {
+      const hasBridgeOverlap = checkBridgeOverlap(selectedTeeth);
+      if (hasBridgeOverlap) {
+        toast.error('Selected teeth overlap with an existing bridge');
+        return;
+      }
     }
 
     // Create new tooth item
     const newItem: ToothItem = {
       id: uuidv4(),
       teeth: selectedTeeth,
-      isRange: false,
-      type: selectedType, // Using type as the product name for now
+      isRange: selectedTeeth.length > 1,
+      type: selectedType,
       productName: selectedType,
     };
 
-    // Update the teeth map
-    const newMap = new Map(addedTeethMap);
-    selectedTeeth.forEach(tooth => {
-      newMap.set(tooth, true);
-    });
+    // Only update the teeth map for bridge products
+    if (selectedType === 'Bridge') {
+      const newMap = new Map(addedTeethMap);
+      selectedTeeth.forEach(tooth => {
+        newMap.set(tooth, true);
+      });
+      setAddedTeethMap(newMap);
+    }
 
-    setAddedTeethMap(newMap);
     setToothItems(prev => [...prev, newItem]);
     setSelectedTeeth([]); // Reset selected teeth
   };
