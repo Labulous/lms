@@ -198,26 +198,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     if (selectedType) {
-      const newPreviewItem: ToothItem = {
-        id: 'preview',
-        teeth: [],
-        isRange: false,
-        type: selectedType,
-        productName: selectedType,
-        shades: {
-          occlusal: '',
-          body: '',
-          gingival: '',
-          stump: ''
-        }
-      };
-      setPreviewItem(newPreviewItem);
-      
+      console.log('Selected type changed:', selectedType);
       const newPreviewProduct: ProductWithShade = {
         id: 'preview',
         name: selectedType,
         type: selectedType,
-        teeth: [],
+        teeth: selectedTeeth,
         material: '',
         shades: {
           occlusal: '',
@@ -227,14 +213,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         },
         price: 0,
         discount: 0,
-        notes: ''
+        notes: '',
+        requiresShade: true
       };
+      console.log('Setting initial preview product:', newPreviewProduct);
       setPreviewProduct(newPreviewProduct);
     } else {
-      setPreviewItem(null);
       setPreviewProduct(null);
     }
-  }, [selectedType]);
+  }, [selectedType, selectedTeeth]);
 
   const handleProductSelect = (value: string, keepTeeth = false, itemId?: string) => {
     const product = products.find(p => p.id === value) || null;
@@ -243,8 +230,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       keepTeeth,
       itemId,
       foundProduct: product?.name,
-      currentTeeth: selectedTeeth,
-      currentProduct: selectedProduct?.name
+      currentTeeth: selectedTeeth
     });
     
     if (product && !['perTooth', 'perArch', 'teeth', 'generic', 'calculate'].includes(product.billingType)) {
@@ -253,12 +239,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return;
     }
 
-    // Always update the selected product first
     setSelectedProduct(product);
     
-    // If we're updating a specific tooth item, update its product name
     if (itemId) {
-      console.log('Updating tooth item:', itemId);
       setToothItems(prev => prev.map(prevItem => 
         prevItem.id === itemId 
           ? { ...prevItem, productName: product?.name || prevItem.productName }
@@ -266,23 +249,33 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       ));
     }
     
-    // Only clear teeth if we're not keeping them and there's no specific item being updated
     if (!keepTeeth && !itemId) {
-      console.log('Clearing teeth selection');
       setSelectedTeeth([]);
     }
     
-    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
-    setErrors({});
-    
-    if (previewProduct && product) {
-      setPreviewProduct(prev => ({
-        ...prev!,
-        material: product.material || '',
-        name: product.name
-      }));
+    if (product) {
+      const newPreviewProduct: ProductWithShade = {
+        ...product,
+        id: 'preview',
+        teeth: selectedTeeth,
+        shades: {
+          occlusal: '',
+          body: '',
+          gingival: '',
+          stump: ''
+        },
+        requiresShade: true
+      };
+      console.log('Setting new preview product:', newPreviewProduct);
+      setPreviewProduct(newPreviewProduct);
+      
+      // Reset shades when changing products
+      setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    } else {
+      setPreviewProduct(null);
     }
-
+    
+    setErrors({});
     checkIfReadyToAdd();
   };
 
@@ -388,11 +381,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const sortedTeeth = [...teeth].sort((a, b) => a - b);
     const isRange = teeth.length > 1;
     
-    // Check for duplicate teeth
-    const hasOverlap = sortedTeeth.some(tooth => addedTeethMap.has(tooth));
-    if (hasOverlap) {
-      toast.error('Some teeth are already added');
-      return;
+    // For bridge type, check if the new selection overlaps with any existing bridge
+    if (selectedType.toLowerCase() === 'bridge') {
+      const hasOverlappingBridge = toothItems.some(item => {
+        if (item.type.toLowerCase() !== 'bridge') return false;
+        return item.teeth.some(tooth => sortedTeeth.includes(tooth));
+      });
+      
+      if (hasOverlappingBridge) {
+        toast.error('This selection overlaps with an existing bridge');
+        return;
+      }
+    } else {
+      // For non-bridge types, check for any duplicate teeth
+      const hasOverlap = sortedTeeth.some(tooth => addedTeethMap.has(tooth));
+      if (hasOverlap) {
+        toast.error('Some teeth are already added');
+        return;
+      }
     }
 
     // Create new tooth item with basic information
@@ -586,15 +592,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setIsReadyToAdd(hasTeeth && hasProduct && hasShades);
   };
 
-  const handleAddPreviewToTable = () => {
-    if (!previewProduct || !selectedTeeth.length) return;
+  const handleSaveShades = () => {
+    console.log('Saving shades:', {
+      currentShades: shades,
+      previewProduct,
+      selectedTeeth,
+      selectedType,
+      selectedProduct
+    });
 
-    const newItem: ToothItem = {
-      id: uuidv4(),
-      teeth: [...selectedTeeth],
-      type: selectedType || '',
-      productName: selectedProduct?.name || '',
-      isRange: false,
+    if (!previewProduct) {
+      console.error('No preview product available');
+      return;
+    }
+
+    if (!selectedTeeth.length) {
+      console.error('No teeth selected');
+      return;
+    }
+
+    // Create a new preview product with updated shades
+    const updatedPreviewProduct = {
+      ...previewProduct,
       shades: {
         occlusal: shades.occlusal || '',
         body: shades.middle || '',
@@ -603,14 +622,74 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     };
 
-    // Update the teeth map
-    const newMap = new Map(addedTeethMap);
-    selectedTeeth.forEach(tooth => {
-      newMap.set(tooth, true);
+    console.log('Updated preview product:', updatedPreviewProduct);
+    
+    // Update the preview product state
+    setPreviewProduct(updatedPreviewProduct);
+    
+    // Close the shade popover
+    setShadePopoverOpen(false);
+    
+    // Add the product to the table with shades
+    handleAddPreviewToTable(updatedPreviewProduct);
+  };
+
+  const handleAddPreviewToTable = (productToAdd = previewProduct) => {
+    console.log('Adding preview to table:', {
+      productToAdd,
+      selectedTeeth,
+      selectedType,
+      selectedProduct,
+      currentShades: shades
     });
 
-    setAddedTeethMap(newMap);
-    setToothItems(prev => [...prev, newItem]);
+    if (!productToAdd || !selectedTeeth.length) {
+      console.error('Missing required data:', { productToAdd, selectedTeeth });
+      return;
+    }
+
+    // Check for overlapping teeth only for bridge type
+    if (selectedType === 'Bridge') {
+      const hasOverlap = selectedTeeth.some(tooth => addedTeethMap.has(tooth));
+      if (hasOverlap) {
+        toast.error('Bridge teeth cannot overlap with existing selections');
+        return;
+      }
+    }
+
+    const newItem: ToothItem = {
+      id: uuidv4(),
+      teeth: [...selectedTeeth],
+      type: selectedType || '',
+      productName: selectedProduct?.name || '',
+      isRange: false,
+      shades: productToAdd.shades // Use the shades from the productToAdd
+    };
+    console.log('Created new item:', newItem);
+
+    // Update the teeth map only for bridge type
+    if (selectedType === 'Bridge') {
+      const newMap = new Map(addedTeethMap);
+      selectedTeeth.forEach(tooth => {
+        newMap.set(tooth, true);
+      });
+      setAddedTeethMap(newMap);
+    }
+
+    setToothItems(prev => {
+      const updated = [...prev, newItem];
+      console.log('Updated tooth items:', updated);
+      return updated;
+    });
+    
+    // Update selected products
+    const newProduct: ProductWithShade = {
+      ...productToAdd,
+      id: newItem.id,
+      teeth: [...selectedTeeth]
+    };
+    onProductsChange([...selectedProducts, newProduct]);
+
     setHighlightedItems(prev => new Set([...prev, newItem.id]));
 
     // Reset states
@@ -630,21 +709,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }, 2000);
   };
 
-  const handleSaveShades = () => {
-    if (previewProduct) {
-      // Update preview product with current shades
-      setPreviewProduct(prev => ({
-        ...prev!,
-        shades: {
-          occlusal: shades.occlusal || '',
-          body: shades.middle || '',
-          gingival: shades.gingival || '',
-          stump: shades.stump || ''
-        }
-      }));
+  const handleRemoveToothItem = (itemId: string) => {
+    // Remove the item from toothItems
+    setToothItems(prev => prev.filter(item => item.id !== itemId));
+    
+    // Remove the teeth from addedTeethMap only if it was a bridge
+    const itemToRemove = toothItems.find(item => item.id === itemId);
+    if (itemToRemove && itemToRemove.type === 'Bridge') {
+      const newMap = new Map(addedTeethMap);
+      itemToRemove.teeth.forEach(tooth => {
+        newMap.delete(tooth);
+      });
+      setAddedTeethMap(newMap);
     }
-    setShadePopoverOpen(false);
-    handleAddPreviewToTable();
+
+    // Remove from selected products
+    onProductsChange(selectedProducts.filter(p => p.id !== itemId));
   };
 
   const handleCancelShades = () => {
@@ -656,21 +736,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       stump: previewProduct?.shades?.stump || ''
     });
     setShadePopoverOpen(false);
-  };
-
-  const handleRemoveToothItem = (itemId: string) => {
-    // Remove the item from toothItems
-    setToothItems(prev => prev.filter(item => item.id !== itemId));
-    
-    // Remove the teeth from addedTeethMap
-    const itemToRemove = toothItems.find(item => item.id === itemId);
-    if (itemToRemove) {
-      const newMap = new Map(addedTeethMap);
-      itemToRemove.teeth.forEach(tooth => {
-        newMap.delete(tooth);
-      });
-      setAddedTeethMap(newMap);
-    }
   };
 
   return (

@@ -131,36 +131,144 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return [];
   };
 
-  // Add this helper function to check if selected teeth form a continuous range
+  // Add this helper function to check if teeth are in same arch
+  const areTeethInSameArch = (teeth: number[]): boolean => {
+    const isUpperArch = (tooth: number) => tooth >= 11 && tooth <= 28;
+    const isLowerArch = (tooth: number) => tooth >= 31 && tooth <= 48;
+    
+    return teeth.every(isUpperArch) || teeth.every(isLowerArch);
+  };
+
+  // Add this helper function to check if teeth are in same quadrant
+  const areTeethInSameQuadrant = (teeth: number[]): boolean => {
+    const getQuadrant = (tooth: number) => {
+      if (tooth >= 11 && tooth <= 18) return 1;
+      if (tooth >= 21 && tooth <= 28) return 2;
+      if (tooth >= 31 && tooth <= 38) return 3;
+      if (tooth >= 41 && tooth <= 48) return 4;
+      return 0;
+    };
+    
+    const firstQuadrant = getQuadrant(teeth[0]);
+    return teeth.every(tooth => getQuadrant(tooth) === firstQuadrant);
+  };
+
+  // Updated isTeethRangeContinuous to handle cross-quadrant selections
   const isTeethRangeContinuous = (teeth: number[]): boolean => {
-    if (teeth.length <= 1) return false;
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
-    for (let i = 1; i < sortedTeeth.length; i++) {
-      if (sortedTeeth[i] - sortedTeeth[i - 1] !== 1) {
-        return false;
-      }
+    console.log('isTeethRangeContinuous called with teeth:', teeth);
+    
+    if (teeth.length <= 1) {
+      console.log('Less than 2 teeth selected');
+      return false;
     }
-    return true;
+    
+    // Must be in same arch
+    const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
+    const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
+    console.log('Arch check:', { isUpperArch, isLowerArch });
+    
+    if (!isUpperArch && !isLowerArch) {
+      console.log('Teeth not in same arch');
+      return false;
+    }
+
+    // Sort teeth in ascending order
+    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+    console.log('Sorted teeth:', sortedTeeth);
+
+    // For upper arch (11-28)
+    if (isUpperArch) {
+      // Convert tooth numbers to a continuous sequence that works across quadrants
+      const normalizedTeeth = sortedTeeth.map(t => {
+        if (t >= 11 && t <= 18) {
+          // Right quadrant: normalize 11-18 to 1-8
+          const normalized = t - 10;
+          console.log(`Normalized upper right tooth ${t} -> ${normalized}`);
+          return normalized;
+        }
+        if (t >= 21 && t <= 28) {
+          // Left quadrant: normalize 21-28 to continue from right quadrant
+          const normalized = t - 20 + 3; // Add offset to make it continuous
+          console.log(`Normalized upper left tooth ${t} -> ${normalized}`);
+          return normalized;
+        }
+        return 0;
+      });
+      console.log('Final normalized upper teeth:', normalizedTeeth);
+
+      // Check if the sequence is continuous
+      for (let i = 1; i < normalizedTeeth.length; i++) {
+        const diff = Math.abs(normalizedTeeth[i] - normalizedTeeth[i - 1]);
+        console.log(`Checking continuity between ${sortedTeeth[i-1]}(${normalizedTeeth[i-1]}) and ${sortedTeeth[i]}(${normalizedTeeth[i]}), diff: ${diff}`);
+        if (diff !== 1) {
+          console.log('Gap found in upper teeth');
+          return false;
+        }
+      }
+      console.log('Upper teeth are continuous');
+      return true;
+    }
+
+    // For lower arch (31-48)
+    if (isLowerArch) {
+      // Convert tooth numbers to a continuous sequence that works across quadrants
+      const normalizedTeeth = sortedTeeth.map(t => {
+        if (t >= 31 && t <= 38) {
+          // Left quadrant: normalize 31-38 to 1-8
+          const normalized = t - 30;
+          console.log(`Normalized lower left tooth ${t} -> ${normalized}`);
+          return normalized;
+        }
+        if (t >= 41 && t <= 48) {
+          // Right quadrant: normalize 41-48 to continue from left quadrant
+          const normalized = t - 40 + 3; // Add offset to make it continuous
+          console.log(`Normalized lower right tooth ${t} -> ${normalized}`);
+          return normalized;
+        }
+        return 0;
+      });
+      console.log('Final normalized lower teeth:', normalizedTeeth);
+
+      // Check if the sequence is continuous
+      for (let i = 1; i < normalizedTeeth.length; i++) {
+        const diff = Math.abs(normalizedTeeth[i] - normalizedTeeth[i - 1]);
+        console.log(`Checking continuity between ${sortedTeeth[i-1]}(${normalizedTeeth[i-1]}) and ${sortedTeeth[i]}(${normalizedTeeth[i]}), diff: ${diff}`);
+        if (diff !== 1) {
+          console.log('Gap found in lower teeth');
+          return false;
+        }
+      }
+      console.log('Lower teeth are continuous');
+      return true;
+    }
+
+    console.log('No valid arch found');
+    return false;
   };
 
   // Get abutment teeth (first and last teeth in the range)
   const getAbutmentTeeth = () => {
-    if (selectedTeeth.length < 2) return [];
+    console.log('getAbutmentTeeth called with selectedTeeth:', selectedTeeth);
     
-    // If teeth were selected using Cmd/Ctrl click (individual selections)
-    if (individualSelections.size > 0) {
-      return []; // Individual selections don't have abutment teeth
-    }
-
-    // For range selections, get the first and last teeth
-    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
-    
-    // Check if it's a continuous range
-    if (!isTeethRangeContinuous(sortedTeeth)) {
+    if (selectedTeeth.length < 2) {
+      console.log('Less than 2 teeth selected');
       return [];
     }
     
-    return [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
+    // Check if it's a continuous range
+    const isContinuous = isTeethRangeContinuous(selectedTeeth);
+    console.log('Range continuity check:', isContinuous);
+    
+    if (!isContinuous) {
+      console.log('Not a continuous range');
+      return [];
+    }
+    
+    // For range selections, get the first and last teeth
+    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+    const abutmentTeeth = [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
+    console.log('Selected abutment teeth:', abutmentTeeth);
+    return abutmentTeeth;
   };
 
   // Check if a tooth can be selected as pontic
@@ -392,16 +500,32 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           {/* Center Buttons */}
           <foreignObject x="65" y="140" width="136" height="60">
             <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-              {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && selectedTeeth.length >= 2 && !ponticMode && isTeethRangeContinuous(selectedTeeth) && (
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="mt-1 px-3 py-1 bg-green-500 text-white hover:bg-green-600"
-                  onClick={() => setPonticMode(true)}
-                >
-                  Select Pontic
-                </Button>
-              )}
+              {(() => {
+                const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
+                const hasEnoughTeeth = selectedTeeth.length >= 2;
+                const notInPonticMode = !ponticMode;
+                const isRangeContinuous = isTeethRangeContinuous(selectedTeeth);
+                
+                console.log('Button visibility conditions:', {
+                  isBridge,
+                  hasEnoughTeeth,
+                  notInPonticMode,
+                  isRangeContinuous,
+                  selectedTeeth,
+                  productType: selectedProduct?.type
+                });
+
+                return isBridge && hasEnoughTeeth && notInPonticMode && isRangeContinuous && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    className="mt-1 px-3 py-1 bg-green-500 text-white hover:bg-green-600"
+                    onClick={() => setPonticMode(true)}
+                  >
+                    Select Pontic
+                  </Button>
+                );
+              })()}
             </div>
           </foreignObject>
 
