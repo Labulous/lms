@@ -50,6 +50,7 @@ import {
 } from "@radix-ui/react-hover-card";
 import MultiColumnProductSelector from './modals/MultiColumnProductSelector';
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ProductConfigurationProps {
   selectedMaterial: ProductMaterial | null;
@@ -317,24 +318,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const handleShadeChange = (type: keyof ShadeData, value: string) => {
     setShades(prev => ({ ...prev, [type]: value }));
     
-    if (previewItem) {
-      setPreviewItem(prev => ({
-        ...prev!,
-        shades: {
-          ...prev!.shades!,
-          [type]: value
-        }
-      }));
+    if (previewProduct) {
+      const updatedShades = {
+        occlusal: type === 'occlusal' ? value : shades.occlusal,
+        body: type === 'middle' ? value : shades.middle,
+        gingival: type === 'gingival' ? value : shades.gingival,
+        stump: type === 'stump' ? value : shades.stump
+      };
+      
       setPreviewProduct(prev => ({
         ...prev!,
-        shades: {
-          ...prev!.shades,
-          [type]: value
-        }
+        shades: updatedShades
       }));
     }
-
-    checkIfReadyToAdd();
   };
 
   const validateForm = () => {
@@ -635,6 +631,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleSaveShades = () => {
+    if (previewProduct) {
+      // Update preview product with current shades
+      setPreviewProduct(prev => ({
+        ...prev!,
+        shades: {
+          occlusal: shades.occlusal || '',
+          body: shades.middle || '',
+          gingival: shades.gingival || '',
+          stump: shades.stump || ''
+        }
+      }));
+    }
     setShadePopoverOpen(false);
     handleAddPreviewToTable();
   };
@@ -839,11 +847,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                <SelectItem key={shade} value={shade}>
-                                                  {shade}
-                                                </SelectItem>
-                                              ))}
+                                              <ScrollArea className="h-[200px]">
+                                                {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                  <SelectItem key={shade} value={shade}>
+                                                    {shade}
+                                                  </SelectItem>
+                                                ))}
+                                              </ScrollArea>
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -857,11 +867,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                <SelectItem key={shade} value={shade}>
-                                                  {shade}
-                                                </SelectItem>
-                                              ))}
+                                              <ScrollArea className="h-[200px]">
+                                                {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                  <SelectItem key={shade} value={shade}>
+                                                    {shade}
+                                                  </SelectItem>
+                                                ))}
+                                              </ScrollArea>
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -875,11 +887,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                <SelectItem key={shade} value={shade}>
-                                                  {shade}
-                                                </SelectItem>
-                                              ))}
+                                              <ScrollArea className="h-[200px]">
+                                                {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                  <SelectItem key={shade} value={shade}>
+                                                    {shade}
+                                                  </SelectItem>
+                                                ))}
+                                              </ScrollArea>
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -893,11 +907,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                <SelectItem key={shade} value={shade}>
-                                                  {shade}
-                                                </SelectItem>
-                                              ))}
+                                              <ScrollArea className="h-[200px]">
+                                                {VITA_CLASSICAL_SHADES.map((shade) => (
+                                                  <SelectItem key={shade} value={shade}>
+                                                    {shade}
+                                                  </SelectItem>
+                                                ))}
+                                              </ScrollArea>
                                             </SelectContent>
                                           </Select>
                                         </div>

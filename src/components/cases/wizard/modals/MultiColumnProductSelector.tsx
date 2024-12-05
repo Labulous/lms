@@ -31,69 +31,30 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(null);
 
-  // Log props when they change
-  useEffect(() => {
-    console.log('MultiColumnProductSelector props:', {
-      materials,
-      productsCount: products.length,
-      products: products.map(p => ({
-        id: p.id,
-        name: p.name,
-        material: p.material,
-        type: p.type
-      }))
-    });
-  }, [materials, products]);
-
-  // Filter products based on search query
+  // Filter products based on search query and selected material
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    if (!query) return products;
-    
-    return products.filter(product => 
-      product.name.toLowerCase().includes(query) || 
-      product.material?.toLowerCase().includes(query) ||
-      (Array.isArray(product.type) && product.type.some(t => t.toLowerCase().includes(query)))
-    );
-  }, [products, searchQuery]);
-
-  // Group filtered products by material
-  const productsByMaterial = useMemo(() => {
-    console.log('Grouping products by material:', {
-      materials,
-      filteredProducts: filteredProducts.map(p => ({
-        name: p.name,
-        material: p.material
-      }))
+    return products.filter(product => {
+      const matchesSearch = !query || 
+        product.name.toLowerCase().includes(query) || 
+        product.material?.toLowerCase().includes(query) ||
+        (Array.isArray(product.type) && product.type.some(t => t.toLowerCase().includes(query)));
+      
+      const matchesMaterial = !selectedMaterial || product.material === selectedMaterial;
+      
+      return matchesSearch && matchesMaterial;
     });
-    
-    const grouped = materials.reduce((acc, material) => {
-      const materialProducts = filteredProducts.filter(product => {
-        const matches = product.material === material;
-        console.log(`Material matching for ${product.name}:`, {
-          productMaterial: product.material,
-          expectedMaterial: material,
-          matches
-        });
-        return matches;
-      });
-      acc[material] = materialProducts;
+  }, [products, searchQuery, selectedMaterial]);
+
+  // Group products by material for the count
+  const productCountByMaterial = useMemo(() => {
+    return materials.reduce((acc, material) => {
+      acc[material] = products.filter(p => p.material === material).length;
       return acc;
-    }, {} as Record<MaterialType, Product[]>);
-
-    console.log('Products grouped by material:', 
-      Object.fromEntries(
-        Object.entries(grouped).map(([material, products]) => 
-          [material, products.map(p => p.name)]
-        )
-      )
-    );
-    return grouped;
-  }, [materials, filteredProducts]);
-
-  // Check if any products are found in the search
-  const hasResults = Object.values(productsByMaterial).some(products => products.length > 0);
+    }, {} as Record<MaterialType, number>);
+  }, [materials, products]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -125,33 +86,72 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
             />
           </div>
         </div>
-        {!hasResults && searchQuery && (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No products found for "{searchQuery}"
-          </div>
-        )}
-        <div className="grid grid-cols-4 divide-x h-[400px]">
-          {materials.map((material) => (
-            <div key={material} className={cn(
-              "px-2 py-2",
-              productsByMaterial[material].length === 0 && "opacity-50"
-            )}>
-              <div className="font-medium text-xs mb-2 px-2">
-                {material}
-                {productsByMaterial[material].length > 0 && (
-                  <span className="ml-1 text-xs text-muted-foreground">
-                    ({productsByMaterial[material].length})
+        
+        <div className="flex divide-x h-[400px]">
+          {/* Materials Column (1/3 width) */}
+          <div className="w-1/3 p-2">
+            <div className="font-medium text-sm mb-2 px-2">Materials</div>
+            <ScrollArea className="h-[350px]">
+              <div className="space-y-1">
+                <Button
+                  key="all"
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-between text-left h-auto py-2 px-3",
+                    !selectedMaterial && "bg-blue-50 text-blue-600"
+                  )}
+                  onClick={() => setSelectedMaterial(null)}
+                >
+                  <span>All Materials</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({products.length})
                   </span>
-                )}
+                </Button>
+                {materials.map((material) => (
+                  <Button
+                    key={material}
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-between text-left h-auto py-2 px-3",
+                      selectedMaterial === material && "bg-blue-50 text-blue-600"
+                    )}
+                    onClick={() => setSelectedMaterial(material)}
+                  >
+                    <span>{material}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({productCountByMaterial[material]})
+                    </span>
+                  </Button>
+                ))}
               </div>
-              <ScrollArea className="h-[320px] w-full">
-                <div className="space-y-1 p-2">
-                  {productsByMaterial[material]?.map((product) => (
+            </ScrollArea>
+          </div>
+
+          {/* Products Column (2/3 width) */}
+          <div className="w-2/3 p-2">
+            <div className="font-medium text-sm mb-2 px-2">
+              Products
+              {filteredProducts.length > 0 && (
+                <span className="ml-1 text-xs text-muted-foreground">
+                  ({filteredProducts.length})
+                </span>
+              )}
+            </div>
+            <ScrollArea className="h-[350px]">
+              {filteredProducts.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  {searchQuery 
+                    ? `No products found for "${searchQuery}"` 
+                    : "No products available"}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-1 p-2">
+                  {filteredProducts.map((product) => (
                     <Button
                       key={product.id}
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start text-left h-auto py-1.5 px-3 text-xs",
+                        "w-full justify-start text-left h-auto py-2 px-3",
                         selectedProduct?.id === product.id && "bg-blue-50 text-blue-600"
                       )}
                       onClick={() => {
@@ -159,15 +159,18 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                         setOpen(false);
                       }}
                     >
-                      <div className="font-medium">
-                        {product.name}
+                      <div>
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {product.material}
+                        </div>
                       </div>
                     </Button>
                   ))}
                 </div>
-              </ScrollArea>
-            </div>
-          ))}
+              )}
+            </ScrollArea>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
