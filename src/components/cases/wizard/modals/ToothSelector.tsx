@@ -10,13 +10,14 @@ interface ToothSelectorProps {
   selectedTeeth: number[];
   disabled?: boolean;
   addedTeethMap?: Map<number, boolean>;
+  selectedProduct?: { type?: string[] };
 }
 
 const teethData = [
   { number: 12, path: "M104.04,15.85c-4.53,0.15-10.17,2.75-12.78,6.3c-3.03,4.13-1.28,9.04,2.42,10.69 c3.89,1.73,16.62,13.27,20.44,5.58c2.02-4.07-1.88-15.5,3.34-18.55c0.68-1.43,1.55-2.84,3.23-3.5 C106.54,15.97,105.33,15.81,104.04,15.85z", x: 102, y: 30 },
   { number: 13, path: "M90.09,30.89c-3.04-2.15-6.49-3.39-9.6-2.95c-3.11,0.43-5.61,2.76-7.01,5.4c-1.91,3.59-2.09,8.06-0.07,11.6 c1.93,3.39,5.62,5.62,9.47,6.9c2.48,0.82,5.14,1.3,7.74,0.94c2.6-0.36,5.13-1.64,6.51-3.73C101.28,42.73,95.46,34.7,90.09,30.89z", x: 84, y: 43 },
   { number: 14, path: "M73.97,45.93c-3.04-2.15-6.49-3.39-9.6-2.95c-3.11,0.43-5.61,2.76-7.01,5.4c-1.91,3.59-2.09,8.06-0.07,11.6 c1.93,3.39,5.62,5.62,9.47,6.9c2.48,0.82,5.14,1.3,7.74,0.94c2.6-0.36,5.13-1.64,6.51-3.73C85.17,57.77,79.35,49.73,73.97,45.93z", x: 68, y: 58 },
-  { number: 15, path: "M63.54,65.56c-2.52-1.09-5.26-1.98-8-1.63c-10.43,1.33-11.03,18.06-2.55,22.02 c4.37,2.04,11.87,3.86,16.13,0.47c5.6-4.45,3.43-14.58-1.69-18.45L63.54,65.56z", x: 59, y: 79 },
+  { number: 15, path: "M63.54,65.56c-2.52-1.09-5.26-1.98-8-1.63c-10.43,1.33-11.03,18.06-2.55,22.02 c4.37,2.04,11.87,3.86,16.13,0.47c5.6-4.45,3.43-14.58,1.69-18.45L63.54,65.56z", x: 59, y: 79 },
   { number: 16, path: "M60.3,109.83c0.07-0.05,0.14-0.11,0.2-0.17c4.02-3.51,6.25-9.72,4.7-14.93c-1.32-4.43-5.57-6.45-9.76-7.35 c-5.31-1.14-10.59-0.06-13.35,5.07c-1.42,2.64-2.8,5.79-2.53,8.91c0.33,3.72,3.5,6.05,6.77,7.15c3.07,1.03,6.47,1.57,9.63,2.25 C57.54,111.1,59.03,110.83,60.3,109.83z", x: 52, y: 102 },
   { number: 17, path: "M54.82,111.6c-3.48-0.73-6.76-2.3-10.28-2.86c-2.27-0.36-4.77-0.11-6.53,1.38 c-1.19,1.01-1.91,2.47-2.57,3.89c-0.83,1.79-1.64,3.61-1.99,5.56s-0.2,4.05,0.79,5.75c0.84,1.45,2.23,2.5,3.67,3.33 c2.72,1.56,5.8,2.45,8.92,2.6c4.43,0.21,9.19-1.32,11.78-4.97c3.42-4.82,1.99-13.58-4.51-14.76", x: 46, y: 123 },
   { number: 18, path: "M47.67,155.5c0.17-0.02,0.33-0.04,0.5-0.06c6.8-0.82,10.92-6.54,9.73-13.69c-0.3-1.78-1.1-3.42-1.9-5.03 c-0.58-1.18-1.22-2.43-2.34-3.11c-0.9-0.55-1.99-0.65-3.03-0.74c-3.45-0.3-6.89-0.61-10.34-0.91c-1.25-0.11-2.54-0.22-3.75,0.11 c-3.91,1.04-6.25,6.27-7.09,9.91c-2.3,9.98,7.01,14.14,15.3,13.79C45.71,155.73,46.69,155.62,47.67,155.5z", x: 43, y: 145 },
@@ -36,7 +37,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   onSelectionChange,
   selectedTeeth,
   disabled = false,
-  addedTeethMap = new Map()
+  addedTeethMap = new Map(),
+  selectedProduct,
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
@@ -45,6 +47,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [ponticMode, setPonticMode] = useState(false);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
+  const [abutmentMode, setAbutmentMode] = useState(false);
 
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
@@ -128,6 +131,18 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return [];
   };
 
+  // Add this helper function to check if selected teeth form a continuous range
+  const isTeethRangeContinuous = (teeth: number[]): boolean => {
+    if (teeth.length <= 1) return false;
+    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+    for (let i = 1; i < sortedTeeth.length; i++) {
+      if (sortedTeeth[i] - sortedTeeth[i - 1] !== 1) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Get abutment teeth (first and last teeth in the range)
   const getAbutmentTeeth = () => {
     if (selectedTeeth.length < 2) return [];
@@ -141,11 +156,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
     
     // Check if it's a continuous range
-    for (let i = 1; i < sortedTeeth.length; i++) {
-      // If there's a gap in the sequence, it's not a continuous range
-      if (sortedTeeth[i] - sortedTeeth[i-1] > 1) {
-        return [];
-      }
+    if (!isTeethRangeContinuous(sortedTeeth)) {
+      return [];
     }
     
     return [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
@@ -298,6 +310,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     setIndividualSelections(new Set());
     setPonticMode(false);
     setPonticTeeth(new Set());
+    setAbutmentMode(false);
   };
 
   return (
@@ -361,21 +374,25 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               </div>
 
               {/* Display Abutment teeth */}
-              {selectedTeeth.length >= 2 && (
+              {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && selectedTeeth.length >= 2 && isTeethRangeContinuous(selectedTeeth) && (
                 <div className="text-purple-500 text-xs font-semibold mt-1">
                   Abutment: {getAbutmentTeeth().join(', ')}
                 </div>
               )}
 
               {/* Display Pontic teeth */}
-              {ponticTeeth.size > 0 && (
+              {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && ponticTeeth.size > 0 && (
                 <div className="text-green-500 text-xs font-semibold mt-1">
                   Pontic: {Array.from(ponticTeeth).sort((a, b) => a - b).join(', ')}
                 </div>
               )}
+            </div>
+          </foreignObject>
 
-              {/* Show Select Pontic button */}
-              {selectedTeeth.length >= 2 && !ponticMode && (
+          {/* Center Buttons */}
+          <foreignObject x="65" y="140" width="136" height="60">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && selectedTeeth.length >= 2 && !ponticMode && isTeethRangeContinuous(selectedTeeth) && (
                 <Button
                   variant="outline"
                   size="xs"
@@ -485,30 +502,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           </g>
         </svg>
       </div>
-      <div className="flex flex-col items-center justify-center mt-4">
-        {billingType === 'perTooth' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-            className="text-xs mb-2"
-          >
-            Clear Selection
-          </Button>
-        )}
-        <div className="text-sm text-gray-600">
-          {billingType === 'perArch' ? (
-            <span>{getArchSelectionText()}</span>
-          ) : (
-            <span>Selected Teeth: {selectedTeeth.length > 0 ? selectedTeeth.join(', ') : 'None'}</span>
-          )}
-        </div>
-        <span className="text-xs text-gray-500 mt-0.5">
-          {billingType === 'perTooth' ? 'Per Tooth' : 
-           billingType === 'perArch' ? 'Click any tooth to select/deselect an arch' : 
-           'Generic'}
-        </span>
-      </div>
+
     </div>
   );
 };

@@ -14,9 +14,9 @@ export interface Product {
 
 export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate' | 'per_unit';
 
-export type MaterialType = 'Acrylic' | 'Denture' | 'E.Max' | 'Full Cast' | 'Implants' | 'PFM' | 'Zirconia' | 'Misc';
+export type MaterialType = 'Acrylic' | 'Denture' | 'E.Max' | 'Full Cast' | 'PFM' | 'Zirconia';
 
-export type ProductType = 'crown' | 'bridge' | 'removable' | 'implant' | 'coping' | 'appliance';
+export type ProductType = 'Crown' | 'Bridge' | 'Removable' | 'Implant' | 'Coping' | 'Appliance';
 
 export const BILLING_TYPES = [
   { value: 'perTooth', label: 'Per Tooth', description: 'Price calculated per tooth (e.g., crowns and bridges)' },
@@ -32,19 +32,17 @@ export const MATERIALS: MaterialType[] = [
   'Denture',
   'E.Max',
   'Full Cast',
-  'Implants',
   'PFM',
   'Zirconia',
-  'Misc',
 ];
 
 export const PRODUCT_TYPES: ProductType[] = [
-  'crown',
-  'bridge',
-  'removable',
-  'implant',
-  'coping',
-  'appliance'
+  'Crown',
+  'Bridge',
+  'Removable',
+  'Implant',
+  'Coping',
+  'Appliance'
 ];
 
 export const VITA_CLASSICAL_SHADES = [
@@ -64,7 +62,7 @@ export const mockProducts: Product[] = [
     isClientVisible: true,
     isTaxable: true,
     requiresShade: true,
-    type: ['crown'],
+    type: ['Crown'],
     billingType: 'per_unit',
     material: 'PFM'
   },
@@ -77,7 +75,7 @@ export const mockProducts: Product[] = [
     isClientVisible: true,
     isTaxable: true,
     requiresShade: false,
-    type: ['removable'],
+    type: ['Removable'],
     billingType: 'perArch',
     material: 'Denture'
   },

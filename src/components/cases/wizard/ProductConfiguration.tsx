@@ -163,7 +163,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       // Then filter by type if selected
       const typeMatches = !selectedType || 
         (product.type && Array.isArray(product.type) && 
-         product.type.includes(selectedType.toLowerCase() as ProductType));
+         product.type.some(t => t.toLowerCase() === selectedType?.toLowerCase()));
       
       const result = materialMatches && typeMatches;
       
@@ -694,8 +694,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           <div className="grid grid-cols-12 gap-0 relative">
             {/* Type Selection - 1 column */}
             <div className="col-span-1 pr-4">
-              <Label>Select Type</Label>
-              <div className="flex flex-col space-y-1 mt-1.5">
+              <Label className="text-xs">Select Type:</Label>
+              <div className="flex flex-col space-y-1 mt-2.5">
                 {PRODUCT_TYPES.map(type => (
                   <Button
                     key={type}
@@ -719,19 +719,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
             {/* Product Selection - 4 columns */}
             <div className="col-span-4 px-4">
-              <Label>Select Teeth</Label>
-              <p className="text-sm text-gray-500 mb-2">
-                {selectedProduct?.billingType === 'perArch' 
-                  ? 'Click any tooth to select the entire arch. You can only select one arch at a time.' 
-                  : 'Click individual teeth to select them.'}
-              </p>
-              <div className="border rounded-lg p-3 bg-white min-h-[400px]">
+              <Label className="text-xs">Select Teeth:</Label>
+
+              <div className="border rounded-lg p-3 bg-white mt-2.5 min-h-[400px]">
                 <ToothSelector
                   billingType={selectedProduct?.billingType || 'perTooth'}
                   selectedTeeth={selectedTeeth}
                   onSelectionChange={handleToothSelectionChange}
                   addedTeethMap={addedTeethMap}
                   disabled={false}
+                  selectedProduct={selectedProduct || { type: selectedType ? [selectedType] : [] }}
                 />
               </div>
               {errors.teeth && (
@@ -749,11 +746,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               <div className="space-y-4">
                 {/* Add Shade Table */}
                 <div>
-                  <Label>Add Shade</Label>
-                  <p className="text-sm text-gray-500 mb-2">
-                    Add shades for the selected teeth
-                  </p>
-                  <div className="border rounded-lg bg-white">
+                  <Label className="text-xs">Add Material, Item, and Shade:</Label>
+
+                  <div className="border rounded-lg bg-white mt-2.5">
                     <Table>
                       <TableHeader className="bg-slate-100 border-b border-slate-200">
                         <TableRow>

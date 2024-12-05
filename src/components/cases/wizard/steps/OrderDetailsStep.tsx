@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker"; // Import DateTimePicker component
 import { Separator } from "@/components/ui/separator"; // Import Separator component
 import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
@@ -317,19 +318,11 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="appointmentDate" className="text-xs">Appointment Date & Time</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <DatePicker
+              <div className="w-full">
+                <DateTimePicker
                   date={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
-                  onSelect={handleDateChange('appointmentDate')}
-                  className="bg-white [&>button]:bg-white"
-                />
-                <Input
-                  type="time"
-                  id="appointmentTime"
-                  name="appointmentTime"
-                  value={formData.appointmentTime || ''}
-                  onChange={handleInputChange}
-                  className="bg-white"
+                  onSelect={(date) => handleDateChange('appointmentDate', date)}
+                  className={cn(errors.appointmentDate && 'border-red-500')}
                 />
               </div>
             </div>
