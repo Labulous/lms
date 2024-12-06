@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
 import { Button } from '@/components/ui/button';
 import { Plus, RotateCcw, HelpCircle } from 'lucide-react';
 
 interface ToothSelectorProps {
-  billingType: BillingType;
-  onSelectionChange: (teeth: number[], ponticTeeth?: number[]) => void;
+  billingType: string;
   selectedTeeth: number[];
-  disabled?: boolean;
-  addedTeethMap?: Map<number, boolean>;
-  selectedProduct?: { type?: string[] };
-  onAddToShadeTable?: () => void;
-  type?: string[];
+  onSelectionChange: (teeth: number[]) => void;
+  addedTeethMap: Map<number, boolean>;
+  disabled: boolean;
+  selectedProduct: {
+    type: string[];
+  };
+  onAddToShadeTable: () => void;
 }
 
 const teethData = [
@@ -34,15 +35,34 @@ const teethData = [
   { number: 22, path: "M164.01,15.85c4.53,0.15,10.17,2.75,12.78,6.3c3.03,4.13,1.28,9.04-2.42,10.69 c-3.89,1.73-16.62,13.27-20.44,5.58c-2.02-4.07,1.88-15.5,3.34-18.55c0.68-1.43,1.55-2.84,3.23-3.5 C161.52,15.97,162.72,15.81,164.01,15.85z", x: 165, y: 30 },
 ] as const;
 
+// Color mapping for different dental work types
+export const TYPE_COLORS = {
+  'Crown': 'rgb(59 130 246)',    // blue-500
+  'Bridge': 'rgb(168 85 247)',   // purple-500
+  'Removable': 'rgb(77 124 15)', // lime-700
+  'Implant': 'rgb(6 182 212)',   // cyan-500
+  'Coping': 'rgb(136 19 55)',    // rose-900
+  'Appliance': 'rgb(120 113 108)' // stone-500
+} as const;
+
+// Color mapping for fill classes
+const TYPE_FILL_CLASSES = {
+  'Crown': 'fill-blue-500',
+  'Bridge': 'fill-purple-500',
+  'Removable': 'fill-lime-700',
+  'Implant': 'fill-cyan-500',
+  'Coping': 'fill-rose-900',
+  'Appliance': 'fill-stone-500'
+} as const;
+
 const ToothSelector: React.FC<ToothSelectorProps> = ({
   billingType,
-  onSelectionChange,
   selectedTeeth,
-  disabled = false,
-  addedTeethMap = new Map(),
+  onSelectionChange,
+  addedTeethMap,
+  disabled,
   selectedProduct,
-  onAddToShadeTable,
-  type,
+  onAddToShadeTable
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
@@ -52,6 +72,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const [ponticMode, setPonticMode] = useState(false);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [abutmentMode, setAbutmentMode] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Reset all selection states
   const resetSelectionStates = () => {
@@ -314,40 +335,43 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   };
 
   const getToothColor = (toothNumber: number): string => {
-    if (!selectedTeeth.includes(toothNumber)) {
-      return hoveredTooth === toothNumber ? "fill-gray-300" : "fill-gray-200";
+    const type = selectedProduct?.type?.[0];
+
+    // If tooth is in ponticTeeth, use Bridge color
+    if (ponticTeeth.has(toothNumber)) {
+      return TYPE_FILL_CLASSES['Bridge'];
     }
 
-    const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
-    if (isBridge && selectedTeeth.length >= 2) {
+    // If tooth is already added to a product
+    if (addedTeethMap && addedTeethMap[toothNumber]) {
+      const addedType = addedTeethMap[toothNumber].type?.[0];
+      if (addedType && addedType in TYPE_FILL_CLASSES) {
+        return TYPE_FILL_CLASSES[addedType];
+      }
+      return 'fill-gray-300';
+    }
+
+    // If in bridge mode
+    if (type === 'Bridge') {
+      if (ponticMode) {
+        return 'fill-gray-300'; // gray-300 for pontic selection mode
+      }
       const abutmentTeeth = getAbutmentTeeth();
       if (abutmentTeeth.includes(toothNumber)) {
-        return "fill-purple-500"; // Abutment teeth
+        return TYPE_FILL_CLASSES['Bridge']; // Abutment teeth
       }
     }
 
-    if (ponticTeeth.has(toothNumber)) {
-      return "fill-green-500"; // Pontic teeth
+    // If tooth is selected
+    if (selectedTeeth.includes(toothNumber)) {
+      if (type && type in TYPE_FILL_CLASSES) {
+        return TYPE_FILL_CLASSES[type];
+      }
+      return 'fill-gray-300'; // gray-300 fallback
     }
 
-    return "fill-blue-500"; // Regular selected teeth
-  };
-
-  // Check if a tooth can be selected as pontic
-  const isPonticSelectable = (toothNumber: number) => {
-    console.log('isPonticSelectable called for tooth:', toothNumber);
-    
-    if (!ponticMode || selectedTeeth.length < 2) {
-      console.log('Not in pontic mode or insufficient teeth selected');
-      return false;
-    }
-    
-    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
-    const [start, end] = [sortedTeeth[0], sortedTeeth[sortedTeeth.length - 1]];
-    
-    const isSelectable = toothNumber > start && toothNumber < end;
-    console.log('Pontic selectability:', { toothNumber, start, end, isSelectable });
-    return isSelectable;
+    // Default unselected color
+    return 'fill-gray-200';
   };
 
   const handlePonticSelect = (toothNumber: number) => {
@@ -442,8 +466,35 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
   };
 
+  const handleContainerClick = (e: React.MouseEvent) => {
+    // Only handle clicks directly on the SVG or container
+    const target = e.target as Element;
+    if (target === containerRef.current || 
+        target.tagName.toLowerCase() === 'svg' || 
+        target === e.currentTarget) {
+      onSelectionChange([]);
+      setPonticTeeth(new Set());
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onSelectionChange([]);
+        setPonticTeeth(new Set());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onSelectionChange]);
+
   return (
-    <div className="relative w-full max-w-3xl mx-auto">
+    <div 
+      ref={containerRef}
+      onClick={handleContainerClick}
+      className="relative w-full max-w-3xl mx-auto"
+    >
       {billingType === 'perTooth' && (
         <div className="absolute top-0 right-0 text-xs text-gray-500">
           <div 

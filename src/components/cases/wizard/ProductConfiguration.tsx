@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { cn } from '@/lib/utils';
 import { 
   MATERIALS,
   ProductMaterial,
@@ -6,51 +13,46 @@ import {
   VITA_CLASSICAL_SHADES,
   PRODUCT_TYPES,
   ProductType
-} from '../../../data/mockProductData';
-import { Product, productsService } from '../../../services/productsService';
-import ToothSelector from './modals/ToothSelector';
+} from '@/data/mockProductData';
+import { Product, productsService } from '@/services/productsService';
+import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
 import { ShadeData } from './modals/ShadeModal';
 import SelectedProductsModal from './modals/SelectedProductsModal';
 import { SavedProduct, ProductWithShade } from './types';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { 
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from '@/components/ui/table';
 import { X } from 'lucide-react';
 import {
   Stepper
-} from "@/components/ui/stepper";
+} from '@/components/ui/stepper';
 import { toast } from 'react-hot-toast';
-import { Separator } from "@/components/ui/separator";
 import { Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
 import {
   HoverCard,
   HoverCardTrigger,
   HoverCardContent,
 } from "@radix-ui/react-hover-card";
 import MultiColumnProductSelector from './modals/MultiColumnProductSelector';
-import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ProductConfigurationProps {
   selectedMaterial: ProductMaterial | null;
@@ -115,6 +117,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [isReadyToAdd, setIsReadyToAdd] = useState(false);
 
   const [shadePopoverOpen, setShadePopoverOpen] = useState(false);
+
+  const [occlusalDetails, setOcclusalDetails] = useState('');
+  const [contactType, setContactType] = useState('na');
+  const [ponticDetails, setPonticDetails] = useState('');
 
   useEffect(() => {
     if (selectedMaterial !== selectedMaterialState) {
@@ -811,10 +817,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 {PRODUCT_TYPES.map(type => (
                   <Button
                     key={type}
-                    variant={selectedType === type ? "default" : "outline"}
+                    variant="default"
+                    style={selectedType === type ? {
+                      backgroundColor: TYPE_COLORS[type],
+                      color: 'white'
+                    } : {
+                      backgroundColor: 'white',
+                      color: 'rgb(55 65 81)' // text-gray-700
+                    }}
                     className={cn(
-                      "justify-start text-left h-auto py-2 px-3",
-                      selectedType === type ? "bg-blue-500 text-white hover:bg-blue-600" : "bg-white"
+                      "justify-start text-left h-auto py-2 px-3 w-full",
+                      selectedType === type 
+                        ? "hover:opacity-90" 
+                        : "hover:bg-gray-50"
                     )}
                     onClick={() => setSelectedType(type)}
                   >
@@ -1151,6 +1166,80 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   </div>
                 </div>
 
+                {/* Third Column */}
+                <div className="flex-1 p-4 flex flex-col">
+                  <div className="flex-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mb-4"
+                      onClick={() => setShowShadeModal(true)}
+                      disabled={!selectedTeeth.length || !selectedProduct}
+                    >
+                      Add to Shade Table
+                    </Button>
+                  </div>
+
+                  <div className="flex items-start justify-between space-x-6">
+                    {/* Occlusal Field */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <Label htmlFor="occlusal">Occlusal</Label>
+                      <Textarea 
+                        id="occlusal"
+                        placeholder="Enter occlusal details..."
+                        className="resize-none"
+                        rows={3}
+                        value={occlusalDetails}
+                        onChange={(e) => setOcclusalDetails(e.target.value)}
+                      />
+                    </div>
+
+                    <Separator orientation="vertical" className="h-[120px] mx-2" />
+
+                    {/* Contact Field */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <Label>Contact</Label>
+                      <RadioGroup 
+                        value={contactType} 
+                        onValueChange={setContactType}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="na" id="na" />
+                          <Label htmlFor="na" className="font-normal">N/A</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="light" id="light" />
+                          <Label htmlFor="light" className="font-normal">Light</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="medium" id="medium" />
+                          <Label htmlFor="medium" className="font-normal">Medium</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="tight" id="tight" />
+                          <Label htmlFor="tight" className="font-normal">Tight</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <Separator orientation="vertical" className="h-[120px] mx-2" />
+
+                    {/* Pontic Field */}
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <Label htmlFor="pontic">Pontic</Label>
+                      <Textarea 
+                        id="pontic"
+                        placeholder="Enter pontic details..."
+                        className="resize-none"
+                        rows={3}
+                        value={ponticDetails}
+                        onChange={(e) => setPonticDetails(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {/* Product Details */}
                 {selectedProduct && (
                   <>
@@ -1162,7 +1251,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           ${selectedProduct.price.toFixed(2)}
                         </p>
                       </div>
-                      <Separator orientation="vertical" className="h-8" />
+                      <Separator orientation="vertical" className="h-8 mx-2" />
                       <div>
                         <Label className="text-xs text-gray-500">Discount (%)</Label>
                         <Input
@@ -1174,7 +1263,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           className="w-20 h-7 text-sm bg-white"
                         />
                       </div>
-                      <Separator orientation="vertical" className="h-8" />
+                      <Separator orientation="vertical" className="h-8 mx-2" />
                       <div>
                         <Label className="text-xs text-gray-500">Total</Label>
                         <p className="text-sm font-extrabold text-blue-500">
