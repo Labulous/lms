@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
 import { Button } from '@/components/ui/button';
@@ -6,11 +6,13 @@ import { Plus, RotateCcw, HelpCircle } from 'lucide-react';
 
 interface ToothSelectorProps {
   billingType: BillingType;
-  onSelectionChange: (teeth: number[]) => void;
+  onSelectionChange: (teeth: number[], ponticTeeth?: number[]) => void;
   selectedTeeth: number[];
   disabled?: boolean;
   addedTeethMap?: Map<number, boolean>;
   selectedProduct?: { type?: string[] };
+  onAddToShadeTable?: () => void;
+  type?: string[];
 }
 
 const teethData = [
@@ -39,6 +41,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   disabled = false,
   addedTeethMap = new Map(),
   selectedProduct,
+  onAddToShadeTable,
+  type,
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
@@ -48,6 +52,31 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const [ponticMode, setPonticMode] = useState(false);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [abutmentMode, setAbutmentMode] = useState(false);
+
+  // Reset all selection states
+  const resetSelectionStates = () => {
+    setPonticMode(false);
+    setPonticTeeth(new Set());
+    setRangeStartTooth(null);
+    setIndividualSelections(new Set());
+    setRangeSelections(new Set());
+  };
+
+  // Effect to reset pontic mode when selected teeth change
+  useEffect(() => {
+    if (selectedTeeth.length < 2) {
+      setPonticMode(false);
+      setPonticTeeth(new Set());
+    }
+  }, [selectedTeeth]);
+
+  // Effect to reset pontic mode when product type changes
+  useEffect(() => {
+    if (!selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge')) {
+      setPonticMode(false);
+      setPonticTeeth(new Set());
+    }
+  }, [selectedProduct?.type]);
 
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
@@ -338,6 +367,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     if (ponticMode) {
       handlePonticSelect(toothNumber);
+      onSelectionChange(selectedTeeth, Array.from(ponticTeeth));
       return;
     }
 
@@ -352,59 +382,29 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       }
       
       setIndividualSelections(newIndividualSelections);
-      
-      // Clear any range-related states
-      setRangeStartTooth(null);
-      setRangeSelections(new Set());
-      
-      // Update selections
+      setPonticMode(false); // Only reset pontic mode
+      setPonticTeeth(new Set()); // Only reset pontic teeth
       onSelectionChange(Array.from(newIndividualSelections));
       return;
     }
 
-    if (billingType === 'perArch') {
-      const isUpper = toothNumber >= 11 && toothNumber <= 28;
-      const upperTeeth = Array.from({ length: 18 }, (_, i) => i + 11);
-      const lowerTeeth = Array.from({ length: 18 }, (_, i) => i + 31);
-      
-      let newSelection: number[] = [];
-      const hasUpper = selectedTeeth.some(t => t >= 11 && t <= 28);
-      const hasLower = selectedTeeth.some(t => t >= 31 && t <= 48);
-
-      if (isUpper) {
-        if (hasUpper) {
-          newSelection = selectedTeeth.filter(t => t >= 31 && t <= 48);
-        } else {
-          newSelection = [...selectedTeeth, ...upperTeeth];
-        }
-      } else {
-        if (hasLower) {
-          newSelection = selectedTeeth.filter(t => t >= 11 && t <= 28);
-        } else {
-          newSelection = [...selectedTeeth, ...lowerTeeth];
-        }
-      }
-
-      onSelectionChange(newSelection);
-      return;
-    }
-
-    // Range selection with shift key
+    // Shift click for range selection
     if (event.shiftKey && billingType === 'perTooth') {
-      // If no previous tooth is selected, start range from this tooth
       if (selectedTeeth.length === 0) {
         setRangeStartTooth(toothNumber);
+        setRangeSelections(new Set([toothNumber]));
+        resetSelectionStates();
         onSelectionChange([toothNumber]);
         return;
       }
 
-      // If there's a range start tooth, calculate the range
       const lastSelectedTooth = selectedTeeth[selectedTeeth.length - 1];
       const teethInRange = getTeethInVisualRange(lastSelectedTooth, toothNumber);
       
       if (teethInRange.length > 0) {
         const newRangeSelections = new Set(teethInRange);
         setRangeSelections(newRangeSelections);
+        resetSelectionStates();
         onSelectionChange(teethInRange);
       }
       return;
@@ -412,8 +412,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     // Regular click (no modifier keys)
     if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
-      setRangeStartTooth(null);
-      setRangeSelections(new Set());
+      resetSelectionStates();
       setIndividualSelections(new Set([toothNumber]));
       onSelectionChange([toothNumber]);
     }
@@ -433,12 +432,14 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   const handleReset = () => {
     onSelectionChange([]);
-    setRangeStartTooth(null);
-    setRangeSelections(new Set());
-    setIndividualSelections(new Set());
-    setPonticMode(false);
-    setPonticTeeth(new Set());
-    setAbutmentMode(false);
+    resetSelectionStates();
+  };
+
+  const handleAddToShadeTable = () => {
+    if (onAddToShadeTable) {
+      resetSelectionStates(); // Reset all states when adding to shade table
+      onAddToShadeTable();
+    }
   };
 
   return (
@@ -492,7 +493,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Selected Teeth Text */}
-          <foreignObject x="65" y="100" width="136" height="120">
+          <foreignObject x="65" y="60" width="136" height="180">
             <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ transform: 'scale(0.75)' }}>
               <div className="text-gray-400 text-xs text-center">
                 Selected Teeth
@@ -507,54 +508,34 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 const hasEnoughTeeth = selectedTeeth.length >= 2;
                 const isRange = isTeethRangeContinuous(selectedTeeth);
                 
-                console.log('Abutment display conditions:', {
-                  isBridge,
-                  hasEnoughTeeth,
-                  isRange,
-                  selectedTeeth,
-                  productType: selectedProduct?.type,
-                  abutmentTeeth: getAbutmentTeeth()
-                });
-
                 return isBridge && hasEnoughTeeth && isRange && (
-                  <div className="text-purple-500 text-xs font-semibold mt-1">
-                    Abutment: {getAbutmentTeeth().join(', ')}
+                  <div className="text-xs font-semibold mt-1">
+                    <span className="text-purple-500">Abutment: </span>
+                    <span className="text-gray-600">{getAbutmentTeeth().join(', ')}</span>
                   </div>
                 );
               })()}
 
               {/* Display Pontic teeth */}
               {selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge') && ponticTeeth.size > 0 && (
-                <div className="text-green-500 text-xs font-semibold mt-1">
-                  Pontic: {Array.from(ponticTeeth).sort((a, b) => a - b).join(', ')}
+                <div className="text-xs font-semibold mt-1">
+                  <span className="text-emerald-500">Pontic: </span>
+                  <span className="text-gray-600">{Array.from(ponticTeeth).sort((a, b) => a - b).join(', ')}</span>
                 </div>
               )}
-            </div>
-          </foreignObject>
 
-          {/* Center Buttons */}
-          <foreignObject x="65" y="140" width="136" height="60">
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+              {/* Pontic Button */}
               {(() => {
                 const isBridge = selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge');
                 const hasEnoughTeeth = selectedTeeth.length >= 2;
                 const notInPonticMode = !ponticMode;
                 const isRange = isTeethRangeContinuous(selectedTeeth);
-                
-                console.log('Pontic button visibility conditions:', {
-                  isBridge,
-                  hasEnoughTeeth,
-                  notInPonticMode,
-                  isRange,
-                  selectedTeeth,
-                  productType: selectedProduct?.type
-                });
 
                 return isBridge && hasEnoughTeeth && notInPonticMode && isRange && (
                   <Button
                     variant="outline"
                     size="xs"
-                    className="mt-1 px-3 py-1 bg-green-500 text-white hover:bg-green-600"
+                    className="mt-1 px-2 py-1 bg-emerald-500 text-white text-xs hover:bg-emerald-600 hover:text-white"
                     onClick={() => setPonticMode(true)}
                   >
                     Select Pontic
@@ -661,6 +642,15 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           </g>
         </svg>
       </div>
+
+      <Button 
+        variant="ghost" 
+        size="xs" 
+        className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
+        onClick={handleAddToShadeTable}
+      >
+        Add to Shade Table
+      </Button>
 
     </div>
   );

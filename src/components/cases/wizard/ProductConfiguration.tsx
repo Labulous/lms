@@ -107,6 +107,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [arch, setArch] = useState<string>('');
   const [selectedMaterialState, setSelectedMaterialState] = useState<ProductMaterial | null>(selectedMaterial);
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [toothSelectorKey, setToothSelectorKey] = useState(0);
 
   // Preview state for the Add Shade table
   const [previewItem, setPreviewItem] = useState<ToothItem | null>(null);
@@ -298,7 +299,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     );
   };
 
-  const handleToothSelectionChange = (teeth: number[]) => {
+  const handleToothSelectionChange = (teeth: number[], ponticTeeth?: number[]) => {
     console.log('Teeth selection changed:', teeth);
     
     // Only validate same arch for Bridge products
@@ -408,8 +409,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return;
     }
 
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
-    const isRange = teeth.length > 1;
+    // For bridge products, combine selected teeth and pontic teeth
+    let allTeeth = [...teeth];
+    if (selectedType === 'Bridge' && ponticTeeth?.length) {
+      allTeeth = [...teeth, ...ponticTeeth].sort((a, b) => a - b);
+    }
+
+    const sortedTeeth = allTeeth;
+    const isRange = allTeeth.length > 1;
     
     // For bridge type, check if the new selection overlaps with any existing bridge
     if (selectedType.toLowerCase() === 'bridge') {
@@ -485,9 +492,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       });
     }, 800);
 
-    // Reset selections
+    // Reset selections and force ToothSelector remount
     setSelectedTeeth([]);
     setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setToothSelectorKey(prev => prev + 1);
   };
 
   const handleShadeSelect = (itemId: string, type: 'occlusal' | 'body' | 'gingival' | 'stump', shade: string) => {
@@ -772,6 +780,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setShadePopoverOpen(false);
   };
 
+  const resetToothSelector = () => {
+    setSelectedTeeth([]);
+    setToothSelectorKey(prev => prev + 1); // Force remount of ToothSelector
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -822,12 +835,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
               <div className="border rounded-lg p-3 bg-white mt-2.5 min-h-[400px]">
                 <ToothSelector
+                  key={toothSelectorKey}
                   billingType={selectedProduct?.billingType || 'perTooth'}
                   selectedTeeth={selectedTeeth}
                   onSelectionChange={handleToothSelectionChange}
                   addedTeethMap={addedTeethMap}
                   disabled={false}
                   selectedProduct={selectedProduct || { type: selectedType ? [selectedType] : [] }}
+                  onAddToShadeTable={() => handleAddToothItems(selectedTeeth)}
                 />
               </div>
               {errors.teeth && (
