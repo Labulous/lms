@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../lib/supabase';
 import { createLogger } from '../utils/logger';
 import { validateAccountNumber } from '../utils/accountNumberFormatter';
 

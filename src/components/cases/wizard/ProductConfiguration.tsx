@@ -1168,17 +1168,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                 {/* Third Column */}
                 <div className="flex-1 p-4 flex flex-col">
-                  <div className="flex-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mb-4"
-                      onClick={() => setShowShadeModal(true)}
-                      disabled={!selectedTeeth.length || !selectedProduct}
-                    >
-                      Add to Shade Table
-                    </Button>
-                  </div>
+  
 
                   <div className="flex items-start justify-between space-x-6">
                     {/* Occlusal Field */}

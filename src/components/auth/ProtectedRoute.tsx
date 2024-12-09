@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { createLogger } from '../../utils/logger';
+import { supabase } from '@/lib/supabase';
 
 const logger = createLogger({ module: 'ProtectedRoute' });
 
@@ -16,20 +17,38 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children, 
   requiredRole 
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
-    logger.debug('Route state changed', { 
-      hasUser: !!user, 
-      loading, 
-      requiredRole, 
-      path: location.pathname 
-    });
-  }, [user, loading, requiredRole, location]);
+    const checkSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          logger.error('Session check failed:', error);
+          return;
+        }
 
-  if (loading) {
-    logger.debug('Authentication loading', { path: location.pathname });
+        if (!session) {
+          logger.debug('No active session found during check');
+          return;
+        }
+
+        logger.debug('Session check successful', { 
+          userId: session.user.id,
+          expiresAt: session.expires_at
+        });
+      } catch (err) {
+        logger.error('Error checking session:', err);
+      }
+    };
+
+    checkSession();
+  }, []);
+
+  // Show loading state while auth is being determined
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
@@ -37,19 +56,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  // Redirect to login if no user
   if (!user) {
-    logger.info('Unauthorized access attempt - no user', { 
+    logger.info('Redirecting to login - no authenticated user', { 
       path: location.pathname,
       from: location.state?.from?.pathname || location.pathname 
     });
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  // Check role requirements if specified
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    if (!roles.includes(user.role) && user.role !== 'admin') {
-      logger.warn('Unauthorized access attempt - insufficient role', { 
-        userRole: user.role, 
+    const userRole = user.role as Role;
+    
+    if (!roles.includes(userRole) && userRole !== 'admin') {
+      logger.warn('Insufficient role for access', { 
+        userRole, 
         requiredRole,
         path: location.pathname,
         userId: user.id

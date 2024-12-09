@@ -3,7 +3,8 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock, PauseCircle, Package, Plus, ChevronUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import CaseFilters from './CaseFilters';
 import PrintButtonWithDropdown from './PrintButtonWithDropdown';
-import { getCases, Case } from '@/data/mockCasesData';
+import { supabase } from '@/lib/supabase';
+import { Database } from '@/types/supabase';
 import { format, isEqual, parseISO, isValid } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,10 +27,20 @@ import {
   VisibilityState,
 } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from '@/contexts/AuthContext';
+import { createLogger } from '@/utils/logger';
+
+const logger = createLogger({ module: 'CaseList' });
+
+type Case = Database['public']['Tables']['cases']['Row'] & {
+  client_name?: string;
+  doctor_name?: string;
+};
 
 const CaseList: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
   const [filteredCases, setFilteredCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,14 +85,14 @@ const CaseList: React.FC = () => {
       ),
     },
     {
-      accessorKey: "clientName",
-      header: "Clinic",
+      accessorKey: "client_name",
+      header: "Client",
     },
     {
-      accessorKey: "doctorName",
+      accessorKey: "doctor_name",
       header: "Doctor",
       cell: ({ row }) => (
-        <div>{row.getValue("doctorName") || "N/A"}</div>
+        <div>{row.getValue("doctor_name") || "N/A"}</div>
       ),
     },
     {
@@ -147,10 +158,208 @@ const CaseList: React.FC = () => {
   });
 
   useEffect(() => {
-    const allCases = getCases();
-    setCases(allCases);
-    setLoading(false);
-  }, []);
+    const fetchCases = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        if (!user) {
+          logger.debug('No user found in auth context');
+          setLoading(false);
+          return;
+        }
+
+        if (!user.id || !user.role) {
+          logger.error('User missing required fields', { 
+            hasId: !!user.id, 
+            hasRole: !!user.role 
+          });
+          throw new Error('User is missing required fields');
+        }
+
+        logger.debug('Starting case fetch with user:', {
+          userId: user.id,
+          role: user.role,
+          email: user.email
+        });
+
+        // First verify the user's session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          logger.error('Session error:', sessionError);
+          throw sessionError;
+        }
+
+        if (!session) {
+          logger.error('No active session');
+          throw new Error('No active session');
+        }
+
+        logger.debug('Current session:', {
+          id: session.user.id,
+          role: session.user.role,
+          email: session.user.email,
+          expires_at: session.expires_at
+        });
+
+        // First try to fetch the specific test case
+        const { data: testCase, error: testError } = await supabase
+          .from('cases')
+          .select(`
+            id,
+            created_at,
+            updated_at,
+            created_by,
+            client_id,
+            doctor_id,
+            patient_name,
+            rx_number,
+            due_date,
+            qr_code,
+            status,
+            billing_type,
+            notes
+          `)
+          .eq('id', '078d7fb1-5abd-4a79-bd10-7083bbed807b');
+
+        if (testError) {
+          logger.error('Error fetching test case:', {
+            error: testError,
+            message: testError.message,
+            details: testError.details,
+            hint: testError.hint
+          });
+          // Don't throw, just log the error and continue
+        } else {
+          logger.debug('Test case query:', {
+            data: testCase,
+            count: testCase?.length
+          });
+        }
+
+        // Then fetch all cases
+        const { data: casesData, error: casesError } = await supabase
+          .from('cases')
+          .select(`
+            id,
+            created_at,
+            updated_at,
+            created_by,
+            client_id,
+            doctor_id,
+            patient_name,
+            rx_number,
+            due_date,
+            qr_code,
+            status,
+            billing_type,
+            notes
+          `)
+          .order('created_at', { ascending: false });
+
+        logger.debug('All cases query:', {
+          data: casesData,
+          error: casesError?.message,
+          details: casesError?.details,
+          hint: casesError?.hint
+        });
+
+        if (casesError) {
+          throw casesError;
+        }
+
+        if (!casesData || casesData.length === 0) {
+          logger.debug('No cases found');
+          setCases([]);
+          setFilteredCases([]);
+          setLoading(false);
+          return;
+        }
+
+        // Transform and set initial cases
+        const transformedCases = casesData.map(caseItem => ({
+          ...caseItem,
+          client_name: 'Loading...', // We'll fetch client names separately
+          doctor_name: caseItem.doctor_id ? 'Loading...' : 'N/A'
+        }));
+
+        logger.debug('Transformed cases:', transformedCases);
+
+        setCases(transformedCases);
+        setFilteredCases(transformedCases);
+
+        // Get unique IDs for related data
+        const clientIds = [...new Set(casesData.map(c => c.client_id))];
+        const doctorIds = [...new Set(casesData.map(c => c.doctor_id).filter(Boolean))];
+
+        logger.debug('Related IDs:', { clientIds, doctorIds });
+
+        // Only fetch if we have IDs to fetch
+        const [clientsResponse, doctorsResponse] = await Promise.all([
+          clientIds.length > 0
+            ? supabase
+                .from('clients')
+                .select('id, client_name')
+                .in('id', clientIds)
+            : Promise.resolve({ data: [], error: null }),
+          doctorIds.length > 0
+            ? supabase
+                .from('doctors')
+                .select('id, name')
+                .in('id', doctorIds)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+
+        logger.debug('Related data responses:', {
+          clients: clientsResponse,
+          doctors: doctorsResponse
+        });
+
+        // Handle any errors in fetching related data
+        if (clientsResponse.error) {
+          logger.error('Error fetching clients:', clientsResponse.error);
+        }
+
+        if (doctorsResponse.error) {
+          logger.error('Error fetching doctors:', doctorsResponse.error);
+        }
+
+        // Create lookup maps for related data
+        const clientMap = new Map(clientsResponse.data?.map(c => [c.id, c.client_name]) || []);
+        const doctorMap = new Map(doctorsResponse.data?.map(d => [d.id, d.name]) || []);
+
+        logger.debug('Data maps:', {
+          clients: Object.fromEntries(clientMap),
+          doctors: Object.fromEntries(doctorMap)
+        });
+
+        // Update cases with related data
+        const finalCases = transformedCases.map(caseItem => ({
+          ...caseItem,
+          client_name: clientMap.get(caseItem.client_id) || 'Unknown Client',
+          doctor_name: caseItem.doctor_id 
+            ? doctorMap.get(caseItem.doctor_id) || 'Unknown Doctor'
+            : 'N/A'
+        }));
+
+        logger.debug('Final cases:', finalCases);
+
+        setCases(finalCases);
+        setFilteredCases(finalCases);
+      } catch (err) {
+        logger.error('Error fetching cases:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch cases');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch cases if auth is not loading and we have a user
+    if (!authLoading && user) {
+      fetchCases();
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (cases.length > 0) {
@@ -188,7 +397,7 @@ const CaseList: React.FC = () => {
 
   const handleSearch = (searchTerm: string) => {
     const filtered = cases.filter(caseItem =>
-      caseItem.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      caseItem.client_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       caseItem.patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       caseItem.caseId.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -197,7 +406,7 @@ const CaseList: React.FC = () => {
 
   const handlePrintOptionSelect = (option: string) => {
     const selectedIds = Object.keys(rowSelection);
-    console.log(`Print option selected: ${option} for cases:`, selectedIds);
+    logger.debug(`Print option selected: ${option} for cases:`, selectedIds);
   };
 
   const formatDate = (dateString: string) => {
@@ -208,7 +417,7 @@ const CaseList: React.FC = () => {
       }
       return format(date, 'MMM d, yyyy');
     } catch (err) {
-      console.error('Error formatting date:', err);
+      logger.error('Error formatting date:', err);
       return 'Invalid Date';
     }
   };

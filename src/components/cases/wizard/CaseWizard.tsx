@@ -10,7 +10,7 @@ import { Case, CaseStatus, DeliveryMethod, addCase } from '../../../data/mockCas
 import { Client, clientsService } from '../../../services/clientsService';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../../config/supabase';
+import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { createLogger } from '../../../utils/logger';
 

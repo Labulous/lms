@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase';
+import { supabase } from '../lib/supabase';
 import { mockClients } from '../data/mockClientsData';
 import { createLogger } from './logger';
 

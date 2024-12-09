@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DoctorFields from './DoctorFields';
 import { ClientInput } from '../../services/clientsService';
 import { toast } from 'react-hot-toast';
-import { supabase } from '../../config/supabase';
+import { supabase } from '../../lib/supabase';
 
 interface Doctor {
   name: string;
