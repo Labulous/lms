@@ -16,7 +16,6 @@ import {
 } from '@/data/mockProductData';
 import { Product, productsService } from '@/services/productsService';
 import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
-import { ShadeData } from './modals/ShadeModal';
 import SelectedProductsModal from './modals/SelectedProductsModal';
 import { SavedProduct, ProductWithShade } from './types';
 import { Input } from '@/components/ui/input';
@@ -84,15 +83,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   onProductsChange,
   onMaterialChange,
 }) => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductWithShade | null>(null);
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [addedTeethMap, setAddedTeethMap] = useState<Map<number, boolean>>(new Map());
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [shadeType, setShadeType] = useState<'1' | '2' | '3'>('1');
-  const [shades, setShades] = useState<ShadeData>({
+  const [shadeData, setShadeData] = useState<ShadeData>({
     occlusal: '',
-    middle: '',
+    body: '',
     gingival: '',
     stump: ''
   });
@@ -192,7 +191,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     console.log('Selected material changed:', selectedMaterial);
     setSelectedProduct(null);
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
     setDiscount(0);
     setErrors({});
     if (selectedMaterial) {
@@ -277,7 +276,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setPreviewProduct(newPreviewProduct);
       
       // Reset shades when changing products
-      setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+      setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
     } else {
       setPreviewProduct(null);
     }
@@ -345,15 +344,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     checkIfReadyToAdd();
   };
 
-  const handleShadeChange = (type: keyof ShadeData, value: string) => {
-    setShades(prev => ({ ...prev, [type]: value }));
+  const handleShadeChange = (key: keyof ShadeData, value: string) => {
+    setShadeData(prev => ({
+      ...prev,
+      [key]: value
+    }));
     
     if (previewProduct) {
       const updatedShades = {
-        occlusal: type === 'occlusal' ? value : shades.occlusal,
-        body: type === 'middle' ? value : shades.middle,
-        gingival: type === 'gingival' ? value : shades.gingival,
-        stump: type === 'stump' ? value : shades.stump
+        occlusal: key === 'occlusal' ? value : shadeData.occlusal,
+        body: key === 'body' ? value : shadeData.middle,
+        gingival: key === 'gingival' ? value : shadeData.gingival,
+        stump: key === 'stump' ? value : shadeData.stump
       };
       
       setPreviewProduct(prev => ({
@@ -387,7 +389,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const productToAdd: SavedProduct = {
       ...selectedProduct!,
       teeth: selectedTeeth,
-      shades: selectedProduct?.requiresShade ? shades : undefined,
+      shades: selectedProduct?.requiresShade ? shadeData : undefined,
       discount,
     };
 
@@ -396,7 +398,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Reset form
     setSelectedProduct(null);
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
     setDiscount(0);
     setErrors({});
   };
@@ -453,10 +455,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       productName: selectedType,
       highlightColor: 'bg-blue-50',
       shades: {
-        occlusal: shades.occlusal || '',
-        body: shades.middle || '',
-        gingival: shades.gingival || '',
-        stump: shades.stump || ''
+        occlusal: shadeData.occlusal || '',
+        body: shadeData.body || '',
+        gingival: shadeData.gingival || '',
+        stump: shadeData.stump || ''
       }
     };
 
@@ -468,10 +470,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       teeth: sortedTeeth,
       material: '',
       shades: {
-        occlusal: shades.occlusal || '',
-        body: shades.middle || '',
-        gingival: shades.gingival || '',
-        stump: shades.stump || ''
+        occlusal: shadeData.occlusal || '',
+        body: shadeData.body || '',
+        gingival: shadeData.gingival || '',
+        stump: shadeData.stump || ''
       },
       price: 0,
       discount: 0,
@@ -500,7 +502,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Reset selections and force ToothSelector remount
     setSelectedTeeth([]);
-    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
     setToothSelectorKey(prev => prev + 1);
   };
 
@@ -634,7 +636,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const hasTeeth = selectedTeeth.length > 0;
     const hasProduct = selectedProduct !== null;
     const hasShades = selectedProduct?.requiresShade 
-      ? Object.values(shades).some(shade => shade !== '')
+      ? Object.values(shadeData).some(shade => shade !== '')
       : true;
     
     setIsReadyToAdd(hasTeeth && hasProduct && hasShades);
@@ -642,7 +644,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const handleSaveShades = () => {
     console.log('Saving shades:', {
-      currentShades: shades,
+      currentShades: shadeData,
       previewProduct,
       selectedTeeth,
       selectedType,
@@ -663,10 +665,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const updatedPreviewProduct = {
       ...previewProduct,
       shades: {
-        occlusal: shades.occlusal || '',
-        body: shades.middle || '',
-        gingival: shades.gingival || '',
-        stump: shades.stump || ''
+        occlusal: shadeData.occlusal || '',
+        body: shadeData.body || '',
+        gingival: shadeData.gingival || '',
+        stump: shadeData.stump || ''
       }
     };
 
@@ -688,7 +690,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       selectedTeeth,
       selectedType,
       selectedProduct,
-      currentShades: shades
+      currentShades: shadeData
     });
 
     if (!productToAdd || !selectedTeeth.length) {
@@ -744,7 +746,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedTeeth([]);
     setSelectedProduct(null);
     setPreviewProduct(null);
-    setShades({ occlusal: '', middle: '', gingival: '', stump: '' });
+    setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
     setErrors({});
 
     // Remove highlight after animation
@@ -777,9 +779,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const handleCancelShades = () => {
     // Reset shades to preview product's shades or empty
-    setShades({
+    setShadeData({
       occlusal: previewProduct?.shades?.occlusal || '',
-      middle: previewProduct?.shades?.body || '',
+      body: previewProduct?.shades?.body || '',
       gingival: previewProduct?.shades?.gingival || '',
       stump: previewProduct?.shades?.stump || ''
     });
@@ -964,8 +966,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <div className="grid grid-cols-3 items-center gap-4">
                                           <Label htmlFor="occlusal">Occlusal</Label>
                                           <Select
-                                            value={shades.occlusal}
-                                            onValueChange={(value) => setShades(prev => ({ ...prev, occlusal: value }))}
+                                            value={shadeData.occlusal}
+                                            onValueChange={(value) => setShadeData(prev => ({ ...prev, occlusal: value }))}
                                           >
                                             <SelectTrigger className="col-span-2">
                                               <SelectValue placeholder="Select shade" />
@@ -984,8 +986,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <div className="grid grid-cols-3 items-center gap-4">
                                           <Label htmlFor="body">Body</Label>
                                           <Select
-                                            value={shades.middle}
-                                            onValueChange={(value) => setShades(prev => ({ ...prev, middle: value }))}
+                                            value={shadeData.body}
+                                            onValueChange={(value) => setShadeData(prev => ({ ...prev, body: value }))}
                                           >
                                             <SelectTrigger className="col-span-2">
                                               <SelectValue placeholder="Select shade" />
@@ -1004,8 +1006,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <div className="grid grid-cols-3 items-center gap-4">
                                           <Label htmlFor="gingival">Gingival</Label>
                                           <Select
-                                            value={shades.gingival}
-                                            onValueChange={(value) => setShades(prev => ({ ...prev, gingival: value }))}
+                                            value={shadeData.gingival}
+                                            onValueChange={(value) => setShadeData(prev => ({ ...prev, gingival: value }))}
                                           >
                                             <SelectTrigger className="col-span-2">
                                               <SelectValue placeholder="Select shade" />
@@ -1024,8 +1026,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <div className="grid grid-cols-3 items-center gap-4">
                                           <Label htmlFor="stump">Stump</Label>
                                           <Select
-                                            value={shades.stump}
-                                            onValueChange={(value) => setShades(prev => ({ ...prev, stump: value }))}
+                                            value={shadeData.stump}
+                                            onValueChange={(value) => setShadeData(prev => ({ ...prev, stump: value }))}
                                           >
                                             <SelectTrigger className="col-span-2">
                                               <SelectValue placeholder="Select shade" />

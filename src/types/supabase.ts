@@ -18,12 +18,10 @@ export interface Database {
           client_id: string
           doctor_id: string | null
           patient_name: string
-          patient_birth_date: string
           rx_number: string
           due_date: string
           qr_code: string
           status: 'in_queue' | 'in_progress'
-          billing_type: 'insurance' | 'cash' | 'warranty'
           notes: string | null
         }
         Insert: {
@@ -34,12 +32,10 @@ export interface Database {
           client_id: string
           doctor_id?: string | null
           patient_name: string
-          patient_birth_date: string
           rx_number: string
           due_date: string
           qr_code?: string
           status?: 'in_queue' | 'in_progress'
-          billing_type: 'insurance' | 'cash' | 'warranty'
           notes?: string | null
         }
         Update: {
@@ -50,12 +46,10 @@ export interface Database {
           client_id?: string
           doctor_id?: string | null
           patient_name?: string
-          patient_birth_date?: string
           rx_number?: string
           due_date?: string
           qr_code?: string
           status?: 'in_queue' | 'in_progress'
-          billing_type?: 'insurance' | 'cash' | 'warranty'
           notes?: string | null
         }
       }
@@ -125,4 +119,42 @@ export interface Database {
       }
     }
   }
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  leadTime: number;
+  isClientVisible: boolean;
+  isTaxable: boolean;
+  billingType: BillingType;
+  category: ProductCategory;
+  requiresShade: boolean;
+  material: string;
+  type: string;
+}
+
+export interface ShadeData {
+  occlusal: string;
+  body: string;
+  gingival: string;
+  stump: string;
+  // Remove stump if not needed
+}
+
+export interface Case {
+  id: string;
+  created_at: string;
+  received_date: string;
+  ship_date: string;
+  due_date: string;
+  patient_name: string;
+  status: string;
+  qr_code?: string;
+  pan_number?: string;
+  rx_number?: string;
+  billing_type?: string;
+  case_files?: any[]; // Define proper type
 }

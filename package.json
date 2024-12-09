@@ -60,10 +60,11 @@
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.14",
     "@types/react-big-calendar": "^1.6.4",
-    "@types/react-dom": "^18.3.2",
+    "@types/react-dom": "^18.3.3",
     "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
