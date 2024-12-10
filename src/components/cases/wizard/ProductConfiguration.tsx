@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,7 +14,8 @@ import {
   PRODUCT_TYPES,
   ProductType
 } from '@/data/mockProductData';
-import { Product, productsService } from '@/services/productsService';
+import { Product, ShadeData } from '@/types/supabase';
+import { productsService } from '@/services/productsService';
 import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
 import SelectedProductsModal from './modals/SelectedProductsModal';
 import { SavedProduct, ProductWithShade } from './types';
@@ -68,12 +69,7 @@ interface ToothItem {
   type: string;
   productName: string;
   highlightColor?: string;
-  shades?: {
-    occlusal?: string;
-    body?: string;
-    gingival?: string;
-    stump?: string;
-  };
+  shades?: ShadeData;
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({

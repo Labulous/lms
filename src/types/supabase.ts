@@ -185,6 +185,9 @@ export interface Database {
 }
 
 // Type aliases for common database types
-export type Case = Database['public']['Tables']['cases']['Row']
-export type CaseProduct = Database['public']['Tables']['case_products']['Row']
-export type CaseProductTooth = Database['public']['Tables']['case_product_teeth']['Row']
+export type Case = Database['public']['Tables']['cases']['Row'] & {
+  client_name?: string;
+  doctor_name?: string;
+};
+export type CaseProduct = Database['public']['Tables']['case_products']['Row'];
+export type CaseProductTooth = Database['public']['Tables']['case_product_teeth']['Row'];

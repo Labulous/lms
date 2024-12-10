@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
@@ -7,7 +7,8 @@ import ProductConfiguration from '../../components/cases/wizard/ProductConfigura
 import FilesStep from '../../components/cases/wizard/steps/FilesStep';
 import NotesStep from '../../components/cases/wizard/steps/NotesStep';
 import { SavedProduct, ProductWithShade } from '../../components/cases/wizard/types';
-import { Case, CaseStatus, DeliveryMethod, addCase } from '../../data/mockCasesData';
+import { CaseStatus } from '@/types/supabase';
+import { DeliveryMethod, addCase } from '../../data/mockCasesData';
 import { Client, clientsService } from '../../services/clientsService';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui/button';

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Clock, PauseCircle, Package, Plus, ChevronUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import CaseFilters from './CaseFilters';
 import PrintButtonWithDropdown from './PrintButtonWithDropdown';
 import { supabase } from '@/lib/supabase';
-import { Database } from '@/types/supabase';
+import { Case } from '@/types/supabase';
 import { format, isEqual, parseISO, isValid } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {

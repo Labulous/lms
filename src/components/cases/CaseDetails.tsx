@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Clock, User, FileText, Camera, Package, CircleDot, MoreHorizontal, Printer } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { Case, CaseProduct, CaseProductTooth, ShadeData } from '@/types/supabase';
 import CaseProgress from './CaseProgress';
 import PhotoUpload from './PhotoUpload';
 import QRCodeScanner from './QRCodeScanner';
@@ -32,43 +33,13 @@ interface CaseFile {
   uploaded_at: string;
 }
 
-interface ShadeData {
-  occlusal: string | null;
-  middle: string | null;
-  gingival: string | null;
-  stump: string | null;
-}
-
-interface CaseProductTooth {
-  id: string;
-  tooth_number: number;
-  shade_data: ShadeData;
-  created_at: string;
-}
-
-interface CaseProduct {
-  id: string;
-  occlusal_details: string;
-  contact_type: string;
-  notes: string;
-  created_at: string;
-  case_product_teeth: CaseProductTooth[];
-}
-
-interface Case {
-  id: string;
-  created_at: string;
-  received_date: string;
-  ship_date: string | null;
-  status: string;
-  patient_name: string;
-  due_date: string | null;
+interface ExtendedCase extends Case {
   client: {
     id: string;
     client_name: string;
     phone: string;
   };
-  doctor: {
+  doctor?: {
     id: string;
     name: string;
     client: {
@@ -82,7 +53,7 @@ interface Case {
 
 const CaseDetails: React.FC = () => {
   const { caseId } = useParams<{ caseId: string }>();
-  const [caseDetail, setCaseDetail] = useState<Case | null>(null);
+  const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
