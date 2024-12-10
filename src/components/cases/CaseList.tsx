@@ -218,7 +218,6 @@ const CaseList: React.FC = () => {
             due_date,
             qr_code,
             status,
-            billing_type,
             notes
           `)
           .eq('id', '078d7fb1-5abd-4a79-bd10-7083bbed807b');
@@ -253,7 +252,6 @@ const CaseList: React.FC = () => {
             due_date,
             qr_code,
             status,
-            billing_type,
             notes
           `)
           .order('created_at', { ascending: false });
