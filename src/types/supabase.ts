@@ -45,18 +45,25 @@ export interface ShadeData {
  * Product type definition
  */
 export interface Product {
-  id: string
-  name: string
-  description: string
-  price: number
-  leadTime: number
-  isClientVisible: boolean
-  isTaxable: boolean
-  billingType: BillingType
-  category: ProductCategory
-  requiresShade: boolean
-  material: string
-  type: string
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  leadTime: number;
+  isClientVisible: boolean;
+  isTaxable: boolean;
+  billingType: BillingType;
+  category: ProductCategory;
+  requiresShade: boolean;
+  material: string;
+  type: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductWithShade extends Product {
+  shadeData?: ShadeData;
+  selectedTeeth?: number[];
 }
 
 /**
