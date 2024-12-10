@@ -1,3 +1,6 @@
+/**
+ * Basic JSON type used throughout the application
+ */
 export type Json =
   | string
   | number
@@ -6,6 +9,59 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+/**
+ * Product related enums
+ */
+export enum ProductCategory {
+  Crown = 'crown',
+  Bridge = 'bridge',
+  Veneer = 'veneer',
+  Implant = 'implant',
+  Other = 'other'
+}
+
+export enum BillingType {
+  PerUnit = 'per_unit',
+  PerTooth = 'per_tooth',
+  Fixed = 'fixed'
+}
+
+/**
+ * Case status types
+ */
+export type CaseStatus = 'in_queue' | 'in_progress' | 'completed' | 'cancelled'
+
+/**
+ * Shade data structure for dental products
+ */
+export interface ShadeData {
+  occlusal: string
+  body: string
+  gingival: string
+  stump?: string
+}
+
+/**
+ * Product type definition
+ */
+export interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  leadTime: number
+  isClientVisible: boolean
+  isTaxable: boolean
+  billingType: BillingType
+  category: ProductCategory
+  requiresShade: boolean
+  material: string
+  type: string
+}
+
+/**
+ * Main database type definitions
+ */
 export interface Database {
   public: {
     Tables: {
@@ -21,7 +77,7 @@ export interface Database {
           rx_number: string
           due_date: string
           qr_code: string
-          status: 'in_queue' | 'in_progress'
+          status: CaseStatus
           notes: string | null
         }
         Insert: {
@@ -35,7 +91,7 @@ export interface Database {
           rx_number: string
           due_date: string
           qr_code?: string
-          status?: 'in_queue' | 'in_progress'
+          status?: CaseStatus
           notes?: string | null
         }
         Update: {
@@ -49,7 +105,7 @@ export interface Database {
           rx_number?: string
           due_date?: string
           qr_code?: string
-          status?: 'in_queue' | 'in_progress'
+          status?: CaseStatus
           notes?: string | null
         }
       }
@@ -94,7 +150,7 @@ export interface Database {
           case_product_id: string
           tooth_number: number
           is_range: boolean
-          shade_data: Json
+          shade_data: ShadeData
           created_at: string
           updated_at: string
         }
@@ -103,7 +159,7 @@ export interface Database {
           case_product_id: string
           tooth_number: number
           is_range?: boolean
-          shade_data?: Json
+          shade_data?: ShadeData
           created_at?: string
           updated_at?: string
         }
@@ -112,7 +168,7 @@ export interface Database {
           case_product_id?: string
           tooth_number?: number
           is_range?: boolean
-          shade_data?: Json
+          shade_data?: ShadeData
           created_at?: string
           updated_at?: string
         }
@@ -121,40 +177,7 @@ export interface Database {
   }
 }
 
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  leadTime: number;
-  isClientVisible: boolean;
-  isTaxable: boolean;
-  billingType: BillingType;
-  category: ProductCategory;
-  requiresShade: boolean;
-  material: string;
-  type: string;
-}
-
-export interface ShadeData {
-  occlusal: string;
-  body: string;
-  gingival: string;
-  stump: string;
-  // Remove stump if not needed
-}
-
-export interface Case {
-  id: string;
-  created_at: string;
-  received_date: string;
-  ship_date: string;
-  due_date: string;
-  patient_name: string;
-  status: string;
-  qr_code?: string;
-  pan_number?: string;
-  rx_number?: string;
-  billing_type?: string;
-  case_files?: any[]; // Define proper type
-}
+// Type aliases for common database types
+export type Case = Database['public']['Tables']['cases']['Row']
+export type CaseProduct = Database['public']['Tables']['case_products']['Row']
+export type CaseProductTooth = Database['public']['Tables']['case_product_teeth']['Row']
