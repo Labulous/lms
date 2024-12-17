@@ -10,8 +10,51 @@ export type Json =
   | Json[]
 
 /**
+ * Reference data interfaces
+ */
+export interface Material {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductType {
+  id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BillingType {
+  id: string;
+  name: string;
+  label: string;
+  description: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShadeOption {
+  id: string;
+  name: string;
+  category: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * Product related enums
  */
+export type MaterialType = 'Acrylic' | 'Denture' | 'E_Max' | 'Full_Cast' | 'PFM' | 'Zirconia'
+export type ProductType = 'Crown' | 'Bridge' | 'Removable' | 'Implant' | 'Coping' | 'Appliance'
+export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate' | 'per_unit'
 export enum ProductCategory {
   Crown = 'crown',
   Bridge = 'bridge',
@@ -21,18 +64,29 @@ export enum ProductCategory {
 }
 
 export enum PonticType {
-  WashThrough = 'Wash-through',
-  Dome = 'Dome',
-  ModifiedRidgeLap = 'Modified Ridge Lap',
-  RidgeLap = 'Ridge Lap',
-  Ovate = 'Ovate',
-  Custom = 'Custom'
+  NotApplicable = 'not_applicable',
+  WashThrough = 'wash_through',
+  Dome = 'dome',
+  ModifiedRidgeLap = 'modified_ridge_lap',
+  RidgeLap = 'ridge_lap',
+  Ovate = 'ovate',
+  Custom = 'custom'
 }
 
-export enum BillingType {
-  PerUnit = 'per_unit',
-  PerTooth = 'per_tooth',
-  Fixed = 'fixed'
+export enum OcclusalType {
+  NotApplicable = 'not_applicable',
+  Light = 'light',
+  Medium = 'medium',
+  Heavy = 'heavy',
+  Custom = 'custom'
+}
+
+export enum ContactType {
+  NotApplicable = 'not_applicable',
+  Light = 'light',
+  Medium = 'medium',
+  Heavy = 'heavy',
+  Custom = 'custom'
 }
 
 /**
@@ -61,11 +115,11 @@ export interface Product {
   leadTime: number;
   isClientVisible: boolean;
   isTaxable: boolean;
-  billingType: BillingType;
+  billing_type_id: string;  // UUID reference to billing_types table
   category: ProductCategory;
   requiresShade: boolean;
-  material: string;
-  type: string;
+  material_id: string;      // UUID reference to materials table
+  product_type_id: string;  // UUID reference to product_types table
   created_at?: string;
   updated_at?: string;
 }
@@ -132,8 +186,9 @@ export interface Database {
           product_id: string
           quantity: number
           notes: string | null
-          occlusal_details: string | null
-          contact_type: string
+          occlusal_type: OcclusalType
+          custom_occlusal: string | null
+          contact_type: ContactType
           custom_contact: string | null
           pontic_type: PonticType | null
           custom_pontic: string | null
@@ -146,11 +201,12 @@ export interface Database {
           product_id: string
           quantity?: number
           notes?: string | null
-          occlusal_details?: string | null
-          contact_type: string
-          custom_contact?: string | null
-          pontic_type?: PonticType | null
-          custom_pontic?: string | null
+          occlusal_type: OcclusalType
+          custom_occlusal: string | null
+          contact_type: ContactType
+          custom_contact: string | null
+          pontic_type: PonticType | null
+          custom_pontic: string | null
           created_at?: string
           updated_at?: string
         }
@@ -160,10 +216,12 @@ export interface Database {
           product_id?: string
           quantity?: number
           notes?: string | null
-          occlusal_details?: string | null
-          contact_type?: string
-          custom_contact?: string | null
-          pontic_type?: PonticType | null
+          occlusal_type: OcclusalType
+          custom_occlusal: string | null
+          contact_type: ContactType
+          custom_contact: string | null
+          pontic_type: PonticType | null
+          custom_pontic: string | null
           custom_pontic?: string | null
           created_at?: string
           updated_at?: string
@@ -194,6 +252,97 @@ export interface Database {
           tooth_number?: number
           is_range?: boolean
           shade_data?: ShadeData
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      materials: {
+        Row: Material;
+        Insert: Omit<Material, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<Material, 'id'>> & {
+          id?: string;
+        };
+      };
+      product_types: {
+        Row: ProductType;
+        Insert: Omit<ProductType, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<ProductType, 'id'>> & {
+          id?: string;
+        };
+      };
+      billing_types: {
+        Row: BillingType;
+        Insert: Omit<BillingType, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<BillingType, 'id'>> & {
+          id?: string;
+        };
+      };
+      shade_options: {
+        Row: ShadeOption;
+        Insert: Omit<ShadeOption, 'id' | 'created_at' | 'updated_at'> & {
+          id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Omit<ShadeOption, 'id'>> & {
+          id?: string;
+        };
+      };
+      products: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          price: number
+          lead_time: number
+          is_client_visible: boolean
+          is_taxable: boolean
+          billing_type_id: string
+          requires_shade: boolean
+          material_id: string
+          product_type_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description: string
+          price: number
+          lead_time: number
+          is_client_visible?: boolean
+          is_taxable?: boolean
+          billing_type_id: string
+          requires_shade?: boolean
+          material_id: string
+          product_type_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          price?: number
+          lead_time?: number
+          is_client_visible?: boolean
+          is_taxable?: boolean
+          billing_type_id?: string
+          requires_shade?: boolean
+          material_id?: string
+          product_type_id?: string
           created_at?: string
           updated_at?: string
         }

@@ -1,127 +1,156 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import ProductStep from './wizard-steps/ProductStep';
-import BillingTypeStep from './wizard-steps/BillingTypeStep';
-import CategoryStep from './wizard-steps/CategoryStep';
-import { Product, BillingType, ProductCategory } from '../../data/mockProductData';
+import { productsService, ProductInput } from '../../services/productsService';
+import { Database } from '../../types/supabase';
+import toast from 'react-hot-toast'; // Import toast
+
+type Product = Database['public']['Tables']['products']['Row'] & {
+  material: { name: string } | null;
+  product_type: { name: string } | null;
+  billing_type: { name: string; label: string | null } | null;
+};
 
 interface ProductWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (product: Product) => void;
+  product?: Product; // Optional product for edit mode
 }
 
-type WizardStep = 'product' | 'billing' | 'category';
+type WizardStep = 'product';
 
 interface FormData {
   name: string;
-  price: string;
-  leadTime?: string;
+  price: number;
+  leadTime?: number;
   isClientVisible: boolean;
   isTaxable: boolean;
-  billingType?: string;
-  category?: string;
-  requiresShade: boolean;
+  material_id: string;
+  product_type_id: string;
+  billing_type_id: string;
+  requires_shade?: boolean;
 }
 
-const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave }) => {
-  const [currentStep, setCurrentStep] = useState<WizardStep>('product');
+const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave, product }) => {
+  const [currentStep] = useState<WizardStep>('product');
   const [formData, setFormData] = useState<FormData>({
     name: '',
-    price: '',
-    leadTime: '',
+    price: 0,
+    leadTime: undefined,
     isClientVisible: true,
     isTaxable: true,
-    billingType: '',
-    category: '',
-    requiresShade: false
+    material_id: '',
+    product_type_id: '',
+    billing_type_id: '',
+    requires_shade: false
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  const validateStep = (): boolean => {
+  // Initialize form data with product data when editing
+  useEffect(() => {
+    if (product) {
+      setFormData({
+        name: product.name || '',
+        price: product.price || 0,
+        leadTime: product.lead_time || undefined,
+        isClientVisible: product.is_client_visible,
+        isTaxable: product.is_taxable,
+        material_id: product.material_id || '',
+        product_type_id: product.product_type_id || '',
+        billing_type_id: product.billing_type_id || '',
+        requires_shade: product.requires_shade || false
+      });
+    } else {
+      // Reset form when opening for new product
+      setFormData({
+        name: '',
+        price: 0,
+        leadTime: undefined,
+        isClientVisible: true,
+        isTaxable: true,
+        material_id: '',
+        product_type_id: '',
+        billing_type_id: '',
+        requires_shade: false
+      });
+    }
+  }, [product]);
+
+  const validateStep = () => {
     const newErrors: Partial<FormData> = {};
 
-    switch (currentStep) {
-      case 'product':
-        if (!formData.name.trim()) newErrors.name = 'Product name is required';
-        if (formData.price <= '0') newErrors.price = 'Price must be greater than 0';
-        break;
-      case 'billing':
-        if (!formData.billingType) newErrors.billingType = 'Billing type is required';
-        break;
-      case 'category':
-        if (!formData.category) newErrors.category = 'Category is required';
-        break;
-    }
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (formData.price === undefined || formData.price < 0) newErrors.price = 'Price must be 0 or greater';
+    if (!formData.material_id) newErrors.material_id = 'Material is required';
+    if (!formData.product_type_id) newErrors.product_type_id = 'Product Type is required';
+    if (!formData.billing_type_id) newErrors.billing_type_id = 'Billing Type is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (!validateStep()) return;
+  const handleFinish = async () => {
+    console.log('handleFinish called');
+    if (!validateStep()) {
+      console.log('Validation failed', errors);
+      return;
+    }
 
-    switch (currentStep) {
-      case 'product':
-        setCurrentStep('billing');
-        break;
-      case 'billing':
-        setCurrentStep('category');
-        break;
+    try {
+      const productData = {
+        name: formData.name,
+        price: formData.price,
+        lead_time: formData.leadTime,
+        is_client_visible: formData.isClientVisible,
+        is_taxable: formData.isTaxable,
+        material_id: formData.material_id || '',
+        product_type_id: formData.product_type_id || '',
+        billing_type_id: formData.billing_type_id || '',
+        requires_shade: formData.requires_shade
+      };
+
+      console.log('Saving product with data:', productData);
+      let savedProduct;
+      if (product) {
+        // Update existing product
+        console.log('Updating product:', product.id);
+        savedProduct = await productsService.updateProduct(product.id, productData);
+      } else {
+        // Create new product
+        console.log('Creating new product');
+        savedProduct = await productsService.addProduct(productData);
+      }
+      
+      console.log('Saved product:', savedProduct);
+      if (savedProduct) {
+        onSave(savedProduct);
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error saving product:', error);
+      toast.error('Failed to save product. Please try again.');
     }
   };
 
-  const handlePrevious = () => {
-    switch (currentStep) {
-      case 'billing':
-        setCurrentStep('product');
-        break;
-      case 'category':
-        setCurrentStep('billing');
-        break;
-    }
-  };
-
-  const handleFinish = () => {
-    if (!validateStep()) return;
-
-    const newProduct: Product = {
-      id: (Date.now()).toString(), // Generate a unique ID
-      ...formData,
-      billingType: formData.billingType!,
-      category: formData.category!,
-    };
-
-    onSave(newProduct);
+  const handleStepChange = (data: Partial<FormData>) => {
+    setFormData(prev => ({
+      ...prev,
+      ...data,
+      material_id: data.material_id || prev.material_id || '',
+      product_type_id: data.product_type_id || prev.product_type_id || '',
+      billing_type_id: data.billing_type_id || prev.billing_type_id || ''
+    }));
   };
 
   const renderStep = () => {
-    switch (currentStep) {
-      case 'product':
-        return (
-          <ProductStep
-            formData={formData}
-            onChange={setFormData}
-            errors={errors}
-          />
-        );
-      case 'billing':
-        return (
-          <BillingTypeStep
-            selectedType={formData.billingType}
-            onChange={(type) => setFormData({ ...formData, billingType: type })}
-            error={errors.billingType}
-          />
-        );
-      case 'category':
-        return (
-          <CategoryStep
-            selectedCategory={formData.category}
-            onChange={(category) => setFormData({ ...formData, category })}
-            error={errors.category}
-          />
-        );
-    }
+    return (
+      <ProductStep
+        formData={formData}
+        onChange={handleStepChange}
+        errors={errors}
+      />
+    );
   };
 
   if (!isOpen) return null;
@@ -135,33 +164,15 @@ const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave }
           {/* Header */}
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">New Product Wizard</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                {product ? 'Edit Product' : 'New Product'}
+              </h3>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-500"
               >
                 <X className="w-6 h-6" />
               </button>
-            </div>
-            {/* Progress indicator */}
-            <div className="mt-4">
-              <div className="flex justify-between">
-                {['Product', 'Billing Type', 'Category'].map((step, index) => (
-                  <div key={step} className="flex items-center">
-                    <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                      index === ['product', 'billing', 'category'].indexOf(currentStep)
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
-                      {index + 1}
-                    </div>
-                    <span className="ml-2 text-sm font-medium text-gray-600">{step}</span>
-                    {index < 2 && (
-                      <div className="w-12 h-1 mx-4 bg-gray-200"></div>
-                    )}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
 
@@ -180,34 +191,13 @@ const ProductWizard: React.FC<ProductWizardProps> = ({ isOpen, onClose, onSave }
               >
                 Cancel
               </button>
-              <div className="flex space-x-2">
-                {currentStep !== 'product' && (
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50"
-                  >
-                    Previous
-                  </button>
-                )}
-                {currentStep !== 'category' ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleFinish}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
-                  >
-                    Finish
-                  </button>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={handleFinish}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
+              >
+                {product ? 'Save Changes' : 'Save Product'}
+              </button>
             </div>
           </div>
         </div>

@@ -1,12 +1,30 @@
 import React from 'react';
-import { ChevronRight } from 'lucide-react';
-import { Product } from '../../data/mockProductData';
+import { ChevronRight, Trash2 } from 'lucide-react';
+import { Database } from '../../types/supabase';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+type Product = Database['public']['Tables']['products']['Row'] & {
+  material: { name: string } | null;
+  product_type: { name: string } | null;
+  billing_type: { name: string; label: string | null } | null;
+};
 
 interface ProductListProps {
   products: Product[];
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products }) => {
+const ProductList: React.FC<ProductListProps> = ({ products, onEdit, onDelete }) => {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -14,44 +32,68 @@ const ProductList: React.FC<ProductListProps> = ({ products }) => {
     }).format(price);
   };
 
+  const handleDelete = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation(); // Prevent triggering edit when clicking delete
+    onDelete?.(product);
+  };
+
+  if (products.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No products found
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-            Product Name
-          </div>
-          <div className="text-sm font-medium text-gray-500 uppercase tracking-wider text-right">
-            Regular Price
-          </div>
-        </div>
-      </div>
-      <div className="divide-y divide-gray-200">
-        {products.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500">
-            No products found in this category
-          </div>
-        ) : (
-          products.map((product) => (
-            <button
-              key={product.id}
-              className="w-full px-4 py-3 hover:bg-gray-50 transition-colors group"
-              onClick={() => {/* Handle edit product */}}
-            >
-              <div className="grid grid-cols-2 gap-4 items-center">
-                <div className="flex items-center">
-                  <span className="text-gray-900">{product.name}</span>
-                  <ChevronRight className="h-5 w-5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
-                </div>
-                <div className="text-right text-gray-900">
-                  {formatPrice(product.price)}
-                </div>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[40%]">Product Name</TableHead>
+          <TableHead>Material</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead className="text-right">Price</TableHead>
+          <TableHead className="w-[50px]"></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {products.map((product) => (
+          <TableRow
+            key={product.id}
+            className="group cursor-pointer"
+            onClick={() => onEdit?.(product)}
+          >
+            <TableCell>
+              <div className="flex items-center">
+                <span>{product.name}</span>
+                <ChevronRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-2" />
               </div>
-            </button>
-          ))
-        )}
-      </div>
-    </div>
+              {product.billing_type?.label && (
+                <span className="text-sm text-muted-foreground block mt-1">
+                  Billing: {product.billing_type.label}
+                </span>
+              )}
+            </TableCell>
+            <TableCell>{product.material?.name || '-'}</TableCell>
+            <TableCell>{product.product_type?.name || '-'}</TableCell>
+            <TableCell className="text-right">{formatPrice(product.price)}</TableCell>
+            <TableCell>
+              {onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => handleDelete(e, product)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete product</span>
+                </Button>
+              )}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
 

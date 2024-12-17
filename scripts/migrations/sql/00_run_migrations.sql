@@ -8,6 +8,7 @@
 \i 06_create_case_technicians.sql
 \i create_rls_helper.sql
 \i 08_setup_rls.sql
+\i 13_create_reference_tables.sql
 
 -- Verify tables were created
 do $$

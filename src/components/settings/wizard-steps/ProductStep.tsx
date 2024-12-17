@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
+import { supabase } from '../../../lib/supabase';
+import { Database } from '../../../types/supabase';
+
+type Material = Database['public']['Tables']['materials']['Row'];
+type ProductType = Database['public']['Tables']['product_types']['Row'];
+type BillingType = Database['public']['Tables']['billing_types']['Row'];
 
 interface FormData {
   name: string;
@@ -7,6 +13,10 @@ interface FormData {
   leadTime?: number;
   isClientVisible: boolean;
   isTaxable: boolean;
+  material_id: string;
+  product_type_id: string;
+  billing_type_id: string;
+  requires_shade?: boolean;
 }
 
 interface ProductStepProps {
@@ -16,11 +26,38 @@ interface ProductStepProps {
 }
 
 const ProductStep: React.FC<ProductStepProps> = ({ formData, onChange, errors }) => {
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
+  const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
+
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      const { data: materialsData } = await supabase.from('materials').select('*').order('name');
+      const { data: productTypesData } = await supabase.from('product_types').select('*').order('name');
+      const { data: billingTypesData } = await supabase.from('billing_types').select('*').order('name');
+
+      if (materialsData) setMaterials(materialsData);
+      if (productTypesData) setProductTypes(productTypesData);
+      if (billingTypesData) setBillingTypes(billingTypesData);
+    };
+
+    fetchReferenceData();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+
+    let newValue = type === 'checkbox' ? checked : value;
+    if (type === 'number') {
+      newValue = parseFloat(value) || 0;
+    } else if (type !== 'checkbox' && !value) {
+      newValue = '';
+    }
+
     onChange({
       ...formData,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value,
+      [name]: newValue,
     });
   };
 
@@ -44,6 +81,75 @@ const ProductStep: React.FC<ProductStepProps> = ({ formData, onChange, errors })
       </div>
 
       <div>
+        <label htmlFor="material_id" className="block text-sm font-medium text-gray-700">
+          Material *
+        </label>
+        <select
+          id="material_id"
+          name="material_id"
+          value={formData.material_id}
+          onChange={handleInputChange}
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            errors.material_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+          }`}
+        >
+          <option value="">Select a material</option>
+          {materials.map((material) => (
+            <option key={material.id} value={material.id}>
+              {material.name}
+            </option>
+          ))}
+        </select>
+        {errors.material_id && <p className="mt-1 text-sm text-red-600">{errors.material_id}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="product_type_id" className="block text-sm font-medium text-gray-700">
+          Product Type *
+        </label>
+        <select
+          id="product_type_id"
+          name="product_type_id"
+          value={formData.product_type_id}
+          onChange={handleInputChange}
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            errors.product_type_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+          }`}
+        >
+          <option value="">Select a product type</option>
+          {productTypes.map((type) => (
+            <option key={type.id} value={type.id}>
+              {type.name}
+            </option>
+          ))}
+        </select>
+        {errors.product_type_id && <p className="mt-1 text-sm text-red-600">{errors.product_type_id}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="billing_type_id" className="block text-sm font-medium text-gray-700">
+          Billing Type *
+        </label>
+        <select
+          id="billing_type_id"
+          name="billing_type_id"
+          value={formData.billing_type_id}
+          onChange={handleInputChange}
+          className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+            errors.billing_type_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+          }`}
+        >
+          <option value="">Select a billing type</option>
+          {billingTypes.map((type) => (
+            <option key={type.id} value={type.id}>
+              {type.label || type.name}
+            </option>
+          ))}
+        </select>
+        {errors.billing_type_id && <p className="mt-1 text-sm text-red-600">{errors.billing_type_id}</p>}
+      </div>
+
+      <div>
         <label htmlFor="price" className="block text-sm font-medium text-gray-700">
           Price *
         </label>
@@ -59,6 +165,7 @@ const ProductStep: React.FC<ProductStepProps> = ({ formData, onChange, errors })
             step="0.01"
             value={formData.price}
             onChange={handleInputChange}
+            placeholder="0.00"
             className={`block w-full pl-7 pr-12 sm:text-sm rounded-md ${
               errors.price ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
             }`}
@@ -86,6 +193,20 @@ const ProductStep: React.FC<ProductStepProps> = ({ formData, onChange, errors })
       </div>
 
       <div className="space-y-4">
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="requires_shade"
+            name="requires_shade"
+            checked={formData.requires_shade}
+            onChange={handleInputChange}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="requires_shade" className="ml-2 block text-sm text-gray-700">
+            Requires Shade
+          </label>
+        </div>
+
         <div className="flex items-center">
           <input
             type="checkbox"
