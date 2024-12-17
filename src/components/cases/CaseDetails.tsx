@@ -78,6 +78,11 @@ const CaseDetails: React.FC = () => {
             status,
             patient_name,
             due_date,
+            occlusal_type,
+            custom_occlusal,
+            contact_type,
+            pontic_type,
+            custom_pontic,
             client:clients!client_id (
               id,
               client_name,
@@ -101,7 +106,8 @@ const CaseDetails: React.FC = () => {
               case_product_teeth (
                 id,
                 tooth_number,
-                shade_data
+                shade_data,
+                created_at
               )
             )
           `)

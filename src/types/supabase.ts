@@ -20,6 +20,15 @@ export enum ProductCategory {
   Other = 'other'
 }
 
+export enum PonticType {
+  WashThrough = 'Wash-through',
+  Dome = 'Dome',
+  ModifiedRidgeLap = 'Modified Ridge Lap',
+  RidgeLap = 'Ridge Lap',
+  Ovate = 'Ovate',
+  Custom = 'Custom'
+}
+
 export enum BillingType {
   PerUnit = 'per_unit',
   PerTooth = 'per_tooth',
@@ -125,6 +134,9 @@ export interface Database {
           notes: string | null
           occlusal_details: string | null
           contact_type: string
+          custom_contact: string | null
+          pontic_type: PonticType | null
+          custom_pontic: string | null
           created_at: string
           updated_at: string
         }
@@ -136,6 +148,9 @@ export interface Database {
           notes?: string | null
           occlusal_details?: string | null
           contact_type: string
+          custom_contact?: string | null
+          pontic_type?: PonticType | null
+          custom_pontic?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -147,6 +162,9 @@ export interface Database {
           notes?: string | null
           occlusal_details?: string | null
           contact_type?: string
+          custom_contact?: string | null
+          pontic_type?: PonticType | null
+          custom_pontic?: string | null
           created_at?: string
           updated_at?: string
         }

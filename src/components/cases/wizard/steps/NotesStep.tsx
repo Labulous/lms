@@ -3,39 +3,49 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
-interface Notes {
-  labNotes?: string;
-  technicianNotes?: string;
+interface FormData {
+  notes?: {
+    labNotes?: string;
+    technicianNotes?: string;
+  };
 }
 
 interface NotesStepProps {
-  notes?: Notes;
-  onChange: (notes: Notes) => void;
+  formData: FormData;
+  onChange: (field: keyof FormData, value: any) => void;
+  errors?: any;
 }
 
-const NotesStep: React.FC<NotesStepProps> = ({ notes = {}, onChange }) => {
+const NotesStep: React.FC<NotesStepProps> = ({ formData, onChange, errors }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    onChange({
-      ...notes,
-      [name]: value,
-    });
+    
+    // Create a new notes object with the updated value
+    const updatedNotes = {
+      ...formData.notes,
+      [name]: value
+    };
+    
+    // Only call onChange if the value has actually changed
+    if (formData.notes?.[name as keyof typeof formData.notes] !== value) {
+      onChange('notes', updatedNotes);
+    }
   };
 
   return (
     <div className="bg-slate-50 h-full flex flex-col">
       <div className="flex-1 space-y-2">
-        <Label htmlFor="labNotes">Lab Notes</Label>
+        <Label htmlFor="labNotes">Invoice Notes</Label>
         <Textarea
           id="labNotes"
           name="labNotes"
-          value={notes.labNotes || ''}
+          value={formData.notes?.labNotes || ''}
           onChange={handleInputChange}
-          placeholder="Enter any lab-specific notes here..."
+          placeholder="Enter any invoice-specific notes here..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any general notes about the case that are relevant for lab staff.
+          Add any invoice notes about the case that are relevant for admin staff or clients.
         </p>
       </div>
 
@@ -46,9 +56,9 @@ const NotesStep: React.FC<NotesStepProps> = ({ notes = {}, onChange }) => {
         <Textarea
           id="technicianNotes"
           name="technicianNotes"
-          value={notes.technicianNotes || ''}
+          value={formData.notes?.technicianNotes || ''}
           onChange={handleInputChange}
-          placeholder="Enter any notes specific to the technician..."
+          placeholder="Enter any specific instructions or notes for the technician..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">

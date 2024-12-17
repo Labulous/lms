@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { CASE_STATUSES, DELIVERY_METHODS, CaseStatus, DeliveryMethod } from '../../../../data/mockCasesData';
 import { Client } from '../../../../services/clientsService';
 import { createLogger } from '../../../../utils/logger';
@@ -43,7 +43,7 @@ interface FormData {
 
 interface OrderDetailsStepProps {
   formData: FormData;
-  onChange: (data: FormData) => void;
+  onChange: (field: keyof FormData, value: any) => void;
   errors?: Partial<FormData>;
   clients: Client[];
   loading?: boolean;
@@ -57,75 +57,43 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   loading = false,
 }) => {
   // Debug log for initial render and props
-  console.log('OrderDetailsStep rendering with props:', {
-    hasFormData: !!formData,
-    clientsCount: clients?.length,
-    clientIds: clients?.map(c => c.id),
-    loading,
-    errors
-  });
-
   useEffect(() => {
-    console.log('OrderDetailsStep clients changed:', {
-      clientsCount: clients?.length,
-      clients: clients?.map(c => ({ id: c.id, name: c.clientName }))
-    });
-  }, [clients]);
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('OrderDetailsStep mounted', {
+        hasFormData: !!formData,
+        clientsCount: clients?.length,
+        loading,
+        selectedClientId: formData?.clientId,
+        selectedClient: clients?.find(c => c.id === formData?.clientId),
+        errors: Object.keys(errors || {})
+      });
+    }
+  }, []); // Only run on mount
 
-  useEffect(() => {
-    logger.debug('OrderDetailsStep props updated', {
-      hasFormData: !!formData,
-      clientsLength: clients?.length,
-      loading,
-      selectedClientId: formData?.clientId,
-      selectedClient: clients?.find(c => c.id === formData?.clientId),
-      errors: Object.keys(errors || {})
-    });
-  }, [formData, clients, loading, errors]);
-
-  // Debug logs
-  useEffect(() => {
-    console.log('OrderDetailsStep props:', {
-      hasFormData: !!formData,
-      clientsLength: clients.length,
-      clients,
-      loading,
-      errors
-    });
-  }, [formData, clients, loading, errors]);
+  // Find the selected client
+  const selectedClient = useMemo(() => 
+    (clients || []).find(client => client.id === formData.clientId),
+    [clients, formData.clientId]
+  );
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = event.target;
-    console.log('Input changed:', { name, value });
     if (type === 'checkbox') {
       const checkbox = event.target as HTMLInputElement;
-      onChange({
-        ...formData,
-        [name]: checkbox.checked,
-        ...(name === 'isDueDateTBD' && checkbox.checked ? { dueDate: undefined } : {}),
-      });
+      onChange(name as keyof FormData, checkbox.checked);
+      if (name === 'isDueDateTBD' && checkbox.checked) {
+        onChange('dueDate', undefined);
+      }
     } else {
-      onChange({
-        ...formData,
-        [name]: value,
-      });
+      onChange(name as keyof FormData, value);
     }
   };
 
   const handleDateChange = (field: keyof FormData) => (date: Date | undefined) => {
-    onChange({
-      ...formData,
-      [field]: date ? date.toISOString().split('T')[0] : '',
-    });
+    onChange(field, date ? date.toISOString().split('T')[0] : '');
   };
-
-  // Find the selected client
-  const selectedClient = (clients || []).find(client => client.id === formData.clientId);
-  console.log('Selected Client:', selectedClient);
-  console.log('Form Data:', formData);
-  console.log('Available Clients:', clients);
 
   return (
     <div>
@@ -147,11 +115,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       name="clientId"
                       value={formData.clientId}
                       onValueChange={(value) => {
-                        onChange({
-                          ...formData,
-                          clientId: value,
-                          doctorId: undefined, // Reset doctor when client changes
-                        });
+                        onChange('clientId', value);
+                        onChange('doctorId', undefined); // Reset doctor when client changes
                       }}
                     >
                       <SelectTrigger className={cn(
@@ -186,10 +151,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="doctorId"
                 value={formData.doctorId}
                 onValueChange={(value) => {
-                  onChange({
-                    ...formData,
-                    doctorId: value,
-                  });
+                  onChange('doctorId', value);
                 }}
                 disabled={!selectedClient}
               >
@@ -292,11 +254,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     name="isDueDateTBD"
                     checked={formData.isDueDateTBD}
                     onCheckedChange={(checked) => {
-                      onChange({
-                        ...formData,
-                        isDueDateTBD: checked as boolean,
-                        dueDate: checked ? undefined : formData.dueDate,
-                      });
+                      onChange('isDueDateTBD', checked);
+                      if (checked) {
+                        onChange('dueDate', undefined);
+                      }
                     }}
                   />
                 </div>
@@ -321,7 +282,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               <div className="w-full">
                 <DateTimePicker
                   date={formData.appointmentDate ? new Date(formData.appointmentDate) : undefined}
-                  onSelect={(date) => handleDateChange('appointmentDate', date)}
+                  onSelect={(date) => handleDateChange('appointmentDate')(date)}
                   className={cn(errors.appointmentDate && 'border-red-500')}
                 />
               </div>
@@ -343,10 +304,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="status"
                 value={formData.status}
                 onValueChange={(value) => {
-                  onChange({
-                    ...formData,
-                    status: value as CaseStatus,
-                  });
+                  onChange('status', value);
                 }}
               >
                 <SelectTrigger className={cn(
@@ -374,10 +332,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="deliveryMethod"
                 value={formData.deliveryMethod}
                 onValueChange={(value) => {
-                  onChange({
-                    ...formData,
-                    deliveryMethod: value as DeliveryMethod,
-                  });
+                  onChange('deliveryMethod', value);
                 }}
               >
                 <SelectTrigger className={cn(
@@ -418,10 +373,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   id="workingPanColor"
                   value={formData.workingPanColor || '#FF0000'}
                   onChange={(color) => {
-                    onChange({
-                      ...formData,
-                      workingPanColor: color,
-                    });
+                    onChange('workingPanColor', color);
                   }}
                   className="flex-shrink-0"
                 />

@@ -1,8 +1,12 @@
 import { supabase } from '../lib/supabase';
 import { createLogger } from '../utils/logger';
-import { Product, ProductCategory, BillingType } from '../data/mockProductData';
+import { Database } from '../types/supabase';
 
 const logger = createLogger({ module: 'ProductsService' });
+
+type ProductRow = Database['public']['Tables']['products']['Row'];
+type ProductInsert = Database['public']['Tables']['products']['Insert'];
+type ProductUpdate = Database['public']['Tables']['products']['Update'];
 
 export interface ProductInput {
   name: string;
@@ -10,23 +14,11 @@ export interface ProductInput {
   leadTime?: number;
   isClientVisible: boolean;
   isTaxable: boolean;
-  billingType: BillingType;
-  category: ProductCategory;
+  billingType: string;
+  category: string;
 }
 
-export interface Product {
-  id: string;
-  name: string;
-  price: number;
-  leadTime?: number;
-  isClientVisible: boolean;
-  isTaxable: boolean;
-  billingType: BillingType;
-  category: ProductCategory;
-  requiresShade: boolean;
-  material: string;
-  type?: string[];
-}
+export type Product = ProductRow;
 
 class ProductsService {
   async getProducts(): Promise<Product[]> {
@@ -63,8 +55,8 @@ class ProductsService {
           leadTime: product.lead_time,
           isClientVisible: product.is_client_visible,
           isTaxable: product.is_taxable,
-          billingType: billingType as BillingType,
-          category: product.category as ProductCategory,
+          billingType: billingType,
+          category: product.category,
           requiresShade: product.requires_shade,
           material: product.material,
           type: product.type || [], // Ensure type is always an array

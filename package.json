@@ -14,10 +14,11 @@
     "migrate:products": "node scripts/migrate.js",
     "migrate:schema": "tsx scripts/migrations/01_create_case_tables.ts",
     "migrate:data": "tsx scripts/migrations/02_migrate_case_data.ts",
+    "migrate:pontic": "tsx scripts/migrations/03_add_pontic_types.ts",
     "migrate:sql": "tsx scripts/migrations/execute_sql_migration.ts",
     "migrate:verify": "tsx scripts/migrations/verify_migration.ts",
     "migrate:verify-rls": "tsx scripts/migrations/verify_rls.ts",
-    "migrate": "npm run migrate:schema && npm run migrate:data"
+    "migrate": "npm run migrate:schema && npm run migrate:data && npm run migrate:pontic"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.1",

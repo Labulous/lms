@@ -61,17 +61,15 @@ const FilesStep: React.FC<FilesStepProps> = ({
     }
   };
 
-  const handleEnclosedItemChange = (key: keyof EnclosedItems, value: string) => {
-    const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue >= 0) {
-      onChange({
-        ...formData,
-        enclosedItems: {
-          ...formData.enclosedItems,
-          [key]: numValue
-        }
-      });
-    }
+  const handleEnclosedItemChange = (key: string, value: string) => {
+    const numValue = parseInt(value) || 0;
+    onChange({
+      ...formData,
+      enclosedItems: {
+        ...(formData.enclosedItems || {}),
+        [key]: numValue
+      }
+    });
   };
 
   const handleIncrement = (key: keyof EnclosedItems) => {
@@ -115,6 +113,8 @@ const FilesStep: React.FC<FilesStepProps> = ({
     { key: 'cadcamFiles', label: 'CAD/CAM Files' },
     { key: 'consultRequested', label: 'Consult Requested' },
   ] as const;
+
+  const enclosedItems = formData.enclosedItems || {};
 
   return (
     <div>
@@ -191,7 +191,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
                   id={key}
                   name={key}
                   min="0"
-                  value={formData.enclosedItems[key] || 0}
+                  value={enclosedItems[key] || 0}
                   onChange={(e) => handleEnclosedItemChange(key, e.target.value)}
                   className="w-16 bg-white text-center h-7 px-2"
                 />

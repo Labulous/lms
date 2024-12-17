@@ -14,7 +14,7 @@ import {
   PRODUCT_TYPES,
   ProductType
 } from '@/data/mockProductData';
-import { Product, ShadeData } from '@/types/supabase';
+import { Product, ShadeData, ProductCategory, BillingType, PonticType } from '@/types/supabase';
 import { productsService } from '@/services/productsService';
 import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
 import SelectedProductsModal from './modals/SelectedProductsModal';
@@ -35,12 +35,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { X } from 'lucide-react';
+import { X, Plus, StickyNote } from 'lucide-react';
 import {
   Stepper
 } from '@/components/ui/stepper';
 import { toast } from 'react-hot-toast';
-import { Plus } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Popover,
@@ -53,6 +52,30 @@ import {
   HoverCardContent,
 } from "@radix-ui/react-hover-card";
 import MultiColumnProductSelector from './modals/MultiColumnProductSelector';
+import { ReactComponent as CrownIcon } from '@/assets/types/crown.svg';
+import { ReactComponent as BridgeIcon } from '@/assets/types/bridge.svg';
+import { ReactComponent as ImplantIcon } from '@/assets/types/implant.svg';
+import { ReactComponent as RemovableIcon } from '@/assets/types/removable.svg';
+import { ReactComponent as CopingIcon } from '@/assets/types/coping.svg';
+import { ReactComponent as ApplianceIcon } from '@/assets/types/appliance.svg';
+
+const OCCLUSAL_OPTIONS = [
+  'N/A',
+  'Light',
+  'Medium',
+  'Heavy',
+  'Custom'
+] as const;
+
+const CONTACT_OPTIONS = [
+  'N/A',
+  'Light',
+  'Medium',
+  'Heavy',
+  'Custom'
+] as const;
+
+const PONTIC_OPTIONS = ['N/A', ...Object.values(PonticType)];
 
 interface ProductConfigurationProps {
   selectedMaterial: ProductMaterial | null;
@@ -60,6 +83,22 @@ interface ProductConfigurationProps {
   selectedProducts: ProductWithShade[];
   onProductsChange: (products: ProductWithShade[]) => void;
   onMaterialChange: (material: ProductMaterial | null) => void;
+  onCaseDetailsChange: (details: {
+    occlusalType: string;
+    customOcclusal?: string;
+    contactType: string;
+    customContact?: string;
+    ponticType: string;
+    customPontic?: string;
+  }) => void;
+  initialCaseDetails?: {
+    occlusalType: string;
+    customOcclusal?: string;
+    contactType: string;
+    customContact?: string;
+    ponticType: string;
+    customPontic?: string;
+  };
 }
 
 interface ToothItem {
@@ -78,6 +117,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   selectedProducts,
   onProductsChange,
   onMaterialChange,
+  onCaseDetailsChange,
+  initialCaseDetails
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<ProductWithShade | null>(null);
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
@@ -115,7 +156,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const [occlusalDetails, setOcclusalDetails] = useState('');
   const [contactType, setContactType] = useState('na');
+  const [customContact, setCustomContact] = useState('');
   const [ponticDetails, setPonticDetails] = useState('');
+
+  // Case-level details state
+  const [caseDetails, setCaseDetails] = useState<{
+    occlusalType: string;
+    customOcclusal?: string;
+    contactType: string;
+    customContact?: string;
+    ponticType: string;
+    customPontic?: string;
+  }>(
+    initialCaseDetails || {
+      occlusalType: '',
+      contactType: '',
+      ponticType: ''
+    }
+  );
+
+  const [productNotes, setProductNotes] = useState<Record<string, string>>({});
+  const [previewNote, setPreviewNote] = useState<string>('');
+  const [notePopoverOpen, setNotePopoverOpen] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedMaterial !== selectedMaterialState) {
@@ -224,6 +286,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setPreviewProduct(null);
     }
   }, [selectedType, selectedTeeth]);
+
+  useEffect(() => {
+    onCaseDetailsChange(caseDetails);
+  }, [caseDetails, onCaseDetailsChange]);
 
   const handleProductSelect = (value: string, keepTeeth = false, itemId?: string) => {
     const product = products.find(p => p.id === value) || null;
@@ -408,8 +474,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleAddToothItems = (teeth: number[]) => {
-    if (!selectedType) {
-      toast.error('Please select a type before adding');
+    if (!selectedType || selectedTeeth.length === 0) {
+      toast.error('Please select teeth before adding');
       return;
     }
 
@@ -442,9 +508,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
 
+    const newId = uuidv4();
+
     // Create new tooth item with basic information
     const newItem: ToothItem = {
-      id: uuidv4(),
+      id: newId,
       teeth: sortedTeeth,
       isRange,
       type: selectedType,
@@ -460,7 +528,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Create new product for the selected products list
     const newProduct: ProductWithShade = {
-      id: newItem.id,
+      id: newId,
       name: selectedType,
       type: selectedType,
       teeth: sortedTeeth,
@@ -473,7 +541,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       },
       price: 0,
       discount: 0,
-      notes: ''
+      notes: previewNote || '' // Add the note to the product
     };
 
     // Update states
@@ -481,6 +549,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     sortedTeeth.forEach(tooth => {
       newMap.set(tooth, isRange);
     });
+
+    if (previewNote) {
+      setProductNotes(prev => ({
+        ...prev,
+        [newId]: previewNote
+      }));
+    }
 
     setAddedTeethMap(newMap);
     setToothItems(prev => [...prev, newItem]);
@@ -499,6 +574,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Reset selections and force ToothSelector remount
     setSelectedTeeth([]);
     setShadeData({ occlusal: '', body: '', gingival: '', stump: '' });
+    setPreviewNote('');
+    setNotePopoverOpen(null);
     setToothSelectorKey(prev => prev + 1);
   };
 
@@ -612,7 +689,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       teeth: selectedTeeth,
       isRange: selectedTeeth.length > 1,
       type: selectedType,
-      productName: selectedType,
     };
 
     // Only update the teeth map for bridge products
@@ -789,6 +865,58 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setToothSelectorKey(prev => prev + 1); // Force remount of ToothSelector
   };
 
+  const handleCaseDetailChange = (
+    field: keyof {
+      occlusalType: string;
+      customOcclusal?: string;
+      contactType: string;
+      customContact?: string;
+      ponticType: string;
+      customPontic?: string;
+    },
+    value: string
+  ) => {
+    setCaseDetails(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Clear custom fields when non-custom option is selected
+      if (field === 'occlusalType' && value !== 'Custom') {
+        delete updated.customOcclusal;
+      }
+      if (field === 'contactType' && value !== 'Custom') {
+        delete updated.customContact;
+      }
+      if (field === 'ponticType' && value !== 'Custom') {
+        delete updated.customPontic;
+      }
+      
+      return updated;
+    });
+  };
+
+  const PONTIC_INFO = {
+    [PonticType.WashThrough]: {
+      description: "A pontic design that allows for easy cleaning underneath, ideal for hygienic maintenance.",
+      imagePath: "/src/assets/pontics/wash-through.png"
+    },
+    [PonticType.Dome]: {
+      description: "A rounded, convex design that makes minimal contact with the ridge.",
+      imagePath: "/src/assets/pontics/dome.png"
+    },
+    [PonticType.ModifiedRidgeLap]: {
+      description: "A modified design that provides some tissue contact while maintaining cleanability.",
+      imagePath: "/src/assets/pontics/modified-ridge-lap.png"
+    },
+    [PonticType.RidgeLapFullSaddle]: {
+      description: "Full contact with the ridge, providing maximum aesthetics but requiring careful hygiene.",
+      imagePath: "/src/assets/pontics/ridge-lap.png"
+    },
+    [PonticType.Ovate]: {
+      description: "An egg-shaped design that creates natural emergence profile and optimal aesthetics.",
+      imagePath: "/src/assets/pontics/ovate.png"
+    }
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -824,7 +952,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       color: 'rgb(55 65 81)' // text-gray-700
                     }}
                     className={cn(
-                      "justify-start text-left h-auto py-2 px-3 w-full",
+                      "justify-start text-left h-auto py-2 px-3 w-full text-xs",
                       selectedType === type 
                         ? "hover:opacity-90" 
                         : "hover:bg-gray-50"
@@ -869,7 +997,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             </div>
 
             {/* Product Details - 7 columns */}
-            <div className="col-span-7 px-4">
+            <div className="col-span-7 pl-4">
               <div className="space-y-4">
                 {/* Add Shade Table */}
                 <div>
@@ -897,7 +1025,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </TableHeader>
                       <TableBody>
                         {/* Preview Row */}
-                        <TableRow>
+                        <TableRow
+                          className="relative bg-yellow-50"
+                        >
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {selectedType || '-'}
                           </TableCell>
@@ -950,7 +1080,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       </Button>
                                     )}
                                   </PopoverTrigger>
-                                  <PopoverContent className="w-80" align="start">
+                                  <PopoverContent className="w-80">
                                     <div className="grid gap-4">
                                       <div className="space-y-2">
                                         <h4 className="font-medium leading-none">Shades</h4>
@@ -1061,19 +1191,46 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="py-1.5 pr-4">
+                          <TableCell className="py-1.5 pr-4 flex items-center space-x-1">
                             {selectedTeeth.length > 0 && selectedProduct && (
-                              // Only require shades if the product requires them
-                              (!selectedProduct.requiresShade || previewProduct?.shades) ? (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={handleAddPreviewToTable}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              ) : null
+                              <>
+                                <Popover open={notePopoverOpen === 'preview'} onOpenChange={(open) => setNotePopoverOpen(open ? 'preview' : null)}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                        "h-6 w-6",
+                                        previewNote && "text-blue-600",
+                                        "hover:text-blue-600"
+                                      )}
+                                    >
+                                      <StickyNote className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80 p-3" align="end">
+                                    <div className="space-y-2">
+                                      <Label className="text-xs">Add Note</Label>
+                                      <Textarea
+                                        placeholder="Enter note for this product..."
+                                        value={previewNote}
+                                        onChange={(e) => setPreviewNote(e.target.value)}
+                                        className="h-24 text-sm"
+                                      />
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                                {(!selectedProduct.requiresShade || previewProduct?.shades) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => handleAddToothItems(selectedTeeth)}
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </>
                             )}
                           </TableCell>
                         </TableRow>
@@ -1137,7 +1294,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-1.5 pr-4">
+                            <TableCell className="py-1.5 pr-4 flex items-center space-x-1">
+                              <Popover 
+                                open={notePopoverOpen === item.id} 
+                                onOpenChange={(open) => setNotePopoverOpen(open ? item.id : null)}
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className={cn(
+                                      "h-6 w-6",
+                                      productNotes[item.id] && "text-blue-600",
+                                      "hover:text-blue-600"
+                                    )}
+                                  >
+                                    <StickyNote className="h-4 w-4" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-80 p-3" align="end">
+                                  <div className="space-y-2">
+                                    <Label className="text-xs">Edit Note</Label>
+                                    <Textarea
+                                      placeholder="Enter note for this product..."
+                                      value={productNotes[item.id] || ''}
+                                      onChange={(e) => {
+                                        const newNote = e.target.value;
+                                        setProductNotes(prev => ({
+                                          ...prev,
+                                          [item.id]: newNote
+                                        }));
+                                        // Update the product's notes in the selectedProducts array
+                                        const updatedProducts = toothItems.map(p => 
+                                          p.id === item.id 
+                                            ? { ...p, notes: newNote }
+                                            : p
+                                        );
+                                        setToothItems(updatedProducts);
+                                      }}
+                                      className="h-24 text-sm"
+                                    />
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -1171,59 +1370,117 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   <div className="flex items-start justify-between space-x-6">
                     {/* Occlusal Field */}
                     <div className="flex-1 space-y-2 min-w-0">
-                      <Label htmlFor="occlusal">Occlusal</Label>
-                      <Textarea 
-                        id="occlusal"
-                        placeholder="Enter occlusal details..."
-                        className="resize-none"
-                        rows={3}
-                        value={occlusalDetails}
-                        onChange={(e) => setOcclusalDetails(e.target.value)}
-                      />
+                      <Label className="text-xs">Occlusal:</Label>
+                      <RadioGroup
+                        value={caseDetails.occlusalType}
+                        onValueChange={(value) => handleCaseDetailChange('occlusalType', value)}
+                        className="flex flex-col"
+                      >
+                        {OCCLUSAL_OPTIONS.map((option) => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`occlusal-${option}`} />
+                            <Label htmlFor={`occlusal-${option}`} className="text-sm pl-2 pr-4">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                      {caseDetails.occlusalType === 'Custom' && (
+                        <Textarea
+                          value={caseDetails.customOcclusal || ''}
+                          onChange={(e) => handleCaseDetailChange('customOcclusal', e.target.value)}
+                          placeholder="Enter custom occlusal details..."
+                          className="h-20"
+                        />
+                      )}
                     </div>
 
                     <Separator orientation="vertical" className="h-[120px] mx-2" />
 
                     {/* Contact Field */}
                     <div className="flex-1 space-y-2 min-w-0">
-                      <Label>Contact</Label>
-                      <RadioGroup 
-                        value={contactType} 
-                        onValueChange={setContactType}
-                        className="flex flex-col space-y-1"
+                      <Label className="text-xs">Contact:</Label>
+                      <RadioGroup
+                        value={caseDetails.contactType}
+                        onValueChange={(value) => handleCaseDetailChange('contactType', value)}
+                        className="flex flex-col"
                       >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="na" id="na" />
-                          <Label htmlFor="na" className="font-normal">N/A</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="light" id="light" />
-                          <Label htmlFor="light" className="font-normal">Light</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="medium" id="medium" />
-                          <Label htmlFor="medium" className="font-normal">Medium</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="tight" id="tight" />
-                          <Label htmlFor="tight" className="font-normal">Tight</Label>
-                        </div>
+                        {CONTACT_OPTIONS.map((option) => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`contact-${option}`} />
+                            <Label htmlFor={`contact-${option}`} className="text-sm pl-2 pr-4">
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
                       </RadioGroup>
+                      {caseDetails.contactType === 'Custom' && (
+                        <Textarea
+                          value={caseDetails.customContact || ''}
+                          onChange={(e) => handleCaseDetailChange('customContact', e.target.value)}
+                          placeholder="Enter custom contact details..."
+                          className="h-20"
+                        />
+                      )}
                     </div>
 
                     <Separator orientation="vertical" className="h-[120px] mx-2" />
 
                     {/* Pontic Field */}
                     <div className="flex-1 space-y-2 min-w-0">
-                      <Label htmlFor="pontic">Pontic</Label>
-                      <Textarea 
-                        id="pontic"
-                        placeholder="Enter pontic details..."
-                        className="resize-none"
-                        rows={3}
-                        value={ponticDetails}
-                        onChange={(e) => setPonticDetails(e.target.value)}
-                      />
+                      <Label className="text-xs">Pontic:</Label>
+                      <RadioGroup
+                        value={caseDetails.ponticType}
+                        onValueChange={(value) => handleCaseDetailChange('ponticType', value)}
+                        className="flex flex-col"
+                      >
+                        {PONTIC_OPTIONS.map((option) => (
+                          <div key={option} className="flex items-center space-x-2">
+                            <RadioGroupItem value={option} id={`pontic-${option}`} />
+                            {option !== 'N/A' ? (
+                              <HoverCard>
+                                <HoverCardTrigger asChild>
+                                  <Label 
+                                    htmlFor={`pontic-${option}`} 
+                                    className="text-sm cursor-pointer hover:text-primary pl-2 pr-4"
+                                  >
+                                    {option}
+                                  </Label>
+                                </HoverCardTrigger>
+                                {option !== PonticType.Custom && (
+                                  <HoverCardContent className="w-80">
+                                    <div className="flex flex-col gap-2">
+                                      <img 
+                                        src={PONTIC_INFO[option as keyof typeof PONTIC_INFO]?.imagePath} 
+                                        alt={`${option} pontic type`}
+                                        className="w-full h-40 object-contain bg-white rounded-md"
+                                      />
+                                      <p className="text-sm text-muted-foreground">
+                                        {PONTIC_INFO[option as keyof typeof PONTIC_INFO]?.description}
+                                      </p>
+                                    </div>
+                                  </HoverCardContent>
+                                )}
+                              </HoverCard>
+                            ) : (
+                              <Label 
+                                htmlFor={`pontic-${option}`} 
+                                className="text-sm pl-2 pr-4"
+                              >
+                                {option}
+                              </Label>
+                            )}
+                          </div>
+                        ))}
+                      </RadioGroup>
+                      {caseDetails.ponticType === 'Custom' && (
+                        <Textarea
+                          value={caseDetails.customPontic || ''}
+                          onChange={(e) => handleCaseDetailChange('customPontic', e.target.value)}
+                          placeholder="Enter custom pontic details..."
+                          className="h-20"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
 import { Button } from '@/components/ui/button';
@@ -301,11 +301,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   };
 
   // Updated isTeethRangeContinuous to handle cross-quadrant selections
-  const isTeethRangeContinuous = (teeth: number[]): boolean => {
-    console.log('isTeethRangeContinuous called with teeth:', teeth);
-    
+  const isTeethRangeContinuous = useCallback((teeth: number[]): boolean => {
     if (teeth.length < 2) {
-      console.log('Less than 2 teeth selected');
       return false;
     }
     
@@ -313,10 +310,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     if (selectedProduct?.type?.includes('Bridge')) {
       const isUpperArch = teeth.every(t => t >= 11 && t <= 28);
       const isLowerArch = teeth.every(t => t >= 31 && t <= 48);
-      console.log('Arch check for Bridge:', { isUpperArch, isLowerArch });
       
       if (!isUpperArch && !isLowerArch) {
-        console.log('Bridge teeth not in same arch');
         return false;
       }
     }
@@ -332,8 +327,25 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     const selectedSet = new Set(teeth);
     return visualOrderTeeth.every(tooth => selectedSet.has(tooth)) &&
            teeth.length === visualOrderTeeth.length;
-  };
+  }, [selectedProduct?.type]);
 
+  // Effect to handle pontic mode
+  useEffect(() => {
+    if (selectedTeeth.length < 2 || !isTeethRangeContinuous(selectedTeeth)) {
+      setPonticMode(false);
+      setPonticTeeth(new Set());
+    }
+  }, [selectedTeeth, isTeethRangeContinuous]);
+
+  // Effect to reset pontic mode when product type changes
+  useEffect(() => {
+    if (!selectedProduct?.type?.some(t => t.toLowerCase() === 'bridge')) {
+      setPonticMode(false);
+      setPonticTeeth(new Set());
+    }
+  }, [selectedProduct?.type]);
+
+  // Helper function to get tooth color
   const getToothColor = (toothNumber: number): string => {
     const type = selectedProduct?.type?.[0];
 

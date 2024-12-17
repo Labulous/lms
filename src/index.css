@@ -35,6 +35,16 @@
     --ring: 222.2 84% 4.9%;
 
     --radius: 0.5rem;
+
+    --animate-duration: 0.2s;
+    --animate-delay: 0s;
+
+    /* Animation properties */
+    --animation-btn: 0.2s;
+    --animation-input: 0.2s;
+    --slide-duration: 0.2s;
+    --fade-duration: 0.2s;
+    --zoom-duration: 0.2s;
   }
 
   .dark {

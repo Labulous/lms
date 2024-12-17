@@ -51,6 +51,17 @@ interface FormData {
   };
   otherItems?: string;
   clientName?: string;
+  caseDetails?: {
+    occlusalType: string;
+    customOcclusal?: string;
+    contactType: string;
+    ponticType: string;
+    customPontic?: string;
+  };
+  notes?: {
+    labNotes?: string;
+    technicianNotes?: string;
+  };
 }
 
 const NewCase: React.FC = () => {
@@ -63,9 +74,23 @@ const NewCase: React.FC = () => {
     orderDate: format(new Date(), 'yyyy-MM-dd'),
     status: 'In Queue' as CaseStatus,
     deliveryMethod: 'Pickup' as DeliveryMethod,
-    enclosedItems: defaultEnclosedItems,
+    enclosedItems: {
+      impression: 0,
+      biteRegistration: 0,
+      photos: 0,
+      jig: 0,
+      opposingModel: 0,
+      articulator: 0,
+      returnArticulator: 0,
+      cadcamFiles: 0,
+      consultRequested: 0,
+    },
     otherItems: '',
     isDueDateTBD: false,
+    notes: {
+      labNotes: '',
+      technicianNotes: ''
+    }
   });
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -87,6 +112,56 @@ const NewCase: React.FC = () => {
   const handleProductsChange = (products: ProductWithShade[]) => {
     console.log('Products changed:', products);
     setSelectedProducts(products);
+  };
+
+  const handleCaseDetailsChange = (details: any) => {
+    setFormData(prev => ({
+      ...prev,
+      caseDetails: details
+    }));
+  };
+
+  const handleFormChange = (field: keyof FormData, value: any) => {
+    setFormData(prevData => {
+      // Don't update if the value hasn't changed
+      if (prevData[field] === value) {
+        return prevData;
+      }
+
+      // For nested objects (notes, enclosedItems), do a deep comparison
+      if (field === 'notes' || field === 'enclosedItems') {
+        const prevValue = prevData[field];
+        if (JSON.stringify(prevValue) === JSON.stringify(value)) {
+          return prevData;
+        }
+      }
+
+      // Update the field with the new value
+      return {
+        ...prevData,
+        [field]: value
+      };
+    });
+  };
+
+  const handleStepChange = (data: Partial<FormData>) => {
+    setFormData(prevData => {
+      const newData = { ...prevData };
+      
+      // Handle each field separately to properly merge nested objects
+      Object.entries(data).forEach(([key, value]) => {
+        if (typeof value === 'object' && value !== null) {
+          newData[key] = {
+            ...(prevData[key] || {}),
+            ...value
+          };
+        } else {
+          newData[key] = value;
+        }
+      });
+
+      return newData;
+    });
   };
 
   useEffect(() => {
@@ -127,7 +202,7 @@ const NewCase: React.FC = () => {
 
     try {
       // Create case object
-      const newCase: Omit<Case, 'id' | 'createdAt' | 'updatedAt'> = {
+      const newCase: any = {
         clientId: formData.clientId,
         clientName: formData.clientName || '',
         patientFirstName: formData.patientFirstName,
@@ -143,6 +218,8 @@ const NewCase: React.FC = () => {
         otherItems: formData.otherItems || '',
         products: selectedProducts,
         labId: user?.labId || '',
+        caseDetails: formData.caseDetails,
+        notes: formData.notes
       };
 
       // Add case to database
@@ -169,7 +246,7 @@ const NewCase: React.FC = () => {
           <div className="p-6 bg-slate-50">
             <OrderDetailsStep
               formData={formData}
-              onChange={setFormData}
+              onChange={handleFormChange}
               errors={errors}
               clients={clients}
               loading={loading}
@@ -180,11 +257,13 @@ const NewCase: React.FC = () => {
         {/* Products & Services */}
         <div className="space-y-4">
           <ProductConfiguration
-            selectedCategory={selectedCategory}
-            onSave={handleSaveProduct}
+            selectedMaterial={selectedCategory}
+            onAddToCase={handleSaveProduct}
             selectedProducts={selectedProducts}
             onProductsChange={handleProductsChange}
-            onCategoryChange={handleCategoryChange}
+            onMaterialChange={handleCategoryChange}
+            onCaseDetailsChange={handleCaseDetailsChange}
+            initialCaseDetails={formData.caseDetails}
           />
         </div>
 
@@ -198,7 +277,7 @@ const NewCase: React.FC = () => {
             <div className="p-6 bg-slate-50">
               <NotesStep
                 formData={formData}
-                onChange={setFormData}
+                onChange={handleFormChange}
                 errors={errors}
               />
             </div>
@@ -212,7 +291,7 @@ const NewCase: React.FC = () => {
             <div className="p-6 bg-slate-50">
               <FilesStep
                 formData={formData}
-                onChange={setFormData}
+                onChange={handleStepChange}
                 errors={errors}
               />
             </div>
