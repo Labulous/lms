@@ -14,7 +14,7 @@ import {
   PRODUCT_TYPES,
   ProductType
 } from '@/data/mockProductData';
-import { Product, ShadeData, ProductCategory, BillingType, PonticType } from '@/types/supabase';
+import { Product, ShadeData, ProductCategory, BillingType, PonticType, OcclusalType, ContactType } from '@/types/supabase';
 import { productsService } from '@/services/productsService';
 import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
 import SelectedProductsModal from './modals/SelectedProductsModal';
@@ -59,23 +59,23 @@ import { ReactComponent as RemovableIcon } from '@/assets/types/removable.svg';
 import { ReactComponent as CopingIcon } from '@/assets/types/coping.svg';
 import { ReactComponent as ApplianceIcon } from '@/assets/types/appliance.svg';
 
-const OCCLUSAL_OPTIONS = [
-  'N/A',
-  'Light',
-  'Medium',
-  'Heavy',
-  'Custom'
-] as const;
+const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map(value => ({
+  value,
+  label: value === OcclusalType.NotApplicable ? 'N/A' : 
+         value.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}));
 
-const CONTACT_OPTIONS = [
-  'N/A',
-  'Light',
-  'Medium',
-  'Heavy',
-  'Custom'
-] as const;
+const CONTACT_OPTIONS = Object.values(ContactType).map(value => ({
+  value,
+  label: value === ContactType.NotApplicable ? 'N/A' : 
+         value.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}));
 
-const PONTIC_OPTIONS = ['N/A', ...Object.values(PonticType)];
+const PONTIC_OPTIONS = Object.values(PonticType).map(value => ({
+  value,
+  label: value === PonticType.NotApplicable ? 'N/A' : 
+         value.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}));
 
 interface ProductConfigurationProps {
   selectedMaterial: ProductMaterial | null;
@@ -1376,16 +1376,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         onValueChange={(value) => handleCaseDetailChange('occlusalType', value)}
                         className="flex flex-col"
                       >
-                        {OCCLUSAL_OPTIONS.map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`occlusal-${option}`} />
-                            <Label htmlFor={`occlusal-${option}`} className="text-sm pl-2 pr-4">
-                              {option}
+                        {OCCLUSAL_OPTIONS.map(({ value, label }) => (
+                          <div key={value} className="flex items-center space-x-2">
+                            <RadioGroupItem value={value} id={`occlusal-${value}`} />
+                            <Label htmlFor={`occlusal-${value}`} className="text-sm pl-2 pr-4">
+                              {label}
                             </Label>
                           </div>
                         ))}
                       </RadioGroup>
-                      {caseDetails.occlusalType === 'Custom' && (
+                      {caseDetails.occlusalType === OcclusalType.Custom && (
                         <Textarea
                           value={caseDetails.customOcclusal || ''}
                           onChange={(e) => handleCaseDetailChange('customOcclusal', e.target.value)}
@@ -1405,16 +1405,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         onValueChange={(value) => handleCaseDetailChange('contactType', value)}
                         className="flex flex-col"
                       >
-                        {CONTACT_OPTIONS.map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`contact-${option}`} />
-                            <Label htmlFor={`contact-${option}`} className="text-sm pl-2 pr-4">
-                              {option}
+                        {CONTACT_OPTIONS.map(({ value, label }) => (
+                          <div key={value} className="flex items-center space-x-2">
+                            <RadioGroupItem value={value} id={`contact-${value}`} />
+                            <Label htmlFor={`contact-${value}`} className="text-sm pl-2 pr-4">
+                              {label}
                             </Label>
                           </div>
                         ))}
                       </RadioGroup>
-                      {caseDetails.contactType === 'Custom' && (
+                      {caseDetails.contactType === ContactType.Custom && (
                         <Textarea
                           value={caseDetails.customContact || ''}
                           onChange={(e) => handleCaseDetailChange('customContact', e.target.value)}
@@ -1434,46 +1434,37 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         onValueChange={(value) => handleCaseDetailChange('ponticType', value)}
                         className="flex flex-col"
                       >
-                        {PONTIC_OPTIONS.map((option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={`pontic-${option}`} />
-                            {option !== 'N/A' ? (
+                        {PONTIC_OPTIONS.map(({ value, label }) => (
+                          <div key={value} className="flex items-center space-x-2">
+                            <RadioGroupItem value={value} id={`pontic-${value}`} />
+                            {value !== PonticType.NotApplicable ? (
                               <HoverCard>
                                 <HoverCardTrigger asChild>
                                   <Label 
-                                    htmlFor={`pontic-${option}`} 
+                                    htmlFor={`pontic-${value}`} 
                                     className="text-sm cursor-pointer hover:text-primary pl-2 pr-4"
                                   >
-                                    {option}
+                                    {label}
                                   </Label>
                                 </HoverCardTrigger>
-                                {option !== PonticType.Custom && (
-                                  <HoverCardContent className="w-80">
-                                    <div className="flex flex-col gap-2">
-                                      <img 
-                                        src={PONTIC_INFO[option as keyof typeof PONTIC_INFO]?.imagePath} 
-                                        alt={`${option} pontic type`}
-                                        className="w-full h-40 object-contain bg-white rounded-md"
-                                      />
-                                      <p className="text-sm text-muted-foreground">
-                                        {PONTIC_INFO[option as keyof typeof PONTIC_INFO]?.description}
-                                      </p>
-                                    </div>
+                                {value !== PonticType.Custom && (
+                                  <HoverCardContent>
+                                    {/* Add pontic type descriptions here */}
                                   </HoverCardContent>
                                 )}
                               </HoverCard>
                             ) : (
                               <Label 
-                                htmlFor={`pontic-${option}`} 
+                                htmlFor={`pontic-${value}`} 
                                 className="text-sm pl-2 pr-4"
                               >
-                                {option}
+                                {label}
                               </Label>
                             )}
                           </div>
                         ))}
                       </RadioGroup>
-                      {caseDetails.ponticType === 'Custom' && (
+                      {caseDetails.ponticType === PonticType.Custom && (
                         <Textarea
                           value={caseDetails.customPontic || ''}
                           onChange={(e) => handleCaseDetailChange('customPontic', e.target.value)}

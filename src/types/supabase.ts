@@ -10,6 +10,18 @@ export type Json =
   | Json[]
 
 /**
+ * Default product types enum
+ */
+export enum DefaultProductType {
+  Crown = 'Crown',
+  Bridge = 'Bridge',
+  Removable = 'Removable',
+  Implant = 'Implant',
+  Coping = 'Coping',
+  Appliance = 'Appliance'
+}
+
+/**
  * Reference data interfaces
  */
 export interface Material {
@@ -26,6 +38,7 @@ export interface ProductType {
   name: string;
   description: string | null;
   is_active: boolean;
+  is_default?: boolean;  // true for DefaultProductType entries
   created_at: string;
   updated_at: string;
 }
@@ -52,16 +65,32 @@ export interface ShadeOption {
 /**
  * Product related enums
  */
-export type MaterialType = 'Acrylic' | 'Denture' | 'E_Max' | 'Full_Cast' | 'PFM' | 'Zirconia'
-export type ProductType = 'Crown' | 'Bridge' | 'Removable' | 'Implant' | 'Coping' | 'Appliance'
-export type BillingType = 'perTooth' | 'perArch' | 'teeth' | 'generic' | 'calculate' | 'per_unit'
-export enum ProductCategory {
-  Crown = 'crown',
-  Bridge = 'bridge',
-  Veneer = 'veneer',
-  Implant = 'implant',
-  Other = 'other'
+export enum MaterialType {
+  Acrylic = 'Acrylic',
+  Denture = 'Denture',
+  E_Max = 'E.Max',
+  Full_Cast = 'Full Cast',
+  PFM = 'PFM',
+  Zirconia = 'Zirconia'
 }
+
+export enum BillingType {
+  PerTooth = 'perTooth',
+  PerArch = 'perArch',
+  Teeth = 'teeth',
+  Generic = 'generic',
+  Calculate = 'calculate',
+  PerUnit = 'per_unit'
+}
+
+export const BILLING_TYPE_LABELS = {
+  [BillingType.PerTooth]: { label: 'Per Tooth', description: 'Price calculated per tooth (e.g., crowns and bridges)' },
+  [BillingType.PerArch]: { label: 'Per Arch', description: 'Price calculated per dental arch' },
+  [BillingType.Teeth]: { label: 'Teeth', description: 'Selection without charging per tooth' },
+  [BillingType.Generic]: { label: 'Generic', description: 'No specific teeth selection required' },
+  [BillingType.Calculate]: { label: 'Calculate', description: 'Price calculation based on entered amount' },
+  [BillingType.PerUnit]: { label: 'Per Unit', description: 'Price calculated per unit' }
+} as const;
 
 export enum PonticType {
   NotApplicable = 'not_applicable',
@@ -116,7 +145,6 @@ export interface Product {
   isClientVisible: boolean;
   isTaxable: boolean;
   billing_type_id: string;  // UUID reference to billing_types table
-  category: ProductCategory;
   requiresShade: boolean;
   material_id: string;      // UUID reference to materials table
   product_type_id: string;  // UUID reference to product_types table
@@ -187,11 +215,11 @@ export interface Database {
           quantity: number
           notes: string | null
           occlusal_type: OcclusalType
-          custom_occlusal: string | null
+          custom_occlusal_details: string | null
           contact_type: ContactType
-          custom_contact: string | null
-          pontic_type: PonticType | null
-          custom_pontic: string | null
+          custom_contact_details: string | null
+          pontic_type: PonticType
+          custom_pontic_details: string | null
           created_at: string
           updated_at: string
         }
@@ -201,12 +229,12 @@ export interface Database {
           product_id: string
           quantity?: number
           notes?: string | null
-          occlusal_type: OcclusalType
-          custom_occlusal: string | null
-          contact_type: ContactType
-          custom_contact: string | null
-          pontic_type: PonticType | null
-          custom_pontic: string | null
+          occlusal_type?: OcclusalType
+          custom_occlusal_details?: string | null
+          contact_type?: ContactType
+          custom_contact_details?: string | null
+          pontic_type?: PonticType
+          custom_pontic_details?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -216,13 +244,12 @@ export interface Database {
           product_id?: string
           quantity?: number
           notes?: string | null
-          occlusal_type: OcclusalType
-          custom_occlusal: string | null
-          contact_type: ContactType
-          custom_contact: string | null
-          pontic_type: PonticType | null
-          custom_pontic: string | null
-          custom_pontic?: string | null
+          occlusal_type?: OcclusalType
+          custom_occlusal_details?: string | null
+          contact_type?: ContactType
+          custom_contact_details?: string | null
+          pontic_type?: PonticType
+          custom_pontic_details?: string | null
           created_at?: string
           updated_at?: string
         }

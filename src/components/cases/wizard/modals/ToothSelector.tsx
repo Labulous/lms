@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { BillingType } from '../../../../data/mockProductData';
 import { Button } from '@/components/ui/button';
 import { Plus, RotateCcw, HelpCircle } from 'lucide-react';
+import { DefaultProductType } from '@/types/supabase';
 
 interface ToothSelectorProps {
   billingType: string;
@@ -37,22 +38,22 @@ const teethData = [
 
 // Color mapping for different dental work types
 export const TYPE_COLORS = {
-  'Crown': 'rgb(59 130 246)',    // blue-500
-  'Bridge': 'rgb(168 85 247)',   // purple-500
-  'Removable': 'rgb(77 124 15)', // lime-700
-  'Implant': 'rgb(6 182 212)',   // cyan-500
-  'Coping': 'rgb(136 19 55)',    // rose-900
-  'Appliance': 'rgb(120 113 108)' // stone-500
+  [DefaultProductType.Crown]: 'rgb(59 130 246)',    // blue-500
+  [DefaultProductType.Bridge]: 'rgb(168 85 247)',   // purple-500
+  [DefaultProductType.Removable]: 'rgb(77 124 15)', // lime-700
+  [DefaultProductType.Implant]: 'rgb(6 182 212)',   // cyan-500
+  [DefaultProductType.Coping]: 'rgb(136 19 55)',    // rose-900
+  [DefaultProductType.Appliance]: 'rgb(120 113 108)' // stone-500
 } as const;
 
 // Color mapping for fill classes
 const TYPE_FILL_CLASSES = {
-  'Crown': 'fill-blue-500',
-  'Bridge': 'fill-purple-500',
-  'Removable': 'fill-lime-700',
-  'Implant': 'fill-cyan-500',
-  'Coping': 'fill-rose-900',
-  'Appliance': 'fill-stone-500'
+  [DefaultProductType.Crown]: 'fill-blue-500',
+  [DefaultProductType.Bridge]: 'fill-purple-500',
+  [DefaultProductType.Removable]: 'fill-lime-700',
+  [DefaultProductType.Implant]: 'fill-cyan-500',
+  [DefaultProductType.Coping]: 'fill-rose-900',
+  [DefaultProductType.Appliance]: 'fill-stone-500'
 } as const;
 
 const ToothSelector: React.FC<ToothSelectorProps> = ({
@@ -351,33 +352,33 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     // If tooth is in ponticTeeth, use Bridge color
     if (ponticTeeth.has(toothNumber)) {
-      return TYPE_FILL_CLASSES['Bridge'];
+      return TYPE_FILL_CLASSES[DefaultProductType.Bridge];
     }
 
     // If tooth is already added to a product
     if (addedTeethMap && addedTeethMap[toothNumber]) {
       const addedType = addedTeethMap[toothNumber].type?.[0];
       if (addedType && addedType in TYPE_FILL_CLASSES) {
-        return TYPE_FILL_CLASSES[addedType];
+        return TYPE_FILL_CLASSES[addedType as DefaultProductType];
       }
       return 'fill-gray-300';
     }
 
     // If in bridge mode
-    if (type === 'Bridge') {
+    if (type === DefaultProductType.Bridge) {
       if (ponticMode) {
         return 'fill-gray-300'; // gray-300 for pontic selection mode
       }
       const abutmentTeeth = getAbutmentTeeth();
       if (abutmentTeeth.includes(toothNumber)) {
-        return TYPE_FILL_CLASSES['Bridge']; // Abutment teeth
+        return TYPE_FILL_CLASSES[DefaultProductType.Bridge]; // Abutment teeth
       }
     }
 
     // If tooth is selected
     if (selectedTeeth.includes(toothNumber)) {
       if (type && type in TYPE_FILL_CLASSES) {
-        return TYPE_FILL_CLASSES[type];
+        return TYPE_FILL_CLASSES[type as DefaultProductType];
       }
       return 'fill-gray-300'; // gray-300 fallback
     }
