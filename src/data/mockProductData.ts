@@ -45,13 +45,6 @@ export const PRODUCT_TYPES: ProductType[] = [
   'Appliance'
 ];
 
-export const VITA_CLASSICAL_SHADES = [
-  'A1', 'A2', 'A2.5', 'A3', 'A3.5', 'A4',
-  'B1', 'B1.5', 'B2', 'B3', 'B4',
-  'C1', 'C1.5', 'C2', 'C3', 'C4',
-  'D2', 'D3', 'D4'
-];
-
 export const mockProducts: Product[] = [
   {
     id: '1',

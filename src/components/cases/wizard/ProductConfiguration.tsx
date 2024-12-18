@@ -10,11 +10,10 @@ import {
   MATERIALS,
   ProductMaterial,
   MaterialType,
-  VITA_CLASSICAL_SHADES,
   PRODUCT_TYPES,
   ProductType
 } from '@/data/mockProductData';
-import { Product, ShadeData, ProductCategory, BillingType, PonticType, OcclusalType, ContactType } from '@/types/supabase';
+import { Product, ShadeData, ProductCategory, BillingType, PonticType, OcclusalType, ContactType, ShadeOption } from '@/types/supabase';
 import { productsService } from '@/services/productsService';
 import ToothSelector, { TYPE_COLORS } from './modals/ToothSelector';
 import SelectedProductsModal from './modals/SelectedProductsModal';
@@ -179,6 +178,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [previewNote, setPreviewNote] = useState<string>('');
   const [notePopoverOpen, setNotePopoverOpen] = useState<string | null>(null);
 
+  const [shadeOptions, setShadeOptions] = useState<ShadeOption[]>([]);
+
   useEffect(() => {
     if (selectedMaterial !== selectedMaterialState) {
       setSelectedMaterialState(selectedMaterial);
@@ -209,6 +210,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     fetchProducts();
   }, []);  // Only fetch on mount, we'll filter in useMemo
+
+  useEffect(() => {
+    const fetchShadeOptions = async () => {
+      try {
+        const { data: options, error } = await supabase
+          .from('shade_options')
+          .select('*')
+          .eq('is_active', true)
+          .order('category', { ascending: true })
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+        setShadeOptions(options || []);
+      } catch (error) {
+        console.error('Error fetching shade options:', error);
+        toast.error('Failed to load shade options');
+      }
+    };
+
+    fetchShadeOptions();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     console.log('Filtering products:', { 
@@ -917,6 +939,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   };
 
+  const shadeOptionsByCategory = useMemo(() => {
+    return shadeOptions.reduce((acc, option) => {
+      if (!acc[option.category]) {
+        acc[option.category] = [];
+      }
+      acc[option.category].push(option.name);
+      return acc;
+    }, {} as Record<string, string[]>);
+  }, [shadeOptions]);
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1095,17 +1127,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             value={shadeData.occlusal}
                                             onValueChange={(value) => setShadeData(prev => ({ ...prev, occlusal: value }))}
                                           >
-                                            <SelectTrigger className="col-span-2">
+                                            <SelectTrigger className="w-full">
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <ScrollArea className="h-[200px]">
-                                                {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                  <SelectItem key={shade} value={shade}>
-                                                    {shade}
-                                                  </SelectItem>
-                                                ))}
-                                              </ScrollArea>
+                                              {Object.entries(shadeOptionsByCategory).map(([category, shades]) => (
+                                                <div key={category}>
+                                                  <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground bg-muted/50">
+                                                    {category}
+                                                  </div>
+                                                  {shades.map((shade) => (
+                                                    <SelectItem key={shade} value={shade}>
+                                                      {shade}
+                                                    </SelectItem>
+                                                  ))}
+                                                </div>
+                                              ))}
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -1115,17 +1152,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             value={shadeData.body}
                                             onValueChange={(value) => setShadeData(prev => ({ ...prev, body: value }))}
                                           >
-                                            <SelectTrigger className="col-span-2">
+                                            <SelectTrigger className="w-full">
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <ScrollArea className="h-[200px]">
-                                                {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                  <SelectItem key={shade} value={shade}>
-                                                    {shade}
-                                                  </SelectItem>
-                                                ))}
-                                              </ScrollArea>
+                                              {Object.entries(shadeOptionsByCategory).map(([category, shades]) => (
+                                                <div key={category}>
+                                                  <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground bg-muted/50">
+                                                    {category}
+                                                  </div>
+                                                  {shades.map((shade) => (
+                                                    <SelectItem key={shade} value={shade}>
+                                                      {shade}
+                                                    </SelectItem>
+                                                  ))}
+                                                </div>
+                                              ))}
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -1135,17 +1177,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             value={shadeData.gingival}
                                             onValueChange={(value) => setShadeData(prev => ({ ...prev, gingival: value }))}
                                           >
-                                            <SelectTrigger className="col-span-2">
+                                            <SelectTrigger className="w-full">
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <ScrollArea className="h-[200px]">
-                                                {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                  <SelectItem key={shade} value={shade}>
-                                                    {shade}
-                                                  </SelectItem>
-                                                ))}
-                                              </ScrollArea>
+                                              {Object.entries(shadeOptionsByCategory).map(([category, shades]) => (
+                                                <div key={category}>
+                                                  <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground bg-muted/50">
+                                                    {category}
+                                                  </div>
+                                                  {shades.map((shade) => (
+                                                    <SelectItem key={shade} value={shade}>
+                                                      {shade}
+                                                    </SelectItem>
+                                                  ))}
+                                                </div>
+                                              ))}
                                             </SelectContent>
                                           </Select>
                                         </div>
@@ -1155,17 +1202,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             value={shadeData.stump}
                                             onValueChange={(value) => setShadeData(prev => ({ ...prev, stump: value }))}
                                           >
-                                            <SelectTrigger className="col-span-2">
+                                            <SelectTrigger className="w-full">
                                               <SelectValue placeholder="Select shade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              <ScrollArea className="h-[200px]">
-                                                {VITA_CLASSICAL_SHADES.map((shade) => (
-                                                  <SelectItem key={shade} value={shade}>
-                                                    {shade}
-                                                  </SelectItem>
-                                                ))}
-                                              </ScrollArea>
+                                              {Object.entries(shadeOptionsByCategory).map(([category, shades]) => (
+                                                <div key={category}>
+                                                  <div className="px-2 py-1.5 text-sm font-medium text-muted-foreground bg-muted/50">
+                                                    {category}
+                                                  </div>
+                                                  {shades.map((shade) => (
+                                                    <SelectItem key={shade} value={shade}>
+                                                      {shade}
+                                                    </SelectItem>
+                                                  ))}
+                                                </div>
+                                              ))}
                                             </SelectContent>
                                           </Select>
                                         </div>

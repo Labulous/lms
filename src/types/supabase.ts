@@ -127,10 +127,20 @@ export type CaseStatus = 'in_queue' | 'in_progress' | 'completed' | 'cancelled'
  * Shade data structure for dental products
  */
 export interface ShadeData {
-  occlusal: string
-  body: string
-  gingival: string
-  stump?: string
+  occlusal_shade_id?: string;  // UUID reference to shade_options
+  body_shade_id?: string;      // UUID reference to shade_options
+  gingival_shade_id?: string;  // UUID reference to shade_options
+  stump_shade_id?: string;     // UUID reference to shade_options
+}
+
+/**
+ * Shade data with resolved names for display
+ */
+export interface ShadeDataDisplay {
+  occlusal?: string;
+  body?: string;
+  gingival?: string;
+  stump?: string;
 }
 
 /**
