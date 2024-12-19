@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { MaterialType } from '../../../../data/mockProductData';
-import { Product } from '../../../../services/productsService';
-import { cn } from '@/lib/utils';
+import { MaterialType } from "../../../../data/mockProductData";
+import { Product } from "../../../../services/productsService";
+import { cn } from "@/lib/utils";
+import { fetchShadeOptions } from "@/data/mockCasesData";
 
 interface MultiColumnProductSelectorProps {
   materials: MaterialType[];
@@ -18,7 +19,7 @@ interface MultiColumnProductSelectorProps {
   selectedProduct: Product | null;
   onProductSelect: (product: Product) => void;
   disabled?: boolean;
-  size?: 'default' | 'xs';
+  size?: "default" | "xs";
 }
 
 const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
@@ -27,35 +28,44 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   selectedProduct,
   onProductSelect,
   disabled = false,
-  size = 'default'
+  size = "default",
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(null);
-
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(
+    null
+  );
+  // console.log(products, "products her");
   // Filter products based on search query and selected material
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return products.filter(product => {
-      const matchesSearch = !query || 
-        product.name.toLowerCase().includes(query) || 
-        product.material?.toLowerCase().includes(query) ||
-        (Array.isArray(product.type) && product.type.some(t => t.toLowerCase().includes(query)));
-      
-      const matchesMaterial = !selectedMaterial || product.material === selectedMaterial;
-      
+    return products.filter((product) => {
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        product.material?.name?.toLowerCase().includes(query) ||
+        (Array.isArray(product.type) &&
+          product?.product_type.some((t) => t.toLowerCase().includes(query)));
+
+      const matchesMaterial =
+        !selectedMaterial || product.material?.name === selectedMaterial;
+
       return matchesSearch && matchesMaterial;
     });
   }, [products, searchQuery, selectedMaterial]);
-
   // Group products by material for the count
+
+ 
+
   const productCountByMaterial = useMemo(() => {
+
     return materials.reduce((acc, material) => {
-      acc[material] = products.filter(p => p.material === material).length;
+      acc[material] = products.filter(
+        (p) => p.material?.name === material
+      ).length;
       return acc;
     }, {} as Record<MaterialType, number>);
   }, [materials, products]);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -65,7 +75,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
           aria-expanded={open}
           className={cn(
             "w-full justify-between",
-            size === 'xs' ? "h-7 text-xs" : "",
+            size === "xs" ? "h-7 text-xs" : "",
             disabled ? "opacity-50 cursor-not-allowed" : ""
           )}
           disabled={disabled}
@@ -86,7 +96,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
             />
           </div>
         </div>
-        
+
         <div className="flex divide-x h-[400px]">
           {/* Materials Column (1/3 width) */}
           <div className="w-1/3 p-2">
@@ -113,7 +123,8 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                     variant="ghost"
                     className={cn(
                       "w-full justify-between text-left h-auto py-2 px-3",
-                      selectedMaterial === material && "bg-blue-50 text-blue-600"
+                      selectedMaterial === material &&
+                        "bg-blue-50 text-blue-600"
                     )}
                     onClick={() => setSelectedMaterial(material)}
                   >
@@ -140,8 +151,8 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
             <ScrollArea className="h-[350px]">
               {filteredProducts.length === 0 ? (
                 <div className="p-4 text-center text-sm text-muted-foreground">
-                  {searchQuery 
-                    ? `No products found for "${searchQuery}"` 
+                  {searchQuery
+                    ? `No products found for "${searchQuery}"`
                     : "No products available"}
                 </div>
               ) : (
@@ -152,7 +163,8 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                       variant="ghost"
                       className={cn(
                         "w-full justify-start text-left h-auto py-2 px-3",
-                        selectedProduct?.id === product.id && "bg-blue-50 text-blue-600"
+                        selectedProduct?.id === product.id &&
+                          "bg-blue-50 text-blue-600"
                       )}
                       onClick={() => {
                         onProductSelect(product);
@@ -162,7 +174,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                       <div>
                         <div className="font-medium">{product.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          {product.material}
+                          {/* {product.material.name} */}
                         </div>
                       </div>
                     </Button>
