@@ -1,5 +1,6 @@
 import { format, addDays } from "date-fns";
 import { createClient } from "@supabase/supabase-js";
+import toast from "react-hot-toast";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -112,7 +113,7 @@ const loadCases = (): Case[] => {
 // const saveCases = (cases: Case[]) => {
 //   localStorage.setItem("cases", JSON.stringify(cases));
 // };
-const saveCaseProduct = async (overview: any, cases: any) => {
+const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
   // Step 1: Create a row in the enclosed_case table
   try {
     const { data: caseProductData, error: caseProductError } = await supabase
@@ -136,7 +137,7 @@ const saveCaseProduct = async (overview: any, cases: any) => {
       body_shade_id: product.shades.body || "",
       gingival_shade_id: product.shades.gingival || "",
       stump_shade_id: product.shades.stump || "",
-      notes: product.note || "",
+      notes: product.notes || "",
       tooth_number: product.teeth || "",
     }));
 
@@ -151,13 +152,15 @@ const saveCaseProduct = async (overview: any, cases: any) => {
       );
     } else {
       console.log("case_product_teeth rows created successfully!");
+      toast.success("Case created successfully");
+     navigate && navigate("/cases");
     }
   } catch (error) {
     console.error("Error while processing case product:", error);
   }
 };
 
-const saveCases = async (cases: any) => {
+const saveCases = async (cases: any, navigate: any) => {
   const enclosedCaseRow = {
     impression: cases.enclosedItems?.impression || 0,
     biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -217,7 +220,7 @@ const saveCases = async (cases: any) => {
 
         // Include other necessary fields here
       };
-      await saveCaseProduct(caseProduct, cases); // Save each case product
+      await saveCaseProduct(caseProduct, cases, navigate); // Save each case product
       console.log("All case products saved successfully.");
     } catch (productError) {
       console.error("Error saving case products:", productError);
@@ -242,9 +245,9 @@ export const getCaseById = (id: string): Case | undefined => {
 };
 
 // Function to add a new case
-export const addCase = (newCase: Case): void => {
+export const addCase = (newCase: Case, navigate:any): void => {
   cases = [newCase];
-  saveCases(newCase);
+  saveCases(newCase, navigate);
 };
 
 // Function to update a case

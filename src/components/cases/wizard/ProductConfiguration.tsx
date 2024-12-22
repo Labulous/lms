@@ -122,6 +122,7 @@ interface ProductConfigurationProps {
     ponticType: string;
     customPontic?: string;
   };
+  setselectedProducts: any;
 }
 
 interface ToothItem {
@@ -142,6 +143,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   onMaterialChange,
   onCaseDetailsChange,
   initialCaseDetails,
+  setselectedProducts,
 }) => {
   const [selectedProduct, setSelectedProduct] =
     useState<ProductWithShade | null>(null);
@@ -609,6 +611,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       isRange,
       type: selectedType,
       productName: selectedType,
+      notes: previewNote,
       highlightColor: "bg-blue-50",
       shades: {
         occlusal: shadeData.occlusal || "",
@@ -859,7 +862,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setShadePopoverOpen(false);
 
     // Add the product to the table with shades
-    handleAddPreviewToTable(updatedPreviewProduct);
   };
 
   const handleAddPreviewToTable = (productToAdd = previewProduct) => {
@@ -1041,14 +1043,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }, {} as Record<string, string[]>);
   }, [shadeOptions]);
 
-  const handleNoteInput = (value: string, selected: any) => {
-    setPreviewNote(value); // Update the preview note state immediately
-    setSelectedProduct((item: any) => ({
-      ...item,
-      note: value, // Use `value` directly instead of `previewNote`
-    }));
-    console.log(value, selected, "note");
+  const handleSaveNotes = (id?: string) => {
+    if (id) {
+      // Edit the product
+      const updatedProducts = selectedProducts.map(
+        (item) => (item.id === id ? { ...item, notes: previewNote } : item) // Use the latest value directly
+      );
+      setselectedProducts(updatedProducts);
+      setNotePopoverOpen(null);
+
+    } else {
+      // Create a new preview product with updated shades
+      // Add the product to the table with shades
+      const updatedPreviewProduct = {
+        ...previewProduct,
+        notes: previewNote,
+      };
+
+      // Update the preview product state
+      setPreviewProduct(updatedPreviewProduct);
+      setNotePopoverOpen(null);
+      // Close the shade popover
+      setShadePopoverOpen(false);
+    }
   };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1458,17 +1477,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     align="end"
                                   >
                                     <div className="space-y-2">
-                                      <Label className="text-xs">
-                                        Add Note
-                                      </Label>
+                                      <div className="flex justify-between">
+                                        <Label className="text-xs">
+                                          Add Note
+                                        </Label>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveNotes()}
+                                        >
+                                          Save
+                                        </Button>
+                                      </div>
                                       <Textarea
                                         placeholder="Enter note for this product..."
                                         value={previewNote}
                                         onChange={(e) =>
-                                          handleNoteInput(
-                                            e.target.value,
-                                            selectedProduct
-                                          )
+                                          setPreviewNote(e.target.value)
                                         }
                                         className="h-24 text-sm"
                                       />
@@ -1602,12 +1626,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   align="end"
                                 >
                                   <div className="space-y-2">
-                                    <Label className="text-xs">Edit Note</Label>
+                                    <div className="flex justify-between">
+                                      <Label className="text-xs">
+                                        Edit Note
+                                      </Label>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleSaveNotes(item.id)}
+                                      >
+                                        Save
+                                      </Button>
+                                    </div>
                                     <Textarea
                                       placeholder="Enter note for this product..."
                                       value={productNotes[item.id] || ""}
                                       onChange={(e) => {
                                         const newNote = e.target.value;
+                                        setPreviewNote(e.target.value);
                                         setProductNotes((prev) => ({
                                           ...prev,
                                           [item.id]: newNote,

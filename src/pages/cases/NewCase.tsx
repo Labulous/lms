@@ -244,9 +244,7 @@ const NewCase: React.FC = () => {
       };
 
       // Add case to database
-      await addCase(newCase);
-      toast.success("Case created successfully");
-      // navigate("/cases");
+      await addCase(newCase, navigate);
     } catch (error) {
       console.error("Error creating case:", error);
       toast.error("Failed to create case");
@@ -286,6 +284,7 @@ const NewCase: React.FC = () => {
             onMaterialChange={handleCategoryChange}
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}
+            setselectedProducts={setSelectedProducts}
           />
         </div>
 
