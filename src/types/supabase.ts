@@ -111,29 +111,29 @@ export const BILLING_TYPE_LABELS = {
 } as const;
 
 export enum PonticType {
-  NotApplicable = "Not Applicable",
-  WashThrough = "Wash Through",
+  NotApplicable = "not_applicable",
+  WashThrough = "wash_through",
   Dome = "Dome",
-  ModifiedRidgeLap = "Modified Ridge Lap",
-  RidgeLap = "Ridge Lap",
-  Ovate = "Ovate",
-  Custom = "Custom",
+  ModifiedRidgeLap = "modified_ridge_lap",
+  RidgeLap = "ridge_lap",
+  Ovate = "ovate",
+  Custom = "custom",
 }
 
 export enum OcclusalType {
   NotApplicable = "not_applicable",
-  Light = "Light",
-  Medium = "Medium",
-  Heavy = "Heavy",
-  Custom = "Custom",
+  Light = "light",
+  Medium = "medium",
+  Heavy = "heavy",
+  Custom = "custom",
 }
 
 export enum ContactType {
   NotApplicable = "not_applicable",
-  Light = "Light",
-  Medium = "Medium",
-  Heavy = "Heavy",
-  Custom = "Custom",
+  Light = "light",
+  Medium = "medium",
+  Heavy = "heavy",
+  Custom = "custom",
 }
 
 /**

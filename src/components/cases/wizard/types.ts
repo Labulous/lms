@@ -9,4 +9,5 @@ export interface SavedProduct extends Product {
 
 export interface ProductWithShade extends SavedProduct {
   shade?: ShadeData;
+  note:string
 }

@@ -65,6 +65,7 @@ import { ReactComponent as RemovableIcon } from "@/assets/types/removable.svg";
 import { ReactComponent as CopingIcon } from "@/assets/types/coping.svg";
 import { ReactComponent as ApplianceIcon } from "@/assets/types/appliance.svg";
 import { fetchShadeOptions } from "@/data/mockCasesData";
+import { Item } from "@radix-ui/react-dropdown-menu";
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
@@ -348,7 +349,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         },
         price: 0,
         discount: 0,
-        notes: "",
+        notes: previewNote,
         requiresShade: true,
       };
       console.log("Setting initial preview product:", newPreviewProduct);
@@ -360,7 +361,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     onCaseDetailsChange(caseDetails);
-  }, [caseDetails, onCaseDetailsChange]);
+  }, [caseDetails, onCaseDetailsChange, previewNote]);
 
   const handleProductSelect = (
     value: string,
@@ -375,6 +376,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       itemId,
       foundProduct: product?.name,
       currentTeeth: selectedTeeth,
+      note: previewNote,
+      isRange: toothItems.length > 1,
     });
 
     if (
@@ -913,6 +916,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const newProduct: ProductWithShade = {
       ...productToAdd,
       id: newItem.id,
+      note: previewNote,
       teeth: [...selectedTeeth],
     };
     onProductsChange([...selectedProducts, newProduct]);
@@ -983,7 +987,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     setCaseDetails((prev) => {
       const updated = { ...prev, [field]: value };
-
+      console.log(field, value, "fleid");
       // Clear custom fields when non-custom option is selected
       if (field === "occlusalType" && value !== "Custom") {
         delete updated.customOcclusal;
@@ -1036,6 +1040,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return acc;
     }, {} as Record<string, string[]>);
   }, [shadeOptions]);
+
+  const handleNoteInput = (value: string, selected: any) => {
+    setPreviewNote(value); // Update the preview note state immediately
+    setSelectedProduct((item: any) => ({
+      ...item,
+      note: value, // Use `value` directly instead of `previewNote`
+    }));
+    console.log(value, selected, "note");
+  };
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1285,7 +1298,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {/* {shades.map((shade) => ( */}
                                                   <SelectItem
                                                     key={shade.id}
-                                                    value={shade.name}
+                                                    value={shade.id}
                                                   >
                                                     {shade.name}
                                                   </SelectItem>
@@ -1318,7 +1331,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {/* {shades.map((shade) => ( */}
                                                   <SelectItem
                                                     key={shade.id}
-                                                    value={shade.name}
+                                                    value={shade.id}
                                                   >
                                                     {shade.name}
                                                   </SelectItem>
@@ -1353,7 +1366,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {/* {shades.map((shade) => ( */}
                                                   <SelectItem
                                                     key={shade.id}
-                                                    value={shade.name}
+                                                    value={shade.id}
                                                   >
                                                     {shade.name}
                                                   </SelectItem>
@@ -1386,7 +1399,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {/* {shades.map((shade) => ( */}
                                                   <SelectItem
                                                     key={shade.id}
-                                                    value={shade.name}
+                                                    value={shade.id}
                                                   >
                                                     {shade.name}
                                                   </SelectItem>
@@ -1452,7 +1465,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         placeholder="Enter note for this product..."
                                         value={previewNote}
                                         onChange={(e) =>
-                                          setPreviewNote(e.target.value)
+                                          handleNoteInput(
+                                            e.target.value,
+                                            selectedProduct
+                                          )
                                         }
                                         className="h-24 text-sm"
                                       />
@@ -1819,7 +1835,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           min="0"
                           max="100"
                           value={discount}
-                          onChange={(e) => setDiscount(Number(e.target.value))}
+                          onChange={(e) => {
+                            setDiscount(Number(e.target.value));
+                            setSelectedProduct((item: any) => ({
+                              ...item,
+                              discount: Number(e.target.value), // Use `value` directly instead of `previewNote`
+                            }));
+                          }}
                           className="w-20 h-7 text-sm bg-white"
                         />
                       </div>

@@ -25,13 +25,16 @@ interface FilesStepProps {
   formData: FormData;
   onChange: (data: FormData) => void;
   errors?: any;
+  selectedFiles:any,
+  setSelectedFiles:any
 }
 
 const FilesStep: React.FC<FilesStepProps> = ({ 
   formData,
-  onChange
+  onChange,
+  selectedFiles,
+  setSelectedFiles
 }) => {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,7 +43,6 @@ const FilesStep: React.FC<FilesStepProps> = ({
       setSelectedFiles(prev => [...prev, ...newFiles]);
     }
   };
-
   const handleRemoveFile = (index: number) => {
     setSelectedFiles(prev => {
       const newFiles = [...prev];

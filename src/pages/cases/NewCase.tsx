@@ -97,10 +97,10 @@ const NewCase: React.FC = () => {
       technicianNotes: "",
     },
   });
-
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const [selectedCategory, setSelectedCategory] =
     useState<ProductCategory | null>(null);
@@ -167,7 +167,7 @@ const NewCase: React.FC = () => {
           newData[key] = value;
         }
       });
-
+      console.log(newData, "newData");
       return newData;
     });
   };
@@ -190,7 +190,6 @@ const NewCase: React.FC = () => {
 
     fetchClients();
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -211,41 +210,48 @@ const NewCase: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
-
     try {
       // Create case object
       const newCase: any = {
-        client_id: formData.clientId,
-        doctor_id: formData.doctorId || "",
-        created_by: user?.id || "",
-        patient_name:
-          formData.patientFirstName + " " + formData.patientLastName,
-        pan_number: "",
-        rx_number: "",
-        received_date: formData.orderDate,
-        status: "in_queue",
-        delivery_method: formData.deliveryMethod,
-        due_date: formData.isDueDateTBD ? null : formData.dueDate,
-        isDueDateTBD: formData.isDueDateTBD || false,
-        notes: formData.notes,
-        appointment_date: formData.appointmentDate,
-        enclosedItems: formData.enclosedItems,
-        otherItems: formData.otherItems || "",
-        products: selectedProducts,
+        overview: {
+          client_id: formData.clientId,
+          doctor_id: formData.doctorId || "",
+          created_by: user?.id || "",
+          patient_name:
+            formData.patientFirstName + " " + formData.patientLastName,
+          pan_number: "",
+          rx_number: "",
+          received_date: formData.orderDate,
+          status: "in_queue",
+          due_date: formData.isDueDateTBD ? null : formData.dueDate,
+          isDueDateTBD: formData.isDueDateTBD || false,
+          appointment_date: formData.appointmentDate,
+          otherItems: formData.otherItems || "",
+          lab_notes: formData.notes?.labNotes,
+          technician_notes: formData.notes?.technicianNotes,
+          occlusal_type: formData.caseDetails?.occlusalType,
+          contact_type: formData.caseDetails?.contactType,
+          pontic_type: formData.caseDetails?.ponticType,
+          custom_contact_details: formData.caseDetails?.customContact,
+          custom_occulusal_details: formData.caseDetails?.customOcclusal,
+          custom_pontic_details: formData.caseDetails?.customPontic,
+        },
         // labId: user?.labId || "",
-        caseDetails: formData.caseDetails,
+        products: selectedProducts,
+        enclosedItems: formData.enclosedItems,
+        files: selectedFiles,
+        // caseDetails: formData.caseDetails,
       };
 
       // Add case to database
       await addCase(newCase);
       toast.success("Case created successfully");
-      navigate("/cases");
+      // navigate("/cases");
     } catch (error) {
       console.error("Error creating case:", error);
       toast.error("Failed to create case");
     }
   };
-  // console.log(formData, "form adta");
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -309,6 +315,8 @@ const NewCase: React.FC = () => {
                 formData={formData}
                 onChange={handleStepChange}
                 errors={errors}
+                selectedFiles={selectedFiles}
+                setSelectedFiles={setSelectedFiles}
               />
             </div>
           </div>
