@@ -115,40 +115,9 @@ const loadCases = (): Case[] => {
 const saveCaseProduct = async (overview: any, cases: any) => {
   // Step 1: Create a row in the enclosed_case table
   try {
-    const enclosedCaseRow = {
-      impression: cases.enclosedItems?.impression || 0,
-      biteRegistration: cases.enclosedItems?.biteRegistration || 0,
-      photos: cases.enclosedItems?.photos || 0,
-      jig: cases.enclosedItems?.jig || 0,
-      opposingModel: cases.enclosedItems?.opposingModel || 0,
-      articulator: cases.enclosedItems?.articulator || 0,
-      returnArticulator: cases.enclosedItems?.returnArticulator || 0,
-      cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
-      consultRequested: cases.enclosedItems?.consultRequested || 0,
-      user_id: cases.overview.created_by,
-    };
-
-    const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
-      .from("enclosed_case")
-      .insert(enclosedCaseRow)
-      .select("*");
-
-    if (enclosedCaseError) {
-      console.error("Error saving enclosed case:", enclosedCaseError);
-      return;
-    }
-
-    const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
-
-    // Step 2: Save cases overview, adding enclosed_case_id to the overview
-    const overviewWithEnclosedCaseId = {
-      ...overview,
-      enclosed_case_id: enclosedCaseId,
-    };
-
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
-      .insert(overviewWithEnclosedCaseId)
+      .insert(overview)
       .select("*");
 
     if (caseProductError) {
@@ -189,9 +158,40 @@ const saveCaseProduct = async (overview: any, cases: any) => {
 };
 
 const saveCases = async (cases: any) => {
+  const enclosedCaseRow = {
+    impression: cases.enclosedItems?.impression || 0,
+    biteRegistration: cases.enclosedItems?.biteRegistration || 0,
+    photos: cases.enclosedItems?.photos || 0,
+    jig: cases.enclosedItems?.jig || 0,
+    opposingModel: cases.enclosedItems?.opposingModel || 0,
+    articulator: cases.enclosedItems?.articulator || 0,
+    returnArticulator: cases.enclosedItems?.returnArticulator || 0,
+    cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
+    consultRequested: cases.enclosedItems?.consultRequested || 0,
+    user_id: cases.overview.created_by,
+  };
+
+  const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
+    .from("enclosed_case")
+    .insert(enclosedCaseRow)
+    .select("*");
+
+  if (enclosedCaseError) {
+    console.error("Error saving enclosed case:", enclosedCaseError);
+    return;
+  }
+
+  const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
+
+  // Step 2: Save cases overview, adding enclosed_case_id to the overview
+  const overviewWithEnclosedCaseId = {
+    ...cases.overview,
+    enclosed_case_id: enclosedCaseId,
+  };
+
   const { data, error } = await supabase
     .from("cases")
-    .upsert(cases.overview, { onConflict: "id" })
+    .upsert(overviewWithEnclosedCaseId, { onConflict: "id" })
     .select("*");
 
   if (error) {

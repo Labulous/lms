@@ -113,7 +113,7 @@ export const BILLING_TYPE_LABELS = {
 export enum PonticType {
   NotApplicable = "not_applicable",
   WashThrough = "wash_through",
-  Dome = "Dome",
+  Dome = "dome",
   ModifiedRidgeLap = "modified_ridge_lap",
   RidgeLap = "ridge_lap",
   Ovate = "ovate",
