@@ -1,9 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Briefcase, Truck, Users, DollarSign, BarChart2, PlusCircle, Calendar, FileText, Package, Activity, ChevronLeft, Building2 } from 'lucide-react';
+import { Home, Briefcase, Truck, Users, DollarSign, BarChart2, PlusCircle, Calendar, FileText, Package, Activity, ChevronLeft, Building2, ChevronDown, CreditCard } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import logomark from '../../assets/logomark.svg';
 import logotext from '../../assets/logotext.svg';
+
+interface MenuItem {
+  icon: any;
+  label: string;
+  href: string;
+  roles: string[];
+  subItems?: {
+    label: string;
+    href: string;
+    icon: any;
+  }[];
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,14 +25,35 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const location = useLocation();
   const { user } = useAuth();
+  const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
-  const menuItems = [
+  const toggleDropdown = (label: string) => {
+    setOpenDropdowns(prev => 
+      prev.includes(label) 
+        ? prev.filter(item => item !== label)
+        : [...prev, label]
+    );
+  };
+
+  const menuItems: MenuItem[] = [
     { icon: Home, label: 'Dashboard', href: '/', roles: ['admin', 'technician', 'client'] },
     { icon: Briefcase, label: 'Cases', href: '/cases', roles: ['admin', 'technician'] },
     { icon: Truck, label: 'Shipping', href: '/shipping', roles: ['admin'] },
     { icon: Users, label: 'Clients', href: '/clients', roles: ['admin', 'technician'] },
     { icon: Activity, label: 'Client Activity', href: '/client-activity', roles: ['admin'] },
-    { icon: DollarSign, label: 'Billing', href: '/billing', roles: ['admin'] },
+    { 
+      icon: DollarSign, 
+      label: 'Billing', 
+      href: '/billing',
+      roles: ['admin'],
+      subItems: [
+        { label: 'Invoices', href: '/billing/invoices', icon: FileText },
+        { label: 'Payments', href: '/billing/payments', icon: CreditCard },
+        { label: 'Balance Tracking', href: '/billing/balance', icon: Activity },
+        { label: 'Statements', href: '/billing/statements', icon: FileText },
+        { label: 'Adjustments', href: '/billing/adjustments', icon: DollarSign }
+      ]
+    },
     { icon: BarChart2, label: 'Reports', href: '/reports', roles: ['admin'] },
     { icon: Package, label: 'Inventory', href: '/inventory', roles: ['admin'] },
   ];
@@ -28,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const quickActions = [
     { icon: PlusCircle, label: 'Create a New Case', href: '/cases/new', roles: ['admin', 'client'] },
     { icon: Calendar, label: 'Schedule a Delivery', href: '/shipping/new', roles: ['admin'] },
-    { icon: FileText, label: 'Generate an Invoice', href: '/billing/new', roles: ['admin'] },
+    { icon: FileText, label: 'Generate an Invoice', href: '/invoices/new', roles: ['admin'] },
     { icon: Package, label: 'Add an Inventory Item', href: '/inventory/add', roles: ['admin'] },
   ];
 
@@ -65,7 +98,54 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <div className="space-y-1">
           {filteredMenuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.href;
+            const isActive = location.pathname === item.href || 
+              (item.subItems?.some(subItem => location.pathname === subItem.href));
+            const isOpen = openDropdowns.includes(item.label);
+
+            // If the item has subItems, render as a dropdown
+            if (item.subItems) {
+              return (
+                <div key={item.href}>
+                  <div
+                    className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'text-gray-600 hover:bg-blue-50/50 hover:text-blue-600'
+                    }`}
+                    onClick={() => toggleDropdown(item.label)}
+                  >
+                    <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span className={`flex-1 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
+                      {item.label}
+                    </span>
+                    <ChevronDown 
+                      className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                    />
+                  </div>
+                  
+                  {isOpen && (
+                    <div className="ml-6 mt-1 space-y-1">
+                      {item.subItems.map((subItem) => (
+                        <Link
+                          key={subItem.href}
+                          to={subItem.href}
+                          className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm transition-colors duration-200 ${
+                            location.pathname === subItem.href
+                              ? 'bg-blue-50 text-blue-600'
+                              : 'text-gray-500 hover:bg-blue-50/50 hover:text-blue-600'
+                          }`}
+                        >
+                          <subItem.icon className={`h-5 w-5 flex-shrink-0 ${location.pathname === subItem.href ? 'text-blue-600' : 'text-gray-500'}`} />
+                          <span>{subItem.label}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // For items without subItems, render as a regular Link
             return (
               <Link
                 key={item.href}
@@ -80,11 +160,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 <span className={`transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
                   {item.label}
                 </span>
-                {item.notification && (
-                  <span className={`ml-auto bg-red-500 text-white text-xs font-medium px-2 py-0.5 rounded-full transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
-                    {item.notification}
-                  </span>
-                )}
               </Link>
             );
           })}

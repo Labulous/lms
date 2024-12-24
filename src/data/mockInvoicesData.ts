@@ -15,6 +15,8 @@ export interface Invoice {
   invoiceNumber: string;
   clientId: string;
   clientName: string;
+  patient: string;
+  client: string;
   clientAddress: {
     street: string;
     city: string;
@@ -35,7 +37,9 @@ export interface Invoice {
     amount: number;
   };
   totalAmount: number;
-  status: 'draft' | 'pending' | 'paid' | 'overdue' | 'cancelled';
+  amount: number;
+  balance: number;
+  status: 'draft' | 'pending' | 'paid' | 'partially_paid' | 'overdue' | 'cancelled';
   paymentTerms: string;
   notes?: string;
   createdAt: string;
@@ -44,90 +48,56 @@ export interface Invoice {
 
 const today = new Date();
 
-// Create default mock invoices using the first two clients
+// Create default mock invoices
 const createDefaultInvoices = (): Invoice[] => {
-  // Add safety check for clients
   if (!mockClients || mockClients.length < 2) {
     console.warn('Not enough mock clients available. Returning empty invoice array.');
     return [];
   }
 
-  const [client1, client2] = mockClients;
+  const invoices: Invoice[] = [];
+  const patients = ['John Smith', 'Sarah Johnson', 'Michael Brown', 'Emma Davis', 'James Wilson'];
 
-  return [
-    {
-      id: '1',
-      invoiceNumber: 'INV-2024-001',
-      clientId: client1.id,
-      clientName: client1.clientName,
-      clientAddress: client1.address,
-      date: format(today, 'yyyy-MM-dd'),
-      dueDate: format(addDays(today, 30), 'yyyy-MM-dd'),
+  for (let i = 1; i <= 20; i++) {
+    const client = mockClients[Math.floor(Math.random() * mockClients.length)];
+    const amount = Math.floor(Math.random() * 5000) + 500;
+    const paidAmount = Math.floor(Math.random() * amount);
+    const invoice: Invoice = {
+      id: `inv-${i}`,
+      invoiceNumber: `INV-${String(i).padStart(4, '0')}`,
+      clientId: client.id,
+      clientName: client.clientName,
+      patient: patients[Math.floor(Math.random() * patients.length)],
+      client: client.clientName,
+      clientAddress: client.address,
+      date: format(addDays(today, -Math.floor(Math.random() * 30)), 'yyyy-MM-dd'),
+      dueDate: format(addDays(today, Math.floor(Math.random() * 30)), 'yyyy-MM-dd'),
       items: [
         {
-          id: '1',
-          description: 'Full Upper Arch Restoration',
+          id: `item-${i}-1`,
+          description: 'Dental Service',
           quantity: 1,
-          unitPrice: 1200.00,
-          totalPrice: 1200.00,
-          caseId: 'CASE001'
-        },
-        {
-          id: '2',
-          description: 'Custom Shading',
-          quantity: 1,
-          unitPrice: 150.00,
-          totalPrice: 150.00,
-          caseId: 'CASE001'
+          unitPrice: amount,
+          totalPrice: amount
         }
       ],
-      subTotal: 1350.00,
+      subTotal: amount,
       tax: {
-        value: 13,
-        amount: 175.50
+        value: 0.1,
+        amount: amount * 0.1
       },
-      totalAmount: 1525.50,
-      status: 'pending',
+      totalAmount: amount * 1.1,
+      amount: amount,
+      balance: amount - paidAmount,
+      status: ['draft', 'pending', 'paid', 'overdue', 'cancelled'][Math.floor(Math.random() * 5)],
       paymentTerms: 'Net 30',
-      notes: 'Please review and approve the restoration work.',
-      createdAt: format(today, 'yyyy-MM-dd HH:mm:ss'),
-      updatedAt: format(today, 'yyyy-MM-dd HH:mm:ss')
-    },
-    {
-      id: '2',
-      invoiceNumber: 'INV-2024-002',
-      clientId: client2.id,
-      clientName: client2.clientName,
-      clientAddress: client2.address,
-      date: format(addDays(today, -15), 'yyyy-MM-dd'),
-      dueDate: format(addDays(today, 15), 'yyyy-MM-dd'),
-      items: [
-        {
-          id: '3',
-          description: 'Porcelain Veneers (4 units)',
-          quantity: 4,
-          unitPrice: 300.00,
-          totalPrice: 1200.00,
-          caseId: 'CASE002'
-        }
-      ],
-      subTotal: 1200.00,
-      discount: {
-        type: 'percentage',
-        value: 10,
-        amount: 120.00
-      },
-      tax: {
-        value: 13,
-        amount: 140.40
-      },
-      totalAmount: 1220.40,
-      status: 'paid',
-      paymentTerms: 'Net 30',
-      createdAt: format(addDays(today, -15), 'yyyy-MM-dd HH:mm:ss'),
-      updatedAt: format(addDays(today, -15), 'yyyy-MM-dd HH:mm:ss')
-    }
-  ];
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    invoices.push(invoice);
+  }
+
+  return invoices;
 };
 
 // Load invoices from localStorage or use default data
