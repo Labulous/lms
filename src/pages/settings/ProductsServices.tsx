@@ -25,7 +25,6 @@ const ProductsServices: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [services, setServices] = useState<Service[]>(mockServices);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
-  const [selectedType, setSelectedType] = useState<string | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
   const [productToDelete, setProductToDelete] = useState<Product | undefined>();
@@ -100,14 +99,6 @@ const ProductsServices: React.FC = () => {
     setIsServiceModalOpen(false);
   };
 
-  const filteredProducts = selectedType === 'all' 
-    ? products 
-    : products.filter(product => product.product_type_id === selectedType);
-
-  const filteredServices = selectedType === 'all'
-    ? services
-    : services.filter(service => service.types?.includes(selectedType));
-
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -141,72 +132,41 @@ const ProductsServices: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex gap-6">
-        {/* Product Types Column */}
-        <div className="w-1/4">
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
-                Product Types
-              </h3>
-            </div>
-            <div className="divide-y divide-gray-200">
-              <button
-                className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                  selectedType === 'all' ? 'bg-blue-50' : ''
-                }`}
-                onClick={() => setSelectedType('all')}
-              >
-                All Products
-              </button>
-              {productTypes.map((type) => (
-                <button
-                  key={type.id}
-                  className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
-                    selectedType === type.id ? 'bg-blue-50' : ''
-                  }`}
-                  onClick={() => setSelectedType(type.id)}
-                >
-                  {type.name}
-                </button>
-              ))}
-            </div>
-          </div>
+      <div className="space-y-8">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Products</h2>
+          <ProductList 
+            products={products}
+            productTypes={productTypes}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteClick}
+          />
         </div>
-
-        {/* Products and Services Column */}
-        <div className="w-3/4 space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Products</h2>
-            <ProductList 
-              products={filteredProducts}
-              onEdit={handleEditProduct}
-              onDelete={handleDeleteClick}
-            />
-          </div>
-          
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Services</h2>
-            <ProductList 
-              products={filteredServices.map(service => ({
-                id: service.id,
-                name: service.name,
-                price: service.price,
-                is_client_visible: service.isClientVisible,
-                is_taxable: service.isTaxable,
-                material: null,
-                product_type: null,
-                billing_type: null,
-                material_id: '',
-                product_type_id: '',
-                billing_type_id: '',
-                category: '',
-                requires_shade: false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }))} 
-            />
-          </div>
+        
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Services</h2>
+          <ProductList 
+            products={services.map(service => ({
+              id: service.id,
+              name: service.name,
+              price: service.price,
+              is_client_visible: service.isClientVisible,
+              is_taxable: service.isTaxable,
+              material: null,
+              product_type: null,
+              billing_type: null,
+              material_id: '',
+              product_type_id: '',
+              billing_type_id: '',
+              category: '',
+              requires_shade: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))}
+            productTypes={productTypes}
+            onEdit={() => {}}
+            onDelete={() => {}}
+          />
         </div>
       </div>
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import InvoiceList from '../components/billing/InvoiceList';
-import InvoiceForm from '../components/billing/InvoiceForm';
+import InvoiceList from '@/components/billing/InvoiceList';
+import InvoiceForm from '@/components/billing/InvoiceForm';
 
-const Billing: React.FC = () => {
+const InvoicesPage: React.FC = () => {
   const location = useLocation();
-  console.log('[Billing] Current path:', location.pathname);
+  console.log('[Invoices] Current path:', location.pathname);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -26,10 +26,10 @@ const Billing: React.FC = () => {
             </React.Suspense>
           } 
         />
-        <Route path="*" element={<Navigate to="/billing" replace />} />
+        <Route path="*" element={<Navigate to="/invoices" replace />} />
       </Routes>
     </div>
   );
 };
 
-export default Billing;
+export default InvoicesPage;

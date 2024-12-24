@@ -14,7 +14,27 @@ const badgeVariants = cva(
           "bg-secondary hover:bg-secondary/80 border-transparent text-secondary-foreground",
         destructive:
           "bg-destructive hover:bg-destructive/80 border-transparent text-destructive-foreground",
+        success:
+          "bg-green-500 hover:bg-green-500/80 border-transparent text-white",
+        warning:
+          "bg-yellow-500 hover:bg-yellow-500/80 border-transparent text-white",
         outline: "text-foreground",
+        // Filter count badge
+        filter:
+          "bg-gray-800 hover:bg-gray-700 border-transparent text-gray-100",
+        // Product type badges
+        Crown:
+          "bg-blue-500 hover:bg-blue-500/80 border-transparent text-white",
+        Bridge:
+          "bg-purple-500 hover:bg-purple-500/80 border-transparent text-white",
+        Removable:
+          "bg-pink-500 hover:bg-pink-500/80 border-transparent text-white",
+        Implant:
+          "bg-cyan-500 hover:bg-cyan-500/80 border-transparent text-white",
+        Coping:
+          "bg-teal-500 hover:bg-teal-500/80 border-transparent text-white",
+        Appliance:
+          "bg-emerald-500 hover:bg-emerald-500/80 border-transparent text-white"
       },
     },
     defaultVariants: {

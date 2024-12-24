@@ -7,7 +7,7 @@ import Cases from './pages/Cases';
 import Shipping from './pages/Shipping';
 import Clients from './pages/Clients';
 import Settings from './pages/Settings';
-import Billing from './pages/Billing';
+import InvoicesPage from './pages/invoices';
 import Reports from './pages/Reports';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
@@ -15,6 +15,11 @@ import Layout from './components/layout/Layout';
 import ClientActivity from './pages/ClientActivity';
 import ProductsServices from './pages/settings/ProductsServices';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import Invoices from './pages/billing/Invoices';
+import Payments from './pages/billing/Payments';
+import Balances from './pages/billing/Balances';
+import Statements from './pages/billing/Statements';
+import Adjustments from './pages/billing/Adjustments';
 
 const App: React.FC = () => {
   return (
@@ -72,10 +77,10 @@ const App: React.FC = () => {
               </Layout>
             </ProtectedRoute>
           } />
-          <Route path="/billing/*" element={
+          <Route path="/invoices/*" element={
             <ProtectedRoute requiredRole="admin">
               <Layout>
-                <Billing />
+                <InvoicesPage />
               </Layout>
             </ProtectedRoute>
           } />
@@ -90,6 +95,42 @@ const App: React.FC = () => {
             <ProtectedRoute requiredRole="admin">
               <Layout>
                 <ProductsServices />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          {/* Billing Routes */}
+          <Route path="/billing/invoices" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Invoices />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/billing/payments" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Payments />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/billing/balance" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Balances />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/billing/statements" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Statements />
+              </Layout>
+            </ProtectedRoute>
+          } />
+          <Route path="/billing/adjustments" element={
+            <ProtectedRoute requiredRole="admin">
+              <Layout>
+                <Adjustments />
               </Layout>
             </ProtectedRoute>
           } />
