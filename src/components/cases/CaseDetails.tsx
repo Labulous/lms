@@ -1,14 +1,28 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { Clock, User, FileText, Camera, Package, CircleDot, MoreHorizontal, Printer } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import { Case, CaseProduct, CaseProductTooth, ShadeData } from '@/types/supabase';
-import CaseProgress from './CaseProgress';
-import PhotoUpload from './PhotoUpload';
-import QRCodeScanner from './QRCodeScanner';
-import { QRCodeSVG } from 'qrcode.react';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import {
+  Clock,
+  User,
+  FileText,
+  Camera,
+  Package,
+  CircleDot,
+  MoreHorizontal,
+  Printer,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import {
+  Case,
+  CaseProduct,
+  CaseProductTooth,
+  ShadeData,
+} from "@/types/supabase";
+import CaseProgress from "./CaseProgress";
+import PhotoUpload from "./PhotoUpload";
+import QRCodeScanner from "./QRCodeScanner";
+import { QRCodeSVG } from "qrcode.react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   Card,
   CardContent,
@@ -22,7 +36,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 // Define TypeScript interfaces for our data structure
 interface CaseFile {
@@ -59,18 +73,19 @@ const CaseDetails: React.FC = () => {
 
   useEffect(() => {
     if (!caseId) {
-      setError('No case ID provided');
+      setError("No case ID provided");
       setLoading(false);
       return;
     }
 
     const fetchCaseData = async () => {
       try {
-        console.log('Fetching case data for ID:', caseId);
-        
+        console.log("Fetching case data for ID:", caseId);
+
         const { data: caseData, error } = await supabase
-          .from('cases')
-          .select(`
+          .from("cases")
+          .select(
+            `
             id,
             created_at,
             received_date,
@@ -78,11 +93,8 @@ const CaseDetails: React.FC = () => {
             status,
             patient_name,
             due_date,
-            occlusal_type,
-            custom_occlusal,
-            contact_type,
-            pontic_type,
-            custom_pontic,
+            products,
+            caseDetails,
             client:clients!client_id (
               id,
               client_name,
@@ -96,41 +108,33 @@ const CaseDetails: React.FC = () => {
                 client_name,
                 phone
               )
-            ),
-            case_products (
-              id,
-              occlusal_details,
-              contact_type,
-              notes,
-              created_at,
-              case_product_teeth (
-                id,
-                tooth_number,
-                shade_data,
-                created_at
-              )
             )
-          `)
-          .eq('id', caseId)
+          `
+          )
+          .eq("id", caseId)
           .single();
 
         if (error) {
-          console.error('Supabase error:', error);
+          console.error("Supabase error:", error);
           setError(error.message);
           return;
         }
 
         if (!caseData) {
-          console.error('No case data found');
-          setError('Case not found');
+          console.error("No case data found");
+          setError("Case not found");
           return;
         }
 
-        console.log('Successfully fetched case data:', caseData);
+        console.log("Successfully fetched case data:", caseData);
         setCaseDetail(caseData);
       } catch (error) {
-        console.error('Error fetching case data:', error);
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+        console.error("Error fetching case data:", error);
+        setError(
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred"
+        );
       } finally {
         setLoading(false);
       }
@@ -159,15 +163,14 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center bg-red-50 p-6 rounded-lg">
           <div className="text-red-600 text-xl mb-2">Error</div>
           <p className="text-gray-700">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Retry
@@ -204,17 +207,23 @@ const CaseDetails: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-semibold text-gray-800">
-                  {caseDetail.patient_name ? (
-                    caseDetail.patient_name.includes(',') ? 
-                      caseDetail.patient_name :
-                      `${caseDetail.patient_name.split(' ').slice(-1)}, ${caseDetail.patient_name.split(' ').slice(0, -1).join(' ')}`
-                  ) : 'Unknown Patient'}
+                  {caseDetail.patient_name
+                    ? caseDetail.patient_name.includes(",")
+                      ? caseDetail.patient_name
+                      : `${caseDetail.patient_name
+                          .split(" ")
+                          .slice(-1)}, ${caseDetail.patient_name
+                          .split(" ")
+                          .slice(0, -1)
+                          .join(" ")}`
+                    : "Unknown Patient"}
                 </h1>
                 <div className="mt-2 flex items-center space-x-4 text-gray-500">
                   <span>Case ID: {caseDetail?.id.slice(0, 8)}...</span>
                   <span>
-                    {caseDetail?.doctor?.name || 'Unknown Doctor'}, 
-                    {caseDetail?.doctor?.client?.client_name || 'Unknown Clinic'}
+                    {caseDetail?.doctor?.name || "Unknown Doctor"},
+                    {caseDetail?.doctor?.client?.client_name ||
+                      "Unknown Clinic"}
                   </span>
                 </div>
               </div>
@@ -296,29 +305,38 @@ const CaseDetails: React.FC = () => {
                   steps={[
                     {
                       date: caseDetail.created_at || new Date().toISOString(),
-                      condition: 'Case Created',
-                      technician: 'System',
-                      status: 'done',
-                      notes: 'Case has been created and is ready for processing'
+                      condition: "Case Created",
+                      technician: "System",
+                      status: "done",
+                      notes:
+                        "Case has been created and is ready for processing",
                     },
                     {
-                      date: caseDetail.received_date || new Date().toISOString(),
-                      condition: 'In Queue',
-                      treatment: 'Waiting for technician',
-                      status: caseDetail.status === 'in_queue' ? 'in_progress' : 'done'
+                      date:
+                        caseDetail.received_date || new Date().toISOString(),
+                      condition: "In Queue",
+                      treatment: "Waiting for technician",
+                      status:
+                        caseDetail.status === "in_queue"
+                          ? "in_progress"
+                          : "done",
                     },
                     {
                       date: new Date().toISOString(),
-                      condition: 'Manufacturing',
-                      treatment: 'Processing',
-                      status: caseDetail.status === 'in_progress' ? 'in_progress' : 'pending'
+                      condition: "Manufacturing",
+                      treatment: "Processing",
+                      status:
+                        caseDetail.status === "in_progress"
+                          ? "in_progress"
+                          : "pending",
                     },
                     {
                       date: caseDetail.ship_date || new Date().toISOString(),
-                      condition: 'Quality Check',
-                      treatment: 'Final Inspection',
-                      status: caseDetail.status === 'completed' ? 'done' : 'pending'
-                    }
+                      condition: "Quality Check",
+                      treatment: "Final Inspection",
+                      status:
+                        caseDetail.status === "completed" ? "done" : "pending",
+                    },
                   ]}
                 />
               </CardContent>
@@ -338,12 +356,20 @@ const CaseDetails: React.FC = () => {
                       <Clock className="h-5 w-5 text-blue-500" />
                       <span className="font-medium">Current Status:</span>
                     </div>
-                    <span className="px-3 py-1 rounded-full text-sm font-medium capitalize" 
+                    <span
+                      className="px-3 py-1 rounded-full text-sm font-medium capitalize"
                       style={{
-                        backgroundColor: caseDetail.status === 'in_progress' ? '#EFF6FF' : '#F3F4F6',
-                        color: caseDetail.status === 'in_progress' ? '#1D4ED8' : '#374151'
-                      }}>
-                      {caseDetail.status.replace('_', ' ')}
+                        backgroundColor:
+                          caseDetail.status === "in_progress"
+                            ? "#EFF6FF"
+                            : "#F3F4F6",
+                        color:
+                          caseDetail.status === "in_progress"
+                            ? "#1D4ED8"
+                            : "#374151",
+                      }}
+                    >
+                      {caseDetail.status.replace("_", " ")}
                     </span>
                   </div>
                 </div>
@@ -373,7 +399,9 @@ const CaseDetails: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-gray-600">Billing Type</p>
-                    <p className="font-medium capitalize">{caseDetail.billing_type}</p>
+                    <p className="font-medium capitalize">
+                      {caseDetail.billing_type}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -390,16 +418,22 @@ const CaseDetails: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <p className="text-gray-600">Received Date</p>
-                    <p className="font-medium">{new Date(caseDetail.received_date).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(caseDetail.received_date).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Due Date</p>
-                    <p className="font-medium">{new Date(caseDetail.due_date).toLocaleDateString()}</p>
+                    <p className="font-medium">
+                      {new Date(caseDetail.due_date).toLocaleDateString()}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Ship Date</p>
                     <p className="font-medium">
-                      {caseDetail.ship_date ? new Date(caseDetail.ship_date).toLocaleDateString() : 'Not shipped'}
+                      {caseDetail.ship_date
+                        ? new Date(caseDetail.ship_date).toLocaleDateString()
+                        : "Not shipped"}
                     </p>
                   </div>
                 </div>
@@ -414,38 +448,51 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {caseDetail.case_products?.map((product) => (
-                  <div key={product.id} className="border-b last:border-b-0 pb-4 mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-gray-600">Occlusal Details</p>
-                        <p className="font-medium">{product.occlusal_details}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Contact Type</p>
-                        <p className="font-medium">{product.contact_type}</p>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <p className="text-gray-600">Notes</p>
-                      <p className="font-medium">{product.notes || 'No notes'}</p>
-                    </div>
-                    {/* Teeth Section */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-gray-600">Occlusal Details</p>
+                    <p className="font-medium">{caseDetail.caseDetails.occlusalType}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Contact Type</p>
+                    <p className="font-medium">{caseDetail.caseDetails.contactType}</p>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <p className="text-gray-600">Notes</p>
+                  <p className="font-medium">{caseDetail.caseDetails?.notes || "No notes"}</p>
+                </div>
+                {/* Teeth Section */}
+                {caseDetail.products?.map((product) => (
+                  <div
+                    key={product.id}
+                    className="border-b last:border-b-0 pb-4 mb-4"
+                  >
                     <div>
                       <h3 className="text-lg font-medium mb-2 flex items-center">
                         <CircleDot className="mr-2" size={16} /> Selected Teeth
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {product.case_product_teeth.map((tooth) => (
-                          <div key={tooth.id} className="bg-gray-50 p-3 rounded">
-                            <p className="font-medium mb-2">Tooth #{tooth.tooth_number}</p>
+                        {product.teeth.map((tooth) => (
+                          <div
+                            key={tooth.id}
+                            className="bg-gray-50 p-3 rounded"
+                          >
+                            <p className="font-medium mb-2">Tooth #{tooth}</p>
                             <div className="text-sm">
-                              {Object.entries(tooth.shade_data).map(([key, value]) => (
-                                <div key={key} className="flex justify-between">
-                                  <span className="text-gray-600 capitalize">{key}:</span>
-                                  <span>{value || 'N/A'}</span>
-                                </div>
-                              ))}
+                              {Object.entries(product.shades).map(
+                                ([key, value]) => (
+                                  <div
+                                    key={key}
+                                    className="flex justify-between"
+                                  >
+                                    <span className="text-gray-600 capitalize">
+                                      {key}:
+                                    </span>
+                                    <span>{value || "N/A"}</span>
+                                  </div>
+                                )
+                              )}
                             </div>
                           </div>
                         ))}
@@ -470,10 +517,11 @@ const CaseDetails: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <p className="text-lg font-medium text-gray-900">
-                      {caseDetail.doctor?.name || 'Unknown Doctor'}
+                      {caseDetail.doctor?.name || "Unknown Doctor"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {caseDetail.doctor?.client?.client_name || 'Unknown Clinic'}
+                      {caseDetail.doctor?.client?.client_name ||
+                        "Unknown Clinic"}
                     </p>
                   </div>
                   {caseDetail.doctor?.client?.phone && (
@@ -503,7 +551,9 @@ const CaseDetails: React.FC = () => {
                           key={file.id}
                           className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
                         >
-                          <span className="text-sm text-gray-600">{file.file_name}</span>
+                          <span className="text-sm text-gray-600">
+                            {file.file_name}
+                          </span>
                           <a
                             href={file.file_url}
                             target="_blank"
