@@ -11,4 +11,5 @@ export interface ProductWithShade extends SavedProduct {
   shade?: ShadeData;
   note: string;
   product_id: string;
+  productPrice:number
 }

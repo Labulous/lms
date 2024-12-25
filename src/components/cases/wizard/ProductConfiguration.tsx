@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote } from "lucide-react";
+import { X, Plus, StickyNote, percent, Percent } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -211,6 +211,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productNotes, setProductNotes] = useState<Record<string, string>>({});
   const [previewNote, setPreviewNote] = useState<string>("");
   const [notePopoverOpen, setNotePopoverOpen] = useState<string | null>(null);
+  const [percentPopoverOpen, setPercentPopoverOpen] = useState<string | null>(
+    null
+  );
   const [shadesItems, setShadesItems] = useState<any[]>([]);
 
   const [shadeOptions, setShadeOptions] = useState<ShadeOption[]>([]);
@@ -401,6 +404,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           prevItem.id === itemId
             ? {
                 ...prevItem,
+                price:product?.price,
                 productName: product?.name || prevItem.productName,
               }
             : prevItem
@@ -411,7 +415,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (!keepTeeth && !itemId) {
       setSelectedTeeth([]);
     }
-
+console.log(product,"product")
     if (product) {
       const newPreviewProduct: ProductWithShade = {
         ...product,
@@ -426,7 +430,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         },
         requiresShade: true,
         note: "",
-        discount: 0,
+        discount: product.discount,
+        productPrice: product?.price,
         type: [],
       };
       console.log("Setting new preview product:", newPreviewProduct);
@@ -631,14 +636,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       name: selectedType,
       type: selectedType,
       teeth: sortedTeeth,
+      price:selectedProduct?.price as number,
       shades: {
         occlusal: shadeData.occlusal || "",
         body: shadeData.body || "",
         gingival: shadeData.gingival || "",
         stump: shadeData.stump || "",
       },
-      price: 0,
-      discount: 0,
+      discount: discount,
       notes: previewNote || "", // Add the note to the product
     };
 
@@ -1054,7 +1059,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       );
       setselectedProducts(updatedProducts);
       setNotePopoverOpen(null);
-
     } else {
       // Create a new preview product with updated shades
       // Add the product to the table with shades
@@ -1070,7 +1074,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setShadePopoverOpen(false);
     }
   };
-
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1502,6 +1505,112 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     </div>
                                   </PopoverContent>
                                 </Popover>
+                                <Popover
+                                  open={percentPopoverOpen === "preview"}
+                                  onOpenChange={(open) =>
+                                    setPercentPopoverOpen(
+                                      open ? "preview" : null
+                                    )
+                                  }
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className={cn(
+                                        "h-6 w-6",
+                                        percentPopoverOpen && "text-blue-600",
+                                        "hover:text-blue-600"
+                                      )}
+                                    >
+                                      <Percent className="h-4 w-4" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent
+                                    className="w-80 p-3"
+                                    align="end"
+                                  >
+                                    <div className="flex flex-col justify-between">
+                                      <div className="flex justify-between">
+                                        <Label className="text-xs">
+                                          Add Discount
+                                        </Label>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            setPercentPopoverOpen(null);
+                                          }}
+                                        >
+                                          Save
+                                        </Button>
+                                      </div>
+
+                                      {selectedProduct && (
+                                        <>
+                                          <Separator className="mt-2" />
+                                          <div className="mt-4 flex justify-between space-x-4">
+                                            <div>
+                                              <Label className="text-xs text-gray-500">
+                                                Price
+                                              </Label>
+                                              <p className="text-sm font-medium">
+                                                $
+                                                {selectedProduct.price.toFixed(
+                                                  2
+                                                )}
+                                              </p>
+                                            </div>
+                                            <Separator
+                                              orientation="vertical"
+                                              className="h-8 mx-2"
+                                            />
+                                            <div>
+                                              <Label className="text-xs text-gray-500">
+                                                Discount (%)
+                                              </Label>
+                                              <Input
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                value={discount}
+                                                onChange={(e) => {
+                                                  setDiscount(
+                                                    Number(e.target.value)
+                                                  );
+                                                  setSelectedProduct(
+                                                    (item: any) => ({
+                                                      ...item,
+                                                      discount: Number(
+                                                        e.target.value
+                                                      ), // Use `value` directly instead of `previewNote`
+                                                    })
+                                                  );
+                                                }}
+                                                className="w-20 h-7 text-sm bg-white"
+                                              />
+                                            </div>
+                                            <Separator
+                                              orientation="vertical"
+                                              className="h-8 mx-2"
+                                            />
+                                            <div>
+                                              <Label className="text-xs text-gray-500">
+                                                Total
+                                              </Label>
+                                              <p className="text-sm font-extrabold text-blue-500">
+                                                $
+                                                {(
+                                                  selectedProduct.price *
+                                                  (1 - discount / 100)
+                                                ).toFixed(2)}
+                                              </p>
+                                            </div>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                                 {(!selectedProduct.requiresShade ||
                                   previewProduct?.shades) && (
                                   <Button
@@ -1853,50 +1962,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 </div>
 
                 {/* Product Details */}
-                {selectedProduct && (
-                  <>
-                    <Separator className="my-6" />
-                    <div className="mt-4 flex items-start space-x-4">
-                      <div>
-                        <Label className="text-xs text-gray-500">Price</Label>
-                        <p className="text-sm font-medium">
-                          ${selectedProduct.price.toFixed(2)}
-                        </p>
-                      </div>
-                      <Separator orientation="vertical" className="h-8 mx-2" />
-                      <div>
-                        <Label className="text-xs text-gray-500">
-                          Discount (%)
-                        </Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={discount}
-                          onChange={(e) => {
-                            setDiscount(Number(e.target.value));
-                            setSelectedProduct((item: any) => ({
-                              ...item,
-                              discount: Number(e.target.value), // Use `value` directly instead of `previewNote`
-                            }));
-                          }}
-                          className="w-20 h-7 text-sm bg-white"
-                        />
-                      </div>
-                      <Separator orientation="vertical" className="h-8 mx-2" />
-                      <div>
-                        <Label className="text-xs text-gray-500">Total</Label>
-                        <p className="text-sm font-extrabold text-blue-500">
-                          $
-                          {(
-                            selectedProduct.price *
-                            (1 - discount / 100)
-                          ).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           </div>
