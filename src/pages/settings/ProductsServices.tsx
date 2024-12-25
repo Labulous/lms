@@ -99,6 +99,21 @@ const ProductsServices: React.FC = () => {
     setIsServiceModalOpen(false);
   };
 
+  const handleBatchAdd = async (products: any[]) => {
+    try {
+      // Create products one by one to ensure proper error handling
+      for (const product of products) {
+        await productsService.addProduct(product);
+      }
+      
+      toast.success(`Successfully added ${products.length} products`);
+      await loadProductsAndTypes();
+    } catch (error) {
+      console.error('Error adding products:', error);
+      toast.error('Failed to add some products. Please check the data and try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -140,6 +155,7 @@ const ProductsServices: React.FC = () => {
             productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
+            onBatchAdd={handleBatchAdd}
           />
         </div>
         

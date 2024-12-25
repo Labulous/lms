@@ -1,12 +1,28 @@
-import React from 'react';
-import Layout from '../../components/layout/Layout';
+'use client';
 
-export default function Settings() {
+import React, { useState, useEffect } from 'react';
+import Layout from '../../components/layout/Layout';
+import { SettingsTabs } from '@/components/settings/SettingsTabs';
+import { SettingsContent } from '@/components/settings/SettingsContent';
+import type { SettingsTab } from '@/components/settings/SettingsTabs';
+
+interface SettingsProps {
+  defaultTab?: SettingsTab;
+}
+
+export default function Settings({ defaultTab = 'system' }: SettingsProps) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(defaultTab);
+
+  // Update active tab when defaultTab changes
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
+
   return (
     <Layout>
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Settings</h1>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <p>Settings and configuration options will be implemented here.</p>
+      <div className="flex h-full bg-gray-50">
+        <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <SettingsContent activeTab={activeTab} />
       </div>
     </Layout>
   );
