@@ -221,42 +221,6 @@ const CaseList: React.FC = () => {
           expires_at: session.expires_at,
         });
 
-        // First try to fetch the specific test case
-        const { data: testCase, error: testError } = await supabase
-          .from("cases")
-          .select(
-            `
-            id,
-            created_at,
-            updated_at,
-            created_by,
-            client_id,
-            doctor_id,
-            patient_name,
-            rx_number,
-            due_date,
-            qr_code,
-            status,
-            notes
-          `
-          )
-          .eq("id", "078d7fb1-5abd-4a79-bd10-7083bbed807b");
-
-        if (testError) {
-          logger.error("Error fetching test case:", {
-            error: testError,
-            message: testError.message,
-            details: testError.details,
-            hint: testError.hint,
-          });
-          // Don't throw, just log the error and continue
-        } else {
-          logger.debug("Test case query:", {
-            data: testCase,
-            count: testCase?.length,
-          });
-        }
-
         // Then fetch all cases
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
@@ -272,8 +236,7 @@ const CaseList: React.FC = () => {
             rx_number,
             due_date,
             qr_code,
-            status,
-            notes
+            status
           `
           )
           .order("created_at", { ascending: false });

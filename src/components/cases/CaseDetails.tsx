@@ -82,34 +82,63 @@ const CaseDetails: React.FC = () => {
       try {
         console.log("Fetching case data for ID:", caseId);
 
+        // Step 1: Fetch case details
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
             `
-            id,
-            created_at,
-            received_date,
-            ship_date,
-            status,
-            patient_name,
-            due_date,
-            products,
-            caseDetails,
-            client:clients!client_id (
-              id,
-              client_name,
-              phone
-            ),
-            doctor:doctors!doctor_id (
-              id,
-              name,
-              client:clients!client_id (
-                id,
-                client_name,
-                phone
-              )
-            )
-          `
+                  id,
+                  created_at,
+                  received_date,
+                  ship_date,
+                  status,
+                  patient_name,
+                  due_date,
+                  client:clients!client_id (
+                    id,
+                    client_name,
+                    phone
+                  ),
+                  doctor:doctors!doctor_id (
+                    id,
+                    name,
+                    client:clients!client_id (
+                      id,
+                      client_name,
+                      phone
+                    )
+                  ),
+                  pan_number,
+                  rx_number,
+                  received_date,
+                  isDueDateTBD,
+                  appointment_date,
+                  otherItems,
+                  lab_notes,
+                  technician_notes,
+                  occlusal_type,
+                  contact_type,
+                  pontic_type,
+                  custom_contact_details,
+                  custom_occulusal_details,
+                  custom_pontic_details,
+                  enclosed_items:enclosed_case!enclosed_case_id (
+                    impression,
+                    biteRegistration,
+                    photos,
+                    jig,
+                    opposingModel,
+                    articulator,
+                    returnArticulator,
+                    cadcamFiles,
+                    consultRequested,
+                    user_id
+                  ),
+                  product_ids:case_products!id (
+                    products_id,
+                    id
+                  )
+                  `
           )
           .eq("id", caseId)
           .single();
@@ -127,7 +156,114 @@ const CaseDetails: React.FC = () => {
         }
 
         console.log("Successfully fetched case data:", caseData);
-        setCaseDetail(caseData);
+
+        // Extract products_id array and caseProductId
+        const productsIdArray = caseData?.product_ids[0]?.products_id;
+        const caseProductId = caseData?.product_ids[0]?.id;
+        console.log(productsIdArray, "productsIdArray");
+        console.log(caseProductId, "caseProductId");
+
+        let products = [];
+        let teethProducts = [];
+
+        if (productsIdArray?.length > 0) {
+          // Step 2: Fetch products based on products_id array
+          const { data: productData, error: productsError } = await supabase
+            .from("products")
+            .select(
+              `
+                      id,
+                      name,
+                      price,
+                      lead_time,
+                      is_client_visible,
+                      is_taxable,
+                      created_at,
+                      updated_at,
+                      requires_shade,
+                      material:materials!material_id (
+                        name,
+                        description,
+                        is_active
+                      ),
+                      product_type:product_types!product_type_id (
+                        name,
+                        description,
+                        is_active
+                      ),
+                      billing_type:billing_types!billing_type_id (
+                        name,
+                        label,
+                        description,
+                        is_active
+                      )
+                      `
+            )
+            .in("id", productsIdArray);
+
+          if (productsError) {
+            console.error("Error fetching products:", productsError);
+            setError(productsError.message);
+          } else {
+            console.log("Successfully fetched products:", productData);
+            products = productData;
+          }
+        } else {
+          console.log("No products associated with this case.");
+        }
+
+        if (caseProductId) {
+          // Step 3: Fetch case_teeth_products based on caseProductId
+          const { data: teethProductData, error: teethProductsError } =
+            await supabase
+              .from("case_product_teeth")
+              .select(
+                `
+                is_range,
+                occlusal_shade:shade_options!occlusal_shade_id (
+                name,
+                category,
+                is_active
+                ),
+                body_shade:shade_options!body_shade_id (
+                name,
+                category,
+                is_active
+                ),
+
+                gingival_shade:shade_options!gingival_shade_id (
+                name,
+                category,
+                is_active
+                ),
+                stump_shade_id:shade_options!stump_shade_id (
+                name,
+                category,
+                is_active
+                ),
+                tooth_number
+                `
+              )
+              .eq("case_product_id", caseProductId);
+
+          if (teethProductsError) {
+            console.error("Error fetching teeth products:", teethProductsError);
+            setError(teethProductsError.message);
+          } else {
+            console.log(
+              "Successfully fetched teeth products:",
+              teethProductData
+            );
+            teethProducts = teethProductData;
+          }
+        } else {
+          console.log("No caseProductId found for fetching teeth products.");
+        }
+
+        // Combine case details, products, and teethProducts
+        const caseDetailWithProducts = { ...caseData, products, teethProducts };
+        console.log(caseDetailWithProducts, "caseDetailWithProducts");
+        setCaseDetail(caseDetailWithProducts);
       } catch (error) {
         console.error("Error fetching case data:", error);
         setError(
@@ -189,7 +325,7 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-
+  console.log(caseDetail, "caseDetail.qr_code");
   return (
     <div className="w-full">
       {/* Full-width Header */}
@@ -208,14 +344,7 @@ const CaseDetails: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-semibold text-gray-800">
                   {caseDetail.patient_name
-                    ? caseDetail.patient_name.includes(",")
-                      ? caseDetail.patient_name
-                      : `${caseDetail.patient_name
-                          .split(" ")
-                          .slice(-1)}, ${caseDetail.patient_name
-                          .split(" ")
-                          .slice(0, -1)
-                          .join(" ")}`
+                    ? caseDetail.patient_name
                     : "Unknown Patient"}
                 </h1>
                 <div className="mt-2 flex items-center space-x-4 text-gray-500">
@@ -451,19 +580,42 @@ const CaseDetails: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-gray-600">Occlusal Details</p>
-                    <p className="font-medium">{caseDetail.caseDetails.occlusalType}</p>
+                    <p className="font-medium">
+                      {caseDetail.custom_occulusal_details
+                        ? caseDetail.custom_occulusal_details
+                        : caseDetail.occlusal_type}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Contact Type</p>
-                    <p className="font-medium">{caseDetail.caseDetails.contactType}</p>
+                    <p className="font-medium">
+                      {caseDetail.custom_contact_details
+                        ? caseDetail.custom_contact_details
+                        : caseDetail.contact_type}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="mb-4">
+                    <p className="text-gray-600">Lab Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.lab_notes || "No notes"}
+                    </p>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Technician Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.technician_notes || "No notes"}
+                    </p>
                   </div>
                 </div>
                 <div className="mb-4">
-                  <p className="text-gray-600">Notes</p>
-                  <p className="font-medium">{caseDetail.caseDetails?.notes || "No notes"}</p>
-                </div>
-                {/* Teeth Section */}
-                {caseDetail.products?.map((product) => (
+                  <p className="text-gray-600">Other Items</p>
+                  <p className="font-medium">
+                    {caseDetail?.otherItems || "No notes"}
+                  </p>
+                </div>{" "}
+                {caseDetail.teethProducts?.map((product) => (
                   <div
                     key={product.id}
                     className="border-b last:border-b-0 pb-4 mb-4"
@@ -473,29 +625,46 @@ const CaseDetails: React.FC = () => {
                         <CircleDot className="mr-2" size={16} /> Selected Teeth
                       </h3>
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {product.teeth.map((tooth) => (
-                          <div
-                            key={tooth.id}
-                            className="bg-gray-50 p-3 rounded"
-                          >
-                            <p className="font-medium mb-2">Tooth #{tooth}</p>
-                            <div className="text-sm">
-                              {Object.entries(product.shades).map(
-                                ([key, value]) => (
-                                  <div
-                                    key={key}
-                                    className="flex justify-between"
-                                  >
-                                    <span className="text-gray-600 capitalize">
-                                      {key}:
-                                    </span>
-                                    <span>{value || "N/A"}</span>
-                                  </div>
-                                )
-                              )}
+                        <div className="bg-gray-50 p-3 rounded">
+                          <p className="font-medium mb-2">
+                          Tooth #{product.tooth_number.length > 1 ? product.tooth_number.map(i => `${i}`).join(', ') : product.tooth_number[0]}
+                          </p>
+                          <div className="text-sm">
+                            {/* {Object.entries(product.shades).map( */}
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Body Shade:
+                              </span>
+                              <span>{product.body_shade.name || "N/A"}</span>
                             </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Gingival Shade:
+                              </span>
+                              <span>
+                                {product.gingival_shade.name || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Occlusal Shade:
+                              </span>
+                              <span>
+                                {product.occlusal_shade.name || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Stump Shade:
+                              </span>
+                              <span>
+                                {product.stump_shade_id.name || "N/A"}
+                              </span>
+                            </div>
+
+                            {/* )} */}
                           </div>
-                        ))}
+                        </div>
                       </div>
                     </div>
                   </div>
