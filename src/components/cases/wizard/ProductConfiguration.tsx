@@ -416,6 +416,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       const newPreviewProduct: ProductWithShade = {
         ...product,
         id: "preview",
+        product_id: product.id,
         teeth: selectedTeeth,
         shades: {
           occlusal: "",
@@ -424,6 +425,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           stump: "",
         },
         requiresShade: true,
+        note: "",
+        discount: 0,
+        type: [],
       };
       console.log("Setting new preview product:", newPreviewProduct);
       setPreviewProduct(newPreviewProduct);
@@ -623,11 +627,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Create new product for the selected products list
     const newProduct: ProductWithShade = {
-      id: newId,
+      id: selectedProduct?.id ?? "",
       name: selectedType,
       type: selectedType,
       teeth: sortedTeeth,
-      material: "",
       shades: {
         occlusal: shadeData.occlusal || "",
         body: shadeData.body || "",

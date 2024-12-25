@@ -250,6 +250,7 @@ const NewCase: React.FC = () => {
       toast.error("Failed to create case");
     }
   };
+
   return (
     <div className="p-6">
       <div className="space-y-4">
