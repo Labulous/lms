@@ -20,6 +20,9 @@ import Payments from './pages/billing/Payments';
 import Balances from './pages/billing/Balances';
 import Statements from './pages/billing/Statements';
 import Adjustments from './pages/billing/Adjustments';
+import SystemSettings from './pages/settings/system';
+import ProductCatalogSettings from './pages/settings/product-catalog';
+import CaseWorkflowSettings from './pages/settings/case-workflow';
 
 const App: React.FC = () => {
   return (
@@ -72,9 +75,13 @@ const App: React.FC = () => {
           } />
           <Route path="/settings/*" element={
             <ProtectedRoute requiredRole="admin">
-              <Layout>
-                <Settings />
-              </Layout>
+              <Routes>
+                <Route path="system" element={<SystemSettings />} />
+                <Route path="product-catalog" element={<ProductCatalogSettings />} />
+                <Route path="case-workflow" element={<CaseWorkflowSettings />} />
+                <Route path="products-services" element={<ProductsServices />} />
+                <Route path="*" element={<Settings />} />
+              </Routes>
             </ProtectedRoute>
           } />
           <Route path="/invoices/*" element={

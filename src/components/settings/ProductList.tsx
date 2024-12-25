@@ -26,6 +26,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import BatchProductUpload from './BatchProductUpload';
+import { ProductInput } from '@/services/productsService';
 
 type Product = Database['public']['Tables']['products']['Row'] & {
   material: { name: string } | null;
@@ -43,9 +45,16 @@ interface ProductListProps {
   productTypes: { id: string; name: string }[];
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
+  onBatchAdd?: (products: ProductInput[]) => Promise<void>;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ products, productTypes, onEdit, onDelete }) => {
+const ProductList: React.FC<ProductListProps> = ({ 
+  products, 
+  productTypes, 
+  onEdit, 
+  onDelete,
+  onBatchAdd 
+}) => {
   // State
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -157,14 +166,62 @@ const ProductList: React.FC<ProductListProps> = ({ products, productTypes, onEdi
             </>
           ) : null}
         </div>
-        <div className="relative w-72">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center space-x-2">
           <Input
             placeholder="Search products..."
-            className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-[300px]"
           />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">Filter by Type</Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                  <span className="text-sm font-medium">Filter by Type</span>
+                  {typeFilter.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setTypeFilter([])}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                {productTypes.map((type) => (
+                  <div key={type.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`type-${type.id}`}
+                      checked={typeFilter.includes(type.name)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTypeFilter(prev => [...prev, type.name]);
+                        } else {
+                          setTypeFilter(prev => prev.filter(t => t !== type.name));
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`type-${type.id}`}
+                      className="flex items-center text-sm font-medium cursor-pointer"
+                    >
+                      <Badge variant={type.name} className="ml-1">
+                        {type.name}
+                      </Badge>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          {onBatchAdd && <BatchProductUpload onUpload={onBatchAdd} />}
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Add Product
+          </Button>
         </div>
       </div>
 
