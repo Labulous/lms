@@ -87,58 +87,58 @@ const CaseDetails: React.FC = () => {
           .from("cases")
           .select(
             `
+              id,
+              created_at,
+              received_date,
+              ship_date,
+              status,
+              patient_name,
+              due_date,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              ),
+              doctor:doctors!doctor_id (
+                id,
+                name,
+                client:clients!client_id (
                   id,
-                  created_at,
-                  received_date,
-                  ship_date,
-                  status,
-                  patient_name,
-                  due_date,
-                  client:clients!client_id (
-                    id,
-                    client_name,
-                    phone
-                  ),
-                  doctor:doctors!doctor_id (
-                    id,
-                    name,
-                    client:clients!client_id (
-                      id,
-                      client_name,
-                      phone
-                    )
-                  ),
-                  pan_number,
-                  rx_number,
-                  received_date,
-                  isDueDateTBD,
-                  appointment_date,
-                  otherItems,
-                  lab_notes,
-                  technician_notes,
-                  occlusal_type,
-                  contact_type,
-                  pontic_type,
-                  custom_contact_details,
-                  custom_occulusal_details,
-                  custom_pontic_details,
-                  enclosed_items:enclosed_case!enclosed_case_id (
-                    impression,
-                    biteRegistration,
-                    photos,
-                    jig,
-                    opposingModel,
-                    articulator,
-                    returnArticulator,
-                    cadcamFiles,
-                    consultRequested,
-                    user_id
-                  ),
-                  product_ids:case_products!id (
-                    products_id,
-                    id
-                  )
-                  `
+                  client_name,
+                  phone
+                )
+              ),
+              pan_number,
+              rx_number,
+              received_date,
+              isDueDateTBD,
+              appointment_date,
+              otherItems,
+              lab_notes,
+              technician_notes,
+              occlusal_type,
+              contact_type,
+              pontic_type,
+              custom_contact_details,
+              custom_occulusal_details,
+              custom_pontic_details,
+              enclosed_items:enclosed_case!enclosed_case_id (
+                impression,
+                biteRegistration,
+                photos,
+                jig,
+                opposingModel,
+                articulator,
+                returnArticulator,
+                cadcamFiles,
+                consultRequested,
+                user_id
+              ),
+              product_ids:case_products!id (
+                products_id,
+                id
+              )
+            `
           )
           .eq("id", caseId)
           .single();
@@ -165,6 +165,7 @@ const CaseDetails: React.FC = () => {
 
         let products = [];
         let teethProducts = [];
+        let discountedPrices = [];
 
         if (productsIdArray?.length > 0) {
           // Step 2: Fetch products based on products_id array
@@ -172,32 +173,32 @@ const CaseDetails: React.FC = () => {
             .from("products")
             .select(
               `
-                      id,
-                      name,
-                      price,
-                      lead_time,
-                      is_client_visible,
-                      is_taxable,
-                      created_at,
-                      updated_at,
-                      requires_shade,
-                      material:materials!material_id (
-                        name,
-                        description,
-                        is_active
-                      ),
-                      product_type:product_types!product_type_id (
-                        name,
-                        description,
-                        is_active
-                      ),
-                      billing_type:billing_types!billing_type_id (
-                        name,
-                        label,
-                        description,
-                        is_active
-                      )
-                      `
+                id,
+                name,
+                price,
+                lead_time,
+                is_client_visible,
+                is_taxable,
+                created_at,
+                updated_at,
+                requires_shade,
+                material:materials!material_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                product_type:product_types!product_type_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                billing_type:billing_types!billing_type_id (
+                  name,
+                  label,
+                  description,
+                  is_active
+                )
+              `
             )
             .in("id", productsIdArray);
 
@@ -208,12 +209,41 @@ const CaseDetails: React.FC = () => {
             console.log("Successfully fetched products:", productData);
             products = productData;
           }
+
+          // Step 3: Fetch discounted price data for products
+          const { data: discountedPriceData, error: discountedPriceError } =
+            await supabase
+              .from("discounted_price")
+              .select(
+                `
+                product_id,
+                discount,
+                final_price,
+                price
+              `
+              )
+              .in("product_id", productsIdArray);
+
+          if (discountedPriceError) {
+            console.error(
+              "Error fetching discounted prices:",
+              discountedPriceError
+            );
+            setError(discountedPriceError.message);
+          } else {
+            console.log(
+              "Successfully fetched discounted prices:",
+              discountedPriceData
+            );
+            discountedPrices = discountedPriceData;
+            console.log(discountedPrices, "discountedPrices");
+          }
         } else {
           console.log("No products associated with this case.");
         }
 
         if (caseProductId) {
-          // Step 3: Fetch case_teeth_products based on caseProductId
+          // Step 4: Fetch case_teeth_products based on caseProductId
           const { data: teethProductData, error: teethProductsError } =
             await supabase
               .from("case_product_teeth")
@@ -221,28 +251,27 @@ const CaseDetails: React.FC = () => {
                 `
                 is_range,
                 occlusal_shade:shade_options!occlusal_shade_id (
-                name,
-                category,
-                is_active
+                  name,
+                  category,
+                  is_active
                 ),
                 body_shade:shade_options!body_shade_id (
-                name,
-                category,
-                is_active
+                  name,
+                  category,
+                  is_active
                 ),
-
                 gingival_shade:shade_options!gingival_shade_id (
-                name,
-                category,
-                is_active
+                  name,
+                  category,
+                  is_active
                 ),
                 stump_shade_id:shade_options!stump_shade_id (
-                name,
-                category,
-                is_active
+                  name,
+                  category,
+                  is_active
                 ),
                 tooth_number
-                `
+              `
               )
               .eq("case_product_id", caseProductId);
 
@@ -260,9 +289,26 @@ const CaseDetails: React.FC = () => {
           console.log("No caseProductId found for fetching teeth products.");
         }
 
-        // Combine case details, products, and teethProducts
-        const caseDetailWithProducts = { ...caseData, products, teethProducts };
-        console.log(caseDetailWithProducts, "caseDetailWithProducts");
+        // Step 5: Combine the products with their respective discounted price data
+        const productsWithDiscounts = products.map((product: any) => {
+          // Find the matching discounted price for the product
+          const discountedPrice = discountedPrices.find(
+            (discount: any) => discount.product_id === product.id
+          );
+          console.log(discountedPrice, "discountedPrice");
+          // Combine the product data with the discounted price details
+          return {
+            ...product,
+            discounted_price: discountedPrice,
+          };
+        });
+
+        // Step 6: Combine case details, products, and teethProducts
+        const caseDetailWithProducts = {
+          ...caseData,
+          products: productsWithDiscounts,
+          teethProducts,
+        };
         setCaseDetail(caseDetailWithProducts);
       } catch (error) {
         console.error("Error fetching case data:", error);
@@ -627,7 +673,12 @@ const CaseDetails: React.FC = () => {
                       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         <div className="bg-gray-50 p-3 rounded">
                           <p className="font-medium mb-2">
-                          Tooth #{product.tooth_number.length > 1 ? product.tooth_number.map(i => `${i}`).join(', ') : product.tooth_number[0]}
+                            Tooth #
+                            {product.tooth_number.length > 1
+                              ? product.tooth_number
+                                  .map((i) => `${i}`)
+                                  .join(", ")
+                              : product.tooth_number[0]}
                           </p>
                           <div className="text-sm">
                             {/* {Object.entries(product.shades).map( */}

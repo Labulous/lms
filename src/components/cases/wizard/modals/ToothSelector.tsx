@@ -12,7 +12,7 @@ interface ToothSelectorProps {
   addedTeethMap: Map<number, boolean>;
   disabled: boolean;
   selectedProduct: {
-    type: string[];
+    type: string[] | [];
   };
   onAddToShadeTable: () => void;
 }

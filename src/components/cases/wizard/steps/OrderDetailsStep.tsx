@@ -11,35 +11,10 @@ import { DateTimePicker } from "@/components/ui/date-time-picker"; // Import Dat
 import { Separator } from "@/components/ui/separator"; // Import Separator component
 import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
+import { FormData } from '@/types/supabase';
 
 const logger = createLogger({ module: 'OrderDetailsStep' });
 
-interface FormData {
-  clientId: string;
-  doctorId?: string;
-  patientFirstName: string;
-  patientLastName: string;
-  orderDate: string;
-  status: CaseStatus;
-  deliveryMethod: DeliveryMethod;
-  dueDate?: string;
-  isDueDateTBD?: boolean;
-  appointmentDate?: string;
-  appointmentTime?: string;
-  workingPanName?: string;
-  workingPanColor?: string;
-  enclosedItems: {
-    impression: number;
-    biteRegistration: number;
-    photos: number;
-    jig: number;
-    opposingModel: number;
-    articulator: number;
-    returnArticulator: number;
-    cadcamFiles: number;
-    consultRequested: number;
-  };
-}
 
 interface OrderDetailsStepProps {
   formData: FormData;

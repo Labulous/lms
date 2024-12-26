@@ -7,15 +7,14 @@ import ProductConfiguration from "../../components/cases/wizard/ProductConfigura
 import FilesStep from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import {
-  SavedProduct,
   ProductWithShade,
 } from "../../components/cases/wizard/types";
-import { CaseStatus } from "@/types/supabase";
+import { CaseStatus, FormData } from "@/types/supabase";
 import { DeliveryMethod, addCase } from "../../data/mockCasesData";
 import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
-import { ProductCategory } from "../../data/mockProductData";
+import { SavedProduct } from "../../data/mockProductData";
 import { productsService } from "../../services/productsService";
 
 const defaultEnclosedItems = {
@@ -30,43 +29,7 @@ const defaultEnclosedItems = {
   consultRequested: 0,
 };
 
-interface FormData {
-  clientId: string;
-  doctorId: string;
-  patientFirstName: string;
-  patientLastName: string;
-  orderDate: string;
-  status: CaseStatus;
-  deliveryMethod: DeliveryMethod;
-  dueDate?: string;
-  isDueDateTBD?: boolean;
-  appointmentDate?: string;
-  appointmentTime?: string;
-  enclosedItems: {
-    impression: number;
-    biteRegistration: number;
-    photos: number;
-    jig: number;
-    opposingModel: number;
-    articulator: number;
-    returnArticulator: number;
-    cadcamFiles: number;
-    consultRequested: number;
-  };
-  otherItems?: string;
-  clientName?: string;
-  caseDetails?: {
-    occlusalType: string;
-    customOcclusal?: string;
-    contactType: string;
-    ponticType: string;
-    customPontic?: string;
-  };
-  notes?: {
-    labNotes?: string;
-    technicianNotes?: string;
-  };
-}
+
 
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
@@ -103,8 +66,8 @@ const NewCase: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const [selectedCategory, setSelectedCategory] =
-    useState<ProductCategory | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<ProductWithShade[]>(
+    useState<SavedProduct | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>(
     []
   );
 
@@ -112,12 +75,12 @@ const NewCase: React.FC = () => {
     setSelectedProducts((prev) => [...prev, product]);
   };
 
-  const handleCategoryChange = (category: ProductCategory | null) => {
+  const handleCategoryChange = (category: SavedProduct | null) => {
     console.log("Category changed:", category);
     setSelectedCategory(category);
   };
 
-  const handleProductsChange = (products: ProductWithShade[]) => {
+  const handleProductsChange = (products: SavedProduct[]) => {
     console.log("Products changed:", products);
     setSelectedProducts(products);
   };
@@ -154,7 +117,7 @@ const NewCase: React.FC = () => {
 
   const handleStepChange = (data: Partial<FormData>) => {
     setFormData((prevData) => {
-      const newData = { ...prevData };
+      const newData: any = { ...prevData };
 
       // Handle each field separately to properly merge nested objects
       Object.entries(data).forEach(([key, value]) => {
@@ -281,7 +244,7 @@ const NewCase: React.FC = () => {
             selectedMaterial={selectedCategory}
             onAddToCase={handleSaveProduct}
             selectedProducts={selectedProducts}
-            onProductsChange={handleProductsChange}
+            onProductsChange={(products)=> handleProductsChange(products)}
             onMaterialChange={handleCategoryChange}
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}

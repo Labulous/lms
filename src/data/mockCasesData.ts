@@ -141,20 +141,47 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
       tooth_number: product.teeth || "",
     }));
 
+    // Calculate discounted prices for products
+    const discountedPrice = cases.products.map((product: any) => ({
+      product_id: product.id,
+      price: product.price,
+      discount: product.discount,
+      final_price: product.price - (product.price * product.discount) / 100,
+    }));
+
+    // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
       .from("case_product_teeth")
-      .insert(caseProductTeethRows);
+      .insert(caseProductTeethRows)
+      .select("");
 
     if (caseProductTeethError) {
       console.error(
         "Error creating case_product_teeth rows:",
         caseProductTeethError
       );
-    } else {
-      console.log("case_product_teeth rows created successfully!");
-      toast.success("Case created successfully");
-     navigate && navigate("/cases");
+      return; // Exit if there is an error
     }
+
+    // Step 4: Insert discount price rows
+    const { error: discountPriceError } = await supabase
+      .from("discounted_price")
+      .insert(discountedPrice)
+      .select("*");
+
+    if (discountPriceError) {
+      console.error("Error inserting discount prices:", discountPriceError);
+      return; // Exit if there is an error
+    } else {
+      console.log("Discount prices inserted successfully!");
+    }
+
+    // Success message
+    console.log(
+      "case_product_teeth rows created and discount prices inserted successfully!"
+    );
+    toast.success("Case created successfully");
+    navigate && navigate("/cases");
   } catch (error) {
     console.error("Error while processing case product:", error);
   }
@@ -245,7 +272,7 @@ export const getCaseById = (id: string): Case | undefined => {
 };
 
 // Function to add a new case
-export const addCase = (newCase: Case, navigate:any): void => {
+export const addCase = (newCase: Case, navigate: any): void => {
   cases = [newCase];
   saveCases(newCase, navigate);
 };

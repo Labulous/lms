@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, MoreVertical, ChevronsUpDown, ChevronUp, ChevronDown, Pencil, Trash, Copy, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, MoreVertical, ChevronsUpDown, ChevronUp, ChevronDown, Pencil, Trash, Copy, ChevronRight } from 'lucide-react';
 import { Database } from '../../types/supabase';
 import {
   Table,

@@ -12,10 +12,11 @@ import { MaterialType } from "../../../../data/mockProductData";
 import { Product } from "../../../../services/productsService";
 import { cn } from "@/lib/utils";
 import { fetchShadeOptions } from "@/data/mockCasesData";
+import { SavedProduct } from "../types";
 
 interface MultiColumnProductSelectorProps {
   materials: MaterialType[];
-  products: Product[];
+  products: SavedProduct[];
   selectedProduct: Product | null;
   onProductSelect: (product: Product) => void;
   disabled?: boolean;
