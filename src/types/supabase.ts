@@ -145,10 +145,10 @@ export type CaseStatus = "in_queue" | "in_progress" | "completed" | "cancelled";
  * Shade data structure for dental products
  */
 export interface ShadeData {
-  occlusal_shade_id?: string; // UUID reference to shade_options
-  body_shade_id?: string; // UUID reference to shade_options
-  gingival_shade_id?: string; // UUID reference to shade_options
-  stump_shade_id?: string; // UUID reference to shade_options
+  occlusal?: string; // UUID reference to shade_options
+  body?: string; // UUID reference to shade_options
+  gingival?: string; // UUID reference to shade_options
+  stump?: string; // UUID reference to shade_options
 }
 
 /**
@@ -164,20 +164,30 @@ export interface ShadeDataDisplay {
 /**
  * Product type definition
  */
-export interface Product {
+
+interface Product {
   id: string;
   name: string;
-  description: string;
   price: number;
-  leadTime: number;
-  isClientVisible: boolean;
-  isTaxable: boolean;
-  billing_type_id: string; // UUID reference to billing_types table
-  requiresShade: boolean;
-  material_id: string; // UUID reference to materials table
-  product_type_id: string; // UUID reference to product_types table
-  created_at?: string;
-  updated_at?: string;
+  lead_time: number | null;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  created_at: string;
+  updated_at: string;
+  requires_shade: boolean;
+  material_id: string;
+  product_type_id: string;
+  billing_type_id: string;
+  material: {
+    name: string;
+  };
+  product_type: {
+    name: string;
+  };
+  billing_type: {
+    name: string;
+    label: string;
+  };
 }
 
 export interface ProductWithShade extends Product {
@@ -357,6 +367,8 @@ export interface Database {
       };
       products: {
         Row: {
+          type: any;
+          material: any;
           id: string;
           name: string;
           description: string;
@@ -414,3 +426,42 @@ export type Case = Database["public"]["Tables"]["cases"]["Row"] & {
 export type CaseProduct = Database["public"]["Tables"]["case_products"]["Row"];
 export type CaseProductTooth =
   Database["public"]["Tables"]["case_product_teeth"]["Row"];
+
+export interface FormData {
+  clientId: string;
+  doctorId: string;
+  patientFirstName: string;
+  patientLastName: string;
+  orderDate: string;
+  status: CaseStatus;
+  deliveryMethod: string;
+  dueDate?: string;
+  isDueDateTBD?: boolean;
+  appointmentDate?: string;
+  appointmentTime?: string;
+  enclosedItems: {
+    impression: number;
+    biteRegistration: number;
+    photos: number;
+    jig: number;
+    opposingModel: number;
+    articulator: number;
+    returnArticulator: number;
+    cadcamFiles: number;
+    consultRequested: number;
+  };
+  otherItems?: string;
+  clientName?: string;
+  caseDetails?: {
+    occlusalType: string;
+    customOcclusal?: string;
+    contactType: string;
+    ponticType: string;
+    customPontic?: string;
+    customContact: string;
+  };
+  notes?: {
+    labNotes?: string;
+    technicianNotes?: string;
+  };
+}

@@ -12,21 +12,20 @@ import {
   MaterialType,
   PRODUCT_TYPES,
   ProductType,
+  SavedProduct,
 } from "@/data/mockProductData";
 import {
   Product,
   ShadeData,
-  ProductCategory,
   BillingType,
   PonticType,
   OcclusalType,
   ContactType,
   ShadeOption,
+  ProductWithShade,
 } from "@/types/supabase";
 import { productsService } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
-import SelectedProductsModal from "./modals/SelectedProductsModal";
-import { SavedProduct, ProductWithShade } from "./types";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, percent, Percent } from "lucide-react";
+import { X, Plus, StickyNote, Percent } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -58,14 +57,10 @@ import {
   HoverCardContent,
 } from "@radix-ui/react-hover-card";
 import MultiColumnProductSelector from "./modals/MultiColumnProductSelector";
-import { ReactComponent as CrownIcon } from "@/assets/types/crown.svg";
-import { ReactComponent as BridgeIcon } from "@/assets/types/bridge.svg";
-import { ReactComponent as ImplantIcon } from "@/assets/types/implant.svg";
-import { ReactComponent as RemovableIcon } from "@/assets/types/removable.svg";
-import { ReactComponent as CopingIcon } from "@/assets/types/coping.svg";
-import { ReactComponent as ApplianceIcon } from "@/assets/types/appliance.svg";
+
 import { fetchShadeOptions } from "@/data/mockCasesData";
 import { Item } from "@radix-ui/react-dropdown-menu";
+import { createClient } from "@supabase/supabase-js";
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
@@ -103,8 +98,8 @@ const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
 interface ProductConfigurationProps {
   selectedMaterial: ProductMaterial | null;
   onAddToCase: (product: SavedProduct) => void;
-  selectedProducts: ProductWithShade[];
-  onProductsChange: (products: ProductWithShade[]) => void;
+  selectedProducts: SavedProduct[];
+  onProductsChange: (products: SavedProduct[]) => void;
   onMaterialChange: (material: ProductMaterial | null) => void;
   onCaseDetailsChange: (details: {
     occlusalType: string;
@@ -180,17 +175,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   // Preview state for the Add Shade table
   const [previewItem, setPreviewItem] = useState<ToothItem | null>(null);
-  const [previewProduct, setPreviewProduct] = useState<ProductWithShade | null>(
+  const [previewProduct, setPreviewProduct] = useState<SavedProduct | null>(
     null
   );
   const [isReadyToAdd, setIsReadyToAdd] = useState(false);
 
   const [shadePopoverOpen, setShadePopoverOpen] = useState(false);
 
-  const [occlusalDetails, setOcclusalDetails] = useState("");
-  const [contactType, setContactType] = useState("na");
-  const [customContact, setCustomContact] = useState("");
-  const [ponticDetails, setPonticDetails] = useState("");
+  // const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  // const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  // const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   // Case-level details state
   const [caseDetails, setCaseDetails] = useState<{
@@ -260,26 +254,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     fetchProducts();
   }, []); // Only fetch on mount, we'll filter in useMemo
 
-  useEffect(() => {
-    const fetchShadeOptions = async () => {
-      try {
-        const { data: options, error } = await supabase
-          .from("shade_options")
-          .select("*")
-          .eq("is_active", true)
-          .order("category", { ascending: true })
-          .order("name", { ascending: true });
-
-        if (error) throw error;
-        setShadeOptions(options || []);
-      } catch (error) {
-        console.error("Error fetching shade options:", error);
-        toast.error("Failed to load shade options");
-      }
-    };
-
-    fetchShadeOptions();
-  }, []);
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return []; // Ensure products is valid
 
@@ -340,12 +314,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   useEffect(() => {
     if (selectedType) {
       console.log("Selected type changed:", selectedType);
-      const newPreviewProduct: ProductWithShade = {
+      const newPreviewProduct: SavedProduct = {
         id: "preview",
         name: selectedType,
         type: selectedType,
         teeth: selectedTeeth,
-        material: "",
         shades: {
           occlusal: "",
           body: "",
@@ -355,7 +328,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         price: 0,
         discount: 0,
         notes: previewNote,
-        requiresShade: true,
       };
       console.log("Setting initial preview product:", newPreviewProduct);
       setPreviewProduct(newPreviewProduct);
@@ -391,7 +363,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         product.billing_type?.name
       )
     ) {
-      console.error("Invalid billing type:", product.billingType);
       toast.error("Invalid product configuration");
       return;
     }
@@ -404,7 +375,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           prevItem.id === itemId
             ? {
                 ...prevItem,
-                price:product?.price,
+                price: product?.price,
                 productName: product?.name || prevItem.productName,
               }
             : prevItem
@@ -415,12 +386,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (!keepTeeth && !itemId) {
       setSelectedTeeth([]);
     }
-console.log(product,"product")
+    console.log(product, "product");
     if (product) {
-      const newPreviewProduct: ProductWithShade = {
+      const newPreviewProduct: SavedProduct = {
         ...product,
         id: "preview",
-        product_id: product.id,
+        type: "",
         teeth: selectedTeeth,
         shades: {
           occlusal: "",
@@ -428,11 +399,8 @@ console.log(product,"product")
           gingival: "",
           stump: "",
         },
-        requiresShade: true,
-        note: "",
+        notes: "",
         discount: product.discount,
-        productPrice: product?.price,
-        type: [],
       };
       console.log("Setting new preview product:", newPreviewProduct);
       setPreviewProduct(newPreviewProduct);
@@ -445,14 +413,6 @@ console.log(product,"product")
 
     setErrors({});
     checkIfReadyToAdd();
-  };
-
-  const handleMaterialSelect = (value: string) => {
-    const material = value as ProductMaterial;
-    setSelectedMaterialState(material);
-    if (onMaterialChange) {
-      onMaterialChange(material);
-    }
   };
 
   // Helper function to check if teeth overlap with existing bridge products
@@ -470,8 +430,6 @@ console.log(product,"product")
     teeth: number[],
     ponticTeeth?: number[]
   ) => {
-    console.log("Teeth selection changed:", teeth);
-
     // Only validate same arch for Bridge products
     if (selectedType === "Bridge") {
       const isUpperArch = teeth.every((t) => t >= 11 && t <= 28);
@@ -500,7 +458,7 @@ console.log(product,"product")
       }));
 
       // Update preview product with new teeth
-      setPreviewProduct((prev) => ({
+      setPreviewProduct((prev: any) => ({
         ...prev!,
         teeth: sortedTeeth,
       }));
@@ -518,12 +476,12 @@ console.log(product,"product")
     if (previewProduct) {
       const updatedShades = {
         occlusal: key === "occlusal" ? value : shadeData.occlusal,
-        body: key === "body" ? value : shadeData.middle,
+        body: key === "body" ? value : shadeData.body,
         gingival: key === "gingival" ? value : shadeData.gingival,
         stump: key === "stump" ? value : shadeData.stump,
       };
 
-      setPreviewProduct((prev) => ({
+      setPreviewProduct((prev: any) => ({
         ...prev!,
         shades: updatedShades,
       }));
@@ -545,37 +503,6 @@ console.log(product,"product")
     return Object.keys(errors).length === 0;
   };
 
-  const handleAddToCase = () => {
-    if (!validateForm()) {
-      toast.error("Please fix the errors before continuing");
-      return;
-    }
-
-    const productToAdd: SavedProduct = {
-      ...selectedProduct!,
-      teeth: selectedTeeth,
-      shades: selectedProduct?.requiresShade ? shadeData : undefined,
-      discount,
-    };
-
-    onAddToCase(productToAdd);
-
-    // Reset form
-    setSelectedProduct(null);
-    setSelectedTeeth([]);
-    setShadeData({ occlusal: "", body: "", gingival: "", stump: "" });
-    setDiscount(0);
-    setErrors({});
-  };
-
-  const handleRemoveProduct = (index: number) => {
-    onProductsChange(selectedProducts.filter((_, i) => i !== index));
-  };
-
-  const handleReviewAndCreate = () => {
-    console.log("Review and create case");
-  };
-
   const handleAddToothItems = (teeth: number[]) => {
     if (!selectedType || selectedTeeth.length === 0) {
       toast.error("Please select teeth before adding");
@@ -584,9 +511,9 @@ console.log(product,"product")
 
     // For bridge products, combine selected teeth and pontic teeth
     let allTeeth = [...teeth];
-    if (selectedType === "Bridge" && ponticTeeth?.length) {
-      allTeeth = [...teeth, ...ponticTeeth].sort((a, b) => a - b);
-    }
+    // if (selectedType === "Bridge" && ponticTeeth?.length) {
+    //   allTeeth = [...teeth, ...ponticTeeth].sort((a, b) => a - b);
+    // }
 
     const sortedTeeth = allTeeth;
     const isRange = allTeeth.length > 1;
@@ -614,29 +541,30 @@ console.log(product,"product")
     const newId = uuidv4();
 
     // Create new tooth item with basic information
-    const newItem: ToothItem = {
+    const newItem: SavedProduct = {
       id: newId,
       teeth: sortedTeeth,
-      isRange,
       type: selectedType,
-      productName: selectedType,
       notes: previewNote,
-      highlightColor: "bg-blue-50",
+      // highlightColor: "bg-blue-50",
       shades: {
         occlusal: shadeData.occlusal || "",
         body: shadeData.body || "",
         gingival: shadeData.gingival || "",
         stump: shadeData.stump || "",
       },
+      name: "",
+      price: 0,
+      discount: 0,
     };
 
     // Create new product for the selected products list
-    const newProduct: ProductWithShade = {
+    const newProduct: SavedProduct = {
       id: selectedProduct?.id ?? "",
       name: selectedType,
       type: selectedType,
       teeth: sortedTeeth,
-      price:selectedProduct?.price as number,
+      price: selectedProduct?.price as number,
       shades: {
         occlusal: shadeData.occlusal || "",
         body: shadeData.body || "",
@@ -661,7 +589,7 @@ console.log(product,"product")
     }
 
     setAddedTeethMap(newMap);
-    setToothItems((prev) => [...prev, newItem]);
+    setToothItems((prev: any) => [...prev, newItem]);
     onProductsChange([...selectedProducts, newProduct]);
 
     // Add highlight effect
@@ -680,57 +608,6 @@ console.log(product,"product")
     setPreviewNote("");
     setNotePopoverOpen(null);
     setToothSelectorKey((prev) => prev + 1);
-  };
-
-  const handleShadeSelect = (
-    itemId: string,
-    type: "occlusal" | "body" | "gingival" | "stump",
-    shade: string
-  ) => {
-    setToothItems((prevItems) => {
-      return prevItems.map((item) => {
-        if (item.id === itemId) {
-          const currentShades = item.shades || {};
-          const newShades = {
-            ...currentShades,
-            [type]: currentShades[type] === shade ? undefined : shade, // Toggle shade if it's the same value
-          };
-          return {
-            ...item,
-            shades: newShades,
-          };
-        }
-        return item;
-      });
-    });
-  };
-
-  const handlePopoverOpenChange = (id: string, open: boolean) => {
-    setOpenPopoverIds((prev) => {
-      const newSet = new Set(prev);
-      if (open) {
-        newSet.add(id);
-      } else {
-        newSet.delete(id);
-      }
-      return newSet;
-    });
-  };
-
-  const formatShades = (shades?: {
-    occlusal?: string;
-    body?: string;
-    gingival?: string;
-    stump?: string;
-  }) => {
-    if (!shades) return "";
-    const values = [
-      shades.occlusal || "-",
-      shades.body || "-",
-      shades.gingival || "-",
-      shades.stump || "-",
-    ];
-    return values.join("/");
   };
 
   const formatTeethRange = (teeth: number[]): string => {
@@ -785,46 +662,10 @@ console.log(product,"product")
     return 3;
   };
 
-  const handleAddTeeth = () => {
-    if (!selectedType || selectedTeeth.length === 0) {
-      toast.error("Please select teeth before adding");
-      return;
-    }
-
-    // For Bridge products, check overlap
-    if (selectedType === "Bridge") {
-      const hasBridgeOverlap = checkBridgeOverlap(selectedTeeth);
-      if (hasBridgeOverlap) {
-        toast.error("Selected teeth overlap with an existing bridge");
-        return;
-      }
-    }
-
-    // Create new tooth item
-    const newItem: ToothItem = {
-      id: uuidv4(),
-      teeth: selectedTeeth,
-      isRange: selectedTeeth.length > 1,
-      type: selectedType,
-    };
-
-    // Only update the teeth map for bridge products
-    if (selectedType === "Bridge") {
-      const newMap = new Map(addedTeethMap);
-      selectedTeeth.forEach((tooth) => {
-        newMap.set(tooth, true);
-      });
-      setAddedTeethMap(newMap);
-    }
-
-    setToothItems((prev) => [...prev, newItem]);
-    setSelectedTeeth([]); // Reset selected teeth
-  };
-
   const checkIfReadyToAdd = () => {
     const hasTeeth = selectedTeeth.length > 0;
     const hasProduct = selectedProduct !== null;
-    const hasShades = selectedProduct?.requiresShade
+    const hasShades = selectedProduct?.shadeData
       ? Object.values(shadeData).some((shade) => shade !== "")
       : true;
 
@@ -872,84 +713,6 @@ console.log(product,"product")
     // Add the product to the table with shades
   };
 
-  const handleAddPreviewToTable = (productToAdd = previewProduct) => {
-    console.log("Adding preview to table:", {
-      productToAdd,
-      selectedTeeth,
-      selectedType,
-      selectedProduct,
-      currentShades: shadeData,
-    });
-
-    if (!productToAdd || !selectedTeeth.length) {
-      console.error("Missing required data:", { productToAdd, selectedTeeth });
-      return;
-    }
-
-    // Check for overlapping teeth only for bridge type
-    if (selectedType === "Bridge") {
-      const hasOverlap = selectedTeeth.some((tooth) =>
-        addedTeethMap.has(tooth)
-      );
-      if (hasOverlap) {
-        toast.error("Bridge teeth cannot overlap with existing selections");
-        return;
-      }
-    }
-
-    const newItem: ToothItem = {
-      id: uuidv4(),
-      teeth: [...selectedTeeth],
-      type: selectedType || "",
-      productName: selectedProduct?.name || "",
-      isRange: false,
-      shades: productToAdd.shades, // Use the shades from the productToAdd
-    };
-    console.log("Created new item:", newItem);
-
-    // Update the teeth map only for bridge type
-    if (selectedType === "Bridge") {
-      const newMap = new Map(addedTeethMap);
-      selectedTeeth.forEach((tooth) => {
-        newMap.set(tooth, true);
-      });
-      setAddedTeethMap(newMap);
-    }
-
-    setToothItems((prev) => {
-      const updated = [...prev, newItem];
-      console.log("Updated tooth items:", updated);
-      return updated;
-    });
-
-    // Update selected products
-    const newProduct: ProductWithShade = {
-      ...productToAdd,
-      id: newItem.id,
-      note: previewNote,
-      teeth: [...selectedTeeth],
-    };
-    onProductsChange([...selectedProducts, newProduct]);
-
-    setHighlightedItems((prev) => new Set([...prev, newItem.id]));
-
-    // Reset states
-    setSelectedTeeth([]);
-    setSelectedProduct(null);
-    setPreviewProduct(null);
-    setShadeData({ occlusal: "", body: "", gingival: "", stump: "" });
-    setErrors({});
-
-    // Remove highlight after animation
-    setTimeout(() => {
-      setHighlightedItems((prev) => {
-        const next = new Set(prev);
-        next.delete(newItem.id);
-        return next;
-      });
-    }, 2000);
-  };
-
   const handleRemoveToothItem = (itemId: string) => {
     // Remove the item from toothItems
     setToothItems((prev) => prev.filter((item) => item.id !== itemId));
@@ -977,11 +740,6 @@ console.log(product,"product")
       stump: previewProduct?.shades?.stump || "",
     });
     setShadePopoverOpen(false);
-  };
-
-  const resetToothSelector = () => {
-    setSelectedTeeth([]);
-    setToothSelectorKey((prev) => prev + 1); // Force remount of ToothSelector
   };
 
   const handleCaseDetailChange = (
@@ -1012,44 +770,6 @@ console.log(product,"product")
       return updated;
     });
   };
-
-  const PONTIC_INFO = {
-    [PonticType.WashThrough]: {
-      description:
-        "A pontic design that allows for easy cleaning underneath, ideal for hygienic maintenance.",
-      imagePath: "/src/assets/pontics/wash-through.png",
-    },
-    [PonticType.Dome]: {
-      description:
-        "A rounded, convex design that makes minimal contact with the ridge.",
-      imagePath: "/src/assets/pontics/dome.png",
-    },
-    [PonticType.ModifiedRidgeLap]: {
-      description:
-        "A modified design that provides some tissue contact while maintaining cleanability.",
-      imagePath: "/src/assets/pontics/modified-ridge-lap.png",
-    },
-    [PonticType.RidgeLapFullSaddle]: {
-      description:
-        "Full contact with the ridge, providing maximum aesthetics but requiring careful hygiene.",
-      imagePath: "/src/assets/pontics/ridge-lap.png",
-    },
-    [PonticType.Ovate]: {
-      description:
-        "An egg-shaped design that creates natural emergence profile and optimal aesthetics.",
-      imagePath: "/src/assets/pontics/ovate.png",
-    },
-  };
-
-  const shadeOptionsByCategory = useMemo(() => {
-    return shadeOptions.reduce((acc, option) => {
-      if (!acc[option.category]) {
-        acc[option.category] = [];
-      }
-      acc[option.category].push(option.name);
-      return acc;
-    }, {} as Record<string, string[]>);
-  }, [shadeOptions]);
 
   const handleSaveNotes = (id?: string) => {
     if (id) {
@@ -1140,17 +860,15 @@ console.log(product,"product")
               <div className="border rounded-lg p-3 bg-white mt-2.5 min-h-[400px]">
                 <ToothSelector
                   key={toothSelectorKey}
-                  billingType={selectedProduct?.billingType || "perTooth"}
+                  billingType={selectedProduct?.billing_type.name || "perTooth"}
                   selectedTeeth={selectedTeeth}
                   onSelectionChange={handleToothSelectionChange}
                   addedTeethMap={addedTeethMap}
                   disabled={false}
-                  selectedProduct={
-                    selectedProduct || {
-                      type: selectedType ? [selectedType] : [],
-                    }
-                  }
                   onAddToShadeTable={() => handleAddToothItems(selectedTeeth)}
+                  selectedProduct={{
+                    type: selectedType ? [selectedType] : [],
+                  }}
                 />
               </div>
               {errors.teeth && (
@@ -1611,7 +1329,7 @@ console.log(product,"product")
                                     </div>
                                   </PopoverContent>
                                 </Popover>
-                                {(!selectedProduct.requiresShade ||
+                                {(!selectedProduct.shadeData ||
                                   previewProduct?.shades) && (
                                   <Button
                                     variant="ghost"
