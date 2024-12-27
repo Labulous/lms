@@ -60,11 +60,20 @@ export const generateInvoice = (
     dueDate: dueDate.toISOString().split("T")[0],
     items,
     subTotal,
-    discount,
+    discount: {
+      type: "percentage",
+      value: 2,
+      amount: 2,
+    },
     discountType,
-    tax,
+    tax: {
+      type: "percentage",
+      value: 1,
+      amount: 1,
+    },
     totalAmount,
     status: "pending",
     notes,
+    paymentTerms: "",
   };
 };

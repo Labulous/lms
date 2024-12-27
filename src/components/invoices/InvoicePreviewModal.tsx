@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Printer } from 'lucide-react';
-import { generateInvoice, formatCurrency } from '../../services/invoiceService';
-import { Invoice } from '../../data/mockInvoiceData';
-import { getClientById } from '../../data/mockClientsData';
-import { useReactToPrint } from 'react-to-print';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import React, { useState, useEffect, useRef } from "react";
+import { X, Download, Printer } from "lucide-react";
+import { generateInvoice } from "../../services/invoiceService";
+import { Invoice } from "../../data/mockInvoiceData";
+import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
@@ -23,7 +22,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,21 +36,36 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     setError(null);
 
     try {
-      const result = await generateInvoice(formData);
-      if ('errors' in result) {
-        setError('Invalid invoice data');
+      // Destructure formData to get the required parameters
+      const { clientId, items, discount, discountType, tax, notes } = formData;
+
+      // Call generateInvoice with the appropriate arguments
+      const result = await generateInvoice(
+        clientId,
+        items,
+        discount,
+        discountType,
+        tax,
+        notes
+      );
+
+      // Assuming result has invoiceId instead of invoice
+      if ("errors" in result) {
+        setError("Invalid invoice data");
         return;
       }
-      setInvoice(result.invoice);
+
+      // Set the invoice data, here we assume `invoiceId` is part of the result
+      setInvoice(result as Invoice); // Or replace `invoiceId` with the correct property if needed
     } catch (err) {
-      setError('Failed to generate invoice preview');
+      setError("Failed to generate invoice preview");
     } finally {
       setLoading(false);
     }
   };
 
   const handlePrint = useReactToPrint({
-    content: () => invoiceRef.current,
+    content: () => invoiceRef.current, // Works with any type
     onBeforeGetContent: () => {
       setIsPrinting(true);
     },
@@ -64,7 +78,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         margin: 20mm;
       }
     `,
-  });
+  } as Partial<UseReactToPrintOptions>);
 
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current || !invoice) return;
@@ -77,21 +91,21 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         useCORS: true,
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
       });
 
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-      pdf.save(`Invoice-${invoice.invoiceNumber}.pdf`);
+
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`Invoice-${invoice.invoiceId}.pdf`);
     } catch (err) {
-      console.error('Error generating PDF:', err);
-      setError('Failed to generate PDF');
+      console.error("Error generating PDF:", err);
+      setError("Failed to generate PDF");
     } finally {
       setIsDownloading(false);
     }
@@ -99,16 +113,29 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
   if (!isOpen) return null;
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(amount);
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        ></div>
 
         <div className="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Invoice Preview</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Invoice Preview
+              </h3>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={handleDownloadPDF}
@@ -116,15 +143,15 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  {isDownloading ? 'Downloading...' : 'Download PDF'}
+                  {isDownloading ? "Downloading..." : "Download PDF"}
                 </button>
                 <button
-                  onClick={handlePrint}
+                  onClick={() => handlePrint()}
                   disabled={isPrinting || !invoice}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
                   <Printer className="h-4 w-4 mr-2" />
-                  {isPrinting ? 'Printing...' : 'Print'}
+                  {isPrinting ? "Printing..." : "Print"}
                 </button>
                 <button
                   onClick={onClose}
@@ -148,7 +175,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               <div ref={invoiceRef} className="space-y-6 p-6 bg-white">
                 {/* Company Logo and Info */}
                 <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900">Labulous Dental Lab</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Labulous Dental Lab
+                  </h2>
                   <p className="text-gray-600">123 Lab Street, Suite 100</p>
                   <p className="text-gray-600">Lab City, LC 12345</p>
                   <p className="text-gray-600">Phone: (555) 123-4567</p>
@@ -164,10 +193,16 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 <div className="grid grid-cols-2 gap-8 mb-8">
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Bill To:</h4>
-                    <p className="text-gray-800 font-medium">{invoice.clientName}</p>
-                    <p className="text-gray-600">{invoice.clientAddress.street}</p>
+                    <p className="text-gray-800 font-medium">
+                      {invoice.clientName}
+                    </p>
                     <p className="text-gray-600">
-                      {invoice.clientAddress.city}, {invoice.clientAddress.state} {invoice.clientAddress.zipCode}
+                      {invoice.client?.address.street}
+                    </p>
+                    <p className="text-gray-600">
+                      {invoice.client?.address.city},{" "}
+                      {invoice.client?.address.state}{" "}
+                      {invoice.client?.address.zipCode}
                     </p>
                   </div>
                   <div>
@@ -229,19 +264,31 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                       <div className="w-64">
                         <div className="flex justify-between py-2">
                           <span className="text-gray-600">Subtotal</span>
-                          <span className="text-gray-900">{formatCurrency(invoice.subTotal)}</span>
+                          <span className="text-gray-900">
+                            {formatCurrency(invoice.subTotal)}
+                          </span>
                         </div>
                         {invoice.discount && (
                           <div className="flex justify-between py-2">
                             <span className="text-gray-600">
-                              Discount ({invoice.discount.type === 'percentage' ? `${invoice.discount.value}%` : 'Fixed'})
+                              Discount (
+                              {invoice.discount.type === "percentage"
+                                ? `${invoice.discount.value}%`
+                                : "Fixed"}
+                              )
                             </span>
-                            <span className="text-gray-900">-{formatCurrency(invoice.discount.amount)}</span>
+                            <span className="text-gray-900">
+                              -{formatCurrency(invoice.discount.amount)}
+                            </span>
                           </div>
                         )}
                         <div className="flex justify-between py-2">
-                          <span className="text-gray-600">Tax ({invoice.tax.value}%)</span>
-                          <span className="text-gray-900">{formatCurrency(invoice.tax.amount)}</span>
+                          <span className="text-gray-600">
+                            Tax ({invoice.tax.value}%)
+                          </span>
+                          <span className="text-gray-900">
+                            {formatCurrency(invoice.tax.amount)}
+                          </span>
                         </div>
                         <div className="flex justify-between py-2 border-t border-gray-200 font-bold">
                           <span>Total</span>
@@ -263,7 +310,9 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 {/* Payment Terms */}
                 <div className="mt-8 text-sm text-gray-600">
                   <p>Payment Terms: {invoice.paymentTerms}</p>
-                  <p className="mt-2">Please make checks payable to: Labulous Dental Lab</p>
+                  <p className="mt-2">
+                    Please make checks payable to: Labulous Dental Lab
+                  </p>
                 </div>
 
                 {/* Thank You Note */}

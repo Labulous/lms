@@ -34,18 +34,20 @@ export interface CaseStage {
 
 export type CaseStatus =
   | "In Queue"
-  | "In Progress"
+  | "in_progress"
   | "On Hold"
-  | "Completed"
-  | "Cancelled";
+  | "completed"
+  | "cancelled"
+  | "in_queue";
 export type DeliveryMethod = "Pickup" | "Local Delivery" | "Shipping";
 
 export const CASE_STATUSES: CaseStatus[] = [
   "In Queue",
-  "In Progress",
+  "in_progress",
   "On Hold",
-  "Completed",
-  "Cancelled",
+  "completed",
+  "cancelled",
+  "in_queue",
 ];
 
 export const DELIVERY_METHODS: DeliveryMethod[] = [
@@ -70,7 +72,7 @@ const defaultCases: Case[] = [
     clientName: "Smile Dental Clinic",
     patientName: "Matthias Cook",
     caseType: "Crown",
-    caseStatus: "In Progress",
+    caseStatus: "in_progress",
     startDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
     assignedTechnicians: ["1", "2"],
@@ -89,7 +91,7 @@ const defaultCases: Case[] = [
     clientName: "Bright Smiles Orthodontics",
     patientName: "Emma Thompson",
     caseType: "Bridge",
-    caseStatus: "In Progress",
+    caseStatus: "in_progress",
     startDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(addDays(new Date(), 10), "yyyy-MM-dd"),
     assignedTechnicians: ["3"],
