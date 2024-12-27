@@ -45,6 +45,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import cn from "classnames";
 
 // Define TypeScript interfaces for our data structure
 interface CaseFile {
@@ -409,6 +410,22 @@ const CaseDetails: React.FC = () => {
                       "Unknown Clinic"}
                   </span>
                 </div>
+                <div className="mt-2">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+                      {
+                        "bg-blue-50 text-blue-700": caseDetail.status === "in_progress",
+                        "bg-gray-100 text-gray-700": caseDetail.status === "in_queue",
+                        "bg-green-50 text-green-700": caseDetail.status === "completed",
+                        "bg-yellow-50 text-yellow-700": caseDetail.status === "on_hold",
+                        "bg-red-50 text-red-700": caseDetail.status === "cancelled",
+                      }
+                    )}
+                  >
+                    {caseDetail.status.replace("_", " ")}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -483,7 +500,7 @@ const CaseDetails: React.FC = () => {
                   <CircleDot className="mr-2" size={20} /> Case Progress
                 </CardTitle>
               </CardHeader>
-              <CardContent className="bg-slate-50 rounded-md">
+              <CardContent className="py-2 px-3">
                 <CaseProgress
                   steps={[
                     {
@@ -525,40 +542,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Status Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <Clock className="mr-2" size={20} /> Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-5 w-5 text-blue-500" />
-                      <span className="font-medium">Current Status:</span>
-                    </div>
-                    <span
-                      className="px-3 py-1 rounded-full text-sm font-medium capitalize"
-                      style={{
-                        backgroundColor:
-                          caseDetail.status === "in_progress"
-                            ? "#EFF6FF"
-                            : "#F3F4F6",
-                        color:
-                          caseDetail.status === "in_progress"
-                            ? "#1D4ED8"
-                            : "#374151",
-                      }}
-                    >
-                      {caseDetail.status.replace("_", " ")}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Products Section */}
             <Card>
               <CardHeader>
@@ -566,7 +549,7 @@ const CaseDetails: React.FC = () => {
                   <Package className="mr-2" size={20} /> Products
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="py-2 px-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-gray-600">Occlusal Details</p>
@@ -595,7 +578,7 @@ const CaseDetails: React.FC = () => {
                   <div className="mb-4">
                     <p className="text-gray-600">Technician Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.technician_notes || "No notes"}
+                      {caseDetail?.technician_notes || "No technician notes"}
                     </p>
                   </div>
                 </div>
@@ -666,11 +649,11 @@ const CaseDetails: React.FC = () => {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             {/* Doctor Information */}
             <Card>
-              <CardContent className="pt-6">
-                <Accordion type="single" defaultValue="doctor-info">
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" defaultValue="doctor-info" collapsible>
                   <AccordionItem value="doctor-info" className="border-none">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
@@ -683,7 +666,8 @@ const CaseDetails: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Client Name</p>
                           <p className="font-medium">
-                            {caseDetail.doctor?.client?.client_name || "Unknown Clinic"}
+                            {caseDetail.doctor?.client?.client_name ||
+                              "Unknown Clinic"}
                           </p>
                         </div>
                         <div>
@@ -695,7 +679,84 @@ const CaseDetails: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Phone Number</p>
                           <p className="font-medium">
-                            {caseDetail.doctor?.client?.phone || "Not provided"}
+                            {caseDetail.doctor?.client?.phone ||
+                              "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            {/* Instructions */}
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" defaultValue="instructions" collapsible>
+                  <AccordionItem value="instructions" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Instructions</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Occlusal Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_occulusal_details ||
+                              caseDetail.occlusal_type ||
+                              "Not specified"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Contact Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_contact_details ||
+                              caseDetail.contact_type ||
+                              "Not specified"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Pontic Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_pontic_details ||
+                              caseDetail.pontic_type ||
+                              "Not specified"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            {/* Case Notes */}
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="notes" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Case Notes</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Lab Notes</p>
+                          <p className="font-medium">
+                            {caseDetail.lab_notes || "No lab notes"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Technician Notes</p>
+                          <p className="font-medium">
+                            {caseDetail.technician_notes || "No technician notes"}
                           </p>
                         </div>
                       </div>
@@ -707,13 +768,18 @@ const CaseDetails: React.FC = () => {
 
             {/* Enclosed Items */}
             <Card>
-              <CardContent className="pt-6">
-                <Accordion type="single">
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
                   <AccordionItem value="enclosed" className="border-none">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
                         <Package className="h-5 w-5" />
-                        <span className="font-semibold">Enclosed Items</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Enclosed Items</span>
+                          <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
+                            {Object.values(caseDetail.enclosed_case || {}).filter(Boolean).length}
+                          </span>
+                        </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
@@ -745,85 +811,20 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Instructions */}
-            <Card>
-              <CardContent className="pt-6">
-                <Accordion type="single">
-                  <AccordionItem value="instructions" className="border-none">
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        <span className="font-semibold">Instructions</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Occlusal Type</p>
-                          <p className="font-medium">
-                            {caseDetail.custom_occulusal_details || caseDetail.occlusal_type || "Not specified"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Contact Type</p>
-                          <p className="font-medium">
-                            {caseDetail.custom_contact_details || caseDetail.contact_type || "Not specified"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Pontic Type</p>
-                          <p className="font-medium">
-                            {caseDetail.custom_pontic_details || caseDetail.pontic_type || "Not specified"}
-                          </p>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-
-            {/* Case Notes */}
-            <Card>
-              <CardContent className="pt-6">
-                <Accordion type="single">
-                  <AccordionItem value="notes" className="border-none">
-                    <AccordionTrigger className="hover:no-underline">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        <span className="font-semibold">Case Notes</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-4">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Lab Notes</p>
-                          <p className="font-medium">
-                            {caseDetail.lab_notes || "No lab notes"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Technician Notes</p>
-                          <p className="font-medium">
-                            {caseDetail.technician_notes || "No technician notes"}
-                          </p>
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-
             {/* Attachments */}
             <Card>
-              <CardContent className="pt-6">
-                <Accordion type="single">
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
                   <AccordionItem value="attachments" className="border-none">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
                         <FileText className="h-5 w-5" />
-                        <span className="font-semibold">Attachments</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Attachments</span>
+                          <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
+                            {caseDetail.case_files?.length || 0}
+                          </span>
+                        </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
