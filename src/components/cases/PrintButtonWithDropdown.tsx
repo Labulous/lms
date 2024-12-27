@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Printer, ChevronDown } from 'lucide-react';
+import React, { useState } from "react";
+import { Printer, ChevronDown } from "lucide-react";
 
 interface PrintButtonWithDropdownProps {
   caseId: string;
@@ -7,19 +7,18 @@ interface PrintButtonWithDropdownProps {
   disabled?: boolean;
 }
 
-const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({ 
-  caseId, 
+const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({
   onPrintOptionSelect,
-  disabled = false 
+  disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const printOptions = [
-    { value: 'invoice', label: 'Invoice' },
-    { value: 'lab-slip', label: 'Lab Slip' },
-    { value: 'address-label', label: 'Address Label' },
-    { value: 'qr-code-label', label: 'QR Code Label' },
-    { value: 'patient-label', label: 'Patient Label' },
+    { value: "invoice", label: "Invoice" },
+    { value: "lab-slip", label: "Lab Slip" },
+    { value: "address-label", label: "Address Label" },
+    { value: "qr-code-label", label: "QR Code Label" },
+    { value: "patient-label", label: "Patient Label" },
   ];
 
   const handleOptionSelect = (option: string) => {
@@ -33,9 +32,9 @@ const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({
         <button
           type="button"
           className={`inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium ${
-            disabled 
-              ? 'text-gray-400 cursor-not-allowed' 
-              : 'text-gray-700 hover:bg-gray-50'
+            disabled
+              ? "text-gray-400 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-50"
           } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500`}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
@@ -48,7 +47,12 @@ const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({
 
       {isOpen && !disabled && (
         <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-          <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+          <div
+            className="py-1"
+            role="menu"
+            aria-orientation="vertical"
+            aria-labelledby="options-menu"
+          >
             {printOptions.map((option) => (
               <button
                 key={option.value}

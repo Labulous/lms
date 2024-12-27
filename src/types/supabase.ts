@@ -43,7 +43,7 @@ export interface ProductType {
   updated_at: string;
 }
 
-export interface BillingType {
+export interface BillingTypes {
   id: string;
   name: string;
   label: string;
@@ -201,20 +201,60 @@ export interface ProductWithShade extends Product {
 export interface Database {
   public: {
     Tables: {
+      users: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          role: "admin" | "technician" | "client";
+        };
+        Insert: {
+          name: string | null;
+          email: string | null;
+          role: "client" | "technician";
+        };
+      };
       cases: {
         Row: {
           id: string;
           created_at: string;
-          updated_at: string;
-          created_by: string;
+          updated_at: string; // Assuming this is available in your query
+          created_by?: string; // Assuming this is available in your query
           client_id: string;
           doctor_id: string | null;
           patient_name: string;
           rx_number: string;
           due_date: string;
-          qr_code: string;
-          status: CaseStatus;
+          qr_code: string; // Assuming this is part of your query (if not, remove this)
+          status: string; // Assuming 'CaseStatus' is a valid enum
           notes: string | null;
+          client: {
+            id: string;
+            client_name: string;
+            phone: string;
+          };
+          doctor: {
+            id: string;
+            name: string;
+            client: {
+              id: string;
+              client_name: string;
+              phone: string;
+            };
+          };
+          enclosed_items: {
+            jig: number;
+            photos: number;
+            user_id: string;
+            impression: number;
+            articulator: number;
+            cadcamFiles: number;
+            opposingModel: number;
+            biteRegistration: number;
+            consultRequested: number;
+            returnArticulator: number;
+          };
+          product_ids: string[]; // Array of product ids
         };
         Insert: {
           id?: string;
@@ -344,7 +384,11 @@ export interface Database {
         };
       };
       billing_types: {
-        Row: BillingType;
+        Row: {
+          id: string;
+          name: string;
+          label: string;
+        };
         Insert: Omit<BillingType, "id" | "created_at" | "updated_at"> & {
           id?: string;
           created_at?: string;
@@ -367,53 +411,75 @@ export interface Database {
       };
       products: {
         Row: {
-          type: any;
-          material: any;
+          discount: number;
           id: string;
           name: string;
-          description: string;
+          description: string; // Added description as it was missing
           price: number;
           lead_time: number;
           is_client_visible: boolean;
           is_taxable: boolean;
-          billing_type_id: string;
+          created_at: string;
+          updated_at: string;
           requires_shade: boolean;
           material_id: string;
           product_type_id: string;
-          created_at: string;
-          updated_at: string;
+          billing_type_id: string;
+          material: {
+            name: string;
+          } | null; // Adding the full object for material
+          product_type: {
+            name: string;
+          } | null; // Adding the full object for product_type
+          billing_type: {
+            name: string;
+            label: string | null;
+          } | null; // Adding the full object for billing_type
         };
         Insert: {
           id?: string;
-          name: string;
-          description: string;
-          price: number;
-          lead_time: number;
-          is_client_visible?: boolean;
-          is_taxable?: boolean;
-          billing_type_id: string;
-          requires_shade?: boolean;
-          material_id: string;
-          product_type_id: string;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
           name?: string;
-          description?: string;
+          description?: string; // Added description as it was missing
           price?: number;
           lead_time?: number;
           is_client_visible?: boolean;
           is_taxable?: boolean;
-          billing_type_id?: string;
+          created_at?: string;
+          updated_at?: string;
           requires_shade?: boolean;
           material_id?: string;
           product_type_id?: string;
-          created_at?: string;
-          updated_at?: string;
+          billing_type_id?: string;
+          material?: {
+            name: string;
+          } | null; // Adding the full object for material
+          product_type?: {
+            name: string;
+          } | null; // Adding the full object for product_type
+          billing_type?: {
+            name: string;
+            label: string | null;
+          };
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string; // Added description as it was missing
+          price?: number;
+          lead_time?: number;
+          is_client_visible?: boolean;
+          is_taxable?: boolean;
+          requires_shade?: boolean;
+          material_id?: string;
+          product_type_id?: string;
+          billing_type_id?: string;
         };
       };
+    };
+    headers: {
+      Accept: string;
+      "Content-Type": string;
+      "Accept-Profile": string;
     };
   };
 }

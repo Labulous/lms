@@ -1,14 +1,21 @@
-import React, { useState, useCallback } from 'react';
-import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, addMonths, subMonths } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import CustomDateCell from './CustomDateCell';
-import { Case, getCases } from '../../data/mockCasesData';
-import './calendar.css';
+import React, { useState, useCallback } from "react";
+import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
+import {
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  addMonths,
+  subMonths,
+} from "date-fns";
+import enUS from "date-fns/locale/en-US";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import CustomDateCell from "./CustomDateCell";
+import { Case, getCases } from "../../data/mockCasesData";
+import "./calendar.css";
 
 const locales = {
-  'en-US': enUS,
+  "en-US": enUS,
 };
 
 const localizer = dateFnsLocalizer({
@@ -26,17 +33,22 @@ interface DueDatesCalendarProps {
 
 interface CustomToolbarProps {
   date: Date;
-  onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
+  onNavigate: (action: "PREV" | "NEXT" | "TODAY") => void;
   label: string;
 }
 
-const CustomToolbar: React.FC<CustomToolbarProps> = ({ date, onNavigate, label }) => {
+/* eslint-disable no-unused-vars */
+const CustomToolbar: React.FC<CustomToolbarProps> = ({
+  date,
+  onNavigate,
+  label,
+}) => {
   return (
     <div className="rbc-toolbar">
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => onNavigate('PREV')}
+          onClick={() => onNavigate("PREV")}
           className="rbc-btn-group"
           aria-label="Previous month"
         >
@@ -44,7 +56,7 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({ date, onNavigate, label }
         </button>
         <button
           type="button"
-          onClick={() => onNavigate('NEXT')}
+          onClick={() => onNavigate("NEXT")}
           className="rbc-btn-group"
           aria-label="Next month"
         >
@@ -54,7 +66,7 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({ date, onNavigate, label }
       </div>
       <button
         type="button"
-        onClick={() => onNavigate('TODAY')}
+        onClick={() => onNavigate("TODAY")}
         className="rbc-btn-group"
       >
         Today
@@ -63,80 +75,87 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({ date, onNavigate, label }
   );
 };
 
-const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({ 
-  events = getCases(), 
-  height = 500 
+const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
+  events = getCases(),
+  height = 500,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const [animationDirection, setAnimationDirection] = useState<
+    "left" | "right" | null
+  >(null);
 
-  const handleNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
-    let newDate;
-    switch (action) {
-      case 'PREV':
-        setAnimationDirection('right');
-        newDate = subMonths(currentDate, 1);
-        break;
-      case 'NEXT':
-        setAnimationDirection('left');
-        newDate = addMonths(currentDate, 1);
-        break;
-      case 'TODAY':
-        newDate = new Date();
-        setAnimationDirection(
-          currentDate > new Date() ? 'right' : 'left'
-        );
-        break;
-      default:
-        return;
-    }
-    
-    setCurrentDate(newDate);
-    
-    // Reset animation direction after animation completes
-    setTimeout(() => {
-      setAnimationDirection(null);
-    }, 300);
-  }, [currentDate]);
+  const handleNavigate = useCallback(
+    (action: "PREV" | "NEXT" | "TODAY") => {
+      let newDate;
+      switch (action) {
+        case "PREV":
+          setAnimationDirection("right");
+          newDate = subMonths(currentDate, 1);
+          break;
+        case "NEXT":
+          setAnimationDirection("left");
+          newDate = addMonths(currentDate, 1);
+          break;
+        case "TODAY":
+          newDate = new Date();
+          setAnimationDirection(currentDate > new Date() ? "right" : "left");
+          break;
+        default:
+          return;
+      }
+
+      setCurrentDate(newDate);
+
+      // Reset animation direction after animation completes
+      setTimeout(() => {
+        setAnimationDirection(null);
+      }, 300);
+    },
+    [currentDate]
+  );
 
   const components = {
     dateCell: (props: any) => {
       const { date } = props;
-      const dateStr = format(date, 'yyyy-MM-dd');
+      const dateStr = format(date, "yyyy-MM-dd");
       const dateEvents = events.filter(
-        event => format(new Date(event.dueDate), 'yyyy-MM-dd') === dateStr
+        (event) => format(new Date(event.dueDate), "yyyy-MM-dd") === dateStr
       );
-      
+
       return <CustomDateCell value={date} events={dateEvents} />;
     },
     toolbar: (props: any) => (
-      <CustomToolbar 
+      <CustomToolbar
         date={props.date}
         onNavigate={handleNavigate}
-        label={format(props.date, 'MMMM yyyy')}
+        label={format(props.date, "MMMM yyyy")}
       />
     ),
   };
 
   const eventStyleGetter = () => ({
     style: {
-      display: 'none',
+      display: "none",
     },
   });
 
   return (
     <div className="calendar-wrapper" style={{ height }}>
-      <div className={`calendar-slide ${animationDirection ? `slide-${animationDirection}` : ''}`}>
+      <div
+        className={`calendar-slide ${
+          animationDirection ? `slide-${animationDirection}` : ""
+        }`}
+      >
         <Calendar
           localizer={localizer}
           events={[]}
           startAccessor="start"
           endAccessor="end"
           components={components}
-          views={['month'] as View[]}
+          views={["month"] as View[]}
           defaultView="month"
           date={currentDate}
-          onNavigate={handleNavigate}
+          onNavigate={handleNavigate as any}
           eventPropGetter={eventStyleGetter}
           className="calendar-container"
         />

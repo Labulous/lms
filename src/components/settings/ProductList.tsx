@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
-import { Plus, MoreVertical, ChevronsUpDown, ChevronUp, ChevronDown, Pencil, Trash, Copy, ChevronRight } from 'lucide-react';
-import { Database } from '../../types/supabase';
+import React, { useState } from "react";
+import {
+  Plus,
+  MoreVertical,
+  ChevronsUpDown,
+  ChevronUp,
+  ChevronDown,
+  Pencil,
+  Trash,
+  Copy,
+  ChevronRight,
+} from "lucide-react";
+import { Database } from "../../types/supabase";
 import {
   Table,
   TableBody,
@@ -26,18 +36,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import BatchProductUpload from './BatchProductUpload';
-import { ProductInput } from '@/services/productsService';
+import BatchProductUpload from "./BatchProductUpload";
+import { ProductInput } from "@/services/productsService";
 
-type Product = Database['public']['Tables']['products']['Row'] & {
-  material: { name: string } | null;
-  product_type: { name: string } | null;
-  billing_type: { name: string; label: string | null } | null;
-};
+type Product = Database["public"]["Tables"]["products"]["Row"] & {};
 
 type SortConfig = {
   key: keyof Product;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 };
 
 interface ProductListProps {
@@ -48,20 +54,20 @@ interface ProductListProps {
   onBatchAdd?: (products: ProductInput[]) => Promise<void>;
 }
 
-const ProductList: React.FC<ProductListProps> = ({ 
-  products, 
-  productTypes, 
-  onEdit, 
+const ProductList: React.FC<ProductListProps> = ({
+  products,
+  productTypes,
+  onEdit,
   onDelete,
-  onBatchAdd 
+  onBatchAdd,
 }) => {
   // State
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: 'name',
-    direction: 'asc'
+    key: "name",
+    direction: "asc",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -69,20 +75,22 @@ const ProductList: React.FC<ProductListProps> = ({
   // Filtering
   const getFilteredProducts = () => {
     let filtered = [...products];
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(product => 
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (typeFilter.length > 0) {
-      filtered = filtered.filter(product => 
-        product.product_type && typeFilter.includes(product.product_type.name)
+      filtered = filtered.filter(
+        (product) =>
+          product.product_type && typeFilter.includes(product.product_type.name)
       );
     }
-    
+
     return filtered;
   };
 
@@ -90,29 +98,32 @@ const ProductList: React.FC<ProductListProps> = ({
 
   // Sorting
   const handleSort = (key: keyof Product) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
   const getSortIcon = (key: keyof Product) => {
-    if (sortConfig.key !== key) return <ChevronsUpDown className="ml-2 h-4 w-4" />;
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="ml-2 h-4 w-4" />
-      : <ChevronDown className="ml-2 h-4 w-4" />;
+    if (sortConfig.key !== key)
+      return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    );
   };
 
   const sortData = (data: Product[]) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
-      
+
       if (aValue === null) return 1;
       if (bValue === null) return -1;
-      
+
       const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
+      return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   };
 
@@ -199,9 +210,11 @@ const ProductList: React.FC<ProductListProps> = ({
                       checked={typeFilter.includes(type.name)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setTypeFilter(prev => [...prev, type.name]);
+                          setTypeFilter((prev) => [...prev, type.name]);
                         } else {
-                          setTypeFilter(prev => prev.filter(t => t !== type.name));
+                          setTypeFilter((prev) =>
+                            prev.filter((t) => t !== type.name)
+                          );
                         }
                       }}
                     />
@@ -209,7 +222,7 @@ const ProductList: React.FC<ProductListProps> = ({
                       htmlFor={`type-${type.id}`}
                       className="flex items-center text-sm font-medium cursor-pointer"
                     >
-                      <Badge variant={type.name} className="ml-1">
+                      <Badge variant={type.name as any} className="ml-1">
                         {type.name}
                       </Badge>
                     </label>
@@ -233,23 +246,36 @@ const ProductList: React.FC<ProductListProps> = ({
                 <Checkbox
                   checked={
                     getSortedAndPaginatedData().length > 0 &&
-                    getSortedAndPaginatedData().every(product => selectedProducts.includes(product.id))
+                    getSortedAndPaginatedData().every((product) =>
+                      selectedProducts.includes(product.id)
+                    )
                   }
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setSelectedProducts(prev => [...prev, ...getSortedAndPaginatedData().map(p => p.id)]);
+                      setSelectedProducts((prev) => [
+                        ...prev,
+                        ...getSortedAndPaginatedData().map((p) => p.id),
+                      ]);
                     } else {
-                      setSelectedProducts(prev => 
-                        prev.filter(id => !getSortedAndPaginatedData().find(p => p.id === id))
+                      setSelectedProducts((prev) =>
+                        prev.filter(
+                          (id) =>
+                            !getSortedAndPaginatedData().find(
+                              (p) => p.id === id
+                            )
+                        )
                       );
                     }
                   }}
                 />
               </TableHead>
-              <TableHead onClick={() => handleSort('name')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("name")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Name
-                  {getSortIcon('name')}
+                  {getSortIcon("name")}
                 </div>
               </TableHead>
               <TableHead className="cursor-pointer">
@@ -257,7 +283,7 @@ const ProductList: React.FC<ProductListProps> = ({
                   <PopoverTrigger asChild>
                     <div className="flex items-center hover:text-primary">
                       Type
-                      {getSortIcon('product_type')}
+                      {getSortIcon("product_type")}
                       {typeFilter.length > 0 && (
                         <Badge variant="filter" className="ml-2">
                           {typeFilter.length}
@@ -268,7 +294,9 @@ const ProductList: React.FC<ProductListProps> = ({
                   <PopoverContent className="w-[200px] p-2" align="start">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                        <span className="text-sm font-medium">Filter by Type</span>
+                        <span className="text-sm font-medium">
+                          Filter by Type
+                        </span>
                         {typeFilter.length > 0 && (
                           <Button
                             variant="ghost"
@@ -281,15 +309,20 @@ const ProductList: React.FC<ProductListProps> = ({
                         )}
                       </div>
                       {productTypes.map((type) => (
-                        <div key={type.id} className="flex items-center space-x-2">
+                        <div
+                          key={type.id}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={`type-${type.id}`}
                             checked={typeFilter.includes(type.name)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setTypeFilter(prev => [...prev, type.name]);
+                                setTypeFilter((prev) => [...prev, type.name]);
                               } else {
-                                setTypeFilter(prev => prev.filter(t => t !== type.name));
+                                setTypeFilter((prev) =>
+                                  prev.filter((t) => t !== type.name)
+                                );
                               }
                             }}
                           />
@@ -297,7 +330,7 @@ const ProductList: React.FC<ProductListProps> = ({
                             htmlFor={`type-${type.id}`}
                             className="flex items-center text-sm font-medium cursor-pointer"
                           >
-                            <Badge variant={type.name} className="ml-1">
+                            <Badge variant={type.name as any} className="ml-1">
                               {type.name}
                             </Badge>
                           </label>
@@ -307,22 +340,31 @@ const ProductList: React.FC<ProductListProps> = ({
                   </PopoverContent>
                 </Popover>
               </TableHead>
-              <TableHead onClick={() => handleSort('material')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("material")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Material
-                  {getSortIcon('material')}
+                  {getSortIcon("material")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('price')} className="cursor-pointer text-right">
+              <TableHead
+                onClick={() => handleSort("price")}
+                className="cursor-pointer text-right"
+              >
                 <div className="flex items-center justify-end">
                   Price
-                  {getSortIcon('price')}
+                  {getSortIcon("price")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('billing_type')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("billing_type")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Billing Type
-                  {getSortIcon('billing_type')}
+                  {getSortIcon("billing_type")}
                 </div>
               </TableHead>
               <TableHead className="w-[50px]" />
@@ -330,7 +372,7 @@ const ProductList: React.FC<ProductListProps> = ({
           </TableHeader>
           <TableBody>
             {getSortedAndPaginatedData().map((product) => (
-              <TableRow 
+              <TableRow
                 key={product.id}
                 className={cn(
                   "group cursor-pointer",
@@ -342,15 +384,17 @@ const ProductList: React.FC<ProductListProps> = ({
                     checked={selectedProducts.includes(product.id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedProducts(prev => [...prev, product.id]);
+                        setSelectedProducts((prev) => [...prev, product.id]);
                       } else {
-                        setSelectedProducts(prev => prev.filter(id => id !== product.id));
+                        setSelectedProducts((prev) =>
+                          prev.filter((id) => id !== product.id)
+                        );
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
-                <TableCell 
+                <TableCell
                   className="font-medium"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -364,26 +408,33 @@ const ProductList: React.FC<ProductListProps> = ({
                 </TableCell>
                 <TableCell>
                   {product.product_type && (
-                    <Badge variant={product.product_type.name}>
+                    <Badge variant={product.product_type.name as any}>
                       {product.product_type.name}
                     </Badge>
                   )}
                 </TableCell>
                 <TableCell>{product.material?.name}</TableCell>
                 <TableCell className="text-right">
-                  ${product.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  $
+                  {product.price.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                  })}
                 </TableCell>
                 <TableCell>{product.billing_type?.label}</TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
                         <MoreVertical className="h-4 w-4" />
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[160px]">
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
                           onEdit?.(product);
@@ -393,7 +444,7 @@ const ProductList: React.FC<ProductListProps> = ({
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
                           // Implement duplicate
@@ -404,7 +455,7 @@ const ProductList: React.FC<ProductListProps> = ({
                         Duplicate
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem 
+                      <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
                           onDelete?.(product);
@@ -426,7 +477,9 @@ const ProductList: React.FC<ProductListProps> = ({
       {/* Pagination controls */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+          {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of{" "}
+          {filteredProducts.length} products
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -440,7 +493,7 @@ const ProductList: React.FC<ProductListProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -448,16 +501,29 @@ const ProductList: React.FC<ProductListProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredProducts.length / itemsPerPage), prev + 1))}
-            disabled={currentPage === Math.ceil(filteredProducts.length / itemsPerPage)}
+            onClick={() =>
+              setCurrentPage((prev) =>
+                Math.min(
+                  Math.ceil(filteredProducts.length / itemsPerPage),
+                  prev + 1
+                )
+              )
+            }
+            disabled={
+              currentPage === Math.ceil(filteredProducts.length / itemsPerPage)
+            }
           >
             Next
           </Button>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(Math.ceil(filteredProducts.length / itemsPerPage))}
-            disabled={currentPage === Math.ceil(filteredProducts.length / itemsPerPage)}
+            onClick={() =>
+              setCurrentPage(Math.ceil(filteredProducts.length / itemsPerPage))
+            }
+            disabled={
+              currentPage === Math.ceil(filteredProducts.length / itemsPerPage)
+            }
           >
             Last
           </Button>

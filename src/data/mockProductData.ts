@@ -17,6 +17,7 @@ export interface SavedProduct {
 }
 
 export interface Product {
+  category: unknown;
   id: string;
   name: string;
   description: string;
@@ -118,6 +119,7 @@ export const mockProducts: Product[] = [
     type: ["Crown"],
     billingType: "per_unit",
     material: "PFM",
+    category: undefined,
   },
   {
     id: "2",
@@ -131,5 +133,6 @@ export const mockProducts: Product[] = [
     type: ["Removable"],
     billingType: "perArch",
     material: "Denture",
+    category: undefined,
   },
 ];

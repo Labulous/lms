@@ -1,4 +1,3 @@
-import React from 'react';
 import { Package, AlertTriangle, CheckSquare } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 

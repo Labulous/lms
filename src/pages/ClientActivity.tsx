@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { mockClients, Client } from '../data/mockClientsData';
-import { getClientSalesData, ClientSalesData } from '../data/mockSalesData';
-import ClientSelector from '../components/clients/ClientSelector';
-import ClientAccountInfo from '../components/clients/ClientAccountInfo';
-import SalesChart from '../components/clients/SalesChart';
-import UnitsChart from '../components/clients/UnitsChart';
-import MonthlyDataTable from '../components/clients/MonthlyDataTable';
+import React, { useState, useEffect } from "react";
+import { mockClients, Client } from "../data/mockClientsData";
+import { getClientSalesData, ClientSalesData } from "../data/mockSalesData";
+import ClientSelector from "../components/clients/ClientSelector";
+import ClientAccountInfo from "../components/clients/ClientAccountInfo";
+import SalesChart from "../components/clients/SalesChart";
+import UnitsChart from "../components/clients/UnitsChart";
+import MonthlyDataTable from "../components/clients/MonthlyDataTable";
+import { ClientInput } from "@/services/clientsService";
 
 const ClientActivity: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -21,18 +22,20 @@ const ClientActivity: React.FC = () => {
   }, [selectedClient]);
 
   const handleClientChange = (clientId: string) => {
-    const client = mockClients.find(c => c.id === clientId);
+    const client = mockClients.find((c) => c.id === clientId);
     setSelectedClient(client || null);
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-6">Client Activity</h1>
-      
+      <h1 className="text-3xl font-semibold text-gray-800 mb-6">
+        Client Activity
+      </h1>
+
       <div className="mb-8">
         <ClientSelector
           clients={mockClients}
-          selectedClientId={selectedClient?.id || ''}
+          selectedClientId={selectedClient?.id || ""}
           onClientChange={handleClientChange}
         />
       </div>
@@ -40,7 +43,23 @@ const ClientActivity: React.FC = () => {
       {selectedClient && salesData && (
         <>
           <div className="mb-8">
-            <ClientAccountInfo client={selectedClient} />
+            <ClientAccountInfo
+              client={selectedClient}
+              isEditing={false}
+              editedData={null}
+              setEditedData={function (_data: ClientInput | null): void {
+                throw new Error("Function not implemented.");
+              }}
+              onEdit={function (_clientData: ClientInput): void {
+                throw new Error("Function not implemented.");
+              }}
+              onDelete={function (): void {
+                throw new Error("Function not implemented.");
+              }}
+              setIsEditing={function (_isEditing: boolean): void {
+                throw new Error("Function not implemented.");
+              }}
+            />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

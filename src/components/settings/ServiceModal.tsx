@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, HelpCircle } from 'lucide-react';
-import { Service } from '../../data/mockServiceData';
-import { PRODUCT_TYPES } from '../../data/mockProductData';
+import React, { useState } from "react";
+import { X, HelpCircle } from "lucide-react";
+import { Service } from "../../data/mockServiceData";
+import { PRODUCT_TYPES } from "../../data/mockProductData";
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -15,11 +15,17 @@ interface FormData {
   isClientVisible: boolean;
   isTaxable: boolean;
   categories: string[];
+  price_error?: string;
+  category_error?: string;
 }
 
-const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) => {
+const ServiceModal: React.FC<ServiceModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+}) => {
   const [formData, setFormData] = useState<FormData>({
-    name: '',
+    name: "",
     price: 0,
     isClientVisible: true,
     isTaxable: true,
@@ -29,26 +35,33 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? parseFloat(value) || 0 : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : type === "number"
+          ? parseFloat(value) || 0
+          : value,
     }));
   };
 
   const handleCategoryChange = (category: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       categories: prev.categories.includes(category)
-        ? prev.categories.filter(c => c !== category)
+        ? prev.categories.filter((c) => c !== category)
         : [...prev.categories, category],
     }));
   };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};
-    if (!formData.name.trim()) newErrors.name = 'Service name is required';
-    if (formData.price <= 0) newErrors.price = 'Price must be greater than 0';
-    if (formData.categories.length === 0) newErrors.categories = 'At least one category must be selected';
+    if (!formData.name.trim()) newErrors.name = "Service name is required";
+    if (formData.price <= 0)
+      newErrors.price_error = "Price must be greater than 0";
+    if (formData.categories.length === 0)
+      newErrors.category_error = "At least one category must be selected";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,13 +83,18 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        ></div>
 
         <div className="inline-block w-full max-w-2xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Add New Service</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Add New Service
+              </h3>
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-500"
@@ -89,7 +107,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
           {/* Content */}
           <div className="px-6 py-4 space-y-6">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Service Name *
               </label>
               <input
@@ -99,14 +120,21 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                 value={formData.name}
                 onChange={handleInputChange}
                 className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
-                  errors.name ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                  errors.name
+                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                 }`}
               />
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="price"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Price *
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
@@ -122,11 +150,15 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                   value={formData.price}
                   onChange={handleInputChange}
                   className={`block w-full pl-7 pr-12 sm:text-sm rounded-md ${
-                    errors.price ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                    errors.price
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   }`}
                 />
               </div>
-              {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price}</p>}
+              {errors.price && (
+                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -139,7 +171,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="isClientVisible" className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="isClientVisible"
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   Visible to Clients
                 </label>
               </div>
@@ -153,7 +188,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="isTaxable" className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="isTaxable"
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   Taxable
                 </label>
               </div>
@@ -162,7 +200,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Apply to Categories *
-                <span className="ml-1 inline-block" title="Select the product categories this service applies to">
+                <span
+                  className="ml-1 inline-block"
+                  title="Select the product categories this service applies to"
+                >
                   <HelpCircle className="h-4 w-4 text-gray-400" />
                 </span>
               </label>
@@ -177,13 +218,18 @@ const ServiceModal: React.FC<ServiceModalProps> = ({ isOpen, onClose, onSave }) 
                       onChange={(e) => handleCategoryChange(e.target.value)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor={type} className="ml-2 block text-sm text-gray-900">
+                    <label
+                      htmlFor={type}
+                      className="ml-2 block text-sm text-gray-900"
+                    >
                       {type}
                     </label>
                   </div>
                 ))}
               </div>
-              {errors.categories && <p className="mt-1 text-sm text-red-600">{errors.categories}</p>}
+              {errors.categories && (
+                <p className="mt-1 text-sm text-red-600">{errors.categories}</p>
+              )}
             </div>
           </div>
 

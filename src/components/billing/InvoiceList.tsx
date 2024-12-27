@@ -1,8 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, FileText, Clock, Eye, Download, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, MoreVertical, ChevronsUpDown, ChevronUp, ChevronDown, Calendar as CalendarIcon, Percent, Mail, Trash, Check, Loader2, X, Pencil } from 'lucide-react';
-import { mockInvoices, Invoice } from '../../data/mockInvoicesData';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Search,
+  Clock,
+  Eye,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  MoreVertical,
+  ChevronsUpDown,
+  ChevronUp,
+  ChevronDown,
+  Calendar as CalendarIcon,
+  Percent,
+  Trash,
+  Loader2,
+  X,
+  Pencil,
+} from "lucide-react";
+import { mockInvoices, Invoice } from "../../data/mockInvoicesData";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,7 +36,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -33,22 +51,34 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 
 type SortConfig = {
   key: keyof Invoice;
-  direction: 'asc' | 'desc';
+  direction: "asc" | "desc";
 };
 
-type BulkAction = 'export' | 'delete' | 'markPaid' | 'sendReminder' | 'exportPDF' | 'exportCSV' | 'changeDueDate' | 'applyDiscount' | 'changePaymentTerms';
+type BulkAction =
+  | "export"
+  | "delete"
+  | "markPaid"
+  | "sendReminder"
+  | "exportPDF"
+  | "exportCSV"
+  | "changeDueDate"
+  | "applyDiscount"
+  | "changePaymentTerms";
 
 interface ModalState {
   isOpen: boolean;
@@ -67,25 +97,32 @@ const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: 'date',
-    direction: 'desc'
+    key: "date",
+    direction: "desc",
   });
-  const [modalState, setModalState] = useState<ModalState>({ isOpen: false, type: null });
+  const [modalState, setModalState] = useState<ModalState>({
+    isOpen: false,
+    type: null,
+  });
   const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
+    "percentage"
+  );
   const [discountValue, setDiscountValue] = useState<number>(0);
-  const [paymentTerms, setPaymentTerms] = useState<string>('net30');
-  const [loadingState, setLoadingState] = useState<LoadingState>({ action: null, isLoading: false });
-  const [processingFeedback, setProcessingFeedback] = useState<string>('');
-  const [selectionHighlight, setSelectionHighlight] = useState<boolean>(false);
+  const [paymentTerms, setPaymentTerms] = useState<string>("net30");
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    action: null,
+    isLoading: false,
+  });
+  const [processingFeedback, setProcessingFeedback] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
-  const [statusFilter, setStatusFilter] = useState<Invoice['status'][]>([]);
+  const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
 
   // Initialize invoices
   useEffect(() => {
@@ -100,31 +137,32 @@ const InvoiceList: React.FC = () => {
     setFilteredInvoices(filtered);
   }, [searchTerm, dateFilter, dueDateFilter, statusFilter, invoices]);
 
-  const handleNewInvoice = () => {
-    navigate('/billing/new');
-  };
-
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
   };
 
-  const getStatusBadgeVariant = (status: Invoice['status'], invoice: Invoice): string => {
+  /* eslint-disable no-unused-vars */
+  const getStatusBadgeVariant = (
+    status: Invoice["status"],
+  /* eslint-disable no-unused-vars */
+  _invoice: Invoice
+  ): string => {
     switch (status) {
-      case 'draft':
-        return 'draft';
-      case 'pending':
-        return 'pending';
-      case 'paid':
-        return 'success';
-      case 'partially_paid':
-        return 'warning';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'cancelled';
+      case "draft":
+        return "draft";
+      case "pending":
+        return "pending";
+      case "paid":
+        return "success";
+      case "partially_paid":
+        return "warning";
+      case "overdue":
+        return "destructive";
+      case "cancelled":
+        return "cancelled";
       default:
-        return 'default';
+        return "default";
     }
   };
 
@@ -132,38 +170,36 @@ const InvoiceList: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value));
-    setCurrentPage(1);
-  };
-
   const handleSort = (key: keyof Invoice) => {
     setSortConfig((prevConfig) => ({
       key,
-      direction: prevConfig.key === key && prevConfig.direction === 'asc' ? 'desc' : 'asc',
+      direction:
+        prevConfig.key === key && prevConfig.direction === "asc"
+          ? "desc"
+          : "asc",
     }));
   };
 
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
-    
+
     return [...data].sort((a, b) => {
-      if (sortConfig.key === 'date' || sortConfig.key === 'dueDate') {
+      if (sortConfig.key === "date" || sortConfig.key === "dueDate") {
         const dateA = new Date(a[sortConfig.key]).getTime();
         const dateB = new Date(b[sortConfig.key]).getTime();
-        return sortConfig.direction === 'asc' ? dateA - dateB : dateB - dateA;
-      }
-      
-      if (sortConfig.key === 'amount' || sortConfig.key === 'balance') {
-        const numA = Number(a[sortConfig.key]) || 0;
-        const numB = Number(b[sortConfig.key]) || 0;
-        return sortConfig.direction === 'asc' ? numA - numB : numB - numA;
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
 
-      const valueA = String(a[sortConfig.key] || '').toLowerCase();
-      const valueB = String(b[sortConfig.key] || '').toLowerCase();
-      
-      return sortConfig.direction === 'asc' 
+      if (sortConfig.key === "amount" || sortConfig.key === "balance") {
+        const numA = Number(a[sortConfig.key]) || 0;
+        const numB = Number(b[sortConfig.key]) || 0;
+        return sortConfig.direction === "asc" ? numA - numB : numB - numA;
+      }
+
+      const valueA = String(a[sortConfig.key] || "").toLowerCase();
+      const valueB = String(b[sortConfig.key] || "").toLowerCase();
+
+      return sortConfig.direction === "asc"
         ? valueA.localeCompare(valueB)
         : valueB.localeCompare(valueA);
     });
@@ -171,38 +207,46 @@ const InvoiceList: React.FC = () => {
 
   const getSortIcon = (key: keyof Invoice) => {
     if (sortConfig.key !== key) {
-      return <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
+      return (
+        <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />
+      );
     }
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="ml-1 h-4 w-4" />
-      : <ChevronDown className="ml-1 h-4 w-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-1 h-4 w-4" />
+    );
   };
 
   const processBatch = async (
-    invoiceBatch: string[],
+    _invoiceBatch: string[],
     action: BulkAction,
     currentBatch: number,
     totalBatches: number
   ) => {
     const progress = Math.round((currentBatch / totalBatches) * 100);
-    setLoadingState(prev => ({ ...prev, progress }));
-    setProcessingFeedback(`Processing batch ${currentBatch} of ${totalBatches} (${progress}%)`);
+    setLoadingState((prev) => ({ ...prev, progress }));
+    setProcessingFeedback(
+      `Processing batch ${currentBatch} of ${totalBatches} (${progress}%)`
+    );
 
     switch (action) {
-      case 'exportPDF':
-      case 'exportCSV':
-        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate export processing
+      case "exportPDF":
+      case "exportCSV":
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate export processing
         break;
-      case 'delete':
-      case 'markPaid':
-      case 'sendReminder':
-        await new Promise(resolve => setTimeout(resolve, 200)); // Simulate API call
+      case "delete":
+      case "markPaid":
+      case "sendReminder":
+        await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate API call
         break;
     }
   };
 
   const handleBulkAction = async (action: BulkAction) => {
-    if (['changeDueDate', 'applyDiscount', 'changePaymentTerms'].includes(action)) {
+    if (
+      ["changeDueDate", "applyDiscount", "changePaymentTerms"].includes(action)
+    ) {
       setModalState({ isOpen: true, type: action });
       return;
     }
@@ -221,18 +265,18 @@ const InvoiceList: React.FC = () => {
 
       // Apply changes after all batches are processed
       switch (action) {
-        case 'delete':
+        case "delete":
           const remainingInvoices = invoices.filter(
-            invoice => !selectedInvoices.includes(invoice.id)
+            (invoice) => !selectedInvoices.includes(invoice.id)
           );
           setInvoices(remainingInvoices);
           setFilteredInvoices(remainingInvoices);
           setSelectedInvoices([]);
           break;
-        case 'markPaid':
-          const paidInvoices = invoices.map(invoice => {
+        case "markPaid":
+          const paidInvoices = invoices.map((invoice) => {
             if (selectedInvoices.includes(invoice.id)) {
-              return { ...invoice, status: 'paid' as const };
+              return { ...invoice, status: "paid" as const };
             }
             return invoice;
           });
@@ -241,14 +285,14 @@ const InvoiceList: React.FC = () => {
           break;
       }
 
-      setProcessingFeedback('Processing completed successfully!');
+      setProcessingFeedback("Processing completed successfully!");
     } catch (error) {
-      setProcessingFeedback('Error occurred during processing');
-      console.error('Bulk action error:', error);
+      setProcessingFeedback("Error occurred during processing");
+      console.error("Bulk action error:", error);
     } finally {
       setTimeout(() => {
         setLoadingState({ action: null, isLoading: false });
-        setProcessingFeedback('');
+        setProcessingFeedback("");
       }, 2000);
     }
   };
@@ -271,28 +315,30 @@ const InvoiceList: React.FC = () => {
 
       // Apply changes after all batches are processed
       switch (action) {
-        case 'changeDueDate':
+        case "changeDueDate":
           if (newDueDate) {
-            const updatedInvoices = invoices.map(invoice => {
+            const updatedInvoices = invoices.map((invoice) => {
               if (selectedInvoices.includes(invoice.id)) {
-                return { ...invoice, dueDate: newDueDate };
+                return { ...invoice, dueDate: newDueDate as unknown as string };
               }
               return invoice;
             });
+            console.log(updatedInvoices, "updatedInvoices");
             setInvoices(updatedInvoices);
             setFilteredInvoices(updatedInvoices);
           }
           break;
-        case 'applyDiscount':
-          const updatedInvoices = invoices.map(invoice => {
+        case "applyDiscount":
+          const updatedInvoices = invoices.map((invoice) => {
             if (selectedInvoices.includes(invoice.id)) {
-              const discount = discountType === 'percentage' 
-                ? invoice.totalAmount * (discountValue / 100)
-                : discountValue;
-              return { 
-                ...invoice, 
+              const discount =
+                discountType === "percentage"
+                  ? invoice.totalAmount * (discountValue / 100)
+                  : discountValue;
+              return {
+                ...invoice,
                 totalAmount: invoice.totalAmount - discount,
-                discount: { type: discountType, value: discountValue }
+                discount: { type: discountType, value: discountValue },
               };
             }
             return invoice;
@@ -300,8 +346,8 @@ const InvoiceList: React.FC = () => {
           setInvoices(updatedInvoices);
           setFilteredInvoices(updatedInvoices);
           break;
-        case 'changePaymentTerms':
-          const updatedTermsInvoices = invoices.map(invoice => {
+        case "changePaymentTerms":
+          const updatedTermsInvoices = invoices.map((invoice) => {
             if (selectedInvoices.includes(invoice.id)) {
               return { ...invoice, paymentTerms };
             }
@@ -312,47 +358,58 @@ const InvoiceList: React.FC = () => {
           break;
       }
 
-      setProcessingFeedback('Changes applied successfully!');
+      setProcessingFeedback("Changes applied successfully!");
     } catch (error) {
-      setProcessingFeedback('Error occurred while applying changes');
-      console.error('Modal submit error:', error);
+      setProcessingFeedback("Error occurred while applying changes");
+      console.error("Modal submit error:", error);
     } finally {
       setTimeout(() => {
         setLoadingState({ action: null, isLoading: false });
-        setProcessingFeedback('');
+        setProcessingFeedback("");
         setModalState({ isOpen: false, type: null });
       }, 2000);
     }
   };
 
   const filterByDates = (invoices: Invoice[]) => {
-    return invoices.filter(invoice => {
-      const matchesDate = !dateFilter || format(new Date(invoice.date), 'yyyy-MM-dd') === format(dateFilter, 'yyyy-MM-dd');
-      const matchesDueDate = !dueDateFilter || format(new Date(invoice.dueDate), 'yyyy-MM-dd') === format(dueDateFilter, 'yyyy-MM-dd');
+    return invoices.filter((invoice) => {
+      const matchesDate =
+        !dateFilter ||
+        format(new Date(invoice.date), "yyyy-MM-dd") ===
+          format(dateFilter, "yyyy-MM-dd");
+      const matchesDueDate =
+        !dueDateFilter ||
+        format(new Date(invoice.dueDate), "yyyy-MM-dd") ===
+          format(dueDateFilter, "yyyy-MM-dd");
       return matchesDate && matchesDueDate;
     });
   };
 
   const getFilteredInvoices = () => {
     let filtered = [...invoices];
-    
+
     // Apply search filter
     if (searchTerm) {
-      filtered = filtered.filter(invoice => 
-        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.patient.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (invoice) =>
+          invoice.invoiceNumber
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.patient.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     // Apply date filters
     filtered = filterByDates(filtered);
 
     // Apply status filter
     if (statusFilter.length > 0) {
-      filtered = filtered.filter(invoice => statusFilter.includes(invoice.status));
+      filtered = filtered.filter((invoice) =>
+        statusFilter.includes(invoice.status)
+      );
     }
-    
+
     return filtered;
   };
 
@@ -363,20 +420,27 @@ const InvoiceList: React.FC = () => {
     return sortedData.slice(startIndex, endIndex);
   };
 
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = Math.min(startIndex + itemsPerPage, filteredInvoices.length);
+  // const startIndex = (currentPage - 1) * itemsPerPage;
+  // const endIndex = Math.min(startIndex + itemsPerPage, filteredInvoices.length);
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 
-  const allStatuses: Invoice['status'][] = ['draft', 'pending', 'paid', 'partially_paid', 'overdue', 'cancelled'];
+  const allStatuses: Invoice["status"][] = [
+    "draft",
+    "pending",
+    "paid",
+    "partially_paid",
+    "overdue",
+    "cancelled",
+  ];
 
   const EmptyState = () => (
     <TableRow>
       <TableCell colSpan={9} className="h-24 text-center">
         <div className="flex flex-col items-center justify-center">
           <p className="text-muted-foreground">No invoices found</p>
-          <Button 
-            variant="link" 
-            onClick={() => navigate('/billing/create-invoice')}
+          <Button
+            variant="link"
+            onClick={() => navigate("/billing/create-invoice")}
             className="mt-2"
           >
             Create your first invoice
@@ -385,7 +449,14 @@ const InvoiceList: React.FC = () => {
       </TableCell>
     </TableRow>
   );
-
+  /* eslint-disable no-unused-vars */
+  const handleDownload = (_id: string) => {
+    console.log("download clciked");
+  };
+  /* eslint-disable no-unused-vars */
+  const handleDelete = (_id: string) => {
+    console.log("download clciked");
+  };
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -394,7 +465,8 @@ const InvoiceList: React.FC = () => {
           {selectedInvoices.length > 0 ? (
             <>
               <span className="text-sm text-muted-foreground mr-2">
-                {selectedInvoices.length} {selectedInvoices.length === 1 ? 'item' : 'items'} selected
+                {selectedInvoices.length}{" "}
+                {selectedInvoices.length === 1 ? "item" : "items"} selected
               </span>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -404,60 +476,64 @@ const InvoiceList: React.FC = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleBulkAction('exportPDF')}>
+                  <DropdownMenuItem
+                    onClick={() => handleBulkAction("exportPDF")}
+                  >
                     Export as PDF
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBulkAction('exportCSV')}>
+                  <DropdownMenuItem
+                    onClick={() => handleBulkAction("exportCSV")}
+                  >
                     Export as CSV
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => handleBulkAction('changeDueDate')}
+                onClick={() => handleBulkAction("changeDueDate")}
                 disabled={loadingState.isLoading}
               >
-                {loadingState.action === 'changeDueDate' ? (
+                {loadingState.action === "changeDueDate" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <CalendarIcon className="mr-2 h-4 w-4" />
                 )}
                 Change Due Date
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => handleBulkAction('applyDiscount')}
+                onClick={() => handleBulkAction("applyDiscount")}
                 disabled={loadingState.isLoading}
               >
-                {loadingState.action === 'applyDiscount' ? (
+                {loadingState.action === "applyDiscount" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Percent className="mr-2 h-4 w-4" />
                 )}
                 Apply Discount
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
-                onClick={() => handleBulkAction('changePaymentTerms')}
+                onClick={() => handleBulkAction("changePaymentTerms")}
                 disabled={loadingState.isLoading}
               >
-                {loadingState.action === 'changePaymentTerms' ? (
+                {loadingState.action === "changePaymentTerms" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Clock className="mr-2 h-4 w-4" />
                 )}
                 Change Terms
               </Button>
-              <Button 
-                variant="destructive" 
+              <Button
+                variant="destructive"
                 size="sm"
-                onClick={() => handleBulkAction('delete')}
+                onClick={() => handleBulkAction("delete")}
                 disabled={loadingState.isLoading}
               >
-                {loadingState.action === 'delete' ? (
+                {loadingState.action === "delete" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Trash className="mr-2 h-4 w-4" />
@@ -472,7 +548,7 @@ const InvoiceList: React.FC = () => {
           <Input
             placeholder="Search invoices..."
             className="pl-8"
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleSearch(e)}
           />
         </div>
       </div>
@@ -486,14 +562,24 @@ const InvoiceList: React.FC = () => {
                   <Checkbox
                     checked={
                       getSortedAndPaginatedData().length > 0 &&
-                      getSortedAndPaginatedData().every(invoice => selectedInvoices.includes(invoice.id))
+                      getSortedAndPaginatedData().every((invoice) =>
+                        selectedInvoices.includes(invoice.id)
+                      )
                     }
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedInvoices(prev => [...prev, ...getSortedAndPaginatedData().map(i => i.id)]);
+                        setSelectedInvoices((prev) => [
+                          ...prev,
+                          ...getSortedAndPaginatedData().map((i) => i.id),
+                        ]);
                       } else {
-                        setSelectedInvoices(prev => 
-                          prev.filter(id => !getSortedAndPaginatedData().find(i => i.id === id))
+                        setSelectedInvoices((prev) =>
+                          prev.filter(
+                            (id) =>
+                              !getSortedAndPaginatedData().find(
+                                (i) => i.id === id
+                              )
+                          )
                         );
                       }
                     }}
@@ -504,8 +590,16 @@ const InvoiceList: React.FC = () => {
                     <PopoverTrigger asChild>
                       <div className="flex items-center hover:text-primary">
                         Date
-                        {getSortIcon('date')}
-                        {dateFilter && <X className="ml-2 h-4 w-4 hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDateFilter(undefined); }} />}
+                        {getSortIcon("date")}
+                        {dateFilter && (
+                          <X
+                            className="ml-2 h-4 w-4 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDateFilter(undefined);
+                            }}
+                          />
+                        )}
                       </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -523,7 +617,7 @@ const InvoiceList: React.FC = () => {
                     <PopoverTrigger asChild>
                       <div className="flex items-center hover:text-primary">
                         Status
-                        {getSortIcon('status')}
+                        {getSortIcon("status")}
                         {statusFilter.length > 0 && (
                           <Badge variant="secondary" className="ml-2">
                             {statusFilter.length}
@@ -534,7 +628,9 @@ const InvoiceList: React.FC = () => {
                     <PopoverContent className="w-[200px] p-2" align="start">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                          <span className="text-sm font-medium">Filter by Status</span>
+                          <span className="text-sm font-medium">
+                            Filter by Status
+                          </span>
                           {statusFilter.length > 0 && (
                             <Button
                               variant="ghost"
@@ -547,15 +643,20 @@ const InvoiceList: React.FC = () => {
                           )}
                         </div>
                         {allStatuses.map((status) => (
-                          <div key={status} className="flex items-center space-x-2">
+                          <div
+                            key={status}
+                            className="flex items-center space-x-2"
+                          >
                             <Checkbox
                               id={`status-${status}`}
                               checked={statusFilter.includes(status)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
-                                  setStatusFilter(prev => [...prev, status]);
+                                  setStatusFilter((prev) => [...prev, status]);
                                 } else {
-                                  setStatusFilter(prev => prev.filter(s => s !== status));
+                                  setStatusFilter((prev) =>
+                                    prev.filter((s) => s !== status)
+                                  );
                                 }
                               }}
                             />
@@ -563,8 +664,32 @@ const InvoiceList: React.FC = () => {
                               htmlFor={`status-${status}`}
                               className="flex items-center text-sm font-medium cursor-pointer"
                             >
-                              <Badge variant={getStatusBadgeVariant(status, {} as Invoice)} className="ml-1">
-                                {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                              <Badge
+                                variant={
+                                  getStatusBadgeVariant(
+                                    status,
+                                    {} as Invoice
+                                  ) as
+                                    | "filter"
+                                    | "default"
+                                    | "success"
+                                    | "warning"
+                                    | "destructive"
+                                    | "outline"
+                                    | "secondary"
+                                    | "Crown"
+                                    | "Bridge"
+                                    | "Removable"
+                                    | "Implant"
+                                    | "Coping"
+                                    | "Appliance"
+                                    | null
+                                    | undefined
+                                }
+                                className="ml-1"
+                              >
+                                {status.charAt(0).toUpperCase() +
+                                  status.slice(1).replace("_", " ")}
                               </Badge>
                             </label>
                           </div>
@@ -573,34 +698,48 @@ const InvoiceList: React.FC = () => {
                     </PopoverContent>
                   </Popover>
                 </TableHead>
-                <TableHead onClick={() => handleSort('invoiceNumber')} className="cursor-pointer whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("invoiceNumber")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
                   <div className="flex items-center">
-                    Invoice #
-                    {getSortIcon('invoiceNumber')}
+                    Invoice #{getSortIcon("invoiceNumber")}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('patient')} className="cursor-pointer whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("patient")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
                   <div className="flex items-center">
                     Patient
-                    {getSortIcon('patient')}
+                    {getSortIcon("patient")}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('client')} className="cursor-pointer whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("client")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
                   <div className="flex items-center">
                     Client
-                    {getSortIcon('client')}
+                    {getSortIcon("client")}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('amount')} className="cursor-pointer text-right whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("amount")}
+                  className="cursor-pointer text-right whitespace-nowrap"
+                >
                   <div className="flex items-center justify-end">
                     Amount
-                    {getSortIcon('amount')}
+                    {getSortIcon("amount")}
                   </div>
                 </TableHead>
-                <TableHead onClick={() => handleSort('balance')} className="cursor-pointer text-right whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("balance")}
+                  className="cursor-pointer text-right whitespace-nowrap"
+                >
                   <div className="flex items-center justify-end">
                     Balance
-                    {getSortIcon('balance')}
+                    {getSortIcon("balance")}
                   </div>
                 </TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap">
@@ -608,8 +747,16 @@ const InvoiceList: React.FC = () => {
                     <PopoverTrigger asChild>
                       <div className="flex items-center hover:text-primary">
                         Due Date
-                        {getSortIcon('dueDate')}
-                        {dueDateFilter && <X className="ml-2 h-4 w-4 hover:text-destructive" onClick={(e) => { e.stopPropagation(); setDueDateFilter(undefined); }} />}
+                        {getSortIcon("dueDate")}
+                        {dueDateFilter && (
+                          <X
+                            className="ml-2 h-4 w-4 hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDueDateFilter(undefined);
+                            }}
+                          />
+                        )}
                       </div>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
@@ -630,8 +777,8 @@ const InvoiceList: React.FC = () => {
                 <EmptyState />
               ) : (
                 getSortedAndPaginatedData().map((invoice) => (
-                  <TableRow 
-                    key={invoice.id} 
+                  <TableRow
+                    key={invoice.id}
                     className={cn(
                       selectedInvoices.includes(invoice.id) && "bg-muted/50",
                       "hover:bg-muted/50 transition-colors"
@@ -642,64 +789,105 @@ const InvoiceList: React.FC = () => {
                         checked={selectedInvoices.includes(invoice.id)}
                         onCheckedChange={() => {
                           if (selectedInvoices.includes(invoice.id)) {
-                            setSelectedInvoices(prev => prev.filter(id => id !== invoice.id));
+                            setSelectedInvoices((prev) =>
+                              prev.filter((id) => id !== invoice.id)
+                            );
                           } else {
-                            setSelectedInvoices(prev => [...prev, invoice.id]);
+                            setSelectedInvoices((prev) => [
+                              ...prev,
+                              invoice.id,
+                            ]);
                           }
                         }}
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice.date), 'dd/MM/yy')}
+                      {format(new Date(invoice.date), "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(invoice.status, invoice)}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                      <Badge
+                        variant={
+                          getStatusBadgeVariant(invoice.status, invoice) as
+                            | "filter"
+                            | "default"
+                            | "success"
+                            | "warning"
+                            | "destructive"
+                            | "outline"
+                            | "secondary"
+                            | "Crown"
+                            | "Bridge"
+                            | "Removable"
+                            | "Implant"
+                            | "Coping"
+                            | "Appliance"
+                            | null
+                            | undefined
+                        }
+                      >
+                        {invoice.status.charAt(0).toUpperCase() +
+                          invoice.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <Link 
+                      <Link
                         to={`/billing/${invoice.id}`}
                         className="text-primary hover:underline"
                       >
                         {invoice.invoiceNumber}
                       </Link>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.patient}</TableCell>
-                    <TableCell className="whitespace-nowrap">{invoice.client}</TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      ${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      ${invoice.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <TableCell className="whitespace-nowrap">
+                      {invoice.patient}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice.dueDate), 'dd/MM/yy')}
+                      {invoice.client}
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      $
+                      {invoice.amount.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      $
+                      {invoice.balance.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {format(new Date(invoice.dueDate), "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0"
+                          >
                             <MoreVertical className="h-4 w-4" />
                             <span className="sr-only">Open menu</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[160px]">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => navigate(`/billing/${invoice.id}`)}
                             className="cursor-pointer"
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => navigate(`/billing/${invoice.id}/edit`)}
+                          <DropdownMenuItem
+                            onClick={() =>
+                              navigate(`/billing/${invoice.id}/edit`)
+                            }
                             className="cursor-pointer"
                           >
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit Invoice
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDownload(invoice.id)}
                             className="cursor-pointer"
                           >
@@ -707,7 +895,7 @@ const InvoiceList: React.FC = () => {
                             Download PDF
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={() => handleDelete(invoice.id)}
                             className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground"
                           >
@@ -743,7 +931,6 @@ const InvoiceList: React.FC = () => {
             <SelectItem value="100">100 per page</SelectItem>
           </SelectContent>
         </Select>
-
         <div className="flex justify-center flex-1">
           <div className="flex items-center space-x-2">
             <button
@@ -764,7 +951,9 @@ const InvoiceList: React.FC = () => {
               Page {currentPage} of {totalPages}
             </span>
             <button
-              onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+              onClick={() =>
+                handlePageChange(Math.min(totalPages, currentPage + 1))
+              }
               disabled={currentPage === totalPages}
               className="transition-all duration-200 hover:scale-105"
             >
@@ -779,21 +968,23 @@ const InvoiceList: React.FC = () => {
             </button>
           </div>
         </div>
-
         <div className="w-[180px]" /> {/* Spacer to balance the layout */}
       </div>
       {loadingState.isLoading && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg shadow-lg">
             <div className="text-lg">
-              {loadingState.action === 'exportPDF' && 'Exporting as PDF...'}
-              {loadingState.action === 'exportCSV' && 'Exporting as CSV...'}
-              {loadingState.action === 'delete' && 'Deleting...'}
-              {loadingState.action === 'markPaid' && 'Marking as paid...'}
-              {loadingState.action === 'sendReminder' && 'Sending reminders...'}
-              {loadingState.action === 'changeDueDate' && 'Changing due date...'}
-              {loadingState.action === 'applyDiscount' && 'Applying discount...'}
-              {loadingState.action === 'changePaymentTerms' && 'Changing payment terms...'}
+              {loadingState.action === "exportPDF" && "Exporting as PDF..."}
+              {loadingState.action === "exportCSV" && "Exporting as CSV..."}
+              {loadingState.action === "delete" && "Deleting..."}
+              {loadingState.action === "markPaid" && "Marking as paid..."}
+              {loadingState.action === "sendReminder" && "Sending reminders..."}
+              {loadingState.action === "changeDueDate" &&
+                "Changing due date..."}
+              {loadingState.action === "applyDiscount" &&
+                "Applying discount..."}
+              {loadingState.action === "changePaymentTerms" &&
+                "Changing payment terms..."}
               <br />
               {processingFeedback}
               <br />
@@ -803,17 +994,23 @@ const InvoiceList: React.FC = () => {
         </div>
       )}
 
-      <Dialog open={modalState.isOpen} onOpenChange={(open) => !open && setModalState({ isOpen: false, type: null })}>
+      <Dialog
+        open={modalState.isOpen}
+        onOpenChange={(open) =>
+          !open && setModalState({ isOpen: false, type: null })
+        }
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {modalState.type === 'changeDueDate' && 'Change Due Date'}
-              {modalState.type === 'applyDiscount' && 'Apply Discount'}
-              {modalState.type === 'changePaymentTerms' && 'Change Payment Terms'}
+              {modalState.type === "changeDueDate" && "Change Due Date"}
+              {modalState.type === "applyDiscount" && "Apply Discount"}
+              {modalState.type === "changePaymentTerms" &&
+                "Change Payment Terms"}
             </DialogTitle>
           </DialogHeader>
 
-          {modalState.type === 'changeDueDate' && (
+          {modalState.type === "changeDueDate" && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="dueDate" className="text-right">
@@ -829,7 +1026,7 @@ const InvoiceList: React.FC = () => {
             </div>
           )}
 
-          {modalState.type === 'applyDiscount' && (
+          {modalState.type === "applyDiscount" && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="discountType" className="text-right">
@@ -837,7 +1034,9 @@ const InvoiceList: React.FC = () => {
                 </Label>
                 <Select
                   value={discountType}
-                  onValueChange={(value: 'percentage' | 'fixed') => setDiscountType(value)}
+                  onValueChange={(value: "percentage" | "fixed") =>
+                    setDiscountType(value)
+                  }
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue />
@@ -863,16 +1062,13 @@ const InvoiceList: React.FC = () => {
             </div>
           )}
 
-          {modalState.type === 'changePaymentTerms' && (
+          {modalState.type === "changePaymentTerms" && (
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="paymentTerms" className="text-right">
                   Payment Terms
                 </Label>
-                <Select
-                  value={paymentTerms}
-                  onValueChange={setPaymentTerms}
-                >
+                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue />
                   </SelectTrigger>
@@ -880,7 +1076,9 @@ const InvoiceList: React.FC = () => {
                     <SelectItem value="net30">Net 30</SelectItem>
                     <SelectItem value="net60">Net 60</SelectItem>
                     <SelectItem value="net90">Net 90</SelectItem>
-                    <SelectItem value="due_on_receipt">Due on Receipt</SelectItem>
+                    <SelectItem value="due_on_receipt">
+                      Due on Receipt
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -888,7 +1086,10 @@ const InvoiceList: React.FC = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setModalState({ isOpen: false, type: null })}>
+            <Button
+              variant="outline"
+              onClick={() => setModalState({ isOpen: false, type: null })}
+            >
               Cancel
             </Button>
             <Button onClick={handleModalSubmit}>Save Changes</Button>

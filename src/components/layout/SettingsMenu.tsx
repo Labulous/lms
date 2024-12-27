@@ -1,6 +1,6 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Settings, Package, Users, CreditCard, Database } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { Package, Users, CreditCard, Database } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,17 +18,15 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ children }) => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { icon: Package, label: 'Products & Services', href: '/products-services' },
-    { icon: Users, label: 'User Management', href: '/settings/users' },
-    { icon: CreditCard, label: 'Billing Settings', href: '/settings/billing' },
-    { icon: Database, label: 'System Settings', href: '/settings/system' },
+    { icon: Package, label: "Products & Services", href: "/products-services" },
+    { icon: Users, label: "User Management", href: "/settings/users" },
+    { icon: CreditCard, label: "Billing Settings", href: "/settings/billing" },
+    { icon: Database, label: "System Settings", href: "/settings/system" },
   ];
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {children}
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />

@@ -1,4 +1,3 @@
-import React from 'react';
 import Layout from '@/components/layout/Layout';
 import { SettingsTabs } from './SettingsTabs';
 import { SystemSettingsContent } from './SettingsContent';

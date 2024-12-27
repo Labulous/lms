@@ -1,34 +1,44 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { UserCircle, Bell, Menu, Search, LogOut, Settings } from 'lucide-react';
-import { getCurrentUser, logout } from '../../services/authService';
-import SettingsMenu from './SettingsMenu';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { UserCircle, Bell, Menu, Search, LogOut, Settings } from "lucide-react";
+import { getCurrentUser, logout } from "../../services/authService";
+import SettingsMenu from "./SettingsMenu";
 
 interface HeaderProps {
   toggleSidebar: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+  const [currentUser, setCurrentUser] = useState<any | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const currentUser = getCurrentUser();
+
+  useEffect(() => {
+    // Fetch current user asynchronously
+    const fetchCurrentUser = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
+
+    fetchCurrentUser();
+  }, []); // Empty dependency array ensures this runs only once after the initial render
 
   const getPageTitle = () => {
     const path = location.pathname;
-    if (path === '/') return 'Dashboard';
-    if (path.startsWith('/cases')) return 'Cases';
-    if (path.startsWith('/shipping')) return 'Shipping';
-    if (path.startsWith('/clients')) return 'Clients';
-    if (path.startsWith('/client-activity')) return 'Client Activity';
-    if (path.startsWith('/billing')) return 'Billing';
-    if (path.startsWith('/reports')) return 'Reports';
-    if (path.startsWith('/inventory')) return 'Inventory';
-    return '';
+    if (path === "/") return "Dashboard";
+    if (path.startsWith("/cases")) return "Cases";
+    if (path.startsWith("/shipping")) return "Shipping";
+    if (path.startsWith("/clients")) return "Clients";
+    if (path.startsWith("/client-activity")) return "Client Activity";
+    if (path.startsWith("/billing")) return "Billing";
+    if (path.startsWith("/reports")) return "Reports";
+    if (path.startsWith("/inventory")) return "Inventory";
+    return "";
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -36,7 +46,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
       <div className="w-full">
         <div className="flex justify-between items-center h-14">
           <div className="flex items-center pl-4">
-            <button onClick={toggleSidebar} className="text-gray-500 focus:outline-none focus:text-gray-600 md:hidden">
+            <button
+              onClick={toggleSidebar}
+              className="text-gray-500 focus:outline-none focus:text-gray-600 md:hidden"
+            >
               <Menu className="h-5 w-5" />
             </button>
             <h1 className="text-lg font-semibold text-gray-900 ml-2 md:ml-0">
@@ -72,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
                 <span className="text-sm font-medium">{currentUser?.name}</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleLogout}
               className="text-gray-500 hover:text-gray-600"
             >

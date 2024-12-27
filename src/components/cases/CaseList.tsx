@@ -1,19 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import {
-  AlertTriangle,
-  Clock,
-  PauseCircle,
-  Package,
-  Plus,
-  ChevronUpDown,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
 import CaseFilters from "./CaseFilters";
 import PrintButtonWithDropdown from "./PrintButtonWithDropdown";
 import { supabase } from "@/lib/supabase";
-import { Case } from "@/types/supabase";
+import { Database } from "@/types/supabase";
 import { format, isEqual, parseISO, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,12 +28,15 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { createLogger } from "@/utils/logger";
+import { Plus } from "lucide-react";
 
 const logger = createLogger({ module: "CaseList" });
 
 type Case = Database["public"]["Tables"]["cases"]["Row"] & {
-  client_name?: string;
-  doctor_name?: string;
+  client: {
+    id: string;
+    name: string;
+  };
 };
 
 const CaseList: React.FC = () => {
@@ -92,13 +85,20 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => <div>{row.getValue("patient_name") || "N/A"}</div>,
     },
     {
-      accessorKey: "client_name",
+      accessorKey: "client", // Directly refer to the client object
       header: "Client",
+      cell: ({ row }) => {
+        const client = row.getValue("client") as { client_name: string } | null;
+        return <div>{client?.client_name || "N/A"}</div>; // Access client_name from client object
+      },
     },
     {
-      accessorKey: "doctor_name",
+      accessorKey: "doctor", // Directly refer to the client object
       header: "Doctor",
-      cell: ({ row }) => <div>{row.getValue("doctor_name") || "N/A"}</div>,
+      cell: ({ row }) => {
+        const doctor = row.getValue("doctor") as { name: string } | null; // Type assertion
+        return <div>{doctor?.name || "N/A"}</div>; // Access client_name from client object
+      },
     },
     {
       accessorKey: "status",
@@ -125,7 +125,7 @@ const CaseList: React.FC = () => {
       header: "Due Date",
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        console.log(date,"date here")
+        console.log(date, "date here");
         return <div>{formatDate(date)}</div>;
       },
     },
@@ -228,15 +228,54 @@ const CaseList: React.FC = () => {
             `
             id,
             created_at,
-            updated_at,
-            created_by,
-            client_id,
-            doctor_id,
+            received_date,
+            ship_date,
+            status,
             patient_name,
-            rx_number,
             due_date,
-            qr_code,
-            status
+            client:clients!client_id (
+              id,
+              client_name,
+              phone
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            pan_number,
+            rx_number,
+            isDueDateTBD,
+            appointment_date,
+            otherItems,
+            lab_notes,
+            technician_notes,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            )
           `
           )
           .order("created_at", { ascending: false });
@@ -261,78 +300,8 @@ const CaseList: React.FC = () => {
         }
 
         // Transform and set initial cases
-        const transformedCases = casesData.map((caseItem) => ({
-          ...caseItem,
-          client_name: "Loading...", // We'll fetch client names separately
-          doctor_name: caseItem.doctor_id ? "Loading..." : "N/A",
-        }));
-
-        logger.debug("Transformed cases:", transformedCases);
-
-        setCases(transformedCases);
-        setFilteredCases(transformedCases);
-
-        // Get unique IDs for related data
-        const clientIds = [...new Set(casesData.map((c) => c.client_id))];
-        const doctorIds = [
-          ...new Set(casesData.map((c) => c.doctor_id).filter(Boolean)),
-        ];
-
-        logger.debug("Related IDs:", { clientIds, doctorIds });
-
-        // Only fetch if we have IDs to fetch
-        const [clientsResponse, doctorsResponse] = await Promise.all([
-          clientIds.length > 0
-            ? supabase
-                .from("clients")
-                .select("id, client_name")
-                .in("id", clientIds)
-            : Promise.resolve({ data: [], error: null }),
-          doctorIds.length > 0
-            ? supabase.from("doctors").select("id, name").in("id", doctorIds)
-            : Promise.resolve({ data: [], error: null }),
-        ]);
-
-        logger.debug("Related data responses:", {
-          clients: clientsResponse,
-          doctors: doctorsResponse,
-        });
-
-        // Handle any errors in fetching related data
-        if (clientsResponse.error) {
-          logger.error("Error fetching clients:", clientsResponse.error);
-        }
-
-        if (doctorsResponse.error) {
-          logger.error("Error fetching doctors:", doctorsResponse.error);
-        }
-
-        // Create lookup maps for related data
-        const clientMap = new Map(
-          clientsResponse.data?.map((c) => [c.id, c.client_name]) || []
-        );
-        const doctorMap = new Map(
-          doctorsResponse.data?.map((d) => [d.id, d.name]) || []
-        );
-
-        logger.debug("Data maps:", {
-          clients: Object.fromEntries(clientMap),
-          doctors: Object.fromEntries(doctorMap),
-        });
-
-        // Update cases with related data
-        const finalCases = transformedCases.map((caseItem) => ({
-          ...caseItem,
-          client_name: clientMap.get(caseItem.client_id) || "Unknown Client",
-          doctor_name: caseItem.doctor_id
-            ? doctorMap.get(caseItem.doctor_id) || "Unknown Doctor"
-            : "N/A",
-        }));
-
-        logger.debug("Final cases:", finalCases);
-
-        setCases(finalCases);
-        setFilteredCases(finalCases);
+        console.log(casesData, "casesData");
+        setCases(casesData as unknown as Case[]);
       } catch (err) {
         logger.error("Error fetching cases:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch cases");
@@ -354,7 +323,7 @@ const CaseList: React.FC = () => {
 
       if (dueDateParam) {
         filtered = filtered.filter((caseItem) => {
-          const caseDate = format(parseISO(caseItem.dueDate), "yyyy-MM-dd");
+          const caseDate = format(parseISO(caseItem.due_date), "yyyy-MM-dd");
           return caseDate === dueDateParam;
         });
       }
@@ -369,14 +338,14 @@ const CaseList: React.FC = () => {
     if (filters.dueDate) {
       const today = new Date();
       filtered = filtered.filter((caseItem) => {
-        const dueDate = parseISO(caseItem.dueDate);
+        const dueDate = parseISO(caseItem.due_date);
         return isValid(dueDate) && isEqual(dueDate, today);
       });
     }
 
     if (filters.status) {
       filtered = filtered.filter(
-        (caseItem) => caseItem.caseStatus === filters.status
+        (caseItem) => caseItem.status === filters.status
       );
     }
 
@@ -386,13 +355,13 @@ const CaseList: React.FC = () => {
   const handleSearch = (searchTerm: string) => {
     const filtered = cases.filter(
       (caseItem) =>
-        caseItem.client_name
+        caseItem.client.client_name
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        caseItem.patientName
+        caseItem.patient_name
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        caseItem.caseId.toLowerCase().includes(searchTerm.toLowerCase())
+        caseItem.id.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredCases(filtered);
   };
