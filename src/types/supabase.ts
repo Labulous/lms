@@ -1,3 +1,5 @@
+import { DeliveryMethod } from "@/data/mockCasesData";
+
 /**
  * Basic JSON type used throughout the application
  */
@@ -586,12 +588,13 @@ export interface FormData {
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
-  deliveryMethod: string;
+  deliveryMethod: DeliveryMethod;
+  deliveryMethodError?: string;
   dueDate?: string;
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string;
+  assignedTechnicians: string[];
   workingPanName?: string;
   workingPanColor?: string;
   enclosedItems: {

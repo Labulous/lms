@@ -13,11 +13,11 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
   },
-  headers: {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-    'Accept-Profile': 'public',
-  },
+  // headers: {
+  //   'Accept': 'application/json',
+  //   'Content-Type': 'application/json',
+  //   'Accept-Profile': 'public',
+  // },
   db: {
     schema: "public",
   },

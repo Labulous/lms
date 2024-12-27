@@ -18,7 +18,8 @@
     "migrate:sql": "tsx scripts/migrations/execute_sql_migration.ts",
     "migrate:verify": "tsx scripts/migrations/verify_migration.ts",
     "migrate:verify-rls": "tsx scripts/migrations/verify_rls.ts",
-    "migrate": "npm run migrate:schema && npm run migrate:data && npm run migrate:pontic"
+    "migrate": "npm run migrate:schema && npm run migrate:data && npm run migrate:pontic",
+    "start": "npm run build && npm run preview"
   },
   "dependencies": {
     "@next/font": "^14.2.15",

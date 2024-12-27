@@ -151,6 +151,7 @@ class ClientsService {
         logger.error("Error getting authenticated user", { authError });
         throw authError;
       }
+      console.log(authUser, "authUser");
 
       // If no authenticated user found, return an empty array
       if (!authUser) {
@@ -160,30 +161,45 @@ class ClientsService {
 
       logger.debug("Authenticated user found", { userId: authUser.id });
 
-      // Check if the user role is available directly in authUser
-      const userRole = authUser.role; // Assuming role is available in authUser (either in user data or custom claims)
+      // Step 1: Fetch the user role from the users table
+      const { data: userRoleData, error: userRoleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", authUser.id)
+        .single(); // assuming there is only one row with that user id
 
-      // If role is not available in the authUser data, fall back to fetching it from the users table
-      let role = userRole;
+      // Step 2: Handle errors or ensure the query result is valid
+      if (userRoleError) {
+        logger.error("Error fetching user role", { userRoleError });
+        throw userRoleError;
+      }
+      const uthenicated: any = userRoleData;
+      // Check if the result is an error or if role is present
+      if (!userRoleData || !uthenicated.role) {
+        logger.error("User role not found in the database", {
+          userId: authUser.id,
+        });
+        throw new Error("User role not found");
+      }
 
-      // Step 4: Check if the user has required permissions (admin or technician)
-      if (
-        !["admin", "technician"].includes(
-          role as "admin" | "technician" | "cleint"
-        )
-      ) {
-        logger.error("User does not have required role", { role });
+      const userRole: any = userRoleData; // Now we get the role from the database
+
+      // Step 3: Check if the user has required permissions (admin or technician)
+      if (!["admin", "technician"].includes(userRole.role)) {
+        logger.error("User does not have required role", {
+          role: userRole.role,
+        });
         throw new Error("Insufficient permissions to view clients");
       }
 
-      // Step 5: Fetch all clients from the 'clients' table
+      // Step 4: Fetch all clients from the 'clients' table
       logger.debug("Fetching all clients...");
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("*")
         .order("client_name", { ascending: true });
 
-      // Step 6: Handle clients fetch error
+      // Step 5: Handle clients fetch error
       if (clientsError) {
         logger.error("Error fetching clients", {
           error: clientsError,
@@ -194,7 +210,7 @@ class ClientsService {
         throw new Error(`Failed to fetch clients: ${clientsError.message}`);
       }
 
-      // Step 7: If no clients are found, return an empty array
+      // Step 6: If no clients are found, return an empty array
       if (!clients) {
         logger.warn("No clients found in database");
         return [];
@@ -202,7 +218,7 @@ class ClientsService {
 
       logger.debug("Successfully fetched clients", { count: clients.length });
 
-      // Step 8: Get doctors for each client
+      // Step 7: Get doctors for each client
       const clientsWithDoctors = await Promise.all(
         clients.map(async (client: any) => {
           try {

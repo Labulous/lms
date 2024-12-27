@@ -47,16 +47,18 @@ const ClientActivity: React.FC = () => {
               client={selectedClient}
               isEditing={false}
               editedData={null}
-              setEditedData={function (_data: ClientInput | null): void {
+              setEditedData={function (
+                value: React.SetStateAction<ClientInput | null>
+              ): void {
                 throw new Error("Function not implemented.");
               }}
-              onEdit={function (_clientData: ClientInput): void {
+              onEdit={function (clientData: ClientInput): void {
                 throw new Error("Function not implemented.");
               }}
               onDelete={function (): void {
                 throw new Error("Function not implemented.");
               }}
-              setIsEditing={function (_isEditing: boolean): void {
+              setIsEditing={function (isEditing: boolean): void {
                 throw new Error("Function not implemented.");
               }}
             />
