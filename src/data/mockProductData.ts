@@ -116,7 +116,7 @@ export const mockProducts: Product[] = [
     isClientVisible: true,
     isTaxable: true,
     requiresShade: true,
-    type: ["Crown"],
+    type: ["Crown", "Bridge"],
     billingType: "per_unit",
     material: "PFM",
     category: undefined,

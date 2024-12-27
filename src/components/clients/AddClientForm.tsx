@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import DoctorFields from './DoctorFields';
-import { ClientInput } from '../../services/clientsService';
-import { toast } from 'react-hot-toast';
-import { supabase } from '../../lib/supabase';
+import React, { useState, useEffect } from "react";
+import DoctorFields from "./DoctorFields";
+import { ClientInput } from "../../services/clientsService";
+import { toast } from "react-hot-toast";
+import { supabase } from "../../lib/supabase";
 
 interface Doctor {
   name: string;
@@ -18,64 +18,74 @@ interface AddClientFormProps {
   onSuccess?: () => void;
 }
 
-const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loading, onSuccess }) => {
-  const [nextAccountNumber, setNextAccountNumber] = useState<string>('');
+const AddClientForm: React.FC<AddClientFormProps> = ({
+  onSubmit,
+  onCancel,
+  loading,
+  onSuccess,
+}) => {
+  const [nextAccountNumber, setNextAccountNumber] = useState<string>("");
   const [formData, setFormData] = useState<ClientInput>({
-    clientName: '',
-    contactName: '',
-    phone: '',
-    email: '',
+    clientName: "",
+    contactName: "",
+    phone: "",
+    email: "",
     address: {
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
     },
-    clinicRegistrationNumber: '',
-    notes: '',
-    doctors: [{ name: '', phone: '', email: '', notes: '' }],
+    clinicRegistrationNumber: "",
+    notes: "",
+    doctors: [{ name: "", phone: "", email: "", notes: "" }],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchNextAccountNumber = async () => {
       try {
-        console.log('Fetching next account number...');
-        const { data, error } = await supabase
-          .rpc('get_next_account_number', {}, {
-            count: 'exact'
-          });
-        
-        console.log('Fetch response:', { data, error });
-        
+        console.log("Fetching next account number...");
+        const { data, error } = await supabase.rpc(
+          "get_next_account_number",
+          {},
+          {
+            count: "exact",
+          }
+        );
+
+        console.log("Fetch response:", { data, error });
+
         if (error) {
-          console.error('Error fetching next account number:', error);
+          console.error("Error fetching next account number:", error);
           return;
         }
-        
+
         if (data) {
-          console.log('Setting account number to:', data);
-          setNextAccountNumber(data);
+          console.log("Setting account number to:", data);
+          setNextAccountNumber(data as string);
         } else {
-          console.warn('No account number received');
-          setNextAccountNumber('1001'); // Default fallback
+          console.warn("No account number received");
+          setNextAccountNumber("1001"); // Default fallback
         }
       } catch (err) {
-        console.error('Error in fetchNextAccountNumber:', err);
-        setNextAccountNumber('1001'); // Default fallback
+        console.error("Error in fetchNextAccountNumber:", err);
+        setNextAccountNumber("1001"); // Default fallback
       }
     };
 
     fetchNextAccountNumber();
   }, []);
 
-  console.log('Rendering with account number:', nextAccountNumber);
+  console.log("Rendering with account number:", nextAccountNumber);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    if (name.startsWith('address.')) {
-      const addressField = name.split('.')[1];
-      setFormData(prev => ({
+    if (name.startsWith("address.")) {
+      const addressField = name.split(".")[1];
+      setFormData((prev) => ({
         ...prev,
         address: {
           ...prev.address,
@@ -83,37 +93,44 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [name]: value,
       }));
     }
   };
 
-  const handleDoctorChange = (index: number, field: keyof Doctor, value: string) => {
-    setFormData(prev => ({
+  const handleDoctorChange = (
+    index: number,
+    field: keyof Doctor,
+    value: string
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      doctors: prev.doctors.map((doctor, i) =>
+      doctors: (prev?.doctors ?? []).map((doctor, i) =>
         i === index ? { ...doctor, [field]: value } : doctor
       ),
     }));
   };
 
   const addDoctor = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      doctors: [...prev.doctors, { name: '', phone: '', email: '', notes: '' }],
+      doctors: [
+        ...(prev?.doctors ?? []),
+        { name: "", phone: "", email: "", notes: "" },
+      ],
     }));
   };
 
   const removeDoctor = (index: number) => {
-    if (formData.doctors.length === 1) {
-      toast.error('At least one doctor is required');
+    if ((formData?.doctors?.length ?? 0) === 1) {
+      toast.error("At least one doctor is required");
       return;
     }
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      doctors: prev.doctors.filter((_, i) => i !== index),
+      doctors: (prev?.doctors ?? []).filter((_, i) => i !== index),
     }));
   };
 
@@ -122,43 +139,48 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
     setIsSubmitting(true);
 
     try {
-      const { data: accountNumber, error: numberError } = await supabase.rpc('get_next_account_number');
+      const { data: accountNumber, error: numberError } = await supabase.rpc(
+        "get_next_account_number"
+      );
       if (numberError) throw numberError;
 
       const result = await onSubmit({
         ...formData,
-        account_number: accountNumber,
+        account_number: accountNumber as string,
       });
 
-      if (result) {
-        toast.success('Client added successfully!');
+      if (result !== undefined) {
+        toast.success("Client added successfully!");
         setFormData({
-          clientName: '',
-          contactName: '',
-          phone: '',
-          email: '',
+          clientName: "",
+          contactName: "",
+          phone: "",
+          email: "",
           address: {
-            street: '',
-            city: '',
-            state: '',
-            zipCode: '',
+            street: "",
+            city: "",
+            state: "",
+            zipCode: "",
           },
-          clinicRegistrationNumber: '',
-          notes: '',
-          doctors: [{ name: '', phone: '', email: '', notes: '' }],
+          clinicRegistrationNumber: "",
+          notes: "",
+          doctors: [{ name: "", phone: "", email: "", notes: "" }],
         });
         onSuccess?.();
       }
     } catch (error) {
-      console.error('Error adding client:', error);
-      toast.error('Failed to add client. Please try again.');
+      console.error("Error adding client:", error);
+      toast.error("Failed to add client. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow"
+    >
       <div className="space-y-4">
         <div className="flex items-center mb-6">
           <h2 className="text-2xl font-bold">
@@ -174,7 +196,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
         {/* Client Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Client Name *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Client Name *
+            </label>
             <input
               type="text"
               name="clientName"
@@ -185,7 +209,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Contact Name</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Contact Name
+            </label>
             <input
               type="text"
               name="contactName"
@@ -195,7 +221,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Phone *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Phone *
+            </label>
             <input
               type="tel"
               name="phone"
@@ -206,7 +234,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email *</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Email *
+            </label>
             <input
               type="email"
               name="email"
@@ -223,7 +253,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
           <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Street *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Street *
+              </label>
               <input
                 type="text"
                 name="address.street"
@@ -234,7 +266,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">City *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                City *
+              </label>
               <input
                 type="text"
                 name="address.city"
@@ -245,7 +279,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">State *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                State *
+              </label>
               <input
                 type="text"
                 name="address.state"
@@ -256,7 +292,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">ZIP Code *</label>
+              <label className="block text-sm font-medium text-gray-700">
+                ZIP Code *
+              </label>
               <input
                 type="text"
                 name="address.zipCode"
@@ -272,7 +310,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
         {/* Additional Information */}
         <div className="mt-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Clinic Registration Number</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Clinic Registration Number
+            </label>
             <input
               type="text"
               name="clinicRegistrationNumber"
@@ -282,7 +322,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
             />
           </div>
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">Notes</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Notes
+            </label>
             <textarea
               name="notes"
               value={formData.notes}
@@ -296,15 +338,18 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
         {/* Doctors Section */}
         <div className="mt-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Doctors</h3>
-          {formData.doctors.map((doctor, index) => (
+          {(formData?.doctors ?? []).map((doctor, index) => (
             <DoctorFields
               key={index}
               doctor={doctor}
-              onChange={(field, value) => handleDoctorChange(index, field, value)}
+              onChange={(field, value) =>
+                handleDoctorChange(index, field, value)
+              }
               onRemove={() => removeDoctor(index)}
-              showRemove={formData.doctors.length > 1}
+              showRemove={(formData?.doctors?.length ?? 0) > 1}
             />
           ))}
+
           <button
             type="button"
             onClick={addDoctor}
@@ -329,7 +374,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({ onSubmit, onCancel, loadi
           disabled={isSubmitting || loading}
           className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
         >
-          {isSubmitting ? 'Adding...' : 'Add Client'}
+          {isSubmitting ? "Adding..." : "Add Client"}
         </button>
       </div>
     </form>

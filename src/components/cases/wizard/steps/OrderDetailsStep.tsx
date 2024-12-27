@@ -65,18 +65,21 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     const { name, value, type } = event.target;
     if (type === "checkbox") {
       const checkbox = event.target as HTMLInputElement;
-      onChange(name as keyof FormData, checkbox.checked);
+      onChange(name as keyof CaseFormData, checkbox.checked);
       if (name === "isDueDateTBD" && checkbox.checked) {
         onChange("dueDate", undefined);
       }
     } else {
-      onChange(name as keyof FormData, value);
+      onChange(name as keyof CaseFormData, value);
     }
   };
 
   const handleDateChange =
     (field: keyof FormData) => (date: Date | undefined) => {
-      onChange(field, date ? date.toISOString().split("T")[0] : "");
+      onChange(
+        field as keyof CaseFormData,
+        date ? date.toISOString().split("T")[0] : ""
+      );
     };
 
   return (
@@ -102,7 +105,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       value={formData.clientId}
                       onValueChange={(value) => {
                         onChange("clientId", value);
-                        onChange("doctorId", undefined); // Reset doctor when client changes
+                        onChange("doctorId" as keyof CaseFormData, undefined); // Reset doctor when client changes
                       }}
                     >
                       <SelectTrigger
@@ -406,7 +409,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   id="workingPanColor"
                   value={formData.workingPanColor || "#FF0000"}
                   onChange={(color) => {
-                    onChange("workingPanColor", color);
+                    onChange("workingPanColor" as keyof CaseFormData, color);
                   }}
                   className="flex-shrink-0"
                 />

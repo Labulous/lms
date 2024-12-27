@@ -190,6 +190,31 @@ interface Product {
   };
 }
 
+interface ProductMaterial {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface ProductProductType {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface ProductBillingType {
+  name: string;
+  label: string;
+  is_active: boolean;
+  description: string;
+}
+
+export interface DiscountedPrice {
+  product_id: string;
+  discount: number;
+  final_price: number;
+  price: number;
+}
 export interface ProductWithShade extends Product {
   shadeData?: ShadeData;
   selectedTeeth?: number[];
@@ -198,9 +223,35 @@ export interface ProductWithShade extends Product {
 /**
  * Main database type definitions
  */
+
+interface Shade {
+  name: string;
+  category: string;
+  is_active: boolean;
+}
+
+export interface ToothInfo {
+  is_range: boolean;
+  tooth_number: number[];
+  occlusal_shade: Shade;
+  body_shade: Shade;
+  gingival_shade: Shade;
+  stump_shade_id: Shade;
+}
 export interface Database {
   public: {
     Tables: {
+      clients: {
+        Row: {
+          id: string;
+          account_number: string;
+          client_name: string;
+        };
+        Insert: {
+          id?: string;
+          account?: number;
+        };
+      };
       users: {
         Row: {
           id: string;
@@ -242,6 +293,23 @@ export interface Database {
               phone: string;
             };
           };
+          product:
+            | {
+                id: string;
+                name: string;
+                price: number;
+                lead_time: string | null; // Assuming the lead time can be a string or null
+                is_client_visible: boolean;
+                is_taxable: boolean;
+                created_at: string; // ISO date string
+                updated_at: string; // ISO date string
+                requires_shade: boolean;
+                material: ProductMaterial;
+                product_type: ProductProductType;
+                billing_type: ProductBillingType;
+                discounted_price?: DiscountedPrice;
+              }[]
+            | [];
           enclosed_items: {
             jig: number;
             photos: number;
@@ -254,7 +322,11 @@ export interface Database {
             consultRequested: number;
             returnArticulator: number;
           };
-          product_ids: string[]; // Array of product ids
+          teethProducts: ToothInfo[];
+          product_ids: {
+            id: string;
+            products_id: string[];
+          }[]; // Array of product ids
         };
         Insert: {
           id?: string;

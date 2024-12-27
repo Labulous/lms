@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
-import { X, ArrowLeft } from 'lucide-react';
-import { ProductType, PRODUCT_TYPES, Product, mockProducts } from '../../../../data/mockProductData';
-import ToothSelector from './ToothSelector';
+import React, { useState } from "react";
+import { X, ArrowLeft } from "lucide-react";
+import {
+  ProductType,
+  PRODUCT_TYPES,
+  Product,
+  mockProducts,
+} from "../../../../data/mockProductData";
+import ToothSelector from "./ToothSelector";
 
 export interface SavedProduct {
   productId: string;
@@ -33,11 +38,14 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [selectedType, setSelectedType] = useState<ProductType | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [discount, setDiscount] = useState(0);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-  const calculateFinalPrice = (price: number, discountPercent: number): number => {
+  const calculateFinalPrice = (
+    price: number,
+    discountPercent: number
+  ): number => {
     return price * (1 - discountPercent / 100);
   };
 
@@ -52,7 +60,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   };
 
   const handleProductSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const product = mockProducts.find(p => p.id === e.target.value);
+    const product = mockProducts.find((p) => p.id === e.target.value);
     setSelectedProduct(product || null);
     setSelectedTeeth([]);
   };
@@ -64,13 +72,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const validateStep2 = () => {
     const newErrors: { [key: string]: string } = {};
     if (!selectedProduct) {
-      newErrors.product = 'Please select a product';
+      newErrors.product = "Please select a product";
     }
     if (discount < 0 || discount > 100) {
-      newErrors.discount = 'Discount must be between 0 and 100';
+      newErrors.discount = "Discount must be between 0 and 100";
     }
-    if (selectedProduct?.billingType !== 'generic' && selectedTeeth.length === 0) {
-      newErrors.teeth = 'Please select at least one tooth';
+    if (
+      selectedProduct?.billingType !== "generic" &&
+      selectedTeeth.length === 0
+    ) {
+      newErrors.teeth = "Please select at least one tooth";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -79,13 +90,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const handleSave = (andAddAnother: boolean = false) => {
     if (!validateStep2()) return;
 
-    const quantity = selectedProduct?.billingType === 'perArc' ? 1 : selectedTeeth.length;
+    const quantity =
+      selectedProduct?.billingType === "perArch" ? 1 : selectedTeeth.length;
     const savedProduct: SavedProduct = {
       productId: selectedProduct!.id,
       name: selectedProduct!.name,
-      category: selectedProduct!.category,
+      category: selectedProduct!.category as string,
       originalPrice: selectedProduct!.price,
-      finalPrice: calculateFinalPrice(selectedProduct!.price, discount) * quantity,
+      finalPrice:
+        calculateFinalPrice(selectedProduct!.price, discount) * quantity,
       discount,
       billingType: selectedProduct!.billingType,
       notes: notes.trim() || undefined,
@@ -98,7 +111,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
       // Reset form for next product
       setSelectedProduct(null);
       setDiscount(0);
-      setNotes('');
+      setNotes("");
       setSelectedTeeth([]);
       setStep(1);
     } else {
@@ -107,11 +120,14 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   };
 
   if (!isOpen) return null;
-console.log(selectedProduct,"selectedProduct")
+  console.log(selectedProduct, "selectedProduct");
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        ></div>
 
         <div className="inline-block w-full max-w-5xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
@@ -127,7 +143,7 @@ console.log(selectedProduct,"selectedProduct")
                   </button>
                 )}
                 <h3 className="text-lg font-medium text-gray-900">
-                  {step === 1 ? 'Select Type' : 'Configure Product'}
+                  {step === 1 ? "Select Type" : "Configure Product"}
                 </h3>
               </div>
               <button
@@ -150,10 +166,23 @@ console.log(selectedProduct,"selectedProduct")
                       id={type}
                       value={type}
                       checked={selectedType === type}
-                      onChange={(e) => handleTypeSelect(e.target.value)}
+                      onChange={(e) =>
+                        handleTypeSelect(
+                          e.target.value as
+                            | "Crown"
+                            | "Bridge"
+                            | "Removable"
+                            | "Implant"
+                            | "Coping"
+                            | "Appliance"
+                        )
+                      }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor={type} className="ml-2 block text-sm text-gray-900">
+                    <label
+                      htmlFor={type}
+                      className="ml-2 block text-sm text-gray-900"
+                    >
                       {type}
                     </label>
                   </div>
@@ -163,45 +192,64 @@ console.log(selectedProduct,"selectedProduct")
               <div className="flex gap-8">
                 {/* Left Column - Tooth Selection */}
                 <div className="w-1/2">
-                  {selectedProduct && selectedProduct.billingType !== 'generic' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-4">
-                        Select Teeth
-                      </label>
-                      <ToothSelector
-                        billingType={selectedProduct.billingType}
-                        onSelectionChange={handleToothSelectionChange}
-                      />
-                      {errors.teeth && (
-                        <p className="mt-1 text-sm text-red-600">{errors.teeth}</p>
-                      )}
-                    </div>
-                  )}
+                  {selectedProduct &&
+                    selectedProduct.billingType !== "generic" && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-4">
+                          Select Teeth
+                        </label>
+                        <ToothSelector
+                          billingType={selectedProduct.billingType}
+                          onSelectionChange={handleToothSelectionChange}
+                          selectedTeeth={[]}
+                          addedTeethMap={null}
+                          disabled={false}
+                          selectedProduct={{
+                            type: [],
+                          }}
+                          onAddToShadeTable={function (): void {
+                            throw new Error("Function not implemented.");
+                          }}
+                        />
+                        {errors.teeth && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.teeth}
+                          </p>
+                        )}
+                      </div>
+                    )}
                 </div>
 
                 {/* Right Column - Product Details */}
                 <div className="w-1/2 space-y-6">
                   <div>
-                    <label htmlFor="product" className="block text-sm font-medium text-gray-700">
+                    <label
+                      htmlFor="product"
+                      className="block text-sm font-medium text-gray-700"
+                    >
                       Select Product *
                     </label>
                     <select
                       id="product"
-                      value={selectedProduct?.id || ''}
+                      value={selectedProduct?.id || ""}
                       onChange={handleProductSelect}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                     >
                       <option value="">Select a product</option>
                       {mockProducts
-                        .filter(product => product.type === selectedType)
-                        .map(product => (
+                        .filter(
+                          (product) => product.type === (selectedType as any)
+                        )
+                        .map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name} - ${product.price}
                           </option>
                         ))}
                     </select>
                     {errors.product && (
-                      <p className="mt-1 text-sm text-red-600">{errors.product}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.product}
+                      </p>
                     )}
                   </div>
 
@@ -228,7 +276,10 @@ console.log(selectedProduct,"selectedProduct")
                       </div>
 
                       <div>
-                        <label htmlFor="discount" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="discount"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Discount (%)
                         </label>
                         <input
@@ -241,12 +292,17 @@ console.log(selectedProduct,"selectedProduct")
                           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                         {errors.discount && (
-                          <p className="mt-1 text-sm text-red-600">{errors.discount}</p>
+                          <p className="mt-1 text-sm text-red-600">
+                            {errors.discount}
+                          </p>
                         )}
                       </div>
 
                       <div>
-                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                        <label
+                          htmlFor="notes"
+                          className="block text-sm font-medium text-gray-700"
+                        >
                           Notes (Optional)
                         </label>
                         <textarea

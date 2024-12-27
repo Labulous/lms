@@ -29,6 +29,9 @@ export interface FormData {
     | undefined;
   clientId: string;
   patientFirstName: string;
+  doctorId?: string;
+  workingPanName?: string;
+  workingPanColor?: string;
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
@@ -37,7 +40,7 @@ export interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string[];
+  assignedTechnicians: string[] ;
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -142,7 +145,6 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
   console.log("Available Clients:", clients);
 
   const handleFormChange = (key: string, value: string) => {
-
     // Clone the newFormData so we don't mutate the state directly
     const updatedFormData = { ...formData, [key]: value };
 
@@ -227,7 +229,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
         : formData.dueDate || formData.orderDate,
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
-      assignedTechnicians: formData.assignedTechnicians,
+      assignedTechnicians: formData?.assignedTechnicians ?? "",
       deliveryMethod: formData.deliveryMethod,
       notes: formData.notes,
       stages: [

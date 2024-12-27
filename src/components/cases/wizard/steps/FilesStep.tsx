@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Camera, X } from 'lucide-react';
+import React, { useRef, Dispatch, SetStateAction } from "react";
+import { Upload, Camera, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
@@ -25,30 +25,31 @@ interface FilesStepProps {
   formData: FormData;
   onChange: (data: FormData) => void;
   errors?: any;
-  selectedFiles?:any,
-  setSelectedFiles?:any
+  selectedFiles?: File[];
+  setSelectedFiles?: Dispatch<SetStateAction<File[]>>;
 }
 
-const FilesStep: React.FC<FilesStepProps> = ({ 
+const FilesStep: React.FC<FilesStepProps> = ({
   formData,
   onChange,
   selectedFiles,
-  setSelectedFiles
+  setSelectedFiles,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
-      setSelectedFiles(prev => [...prev, ...newFiles]);
+      setSelectedFiles && setSelectedFiles((prev) => [...prev, ...newFiles]);
     }
   };
   const handleRemoveFile = (index: number) => {
-    setSelectedFiles(prev => {
-      const newFiles = [...prev];
-      newFiles.splice(index, 1);
-      return newFiles;
-    });
+    setSelectedFiles &&
+      setSelectedFiles((prev) => {
+        const newFiles = [...prev];
+        newFiles.splice(index, 1);
+        return newFiles;
+      });
   };
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -59,7 +60,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
     event.preventDefault();
     if (event.dataTransfer.files) {
       const newFiles = Array.from(event.dataTransfer.files);
-      setSelectedFiles(prev => [...prev, ...newFiles]);
+      setSelectedFiles && setSelectedFiles((prev) => [...prev, ...newFiles]);
     }
   };
 
@@ -69,51 +70,53 @@ const FilesStep: React.FC<FilesStepProps> = ({
       ...formData,
       enclosedItems: {
         ...(formData.enclosedItems || {}),
-        [key]: numValue
-      }
+        [key]: numValue,
+      },
     });
   };
 
-  const handleIncrement = (key: keyof EnclosedItems) => {
+  // const handleIncrement = (key: keyof EnclosedItems) => {
+  //   onChange({
+  //     ...formData,
+  //     enclosedItems: {
+  //       ...formData.enclosedItems,
+  //       [key]: (formData.enclosedItems[key] || 0) + 1,
+  //     },
+  //   });
+  // };
+
+  // const handleDecrement = (key: keyof EnclosedItems) => {
+  //   const currentValue = formData.enclosedItems[key] || 0;
+  //   if (currentValue > 0) {
+  //     onChange({
+  //       ...formData,
+  //       enclosedItems: {
+  //         ...formData.enclosedItems,
+  //         [key]: currentValue - 1,
+  //       },
+  //     });
+  //   }
+  // };
+
+  const handleOtherItemsChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ) => {
     onChange({
       ...formData,
-      enclosedItems: {
-        ...formData.enclosedItems,
-        [key]: (formData.enclosedItems[key] || 0) + 1
-      }
-    });
-  };
-
-  const handleDecrement = (key: keyof EnclosedItems) => {
-    const currentValue = formData.enclosedItems[key] || 0;
-    if (currentValue > 0) {
-      onChange({
-        ...formData,
-        enclosedItems: {
-          ...formData.enclosedItems,
-          [key]: currentValue - 1
-        }
-      });
-    }
-  };
-
-  const handleOtherItemsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange({
-      ...formData,
-      otherItems: e.target.value
+      otherItems: e.target.value,
     });
   };
 
   const enclosedItemsList = [
-    { key: 'impression', label: 'Impression' },
-    { key: 'biteRegistration', label: 'Bite registration' },
-    { key: 'photos', label: 'Photos' },
-    { key: 'jig', label: 'Jig' },
-    { key: 'opposingModel', label: 'Opposing Model' },
-    { key: 'articulator', label: 'Articulator' },
-    { key: 'returnArticulator', label: 'Return Articulator' },
-    { key: 'cadcamFiles', label: 'CAD/CAM Files' },
-    { key: 'consultRequested', label: 'Consult Requested' },
+    { key: "impression", label: "Impression" },
+    { key: "biteRegistration", label: "Bite registration" },
+    { key: "photos", label: "Photos" },
+    { key: "jig", label: "Jig" },
+    { key: "opposingModel", label: "Opposing Model" },
+    { key: "articulator", label: "Articulator" },
+    { key: "returnArticulator", label: "Return Articulator" },
+    { key: "cadcamFiles", label: "CAD/CAM Files" },
+    { key: "consultRequested", label: "Consult Requested" },
   ] as const;
 
   const enclosedItems = formData.enclosedItems || {};
@@ -157,14 +160,21 @@ const FilesStep: React.FC<FilesStepProps> = ({
         </div>
       </div>
 
-      {selectedFiles.length > 0 && (
+      {selectedFiles && selectedFiles.length > 0 && (
         <div className="mt-4">
           <ul className="divide-y divide-gray-200">
             {selectedFiles.map((file, index) => (
-              <li key={index} className="px-4 py-3 flex items-center justify-between">
+              <li
+                key={index}
+                className="px-4 py-3 flex items-center justify-between"
+              >
                 <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-900">{file.name}</span>
-                  <span className="ml-2 text-sm text-gray-500">({(file.size / 1024).toFixed(1)} KB)</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {file.name}
+                  </span>
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({(file.size / 1024).toFixed(1)} KB)
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -194,7 +204,9 @@ const FilesStep: React.FC<FilesStepProps> = ({
                   name={key}
                   min="0"
                   value={enclosedItems[key] || 0}
-                  onChange={(e) => handleEnclosedItemChange(key, e.target.value)}
+                  onChange={(e) =>
+                    handleEnclosedItemChange(key, e.target.value)
+                  }
                   className="w-16 bg-white text-center h-7 px-2"
                 />
                 <label htmlFor={key} className="text-sm text-gray-700">
@@ -203,17 +215,20 @@ const FilesStep: React.FC<FilesStepProps> = ({
               </div>
             ))}
           </div>
-          
+
           {/* Other Items Field */}
           <div>
-            <label htmlFor="otherItems" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="otherItems"
+              className="block text-sm font-medium text-gray-700"
+            >
               Other items:
             </label>
             <Textarea
               id="otherItems"
               name="otherItems"
               rows={4}
-              value={formData.otherItems || ''}
+              value={formData.otherItems || ""}
               onChange={handleOtherItemsChange}
               className="mt-1 bg-white"
               placeholder="Enter any additional items..."
