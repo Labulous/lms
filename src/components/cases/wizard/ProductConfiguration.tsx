@@ -342,21 +342,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   }, [caseDetails, onCaseDetailsChange, previewNote]);
 
   const handleProductSelect = (
-    value: string,
+    value: any,
     keepTeeth = false,
     itemId?: string
   ) => {
-    const product = products.find((p) => p.id === value) || null;
-    console.log(product, value, "value");
-    console.log("handleProductSelect called:", {
-      productId: value,
-      keepTeeth,
-      itemId,
-      foundProduct: product?.name,
-      currentTeeth: selectedTeeth,
-      note: previewNote,
-      isRange: toothItems.length > 1,
-    });
+    const product = products.find((p) => p.id === value.id) || null;
+    console.log(product, value, products, "value");
+    console.log("handleProductSelect called:", product);
 
     if (
       product &&
@@ -367,7 +359,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       toast.error("Invalid product configuration");
       return;
     }
-
+    console.log(product, "product selected");
     setSelectedProduct(product);
 
     if (itemId) {
@@ -388,6 +380,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setSelectedTeeth([]);
     }
     console.log(product, "product");
+    console.log("products", products);
+
     if (product) {
       const newPreviewProduct: SavedProduct = {
         ...product,
@@ -1394,14 +1388,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </TableCell>
                             <TableCell className="py-1.5 pl-4 pr-0">
                               <div className="flex flex-col space-y-0.5">
-                                {item.shades ? (
+                                {item?.shades ? (
                                   <>
                                     {item.shades.occlusal && (
                                       <div className="text-xs">
                                         <span className="text-gray-500">
                                           O:
                                         </span>{" "}
-                                        {item.shades.occlusal}
+                                        {shadesItems.find(
+                                          (shade) =>
+                                            shade.id === item?.shades?.occlusal
+                                        )?.name || item.shades.occlusal}
                                       </div>
                                     )}
                                     {item.shades.body && (
@@ -1409,7 +1406,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <span className="text-gray-500">
                                           B:
                                         </span>{" "}
-                                        {item.shades.body}
+                                        {shadesItems.find(
+                                          (shade) =>
+                                            shade.id === item?.shades?.body
+                                        )?.name || item.shades.body}
                                       </div>
                                     )}
                                     {item.shades.gingival && (
@@ -1417,7 +1417,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <span className="text-gray-500">
                                           G:
                                         </span>{" "}
-                                        {item.shades.gingival}
+                                        {shadesItems.find(
+                                          (shade) =>
+                                            shade.id === item?.shades?.gingival
+                                        )?.name || item.shades.gingival}
                                       </div>
                                     )}
                                     {item.shades.stump && (
@@ -1425,7 +1428,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <span className="text-gray-500">
                                           S:
                                         </span>{" "}
-                                        {item.shades.stump}
+                                        {shadesItems.find(
+                                          (shade) =>
+                                            shade.id === item?.shades?.stump
+                                        )?.name || item.shades.stump}
                                       </div>
                                     )}
                                   </>

@@ -35,12 +35,12 @@ export interface FormData {
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
-  deliveryMethod: DeliveryMethod;
+  deliveryMethod: "Pickup" | "Local Delivery" | "Shipping";
   dueDate?: string;
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string[] ;
+  assignedTechnicians: string[];
   enclosedItems: {
     impression: number;
     biteRegistration: number;

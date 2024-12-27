@@ -24,6 +24,7 @@ const NewCase: React.FC = () => {
     orderDate: format(new Date(), "yyyy-MM-dd"),
     status: "In Queue" as CaseStatus,
     deliveryMethod: "Pickup" as DeliveryMethod,
+    deliveryMethodError: "",
     enclosedItems: {
       impression: 0,
       biteRegistration: 0,
@@ -35,7 +36,7 @@ const NewCase: React.FC = () => {
       cadcamFiles: 0,
       consultRequested: 0,
     },
-    assignedTechnicians: "",
+    assignedTechnicians: [],
     otherItems: "",
     isDueDateTBD: false,
     notes: {
@@ -122,6 +123,8 @@ const NewCase: React.FC = () => {
       try {
         setLoading(true);
         const data = await clientsService.getClients();
+        console.log(data, "data client");
+
         if (Array.isArray(data)) {
           setClients(data);
         }
@@ -147,7 +150,7 @@ const NewCase: React.FC = () => {
     if (!formData.patientLastName)
       validationErrors.patientLastName = "Patient last name is required";
     if (!formData.deliveryMethod)
-      validationErrors.deliveryMethod = "Delivery method is required";
+      validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
 
@@ -181,7 +184,6 @@ const NewCase: React.FC = () => {
           custom_occulusal_details: formData.caseDetails?.customOcclusal,
           custom_pontic_details: formData.caseDetails?.customPontic,
           assignedTechnicians: [""],
-
         },
         // labId: user?.labId || "",
         products: selectedProducts,

@@ -191,6 +191,7 @@ const ProductsServices: React.FC = () => {
               requires_shade: false,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
+              discount: service.discount as number,
             }))}
             productTypes={productTypes}
             onEdit={() => {}}
