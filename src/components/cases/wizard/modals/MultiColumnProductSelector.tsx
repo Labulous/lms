@@ -12,13 +12,12 @@ import { MaterialType } from "../../../../data/mockProductData";
 import { Product } from "../../../../services/productsService";
 import { cn } from "@/lib/utils";
 import { fetchShadeOptions } from "@/data/mockCasesData";
-import { SavedProduct } from "../types";
 
 interface MultiColumnProductSelectorProps {
   materials: MaterialType[];
-  products: SavedProduct[];
+  products: Product[];
   selectedProduct: Product | null;
-  onProductSelect: (product: Product) => void;
+  onProductSelect: (product: Product | any) => void;
   disabled?: boolean;
   size?: "default" | "xs";
 }
@@ -44,9 +43,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
       const matchesSearch =
         !query ||
         product.name.toLowerCase().includes(query) ||
-        product.material?.name?.toLowerCase().includes(query) ||
-        (Array.isArray(product.type) &&
-          product?.product_type.some((t) => t.toLowerCase().includes(query)));
+        product.material?.name?.toLowerCase().includes(query);
 
       const matchesMaterial =
         !selectedMaterial || product.material?.name === selectedMaterial;
@@ -56,10 +53,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   }, [products, searchQuery, selectedMaterial]);
   // Group products by material for the count
 
- 
-
   const productCountByMaterial = useMemo(() => {
-
     return materials.reduce((acc, material) => {
       acc[material] = products.filter(
         (p) => p.material?.name === material

@@ -25,8 +25,8 @@ interface FilesStepProps {
   formData: FormData;
   onChange: (data: FormData) => void;
   errors?: any;
-  selectedFiles:any,
-  setSelectedFiles:any
+  selectedFiles?:any,
+  setSelectedFiles?:any
 }
 
 const FilesStep: React.FC<FilesStepProps> = ({ 

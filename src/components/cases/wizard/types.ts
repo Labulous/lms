@@ -1,15 +1,14 @@
-import { Product, BillingType } from "@/data/mockProductData";
-import { ShadeData } from "./modals/ShadeModal";
-
+import { Product } from "@/data/mockProductData";
+import { ProductShades } from "@/data/mockProductData";
 export interface SavedProduct extends Product {
   teeth: number[];
-  shades: ShadeData;
+  shades: ProductShades;
   discount: number;
 }
 
 export interface ProductWithShade extends SavedProduct {
-  shade?: ShadeData;
+  shade?: ProductShades;
   note: string;
   product_id: string;
-  productPrice:number
+  productPrice: number;
 }

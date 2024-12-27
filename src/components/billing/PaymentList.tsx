@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { format } from 'date-fns';
+import { useState } from "react";
+import { format } from "date-fns";
 import {
   ChevronDown,
   ChevronUp,
@@ -10,36 +10,43 @@ import {
   Search,
   Trash,
   X,
-} from 'lucide-react';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
+} from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import cn from 'classnames';
+import cn from "classnames";
 
 // Mock data types
 interface Payment {
   id: string;
   date: string;
   client: string;
-  paymentMethod: 'Check' | 'Credit Card' | 'Bank Transfer' | 'Cash' | 'Other';
+  paymentMethod: "Check" | "Credit Card" | "Bank Transfer" | "Cash" | "Other";
   memo: string;
   amount: number;
   applied: number;
@@ -49,24 +56,24 @@ interface Payment {
 // Mock data
 const mockPayments: Payment[] = [
   {
-    id: '1',
-    date: '2023-12-21',
-    client: 'Dental Clinic A',
-    paymentMethod: 'Credit Card',
-    memo: 'December Invoice Payment',
-    amount: 1500.00,
-    applied: 1500.00,
+    id: "1",
+    date: "2023-12-21",
+    client: "Dental Clinic A",
+    paymentMethod: "Credit Card",
+    memo: "December Invoice Payment",
+    amount: 1500.0,
+    applied: 1500.0,
     unapplied: 0,
   },
   {
-    id: '2',
-    date: '2023-12-20',
-    client: 'Dental Clinic B',
-    paymentMethod: 'Check',
-    memo: 'Partial Payment',
-    amount: 2000.00,
-    applied: 1800.00,
-    unapplied: 200.00,
+    id: "2",
+    date: "2023-12-20",
+    client: "Dental Clinic B",
+    paymentMethod: "Check",
+    memo: "Partial Payment",
+    amount: 2000.0,
+    applied: 1800.0,
+    unapplied: 200.0,
   },
   // Add more mock data as needed
 ];
@@ -74,14 +81,14 @@ const mockPayments: Payment[] = [
 const PaymentList = () => {
   // State
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Payment;
-    direction: 'asc' | 'desc';
-  }>({ key: 'date', direction: 'desc' });
+    direction: "asc" | "desc";
+  }>({ key: "date", direction: "desc" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [dateRange, setDateRange] = useState<DateRange>();
   const [paymentMethod, setPaymentMethod] = useState<string>("all");
   const [paymentStatus, setPaymentStatus] = useState<string>("all");
 
@@ -91,62 +98,71 @@ const PaymentList = () => {
   // Filtering
   const getFilteredPayments = () => {
     let filtered = [...mockPayments];
-    
+
     // Date range filter
-    if (dateRange?.from) {
-      filtered = filtered.filter(payment => {
+    if (dateRange && dateRange.from !== undefined) {
+      filtered = filtered.filter((payment) => {
         const paymentDate = new Date(payment.date);
         if (dateRange.to) {
-          return paymentDate >= dateRange.from && paymentDate <= dateRange.to;
+          return dateRange.from
+            ? paymentDate >= dateRange.from && paymentDate <= dateRange.to
+            : null;
         }
-        return paymentDate >= dateRange.from;
+        return dateRange.from ? paymentDate >= dateRange?.from : null;
       });
     }
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(payment => 
-        Object.values(payment).some(value =>
+      filtered = filtered.filter((payment) =>
+        Object.values(payment).some((value) =>
           value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
       );
     }
 
     if (paymentMethod !== "all") {
-      filtered = filtered.filter(payment => payment.paymentMethod === paymentMethod);
+      filtered = filtered.filter(
+        (payment) => payment.paymentMethod === paymentMethod
+      );
     }
 
     if (paymentStatus !== "all") {
-      filtered = filtered.filter(payment => {
-        if (paymentStatus === 'applied') {
+      filtered = filtered.filter((payment) => {
+        if (paymentStatus === "applied") {
           return payment.applied > 0;
-        } else if (paymentStatus === 'unapplied') {
+        } else if (paymentStatus === "unapplied") {
           return payment.unapplied > 0;
         }
         return true;
       });
     }
-    
+
     return filtered;
   };
 
   // Sorting
   const handleSort = (key: keyof Payment) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
   const getSortIcon = (key: keyof Payment) => {
-    if (sortConfig.key !== key) return <ChevronsUpDown className="ml-2 h-4 w-4" />;
-    return sortConfig.direction === 'asc' 
-      ? <ChevronUp className="ml-2 h-4 w-4" />
-      : <ChevronDown className="ml-2 h-4 w-4" />;
+    if (sortConfig.key !== key)
+      return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    );
   };
 
   const sortedPayments = [...getFilteredPayments()].sort((a, b) => {
-    if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'asc' ? 1 : -1;
+    if (a[sortConfig.key] < b[sortConfig.key])
+      return sortConfig.direction === "asc" ? -1 : 1;
+    if (a[sortConfig.key] > b[sortConfig.key])
+      return sortConfig.direction === "asc" ? 1 : -1;
     return 0;
   });
 
@@ -159,9 +175,9 @@ const PaymentList = () => {
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -178,10 +194,12 @@ const PaymentList = () => {
           <div className="relative">
             <div className="relative inline-block">
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className={cn(
-                  "w-[180px]",
-                  paymentMethod !== "all" && activeSelectStyles
-                )}>
+                <SelectTrigger
+                  className={cn(
+                    "w-[180px]",
+                    paymentMethod !== "all" && activeSelectStyles
+                  )}
+                >
                   <SelectValue placeholder="Payment Method" />
                 </SelectTrigger>
                 <SelectContent>
@@ -208,10 +226,12 @@ const PaymentList = () => {
           <div className="relative">
             <div className="relative inline-block">
               <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                <SelectTrigger className={cn(
-                  "w-[180px]",
-                  paymentStatus !== "all" && activeSelectStyles
-                )}>
+                <SelectTrigger
+                  className={cn(
+                    "w-[180px]",
+                    paymentStatus !== "all" && activeSelectStyles
+                  )}
+                >
                   <SelectValue placeholder="Payment Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -267,57 +287,80 @@ const PaymentList = () => {
                 <Checkbox
                   checked={
                     paginatedPayments.length > 0 &&
-                    paginatedPayments.every(payment => selectedPayments.includes(payment.id))
+                    paginatedPayments.every((payment) =>
+                      selectedPayments.includes(payment.id)
+                    )
                   }
                   onCheckedChange={(checked) => {
                     if (checked) {
-                      setSelectedPayments(paginatedPayments.map(p => p.id));
+                      setSelectedPayments(paginatedPayments.map((p) => p.id));
                     } else {
                       setSelectedPayments([]);
                     }
                   }}
                 />
               </TableHead>
-              <TableHead onClick={() => handleSort('date')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("date")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Date
-                  {getSortIcon('date')}
+                  {getSortIcon("date")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('client')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("client")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Client
-                  {getSortIcon('client')}
+                  {getSortIcon("client")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('paymentMethod')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("paymentMethod")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Payment Method
-                  {getSortIcon('paymentMethod')}
+                  {getSortIcon("paymentMethod")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('memo')} className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("memo")}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center">
                   Memo
-                  {getSortIcon('memo')}
+                  {getSortIcon("memo")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('amount')} className="cursor-pointer text-right">
+              <TableHead
+                onClick={() => handleSort("amount")}
+                className="cursor-pointer text-right"
+              >
                 <div className="flex items-center justify-end">
                   Amount
-                  {getSortIcon('amount')}
+                  {getSortIcon("amount")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('applied')} className="cursor-pointer text-right">
+              <TableHead
+                onClick={() => handleSort("applied")}
+                className="cursor-pointer text-right"
+              >
                 <div className="flex items-center justify-end">
                   Applied
-                  {getSortIcon('applied')}
+                  {getSortIcon("applied")}
                 </div>
               </TableHead>
-              <TableHead onClick={() => handleSort('unapplied')} className="cursor-pointer text-right">
+              <TableHead
+                onClick={() => handleSort("unapplied")}
+                className="cursor-pointer text-right"
+              >
                 <div className="flex items-center justify-end">
                   Unapplied
-                  {getSortIcon('unapplied')}
+                  {getSortIcon("unapplied")}
                 </div>
               </TableHead>
               <TableHead className="w-[50px]" />
@@ -331,26 +374,40 @@ const PaymentList = () => {
                     checked={selectedPayments.includes(payment.id)}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedPayments(prev => [...prev, payment.id]);
+                        setSelectedPayments((prev) => [...prev, payment.id]);
                       } else {
-                        setSelectedPayments(prev => prev.filter(id => id !== payment.id));
+                        setSelectedPayments((prev) =>
+                          prev.filter((id) => id !== payment.id)
+                        );
                       }
                     }}
                   />
                 </TableCell>
-                <TableCell>{format(new Date(payment.date), 'dd/MM/yy')}</TableCell>
+                <TableCell>
+                  {format(new Date(payment.date), "dd/MM/yy")}
+                </TableCell>
                 <TableCell>{payment.client}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{payment.paymentMethod}</Badge>
                 </TableCell>
                 <TableCell>{payment.memo}</TableCell>
-                <TableCell className="text-right">{formatCurrency(payment.amount)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(payment.applied)}</TableCell>
-                <TableCell className="text-right">{formatCurrency(payment.unapplied)}</TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(payment.amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(payment.applied)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(payment.unapplied)}
+                </TableCell>
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -374,7 +431,9 @@ const PaymentList = () => {
       {/* Pagination */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, sortedPayments.length)} of {sortedPayments.length} payments
+          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+          {Math.min(currentPage * itemsPerPage, sortedPayments.length)} of{" "}
+          {sortedPayments.length} payments
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -388,7 +447,7 @@ const PaymentList = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
             Previous
@@ -396,7 +455,9 @@ const PaymentList = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
             disabled={currentPage === totalPages}
           >
             Next

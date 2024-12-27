@@ -187,7 +187,7 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
   }
 };
 
-const saveCases = async (cases: any, navigate: any) => {
+const saveCases = async (cases: any, navigate?: any) => {
   const enclosedCaseRow = {
     impression: cases.enclosedItems?.impression || 0,
     biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -263,7 +263,7 @@ let cases: Case[] = loadCases();
 
 // Function to get all cases
 export const getCases = (): Case[] => {
-  return cases;
+  return cases || [];
 };
 
 // Function to get a case by ID
@@ -272,7 +272,7 @@ export const getCaseById = (id: string): Case | undefined => {
 };
 
 // Function to add a new case
-export const addCase = (newCase: Case, navigate: any): void => {
+export const addCase = (newCase: Case, navigate?: any): void => {
   cases = [newCase];
   saveCases(newCase, navigate);
 };

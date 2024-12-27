@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Palette } from 'lucide-react';
-import AddProductModal, { SavedProduct } from '../modals/AddProductModal';
-import ShadeModal, { ShadeData } from '../modals/ShadeModal';
-
+import React, { useState } from "react";
+import { Plus, Trash2, Palette } from "lucide-react";
+import AddProductModal, { SavedProduct } from "../modals/AddProductModal";
+// import ShadeModal from "../modals/ShadeModal";
+import { ProductShades as ShadeData } from "@/data/mockProductData";
 interface ProductWithShade extends SavedProduct {
   shade?: ShadeData;
 }
 
-const PRODUCT_CATEGORIES = ['Category 1', 'Category 2', 'Category 3'];
+const PRODUCT_CATEGORIES = ["Category 1", "Category 2", "Category 3"];
 
 interface ProductsServicesStepProps {
   selectedCategory: string;
@@ -27,44 +27,58 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
   onProductsChange,
 }) => {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<ProductWithShade[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ProductWithShade[]>(
+    []
+  );
   const [isShadeModalOpen, setIsShadeModalOpen] = useState(false);
-  const [selectedProductIndex, setSelectedProductIndex] = useState<number | null>(null);
+  const [selectedProductIndex, setSelectedProductIndex] = useState<
+    number | null
+  >(null);
 
   const handleSaveProduct = (product: SavedProduct) => {
-    if (product.billingType === 'perTooth' && product.selectedTeeth.length > 0) {
+    if (
+      product.billingType === "perTooth" &&
+      product.selectedTeeth.length > 0
+    ) {
       // Create individual products for each selected tooth
-      const individualProducts = product.selectedTeeth.map(toothNumber => ({
+      const individualProducts = product.selectedTeeth.map((toothNumber) => ({
         ...product,
         selectedTeeth: [toothNumber],
         quantity: 1,
         finalPrice: product.finalPrice / product.selectedTeeth.length,
-        notes: product.notes ? `${product.notes} - Tooth ${toothNumber}` : `Tooth ${toothNumber}`,
+        notes: product.notes
+          ? `${product.notes} - Tooth ${toothNumber}`
+          : `Tooth ${toothNumber}`,
       }));
-      setSelectedProducts(prev => [...prev, ...individualProducts]);
+      setSelectedProducts((prev) => [...prev, ...individualProducts]);
     } else {
-      setSelectedProducts(prev => [...prev, product]);
+      setSelectedProducts((prev) => [...prev, product]);
     }
     setIsProductModalOpen(false);
   };
 
   const handleSaveAndAddAnother = (product: SavedProduct) => {
-    if (product.billingType === 'perTooth' && product.selectedTeeth.length > 0) {
-      const individualProducts = product.selectedTeeth.map(toothNumber => ({
+    if (
+      product.billingType === "perTooth" &&
+      product.selectedTeeth.length > 0
+    ) {
+      const individualProducts = product.selectedTeeth.map((toothNumber) => ({
         ...product,
         selectedTeeth: [toothNumber],
         quantity: 1,
         finalPrice: product.finalPrice / product.selectedTeeth.length,
-        notes: product.notes ? `${product.notes} - Tooth ${toothNumber}` : `Tooth ${toothNumber}`,
+        notes: product.notes
+          ? `${product.notes} - Tooth ${toothNumber}`
+          : `Tooth ${toothNumber}`,
       }));
-      setSelectedProducts(prev => [...prev, ...individualProducts]);
+      setSelectedProducts((prev) => [...prev, ...individualProducts]);
     } else {
-      setSelectedProducts(prev => [...prev, product]);
+      setSelectedProducts((prev) => [...prev, product]);
     }
   };
 
   const handleRemoveProduct = (index: number) => {
-    setSelectedProducts(prev => prev.filter((_, i) => i !== index));
+    setSelectedProducts((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleAddShade = (index: number) => {
@@ -72,40 +86,44 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
     setIsShadeModalOpen(true);
   };
 
-  const handleSaveShade = (shadeData: ShadeData) => {
-    if (selectedProductIndex !== null) {
-      setSelectedProducts(prev => prev.map((product, index) => 
-        index === selectedProductIndex ? { ...product, shade: shadeData } : product
-      ));
-    }
-    setIsShadeModalOpen(false);
-    setSelectedProductIndex(null);
-  };
-
-  const formatShadeDisplay = (shade?: ShadeData): string => {
-    if (!shade) return 'No Shade';
-    
-    const { type, shades } = shade;
-    if (type === '1') return shades.occlusal || 'No Shade';
-    if (type === '2') return `${shades.occlusal || ''} / ${shades.gingival || ''}`;
-    return `${shades.occlusal || ''} / ${shades.middle || ''} / ${shades.gingival || ''}`;
-  };
+  // const handleSaveShade = (shadeData: ShadeData) => {
+  //   if (selectedProductIndex !== null) {
+  //     setSelectedProducts((prev) =>
+  //       prev.map((product, index) =>
+  //         index === selectedProductIndex
+  //           ? { ...product, shade: shadeData }
+  //           : product
+  //       )
+  //     );
+  //   }
+  //   setIsShadeModalOpen(false);
+  //   setSelectedProductIndex(null);
+  // };
 
   const formatTeethDisplay = (product: any) => {
-    if (!product.selectedTeeth || product.selectedTeeth.length === 0) return '-';
-    
-    if (product.billingType === 'perArch') {
-      const hasUpper = product.selectedTeeth.some((t: number) => t >= 11 && t <= 28);
-      const hasLower = product.selectedTeeth.some((t: number) => t >= 31 && t <= 48);
-      
-      if (hasUpper && hasLower) return 'All';
-      if (hasUpper) return 'Upper';
-      if (hasLower) return 'Lower';
-      return '-';
+    if (!product.selectedTeeth || product.selectedTeeth.length === 0)
+      return "-";
+
+    if (product.billingType === "perArch") {
+      const hasUpper = product.selectedTeeth.some(
+        (t: number) => t >= 11 && t <= 28
+      );
+      const hasLower = product.selectedTeeth.some(
+        (t: number) => t >= 31 && t <= 48
+      );
+
+      if (hasUpper && hasLower) return "All";
+      if (hasUpper) return "Upper";
+      if (hasLower) return "Lower";
+      return "-";
     }
 
     // For non-arch selections, use the original formatting
-    return product.selectedTeeth.length === 1 ? `Tooth ${product.selectedTeeth[0]}` : `${product.selectedTeeth[0]}-${product.selectedTeeth[product.selectedTeeth.length - 1]}`;
+    return product.selectedTeeth.length === 1
+      ? `Tooth ${product.selectedTeeth[0]}`
+      : `${product.selectedTeeth[0]}-${
+          product.selectedTeeth[product.selectedTeeth.length - 1]
+        }`;
   };
 
   return (
@@ -118,9 +136,10 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
             onClick={() => onCategoryChange(category)}
             className={`
               p-3 text-left rounded-lg transition-colors
-              ${selectedCategory === category
-                ? 'bg-blue-50 text-blue-700 font-medium'
-                : 'text-gray-600 hover:bg-gray-50'
+              ${
+                selectedCategory === category
+                  ? "bg-blue-50 text-blue-700 font-medium"
+                  : "text-gray-600 hover:bg-gray-50"
               }
             `}
           >
@@ -135,14 +154,14 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
         {selectedCategory ? (
           <select
             className="w-full border border-gray-300 rounded-md shadow-sm p-2 mb-4"
-            value={selectedProduct?.id || ''}
+            value={selectedProduct?.productId || ""}
             onChange={(e) => onProductSelect(e.target.value)}
           >
             <option value="">Select a product</option>
             {products
               .filter((product) => product.category === selectedCategory)
               .map((product) => (
-                <option key={product.id} value={product.id}>
+                <option key={product.productId} value={product.productId}>
                   {product.name}
                 </option>
               ))}
@@ -170,11 +189,12 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
             Add Service
           </button>
         </div>
-        
+
         {selectedProducts.length === 0 ? (
           <div className="bg-gray-50 p-6 rounded-lg">
             <p className="text-gray-500 text-center">
-              No products or services added yet. Click the buttons above to add items to this case.
+              No products or services added yet. Click the buttons above to add
+              items to this case.
             </p>
           </div>
         ) : (
@@ -182,28 +202,52 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Product
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Teeth
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Shade
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Category
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Original Price
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Discount
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Final Price
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -221,14 +265,27 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
                         )}
                       </div>
                       {product.notes && (
-                        <p className="text-xs text-gray-500 mt-1">{product.notes}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {product.notes}
+                        </p>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatTeethDisplay(product)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatShadeDisplay(product.shade)}
+                      <div>
+                        <p>Shade:</p>
+                        <ul>
+                          {Object.entries(product.shade as ShadeData).map(
+                            ([key, value]) => (
+                              <li key={key}>
+                                <strong>{key}:</strong> {value}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      </div>{" "}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {product.category}
@@ -274,15 +331,19 @@ const ProductsServicesStep: React.FC<ProductsServicesStepProps> = ({
           onSaveAndAddAnother={handleSaveAndAddAnother}
         />
 
-        <ShadeModal
+        {/* <ShadeModal
           isOpen={isShadeModalOpen}
           onClose={() => {
             setIsShadeModalOpen(false);
             setSelectedProductIndex(null);
           }}
           onSave={handleSaveShade}
-          initialShade={selectedProductIndex !== null ? selectedProducts[selectedProductIndex].shade : undefined}
-        />
+          initialShade={
+            selectedProductIndex !== null
+              ? selectedProducts[selectedProductIndex].shade
+              : undefined
+          }
+        /> */}
       </div>
     </div>
   );

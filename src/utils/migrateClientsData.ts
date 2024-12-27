@@ -1,12 +1,12 @@
-import { supabase } from '../lib/supabase';
-import { mockClients } from '../data/mockClientsData';
-import { createLogger } from './logger';
+import { supabase } from "../lib/supabase";
+import { mockClients } from "../data/mockClientsData";
+import { createLogger } from "./logger";
 
-const logger = createLogger({ module: 'MigrateClientsData' });
+const logger = createLogger({ module: "MigrateClientsData" });
 
 export async function migrateClientsData() {
   try {
-    logger.info('Starting clients data migration');
+    logger.info("Starting clients data migration");
     let successCount = 0;
     let errorCount = 0;
 
@@ -14,7 +14,7 @@ export async function migrateClientsData() {
       try {
         // Insert client
         const { data: newClient, error: clientError } = await supabase
-          .from('clients')
+          .from("clients")
           .insert({
             account_number: client.accountNumber,
             client_name: client.clientName,
@@ -27,7 +27,7 @@ export async function migrateClientsData() {
             zip_code: client.address.zipCode,
             clinic_registration_number: client.clinicRegistrationNumber,
             notes: client.notes,
-          })
+          } as any)
           .select()
           .single();
 
@@ -35,29 +35,30 @@ export async function migrateClientsData() {
 
         // Insert doctors
         if (client.doctors.length > 0) {
-          const { error: doctorsError } = await supabase
-            .from('doctors')
-            .insert(
-              client.doctors.map(doctor => ({
-                client_id: newClient.id,
-                name: doctor.name,
-                phone: doctor.phone,
-                email: doctor.email,
-                notes: doctor.notes,
-              }))
-            );
+          const { error: doctorsError } = await supabase.from("doctors").insert(
+            client.doctors.map(
+              (doctor) =>
+                ({
+                  client_id: newClient.id,
+                  name: doctor.name,
+                  phone: doctor.phone,
+                  email: doctor.email,
+                  notes: doctor.notes,
+                } as any)
+            )
+          );
 
           if (doctorsError) throw doctorsError;
         }
 
         successCount++;
-        logger.info('Successfully migrated client', {
+        logger.info("Successfully migrated client", {
           clientName: client.clientName,
           accountNumber: client.accountNumber,
         });
       } catch (error) {
         errorCount++;
-        logger.error('Error migrating client', {
+        logger.error("Error migrating client", {
           clientName: client.clientName,
           accountNumber: client.accountNumber,
           error,
@@ -65,7 +66,7 @@ export async function migrateClientsData() {
       }
     }
 
-    logger.info('Migration completed', {
+    logger.info("Migration completed", {
       total: mockClients.length,
       success: successCount,
       error: errorCount,
@@ -77,7 +78,7 @@ export async function migrateClientsData() {
       total: mockClients.length,
     };
   } catch (error) {
-    logger.error('Migration failed', { error });
+    logger.error("Migration failed", { error });
     throw error;
   }
 }

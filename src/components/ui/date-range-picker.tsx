@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { format, isAfter, isBefore } from 'date-fns';
+import { format, isBefore } from 'date-fns';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import 'react-day-picker/dist/style.css';
 import cn from 'classnames';

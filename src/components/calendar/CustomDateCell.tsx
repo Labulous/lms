@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
-import { Case } from '../../data/mockCasesData';
-import { ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { Case } from "../../data/mockCasesData";
+import { ChevronRight } from "lucide-react";
 
 interface CustomDateCellProps {
   value: Date;
@@ -18,36 +18,39 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
         setShowTooltip(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleDateClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const formattedDate = format(value, 'yyyy-MM-dd');
+    const formattedDate = format(value, "yyyy-MM-dd");
     navigate(`/cases?dueDate=${formattedDate}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      const formattedDate = format(value, 'yyyy-MM-dd');
+      const formattedDate = format(value, "yyyy-MM-dd");
       navigate(`/cases?dueDate=${formattedDate}`);
-    } else if (e.key === 'ArrowDown' && showTooltip) {
+    } else if (e.key === "ArrowDown" && showTooltip) {
       e.preventDefault();
-      setSelectedEventIndex(prev => 
+      setSelectedEventIndex((prev) =>
         prev < events.length - 1 ? prev + 1 : prev
       );
-    } else if (e.key === 'ArrowUp' && showTooltip) {
+    } else if (e.key === "ArrowUp" && showTooltip) {
       e.preventDefault();
-      setSelectedEventIndex(prev => prev > 0 ? prev - 1 : prev);
-    } else if (e.key === 'Escape') {
+      setSelectedEventIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === "Escape") {
       setShowTooltip(false);
       setSelectedEventIndex(-1);
     }
@@ -60,20 +63,22 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
   };
 
   return (
-    <div 
+    <div
       ref={cellRef}
-      className="custom-date-cell" 
+      className="custom-date-cell"
       onClick={handleDateClick}
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`${format(value, 'MMMM d, yyyy')}${events.length > 0 ? `, ${events.length} cases due` : ''}`}
+      aria-label={`${format(value, "MMMM d, yyyy")}${
+        events.length > 0 ? `, ${events.length} cases due` : ""
+      }`}
       aria-haspopup={events.length > 0}
       aria-expanded={showTooltip}
     >
-      <span className="date-number">{format(value, 'd')}</span>
+      <span className="date-number">{format(value, "d")}</span>
       {events.length > 0 && (
-        <div 
+        <div
           className="badge-container"
           onMouseEnter={() => {
             setShowTooltip(true);
@@ -85,7 +90,7 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div 
+          <div
             className="count-badge"
             role="button"
             tabIndex={0}
@@ -94,20 +99,22 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
             {events.length}
           </div>
           {showTooltip && (
-            <div 
+            <div
               ref={tooltipRef}
-              className="tooltip" 
+              className="tooltip"
               role="dialog"
-              aria-label={`Cases due on ${format(value, 'MMMM d, yyyy')}`}
+              aria-label={`Cases due on ${format(value, "MMMM d, yyyy")}`}
             >
               <div className="tooltip-content">
-                Due on {format(value, 'MMM d, yyyy')}:
+                Due on {format(value, "MMM d, yyyy")}:
               </div>
               <div className="tooltip-list">
                 {events.map((event, index) => (
-                  <div 
-                    key={event.id} 
-                    className={`tooltip-item ${selectedEventIndex === index ? 'bg-accent' : ''}`}
+                  <div
+                    key={event.id}
+                    className={`tooltip-item ${
+                      selectedEventIndex === index ? "bg-accent" : ""
+                    }`}
                     onClick={(e) => handleEventClick(e, event.id)}
                     onMouseEnter={() => setSelectedEventIndex(index)}
                     role="button"
@@ -122,7 +129,14 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
                       {event.caseType} - {event.patientName}
                     </div>
                     {event.notes && (
-                      <div className="tooltip-item-notes">{event.notes}</div>
+                      <div className="tooltip-item-notes">
+                        {event?.notes.labNotes}
+                      </div>
+                    )}
+                    {event.notes && (
+                      <div className="tooltip-item-notes">
+                        {event?.notes.technicianNotes}
+                      </div>
                     )}
                   </div>
                 ))}

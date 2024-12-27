@@ -5,53 +5,53 @@ interface PrintPageProps {
   data: any; // Replace 'any' with a more specific type based on the data structure
 }
 
-const PrintPage: React.FC<PrintPageProps> = ({ type, data }) => {
+const PrintPage: React.FC<PrintPageProps> = ({ type }) => {
   const renderContent = () => {
     switch (type) {
       case 'invoice':
-        return renderInvoice(data);
+        return renderInvoice();
       case 'lab-slip':
-        return renderLabSlip(data);
+        return renderLabSlip();
       case 'address-label':
-        return renderAddressLabel(data);
+        return renderAddressLabel();
       case 'qr-code-label':
-        return renderQRCodeLabel(data);
+        return renderQRCodeLabel();
       case 'patient-label':
-        return renderPatientLabel(data);
+        return renderPatientLabel();
       default:
         return <div>Invalid print type</div>;
     }
   };
 
-  const renderInvoice = (invoiceData: any) => (
+  const renderInvoice = () => (
     <div className="invoice-slip">
       <h1>Invoice</h1>
       {/* Add invoice details here */}
     </div>
   );
 
-  const renderLabSlip = (labSlipData: any) => (
+  const renderLabSlip = () => (
     <div className="lab-slip">
       <h1>Lab Slip</h1>
       {/* Add lab slip details here */}
     </div>
   );
 
-  const renderAddressLabel = (addressData: any) => (
+  const renderAddressLabel = () => (
     <div className="address-label">
       <h1>Address Label</h1>
       {/* Add address label details here */}
     </div>
   );
 
-  const renderQRCodeLabel = (qrCodeData: any) => (
+  const renderQRCodeLabel = () => (
     <div className="qr-code-label">
       <h1>QR Code Label</h1>
       {/* Add QR code label details here */}
     </div>
   );
 
-  const renderPatientLabel = (patientData: any) => (
+  const renderPatientLabel = () => (
     <div className="patient-label">
       <h1>Patient Label</h1>
       {/* Add patient label details here */}

@@ -1,22 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
-import ProductWizard from '../../components/settings/ProductWizard';
-import ServiceModal from '../../components/settings/ServiceModal';
-import DeleteConfirmationModal from '../../components/settings/DeleteConfirmationModal';
-import { mockServices, Service } from '../../data/mockServiceData';
-import ProductList from '../../components/settings/ProductList';
-import { productsService } from '../../services/productsService';
-import { supabase } from '../../lib/supabase';
-import { Database } from '../../types/supabase';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { Plus } from "lucide-react";
+import ProductWizard from "../../components/settings/ProductWizard";
+import ServiceModal from "../../components/settings/ServiceModal";
+import DeleteConfirmationModal from "../../components/settings/DeleteConfirmationModal";
+import { mockServices, Service } from "../../data/mockServiceData";
+import ProductList from "../../components/settings/ProductList";
+import { productsService } from "../../services/productsService";
+import { supabase } from "../../lib/supabase";
+import { Database } from "../../types/supabase";
+import { toast } from "react-hot-toast";
 
-type Product = Database['public']['Tables']['products']['Row'] & {
+type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
   product_type: { name: string } | null;
   billing_type: { name: string; label: string | null } | null;
 };
 
-type ProductType = Database['public']['Tables']['product_types']['Row'];
+type ProductType = Database["public"]["Tables"]["product_types"]["Row"];
 
 const ProductsServices: React.FC = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -32,36 +32,43 @@ const ProductsServices: React.FC = () => {
   useEffect(() => {
     loadProductsAndTypes();
   }, []);
-
+  console.log(productTypes, "productTypes");
   const loadProductsAndTypes = async () => {
     try {
       setLoading(true);
       const [productsResult, typesResult] = await Promise.all([
         productsService.getProducts(),
-        supabase.from('product_types').select('*').order('name')
+        supabase.from("product_types").select("*").order("name"),
       ]);
 
       if (typesResult.error) throw typesResult.error;
-      
+
       setProducts(productsResult);
-      setProductTypes(typesResult.data);
+      setProductTypes(typesResult.data as any[]);
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load products and types. Please try refreshing the page.');
+      console.error("Error loading data:", error);
+      toast.error(
+        "Failed to load products and types. Please try refreshing the page."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSaveProduct = async (savedProduct: Product) => {
+  const handleSaveProduct = async () => {
     try {
-      toast.success(selectedProduct ? 'Product updated successfully' : 'Product added successfully');
+      toast.success(
+        selectedProduct
+          ? "Product updated successfully"
+          : "Product added successfully"
+      );
       await loadProductsAndTypes();
     } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error(selectedProduct 
-        ? 'Failed to update product. Please try again.' 
-        : 'Failed to add product. Please try again.'
+      console.error("Error saving product:", error);
+      toast.error(
+        selectedProduct
+          ? "Failed to update product. Please try again."
+          : "Failed to add product. Please try again."
       );
     } finally {
       setIsWizardOpen(false);
@@ -87,10 +94,10 @@ const ProductsServices: React.FC = () => {
       await loadProductsAndTypes();
       setIsDeleteModalOpen(false);
       setProductToDelete(undefined);
-      toast.success('Product deleted successfully');
+      toast.success("Product deleted successfully");
     } catch (error) {
-      console.error('Error deleting product:', error);
-      toast.error('Failed to delete product. Please try again.');
+      console.error("Error deleting product:", error);
+      toast.error("Failed to delete product. Please try again.");
     }
   };
 
@@ -105,12 +112,14 @@ const ProductsServices: React.FC = () => {
       for (const product of products) {
         await productsService.addProduct(product);
       }
-      
+
       toast.success(`Successfully added ${products.length} products`);
       await loadProductsAndTypes();
     } catch (error) {
-      console.error('Error adding products:', error);
-      toast.error('Failed to add some products. Please check the data and try again.');
+      console.error("Error adding products:", error);
+      toast.error(
+        "Failed to add some products. Please check the data and try again."
+      );
     }
   };
 
@@ -125,7 +134,9 @@ const ProductsServices: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">Products & Services</h1>
+        <h1 className="text-3xl font-semibold text-gray-800">
+          Products & Services
+        </h1>
         <div className="flex space-x-4">
           <button
             onClick={() => setIsServiceModalOpen(true)}
@@ -150,7 +161,7 @@ const ProductsServices: React.FC = () => {
       <div className="space-y-8">
         <div>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Products</h2>
-          <ProductList 
+          <ProductList
             products={products}
             productTypes={productTypes}
             onEdit={handleEditProduct}
@@ -158,26 +169,28 @@ const ProductsServices: React.FC = () => {
             onBatchAdd={handleBatchAdd}
           />
         </div>
-        
+
         <div>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Services</h2>
-          <ProductList 
-            products={services.map(service => ({
+          <ProductList
+            products={services.map((service) => ({
               id: service.id,
               name: service.name,
+              description: "",
+              lead_time: 0,
               price: service.price,
               is_client_visible: service.isClientVisible,
               is_taxable: service.isTaxable,
               material: null,
               product_type: null,
               billing_type: null,
-              material_id: '',
-              product_type_id: '',
-              billing_type_id: '',
-              category: '',
+              material_id: "",
+              product_type_id: "",
+              billing_type_id: "",
+              category: "",
               requires_shade: false,
               created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             }))}
             productTypes={productTypes}
             onEdit={() => {}}
@@ -193,7 +206,7 @@ const ProductsServices: React.FC = () => {
             setIsWizardOpen(false);
             setSelectedProduct(undefined);
           }}
-          onSave={handleSaveProduct}
+          onSave={() => handleSaveProduct()}
           product={selectedProduct}
         />
       )}

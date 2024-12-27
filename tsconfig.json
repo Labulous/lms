@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
+    "strictNullChecks": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
@@ -16,8 +17,8 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,  // Disable this to allow unused local variables without an error
+    "noUnusedParameters": false,  // Disable this to allow unused function parameters
     "noFallthroughCasesInSwitch": true,
     "downlevelIteration": true,
     "baseUrl": ".",

@@ -1,10 +1,9 @@
 import React from 'react';
-import { ProductCategory } from '../../data/mockProductData';
 
 interface CategoryListProps {
-  categories: ProductCategory[];
-  selectedCategory: ProductCategory | 'all';
-  onSelectCategory: (category: ProductCategory | 'all') => void;
+  categories: string[];
+  selectedCategory: string[] | 'all';
+  onSelectCategory: (category: string[] | string) => void;
 }
 
 const CategoryList: React.FC<CategoryListProps> = ({

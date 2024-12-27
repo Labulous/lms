@@ -1,24 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
-import { Button } from '../../ui/button';
-import OrderDetailsStep from './steps/OrderDetailsStep';
-import ProductsServicesStep from './steps/ProductsServicesStep';
-import FilesStep from './steps/FilesStep';
-import NotesStep from './steps/NotesStep';
-import { Case, CaseStatus, DeliveryMethod, addCase } from '../../../data/mockCasesData';
-import { Client, clientsService } from '../../../services/clientsService';
-import { format } from 'date-fns';
-import { toast } from 'react-hot-toast';
-import { supabase } from '../../../lib/supabase';
-import { useAuth } from '../../../contexts/AuthContext';
-import { createLogger } from '../../../utils/logger';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
+import { Button } from "../../ui/button";
+import OrderDetailsStep from "./steps/OrderDetailsStep";
+import ProductsServicesStep from "./steps/ProductsServicesStep";
+import FilesStep from "./steps/FilesStep";
+import NotesStep from "./steps/NotesStep";
+import {
+  Case,
+  CaseStatus,
+  DeliveryMethod,
+  addCase,
+} from "../../../data/mockCasesData";
+import { Client, clientsService } from "../../../services/clientsService";
+import { format } from "date-fns";
+import { toast } from "react-hot-toast";
+import { useAuth } from "../../../contexts/AuthContext";
+import { createLogger } from "../../../utils/logger";
+import { SavedProduct } from "./modals/AddProductModal";
 
-const logger = createLogger({ module: 'CaseWizard' });
+const logger = createLogger({ module: "CaseWizard" });
 
-type WizardStep = 'order' | 'products' | 'files' | 'notes';
+type WizardStep = "order" | "products" | "files" | "notes";
 
-interface FormData {
+export interface FormData {
+  notes:
+    | { labNotes?: string | undefined; technicianNotes?: string | undefined }
+    | undefined;
   clientId: string;
   patientFirstName: string;
   patientLastName: string;
@@ -29,6 +37,7 @@ interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
+  assignedTechnicians: string[];
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -62,94 +71,114 @@ const defaultEnclosedItems = {
   consultRequested: 0,
 };
 
-const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 'order' }) => {
+const CaseWizard: React.FC<CaseWizardProps> = ({
+  onClose,
+  onSave,
+  initialStep = "order",
+}) => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
   const [formData, setFormData] = useState<FormData>({
-    clientId: '',
-    patientFirstName: '',
-    patientLastName: '',
-    orderDate: format(new Date(), 'yyyy-MM-dd'),
-    status: 'In Queue' as CaseStatus,
-    deliveryMethod: 'Pickup' as DeliveryMethod,
+    clientId: "",
+    patientFirstName: "",
+    patientLastName: "",
+    assignedTechnicians: [],
+    orderDate: format(new Date(), "yyyy-MM-dd"),
+    status: "In Queue" as CaseStatus,
+    deliveryMethod: "Pickup" as DeliveryMethod,
     enclosedItems: defaultEnclosedItems,
-    otherItems: '',
+    otherItems: "",
     isDueDateTBD: false,
+    notes: {
+      labNotes: "",
+      technicianNotes: "",
+    },
   });
 
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
-  console.log('CaseWizard rendering:', { user, authLoading, clients });
+  console.log("CaseWizard rendering:", { user, authLoading, clients });
 
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        console.log('Starting client fetch...');
+        console.log("Starting client fetch...");
         setLoading(true);
         const data = await clientsService.getClients();
-        console.log('Client fetch response:', data);
+        console.log("Client fetch response:", data);
         if (Array.isArray(data)) {
           setClients(data);
-          console.log('Clients set in state:', data);
+          console.log("Clients set in state:", data);
         }
       } catch (error) {
-        console.error('Error fetching clients:', error);
-        toast.error('Failed to load clients');
+        console.error("Error fetching clients:", error);
+        toast.error("Failed to load clients");
       } finally {
         setLoading(false);
       }
     };
 
     if (user && !authLoading) {
-      console.log('Fetching clients for user:', user.id);
+      console.log("Fetching clients for user:", user.id);
       fetchClients();
     }
   }, [user, authLoading]);
 
   useEffect(() => {
-    logger.debug('CaseWizard state updated:', {
+    logger.debug("CaseWizard state updated:", {
       clientsCount: clients.length,
       loading,
       currentStep,
       hasUser: !!user,
-      userRole: user?.role
+      userRole: user?.role,
     });
   }, [clients, loading, currentStep, user]);
 
   // Log initial state
-  console.log('Initial Form Data:', formData);
-  console.log('Available Clients:', clients);
+  console.log("Initial Form Data:", formData);
+  console.log("Available Clients:", clients);
 
-  const handleFormChange = (newFormData: FormData) => {
-    console.log('Form Data Changed:', newFormData);
-    const client = clients.find(c => c.id === newFormData.clientId);
-    console.log('Found Client:', client);
-    if (client) {
-      setFormData({ ...newFormData, clientName: client.clientName });
-    } else {
-      setFormData(newFormData);
+  const handleFormChange = (key: string, value: string) => {
+
+    // Clone the newFormData so we don't mutate the state directly
+    const updatedFormData = { ...formData, [key]: value };
+
+    // If the key is `clientId`, we need to update the `clientName` as well
+    if (key === "clientId") {
+      const client = clients.find((c) => c.id === value);
+      console.log("Found Client:", client);
+      if (client) {
+        // If client found, update clientName
+        updatedFormData.clientName = client.clientName;
+      } else {
+        // If no client found, clear the clientName or leave it as-is
+        updatedFormData.clientName = "";
+      }
     }
+
+    // Now set the form data with the updated values
+    setFormData(updatedFormData);
   };
 
   const steps: { key: WizardStep; label: string }[] = [
-    { key: 'order', label: 'Order Details' },
-    { key: 'products', label: 'Products & Services' },
-    { key: 'files', label: 'Files' },
-    { key: 'notes', label: 'Notes' },
+    { key: "order", label: "Order Details" },
+    { key: "products", label: "Products & Services" },
+    { key: "files", label: "Files" },
+    { key: "notes", label: "Notes" },
   ];
 
   const validateStep = (): boolean => {
     const newErrors: Partial<FormData> = {};
 
     switch (currentStep) {
-      case 'order':
-        if (!formData.clientId) newErrors.clientId = 'Client is required';
-        if (!formData.orderDate) newErrors.orderDate = 'Order date is required';
+      case "order":
+        if (!formData.clientId) newErrors.clientId = "Client is required";
+        if (!formData.orderDate) newErrors.orderDate = "Order date is required";
         if (!formData.isDueDateTBD && !formData.dueDate) {
-          newErrors.dueDate = 'Due date is required when not TBD';
+          newErrors.dueDate = "Due date is required when not TBD";
         }
         break;
     }
@@ -161,14 +190,14 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
   const handleNext = () => {
     if (!validateStep()) return;
 
-    const currentIndex = steps.findIndex(step => step.key === currentStep);
+    const currentIndex = steps.findIndex((step) => step.key === currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1].key);
     }
   };
 
   const handlePrevious = () => {
-    const currentIndex = steps.findIndex(step => step.key === currentStep);
+    const currentIndex = steps.findIndex((step) => step.key === currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1].key);
     }
@@ -177,9 +206,9 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
   const handleSave = () => {
     if (!validateStep()) return;
 
-    const client = clients.find(c => c.id === formData.clientId);
+    const client = clients.find((c) => c.id === formData.clientId);
     if (!client) {
-      setErrors({ clientId: 'Invalid client selected' });
+      setErrors({ clientId: "Invalid client selected" });
       return;
     }
 
@@ -190,37 +219,39 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
       clientId: formData.clientId,
       clientName: client.clientName,
       patientName: `${formData.patientFirstName} ${formData.patientLastName}`,
-      caseType: 'Standard', // Default type
+      caseType: "Standard", // Default type
       caseStatus: formData.status,
       startDate: formData.orderDate,
-      dueDate: formData.isDueDateTBD ? formData.orderDate : formData.dueDate || formData.orderDate,
+      dueDate: formData.isDueDateTBD
+        ? formData.orderDate
+        : formData.dueDate || formData.orderDate,
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
       assignedTechnicians: formData.assignedTechnicians,
       deliveryMethod: formData.deliveryMethod,
       notes: formData.notes,
       stages: [
-        { name: 'Initial Review', status: 'pending' },
-        { name: 'Production', status: 'pending' },
-        { name: 'Quality Check', status: 'pending' },
-        { name: 'Completion', status: 'pending' },
+        { name: "Initial Review", status: "pending" },
+        { name: "Production", status: "pending" },
+        { name: "Quality Check", status: "pending" },
+        { name: "Completion", status: "pending" },
       ],
     };
 
     // Add the case to our mock database
     addCase(newCase);
-    
+
     // Call the onSave callback
     onSave(newCase);
-    
+
     // Close the wizard and navigate
     onClose();
-    navigate('/cases');
+    navigate("/cases");
   };
 
   const renderStep = () => {
     switch (currentStep) {
-      case 'order':
+      case "order":
         return (
           <OrderDetailsStep
             formData={formData}
@@ -230,25 +261,46 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
             loading={loading}
           />
         );
-      case 'products':
+      case "products":
         return (
-          <ProductsServicesStep />
-        );
-      case 'files':
-        return (
-          <FilesStep
-            onFileUpload={(files) => setFormData({ ...formData, files })}
-            enclosedItems={formData.enclosedItems || defaultEnclosedItems}
-            onEnclosedItemsChange={(items) => setFormData({ ...formData, enclosedItems: items })}
-            otherItems={formData.otherItems}
-            onOtherItemsChange={(value) => setFormData({ ...formData, otherItems: value })}
+          <ProductsServicesStep
+            selectedCategory={""}
+            onCategoryChange={function (category: string): void {
+              throw new Error("Function not implemented.");
+            }}
+            onProductSelect={function (productId: string): void {
+              throw new Error("Function not implemented.");
+            }}
+            selectedProduct={null}
+            products={[]}
+            onProductsChange={function (products: SavedProduct[]): void {
+              throw new Error("Function not implemented.");
+            }}
           />
         );
-      case 'notes':
+      case "files":
+        return (
+          <FilesStep
+            formData={{
+              enclosedItems: formData.enclosedItems,
+              otherItems: formData.otherItems,
+            }}
+            // onFileUpload={(files) => setFormData({ ...formData, files })}
+            onChange={(items: any) =>
+              setFormData({ ...formData, enclosedItems: items })
+            }
+          />
+        );
+      case "notes":
         return (
           <NotesStep
-            notes={formData.notes}
-            onChange={(notes) => setFormData({ ...formData, notes })}
+            formData={{
+              notes: {
+                labNotes: formData.notes?.labNotes,
+                technicianNotes: formData.notes?.technicianNotes,
+              },
+            }}
+            onChange={(notes) => setFormData({ ...formData })}
           />
         );
     }
@@ -274,24 +326,18 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
             {steps.map((step, index) => (
               <div
                 key={step.key}
-                className={`flex-1 ${
-                  index > 0 ? 'ml-4' : ''
-                }`}
+                className={`flex-1 ${index > 0 ? "ml-4" : ""}`}
               >
                 <div
                   className={`text-sm font-medium ${
-                    currentStep === step.key
-                      ? 'text-blue-600'
-                      : 'text-gray-500'
+                    currentStep === step.key ? "text-blue-600" : "text-gray-500"
                   }`}
                 >
                   {step.label}
                 </div>
                 <div
                   className={`mt-2 h-1 rounded-full ${
-                    currentStep === step.key
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200'
+                    currentStep === step.key ? "bg-blue-600" : "bg-gray-200"
                   }`}
                 />
               </div>
@@ -302,33 +348,19 @@ const CaseWizard: React.FC<CaseWizardProps> = ({ onClose, onSave, initialStep = 
         {renderStep()}
 
         <div className="mt-8 flex justify-between">
-          <Button
-            variant="outline"
-            onClick={onClose}
-          >
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <div className="flex space-x-2">
-            {currentStep !== 'order' && (
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-              >
+            {currentStep !== "order" && (
+              <Button variant="outline" onClick={handlePrevious}>
                 Previous
               </Button>
             )}
-            {currentStep !== 'notes' ? (
-              <Button
-                onClick={handleNext}
-              >
-                Next
-              </Button>
+            {currentStep !== "notes" ? (
+              <Button onClick={handleNext}>Next</Button>
             ) : (
-              <Button
-                onClick={handleSave}
-              >
-                Create Case
-              </Button>
+              <Button onClick={handleSave}>Create Case</Button>
             )}
           </div>
         </div>

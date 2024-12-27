@@ -6,30 +6,12 @@ import OrderDetailsStep from "../../components/cases/wizard/steps/OrderDetailsSt
 import ProductConfiguration from "../../components/cases/wizard/ProductConfiguration";
 import FilesStep from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
-import {
-  ProductWithShade,
-} from "../../components/cases/wizard/types";
 import { CaseStatus, FormData } from "@/types/supabase";
 import { DeliveryMethod, addCase } from "../../data/mockCasesData";
 import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
-import { productsService } from "../../services/productsService";
-
-const defaultEnclosedItems = {
-  impression: 0,
-  biteRegistration: 0,
-  photos: 0,
-  jig: 0,
-  opposingModel: 0,
-  articulator: 0,
-  returnArticulator: 0,
-  cadcamFiles: 0,
-  consultRequested: 0,
-};
-
-
 
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
@@ -65,11 +47,10 @@ const NewCase: React.FC = () => {
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  const [selectedCategory, setSelectedCategory] =
-    useState<SavedProduct | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>(
-    []
+  const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
+    null
   );
+  const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
 
   const handleSaveProduct = (product: SavedProduct) => {
     setSelectedProducts((prev) => [...prev, product]);
@@ -116,7 +97,7 @@ const NewCase: React.FC = () => {
   };
 
   const handleStepChange = (data: Partial<FormData>) => {
-    setFormData((prevData) => {
+    setFormData((prevData: any) => {
       const newData: any = { ...prevData };
 
       // Handle each field separately to properly merge nested objects
@@ -244,7 +225,7 @@ const NewCase: React.FC = () => {
             selectedMaterial={selectedCategory}
             onAddToCase={handleSaveProduct}
             selectedProducts={selectedProducts}
-            onProductsChange={(products)=> handleProductsChange(products)}
+            onProductsChange={(products) => handleProductsChange(products)}
             onMaterialChange={handleCategoryChange}
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}

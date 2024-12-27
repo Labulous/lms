@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ShipmentFormData {
   caseId: string;
@@ -10,23 +10,28 @@ interface ShipmentFormData {
   expectedDeliveryDate: string;
   status: string;
   notes: string;
+  submit?: string;
 }
 
 const AddShipmentForm: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ShipmentFormData>({
-    caseId: '',
-    clientName: '',
-    shippingProvider: '',
-    trackingNumber: '',
-    shipmentDate: '',
-    expectedDeliveryDate: '',
-    status: 'Pending',
-    notes: '',
+    caseId: "",
+    clientName: "",
+    shippingProvider: "",
+    trackingNumber: "",
+    shipmentDate: "",
+    expectedDeliveryDate: "",
+    status: "Pending",
+    notes: "",
   });
   const [errors, setErrors] = useState<Partial<ShipmentFormData>>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
@@ -47,10 +52,12 @@ const AddShipmentForm: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<ShipmentFormData> = {};
-    if (!formData.caseId) newErrors.caseId = 'Case ID is required';
-    if (!formData.shippingProvider) newErrors.shippingProvider = 'Shipping Provider is required';
-    if (!formData.shipmentDate) newErrors.shipmentDate = 'Shipment Date is required';
-    if (!formData.status) newErrors.status = 'Status is required';
+    if (!formData.caseId) newErrors.caseId = "Case ID is required";
+    if (!formData.shippingProvider)
+      newErrors.shippingProvider = "Shipping Provider is required";
+    if (!formData.shipmentDate)
+      newErrors.shipmentDate = "Shipment Date is required";
+    if (!formData.status) newErrors.status = "Status is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -61,13 +68,13 @@ const AddShipmentForm: React.FC = () => {
     if (validateForm()) {
       try {
         // Here you would typically make an API call to save the new shipment
-        console.log('Submitting shipment:', formData);
+        console.log("Submitting shipment:", formData);
         // Simulating API call
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        navigate('/shipping');
+        navigate("/shipping");
       } catch (error) {
-        console.error('Error submitting shipment:', error);
-        setErrors({ submit: 'Failed to submit shipment. Please try again.' });
+        console.error("Error submitting shipment:", error);
+        setErrors({ submit: "Failed to submit shipment. Please try again." });
       }
     }
   };
@@ -77,7 +84,12 @@ const AddShipmentForm: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">Add New Shipment</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="caseId" className="block text-sm font-medium text-gray-700">Case ID</label>
+          <label
+            htmlFor="caseId"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Case ID
+          </label>
           <input
             type="text"
             id="caseId"
@@ -86,11 +98,18 @@ const AddShipmentForm: React.FC = () => {
             onChange={handleInputChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
-          {errors.caseId && <p className="mt-1 text-sm text-red-600">{errors.caseId}</p>}
+          {errors.caseId && (
+            <p className="mt-1 text-sm text-red-600">{errors.caseId}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="clientName" className="block text-sm font-medium text-gray-700">Client Name</label>
+          <label
+            htmlFor="clientName"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Client Name
+          </label>
           <input
             type="text"
             id="clientName"
@@ -102,7 +121,12 @@ const AddShipmentForm: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="shippingProvider" className="block text-sm font-medium text-gray-700">Shipping Provider</label>
+          <label
+            htmlFor="shippingProvider"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Shipping Provider
+          </label>
           <select
             id="shippingProvider"
             name="shippingProvider"
@@ -115,11 +139,20 @@ const AddShipmentForm: React.FC = () => {
             <option value="UPS">UPS</option>
             <option value="DHL">DHL</option>
           </select>
-          {errors.shippingProvider && <p className="mt-1 text-sm text-red-600">{errors.shippingProvider}</p>}
+          {errors.shippingProvider && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.shippingProvider}
+            </p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="trackingNumber" className="block text-sm font-medium text-gray-700">Tracking Number (optional)</label>
+          <label
+            htmlFor="trackingNumber"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Tracking Number (optional)
+          </label>
           <input
             type="text"
             id="trackingNumber"
@@ -131,7 +164,12 @@ const AddShipmentForm: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="shipmentDate" className="block text-sm font-medium text-gray-700">Shipment Date</label>
+          <label
+            htmlFor="shipmentDate"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Shipment Date
+          </label>
           <input
             type="date"
             id="shipmentDate"
@@ -140,11 +178,18 @@ const AddShipmentForm: React.FC = () => {
             onChange={handleInputChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
-          {errors.shipmentDate && <p className="mt-1 text-sm text-red-600">{errors.shipmentDate}</p>}
+          {errors.shipmentDate && (
+            <p className="mt-1 text-sm text-red-600">{errors.shipmentDate}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="expectedDeliveryDate" className="block text-sm font-medium text-gray-700">Expected Delivery Date</label>
+          <label
+            htmlFor="expectedDeliveryDate"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Expected Delivery Date
+          </label>
           <input
             type="date"
             id="expectedDeliveryDate"
@@ -156,7 +201,12 @@ const AddShipmentForm: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-700">Status</label>
+          <label
+            htmlFor="status"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Status
+          </label>
           <select
             id="status"
             name="status"
@@ -169,11 +219,18 @@ const AddShipmentForm: React.FC = () => {
             <option value="In Transit">In Transit</option>
             <option value="Delivered">Delivered</option>
           </select>
-          {errors.status && <p className="mt-1 text-sm text-red-600">{errors.status}</p>}
+          {errors.status && (
+            <p className="mt-1 text-sm text-red-600">{errors.status}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (optional)</label>
+          <label
+            htmlFor="notes"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Notes (optional)
+          </label>
           <textarea
             id="notes"
             name="notes"
@@ -184,12 +241,14 @@ const AddShipmentForm: React.FC = () => {
           ></textarea>
         </div>
 
-        {errors.submit && <p className="text-sm text-red-600">{errors.submit}</p>}
+        {errors.submit && (
+          <p className="text-sm text-red-600">{errors.submit}</p>
+        )}
 
         <div className="flex justify-end space-x-3">
           <button
             type="button"
-            onClick={() => navigate('/shipping')}
+            onClick={() => navigate("/shipping")}
             className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
             Cancel

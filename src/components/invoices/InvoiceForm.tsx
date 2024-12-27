@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { PlusCircle, Trash2, Eye } from 'lucide-react';
-import { Client } from '../../data/mockClientsData';
-import { generateInvoice } from '../../services/invoiceService';
-import { mockClients } from '../../data/mockClientsData';
-import { getCases } from '../../data/mockCasesData';
-import InvoicePreviewModal from './InvoicePreviewModal';
-import { toast } from 'react-hot-toast';
+import React, { useState } from "react";
+import { PlusCircle, Trash2, Eye } from "lucide-react";
+import { generateInvoice } from "../../services/invoiceService";
+import { mockClients } from "../../data/mockClientsData";
+import { getCases } from "../../data/mockCasesData";
+import InvoicePreviewModal from "./InvoicePreviewModal";
+import { toast } from "react-hot-toast";
 
 interface InvoiceFormItem {
   description: string;
@@ -18,7 +17,7 @@ interface InvoiceFormData {
   clientId: string;
   items: InvoiceFormItem[];
   discount?: {
-    type: 'percentage' | 'fixed';
+    type: "percentage" | "fixed";
     value: number;
   };
   taxRate: number;
@@ -28,18 +27,18 @@ interface InvoiceFormData {
 }
 
 const defaultItem: InvoiceFormItem = {
-  description: '',
+  description: "",
   quantity: 1,
   unitPrice: 0,
 };
 
 const InvoiceForm: React.FC = () => {
   const [formData, setFormData] = useState<InvoiceFormData>({
-    clientId: '',
+    clientId: "",
     items: [{ ...defaultItem }],
     taxRate: 13,
-    notes: 'Thank you for your business!',
-    paymentTerms: 'Net 30',
+    notes: "Thank you for your business!",
+    paymentTerms: "Net 30",
     dueInDays: 30,
   });
 
@@ -48,18 +47,22 @@ const InvoiceForm: React.FC = () => {
 
   // Get client's cases
   const clientCases = formData.clientId
-    ? getCases.filter(c => c.clientId === formData.clientId)
+    ? getCases().filter((c) => c.clientId === formData.clientId)
     : [];
 
   const handleClientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       clientId: e.target.value,
     }));
   };
 
-  const handleItemChange = (index: number, field: keyof InvoiceFormItem, value: string | number) => {
-    setFormData(prev => ({
+  const handleItemChange = (
+    index: number,
+    field: keyof InvoiceFormItem,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       items: prev.items.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
@@ -68,29 +71,33 @@ const InvoiceForm: React.FC = () => {
   };
 
   const handleCaseSelect = (index: number, caseId: string) => {
-    const selectedCase = getCases.find(c => c.id === caseId);
+    const selectedCase = getCases().find((c) => c.id === caseId);
     if (selectedCase) {
-      handleItemChange(index, 'description', `${selectedCase.caseType} - ${selectedCase.patientName}`);
-      handleItemChange(index, 'caseId', caseId);
+      handleItemChange(
+        index,
+        "description",
+        `${selectedCase.caseType} - ${selectedCase.patientName}`
+      );
+      handleItemChange(index, "caseId", caseId);
     }
   };
 
   const addItem = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: [...prev.items, { ...defaultItem }],
     }));
   };
 
   const removeItem = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
   };
 
-  const handleDiscountTypeChange = (type: 'percentage' | 'fixed') => {
-    setFormData(prev => ({
+  const handleDiscountTypeChange = (type: "percentage" | "fixed") => {
+    setFormData((prev) => ({
       ...prev,
       discount: {
         type,
@@ -101,19 +108,20 @@ const InvoiceForm: React.FC = () => {
 
   const handleDiscountValueChange = (value: string) => {
     const numValue = parseFloat(value);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       discount: {
-        type: prev.discount?.type || 'percentage',
+        type: prev.discount?.type || "percentage",
         value: isNaN(numValue) ? 0 : numValue,
       },
+      items: [],
     }));
   };
 
   const handlePreview = async () => {
     const result = await generateInvoice(formData);
-    if ('errors' in result) {
-      toast.error('Please fill in all required fields correctly');
+    if ("errors" in result) {
+      toast.error("Please fill in all required fields correctly");
       return;
     }
     setShowPreview(true);
@@ -125,25 +133,25 @@ const InvoiceForm: React.FC = () => {
 
     try {
       const result = await generateInvoice(formData);
-      if ('errors' in result) {
-        toast.error('Please fill in all required fields correctly');
+      if ("errors" in result) {
+        toast.error("Please fill in all required fields correctly");
         return;
       }
 
       // Here you would typically save the invoice
-      toast.success('Invoice generated successfully');
-      
+      toast.success("Invoice generated successfully");
+
       // Reset form
       setFormData({
-        clientId: '',
+        clientId: "",
         items: [{ ...defaultItem }],
         taxRate: 13,
-        notes: 'Thank you for your business!',
-        paymentTerms: 'Net 30',
+        notes: "Thank you for your business!",
+        paymentTerms: "Net 30",
         dueInDays: 30,
       });
     } catch (error) {
-      toast.error('Failed to generate invoice');
+      toast.error("Failed to generate invoice");
     } finally {
       setIsSubmitting(false);
     }
@@ -153,7 +161,9 @@ const InvoiceForm: React.FC = () => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Client Selection */}
       <div>
-        <label className="block text-sm font-medium text-gray-700">Client</label>
+        <label className="block text-sm font-medium text-gray-700">
+          Client
+        </label>
         <select
           value={formData.clientId}
           onChange={handleClientChange}
@@ -161,7 +171,7 @@ const InvoiceForm: React.FC = () => {
           required
         >
           <option value="">Select a client</option>
-          {mockClients.map(client => (
+          {mockClients.map((client) => (
             <option key={client.id} value={client.id}>
               {client.clientName}
             </option>
@@ -189,12 +199,12 @@ const InvoiceForm: React.FC = () => {
             {clientCases.length > 0 && (
               <div className="col-span-12 sm:col-span-4">
                 <select
-                  value={item.caseId || ''}
+                  value={item.caseId || ""}
                   onChange={(e) => handleCaseSelect(index, e.target.value)}
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 >
                   <option value="">Select a case</option>
-                  {clientCases.map(c => (
+                  {clientCases.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.caseType} - {c.patientName}
                     </option>
@@ -208,7 +218,9 @@ const InvoiceForm: React.FC = () => {
               <input
                 type="text"
                 value={item.description}
-                onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                onChange={(e) =>
+                  handleItemChange(index, "description", e.target.value)
+                }
                 placeholder="Description"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
@@ -220,7 +232,9 @@ const InvoiceForm: React.FC = () => {
               <input
                 type="number"
                 value={item.quantity}
-                onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value))}
+                onChange={(e) =>
+                  handleItemChange(index, "quantity", parseInt(e.target.value))
+                }
                 min="1"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 required
@@ -232,7 +246,13 @@ const InvoiceForm: React.FC = () => {
               <input
                 type="number"
                 value={item.unitPrice}
-                onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value))}
+                onChange={(e) =>
+                  handleItemChange(
+                    index,
+                    "unitPrice",
+                    parseFloat(e.target.value)
+                  )
+                }
                 min="0"
                 step="0.01"
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
@@ -259,11 +279,17 @@ const InvoiceForm: React.FC = () => {
       {/* Discount and Tax */}
       <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Discount</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Discount
+          </label>
           <div className="mt-1 flex rounded-md shadow-sm">
             <select
-              value={formData.discount?.type || 'percentage'}
-              onChange={(e) => handleDiscountTypeChange(e.target.value as 'percentage' | 'fixed')}
+              value={formData.discount?.type || "percentage"}
+              onChange={(e) =>
+                handleDiscountTypeChange(
+                  e.target.value as "percentage" | "fixed"
+                )
+              }
               className="rounded-l-md border-r-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"
             >
               <option value="percentage">%</option>
@@ -271,22 +297,29 @@ const InvoiceForm: React.FC = () => {
             </select>
             <input
               type="number"
-              value={formData.discount?.value || ''}
+              value={formData.discount?.value || ""}
               onChange={(e) => handleDiscountValueChange(e.target.value)}
               min="0"
-              step={formData.discount?.type === 'percentage' ? '1' : '0.01'}
-              max={formData.discount?.type === 'percentage' ? '100' : undefined}
+              step={formData.discount?.type === "percentage" ? "1" : "0.01"}
+              max={formData.discount?.type === "percentage" ? "100" : undefined}
               className="block w-full rounded-r-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Tax Rate (%)</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Tax Rate (%)
+          </label>
           <input
             type="number"
             value={formData.taxRate}
-            onChange={(e) => setFormData(prev => ({ ...prev, taxRate: parseFloat(e.target.value) }))}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                taxRate: parseFloat(e.target.value),
+              }))
+            }
             min="0"
             max="100"
             step="0.1"
@@ -298,20 +331,28 @@ const InvoiceForm: React.FC = () => {
       {/* Notes and Terms */}
       <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Notes</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Notes
+          </label>
           <textarea
             value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, notes: e.target.value }))
+            }
             rows={3}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Payment Terms</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Payment Terms
+          </label>
           <select
             value={formData.paymentTerms}
-            onChange={(e) => setFormData(prev => ({ ...prev, paymentTerms: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, paymentTerms: e.target.value }))
+            }
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           >
             <option value="Net 30">Net 30</option>
@@ -336,7 +377,7 @@ const InvoiceForm: React.FC = () => {
           disabled={isSubmitting}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          {isSubmitting ? 'Generating...' : 'Generate Invoice'}
+          {isSubmitting ? "Generating..." : "Generate Invoice"}
         </button>
       </div>
 

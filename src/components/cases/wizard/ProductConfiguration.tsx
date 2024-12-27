@@ -8,21 +8,19 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import {
   MATERIALS,
-  ProductMaterial,
-  MaterialType,
   PRODUCT_TYPES,
-  ProductType,
   SavedProduct,
+  Product,
 } from "@/data/mockProductData";
 import {
-  Product,
+  Material as ProductMaterial,
   ShadeData,
-  BillingType,
   PonticType,
   OcclusalType,
   ContactType,
   ShadeOption,
   ProductWithShade,
+  Database,
 } from "@/types/supabase";
 import { productsService } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
@@ -129,6 +127,7 @@ interface ToothItem {
   highlightColor?: string;
   shades?: ShadeData;
 }
+type ProductType = Database["public"]["Tables"]["products"]["Row"];
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   selectedMaterial,
@@ -140,13 +139,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   initialCaseDetails,
   setselectedProducts,
 }) => {
-  const [selectedProduct, setSelectedProduct] =
-    useState<ProductWithShade | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
+    null
+  );
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [addedTeethMap, setAddedTeethMap] = useState<Map<number, boolean>>(
     new Map()
   );
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [shadeType, setShadeType] = useState<"1" | "2" | "3">("1");
   const [shadeData, setShadeData] = useState<ShadeData>({
@@ -239,7 +239,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             id: p.id,
             name: p.name,
             material: p.material,
-            type: p.type,
+            type: p.product_type,
           }))
         );
         setProducts(fetchedProducts);
@@ -268,16 +268,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       const materialMatches =
         !selectedMaterial ||
         product.material?.name?.toLowerCase() ===
-          selectedMaterial.toLowerCase();
+          selectedMaterial.name.toLowerCase();
 
       // Filter by type (check if type is array or single object)
       const typeMatches =
         !selectedType ||
-        (Array.isArray(product.type)
-          ? product.type.some(
+        (Array.isArray(product.product_type)
+          ? product.product_type.some(
               (t) => t.name?.toLowerCase() === selectedType.toLowerCase()
             )
-          : product.type?.name?.toLowerCase() === selectedType.toLowerCase());
+          : product.product_type?.name?.toLowerCase() ===
+            selectedType.toLowerCase());
 
       console.log("Debugging Filters:", {
         product: product.name,
@@ -360,7 +361,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (
       product &&
       !["perTooth", "perArch", "teeth", "generic", "calculate"].includes(
-        product.billing_type?.name
+        product.billing_type?.name as string
       )
     ) {
       toast.error("Invalid product configuration");
@@ -665,7 +666,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const checkIfReadyToAdd = () => {
     const hasTeeth = selectedTeeth.length > 0;
     const hasProduct = selectedProduct !== null;
-    const hasShades = selectedProduct?.shadeData
+    const hasShades = selectedProduct?.requires_shade
       ? Object.values(shadeData).some((shade) => shade !== "")
       : true;
 
@@ -784,11 +785,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       // Add the product to the table with shades
       const updatedPreviewProduct = {
         ...previewProduct,
+        id: previewItem?.id as string,
+        name: previewItem?.productName as string,
         notes: previewNote,
       };
 
       // Update the preview product state
-      setPreviewProduct(updatedPreviewProduct);
+      setPreviewProduct(updatedPreviewProduct as any);
       setNotePopoverOpen(null);
       // Close the shade popover
       setShadePopoverOpen(false);
@@ -860,7 +863,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               <div className="border rounded-lg p-3 bg-white mt-2.5 min-h-[400px]">
                 <ToothSelector
                   key={toothSelectorKey}
-                  billingType={selectedProduct?.billing_type.name || "perTooth"}
+                  billingType={
+                    selectedProduct?.billing_type?.name || "perTooth"
+                  }
                   selectedTeeth={selectedTeeth}
                   onSelectionChange={handleToothSelectionChange}
                   addedTeethMap={addedTeethMap}
@@ -955,11 +960,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               materials={MATERIALS}
                               products={products}
                               selectedProduct={selectedProduct}
-                              setSelectedMaterialState={
-                                setSelectedMaterialState
-                              }
+                              // setSelectedMaterialState={
+                              //   setSelectedMaterialState
+                              // }
                               onProductSelect={(product) => {
-                                handleProductSelect(product.id, true);
+                                handleProductSelect(product, true);
                               }}
                               disabled={loading || selectedTeeth.length === 0}
                               size="xs"
@@ -979,7 +984,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   onOpenChange={setShadePopoverOpen}
                                 >
                                   <PopoverTrigger asChild>
-                                    {previewProduct?.requiresShade ? (
+                                    {previewProduct?.shades ? (
                                       <Button
                                         variant="outline"
                                         size="sm"
@@ -1329,7 +1334,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     </div>
                                   </PopoverContent>
                                 </Popover>
-                                {(!selectedProduct.shadeData ||
+                                {(!selectedProduct.requires_shade ||
                                   previewProduct?.shades) && (
                                   <Button
                                     variant="ghost"

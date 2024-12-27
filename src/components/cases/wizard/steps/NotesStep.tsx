@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -16,19 +16,22 @@ interface NotesStepProps {
   errors?: any;
 }
 
-const NotesStep: React.FC<NotesStepProps> = ({ formData, onChange, errors }) => {
+const NotesStep: React.FC<NotesStepProps> = ({
+  formData,
+  onChange,
+}) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     // Create a new notes object with the updated value
     const updatedNotes = {
       ...formData.notes,
-      [name]: value
+      [name]: value,
     };
-    
+
     // Only call onChange if the value has actually changed
     if (formData.notes?.[name as keyof typeof formData.notes] !== value) {
-      onChange('notes', updatedNotes);
+      onChange("notes", updatedNotes);
     }
   };
 
@@ -39,13 +42,14 @@ const NotesStep: React.FC<NotesStepProps> = ({ formData, onChange, errors }) => 
         <Textarea
           id="labNotes"
           name="labNotes"
-          value={formData.notes?.labNotes || ''}
+          value={formData.notes?.labNotes || ""}
           onChange={handleInputChange}
           placeholder="Enter any invoice-specific notes here..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any invoice notes about the case that are relevant for admin staff or clients.
+          Add any invoice notes about the case that are relevant for admin staff
+          or clients.
         </p>
       </div>
 
@@ -56,7 +60,7 @@ const NotesStep: React.FC<NotesStepProps> = ({ formData, onChange, errors }) => 
         <Textarea
           id="technicianNotes"
           name="technicianNotes"
-          value={formData.notes?.technicianNotes || ''}
+          value={formData.notes?.technicianNotes || ""}
           onChange={handleInputChange}
           placeholder="Enter any specific instructions or notes for the technician..."
           className="bg-white h-[200px] resize-none"
