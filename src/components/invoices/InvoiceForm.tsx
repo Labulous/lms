@@ -5,6 +5,7 @@ import { mockClients } from "../../data/mockClientsData";
 import { getCases } from "../../data/mockCasesData";
 import InvoicePreviewModal from "./InvoicePreviewModal";
 import { toast } from "react-hot-toast";
+import { InvoiceItem } from "@/data/mockInvoicesData";
 
 interface InvoiceFormItem {
   description: string;
@@ -15,7 +16,7 @@ interface InvoiceFormItem {
 
 interface InvoiceFormData {
   clientId: string;
-  items: InvoiceFormItem[];
+  items: InvoiceItem[];
   discount?: {
     type: "percentage" | "fixed";
     value: number;
@@ -26,10 +27,12 @@ interface InvoiceFormData {
   dueInDays: number;
 }
 
-const defaultItem: InvoiceFormItem = {
+const defaultItem: InvoiceItem = {
+  id: "",
   description: "",
   quantity: 1,
-  unitPrice: 0,
+  unitPrice: 1,
+  totalPrice: 1,
 };
 
 const InvoiceForm: React.FC = () => {
@@ -119,11 +122,25 @@ const InvoiceForm: React.FC = () => {
   };
 
   const handlePreview = async () => {
-    const result = await generateInvoice(formData);
+    const { clientId, items, discount, taxRate, notes } = formData;
+
+    // Ensure items is an array, even if formData.items is undefined or null
+    const result = await generateInvoice(
+      clientId, // clientId as a string
+      items || [], // Ensure items is at least an empty array if not provided
+      discount?.value,
+      discount?.type, // Default discount type to "percentage" if not provided
+      taxRate || 0, // Default tax to 0 if not provided
+      notes // Notes (string or undefined)
+    );
+
+    // Handle errors if any
     if ("errors" in result) {
       toast.error("Please fill in all required fields correctly");
       return;
     }
+
+    // Set the preview to be shown
     setShowPreview(true);
   };
 
@@ -132,7 +149,19 @@ const InvoiceForm: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await generateInvoice(formData);
+      const { clientId, items, discount, taxRate, notes } = formData;
+
+      // Ensure items is an array, even if formData.items is undefined or null
+      const result = await generateInvoice(
+        clientId, // clientId as a string
+        items || [], // Ensure items is at least an empty array if not provided
+        discount?.value,
+        discount?.type, // Default discount type to "percentage" if not provided
+        taxRate || 0, // Default tax to 0 if not provided
+        notes // Notes (string or undefined)
+      );
+
+      // Handle errors if any
       if ("errors" in result) {
         toast.error("Please fill in all required fields correctly");
         return;

@@ -139,7 +139,12 @@ export enum ContactType {
 /**
  * Case status types
  */
-export type CaseStatus = "in_queue" | "in_progress" | "completed" | "cancelled";
+export type CaseStatus =
+  | "in_queue"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "In Queue";
 
 /**
  * Shade data structure for dental products
@@ -248,8 +253,17 @@ export interface Database {
           client_name: string;
         };
         Insert: {
-          id?: string;
-          account?: number;
+          client_name: string;
+          contact_name: string;
+          phone: string;
+          email: string;
+          street: string;
+          city: string;
+          state: string;
+          zip_code: string;
+          clinic_registration_number: string;
+          notes: string;
+          account_number: string;
         };
       };
       users: {
@@ -577,6 +591,9 @@ export interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
+  assignedTechnicians: string;
+  workingPanName?: string;
+  workingPanColor?: string;
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -598,7 +615,7 @@ export interface FormData {
     customPontic?: string;
     customContact: string;
   };
-  notes?: {
+  notes: {
     labNotes?: string;
     technicianNotes?: string;
   };

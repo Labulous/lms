@@ -94,11 +94,11 @@ const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
 }));
 
 interface ProductConfigurationProps {
-  selectedMaterial: ProductMaterial | null;
+  selectedMaterial: SavedProduct | null;
   onAddToCase: (product: SavedProduct) => void;
   selectedProducts: SavedProduct[];
   onProductsChange: (products: SavedProduct[]) => void;
-  onMaterialChange: (material: ProductMaterial | null) => void;
+  onMaterialChange: (material: SavedProduct | null) => void;
   onCaseDetailsChange: (details: {
     occlusalType: string;
     customOcclusal?: string;
@@ -169,7 +169,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [openPopoverIds, setOpenPopoverIds] = useState<Set<string>>(new Set());
   const [arch, setArch] = useState<string>("");
   const [selectedMaterialState, setSelectedMaterialState] =
-    useState<ProductMaterial | null>(selectedMaterial);
+    useState<SavedProduct | null>(selectedMaterial);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [toothSelectorKey, setToothSelectorKey] = useState(0);
 
