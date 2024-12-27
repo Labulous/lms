@@ -4,7 +4,6 @@ import {
   Clock,
   User,
   FileText,
-  Camera,
   Package,
   CircleDot,
   MoreHorizontal,
@@ -13,26 +12,12 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import {
-  Case,
-  CaseProduct,
-  CaseProductTooth,
-  ShadeData,
-} from "@/types/supabase";
+import { Case, CaseProduct, ToothInfo } from "@/types/supabase";
 import CaseProgress from "./CaseProgress";
-import PhotoUpload from "./PhotoUpload";
-import QRCodeScanner from "./QRCodeScanner";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,13 +41,56 @@ interface CaseFile {
   uploaded_at: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  lead_time: string | null; // Assuming the lead time can be a string or null
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  created_at: string; // ISO date string
+  updated_at: string; // ISO date string
+  requires_shade: boolean;
+  material?: Material;
+  product_type: ProductType;
+  billing_type: BillingType;
+  discounted_price?: DiscountedPrice;
+  contact_type: string;
+}
+
+interface Material {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface ProductType {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface BillingType {
+  name: string;
+  label: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface DiscountedPrice {
+  product_id: string;
+  discount: number;
+  final_price: number;
+  price: number;
+}
+
 interface ExtendedCase extends Case {
   client: {
     id: string;
     client_name: string;
     phone: string;
   };
-  doctor?: {
+  doctor: {
     id: string;
     name: string;
     client: {
@@ -71,7 +99,33 @@ interface ExtendedCase extends Case {
       phone: string;
     };
   };
-  case_products?: CaseProduct[];
+  case_products: CaseProduct[];
+  product_ids: {
+    id: string;
+    products_id: string[];
+  }[];
+  lab_notes: string;
+  technician_notes: string;
+  otherItems: string;
+  custom_contact_details: string;
+  custom_occulusal_details: string;
+  custom_pontic_details: string;
+  custom_occlusal_details: string;
+  occlusal_type: string;
+  pontic_type: string;
+  contact_type: string;
+  enclosed_items: {
+    jig: number;
+    photos: number;
+    user_id: string;
+    impression: number;
+    articulator: number;
+    cadcamFiles: number;
+    opposingModel: number;
+    biteRegistration: number;
+    consultRequested: number;
+    returnArticulator: number;
+  };
 }
 
 const CaseDetails: React.FC = () => {
@@ -165,16 +219,16 @@ const CaseDetails: React.FC = () => {
         }
 
         console.log("Successfully fetched case data:", caseData);
-
+        const caseDetails: any = caseData;
         // Extract products_id array and caseProductId
-        const productsIdArray = caseData?.product_ids[0]?.products_id;
-        const caseProductId = caseData?.product_ids[0]?.id;
+        const productsIdArray = caseDetails?.product_ids[0].products_id;
+        const caseProductId = caseDetails?.product_ids[0]?.id;
         console.log(productsIdArray, "productsIdArray");
         console.log(caseProductId, "caseProductId");
 
-        let products = [];
-        let teethProducts = [];
-        let discountedPrices = [];
+        let products: Product[] = [];
+        let teethProducts: ToothInfo[] = [];
+        let discountedPrices: DiscountedPrice[];
 
         if (productsIdArray?.length > 0) {
           // Step 2: Fetch products based on products_id array
@@ -215,8 +269,17 @@ const CaseDetails: React.FC = () => {
             console.error("Error fetching products:", productsError);
             setError(productsError.message);
           } else {
+            console.log(productData, "productData");
+            const productsData: any[] = productData.map((item: any) => ({
+              ...item,
+              material: {
+                name: item.name,
+                description: item.description,
+                is_active: item.is_active,
+              },
+            }));
             console.log("Successfully fetched products:", productData);
-            products = productData;
+            products = productsData;
           }
 
           // Step 3: Fetch discounted price data for products
@@ -244,7 +307,7 @@ const CaseDetails: React.FC = () => {
               "Successfully fetched discounted prices:",
               discountedPriceData
             );
-            discountedPrices = discountedPriceData;
+            discountedPrices = discountedPriceData.map((item: any) => item);
             console.log(discountedPrices, "discountedPrices");
           }
         } else {
@@ -292,7 +355,7 @@ const CaseDetails: React.FC = () => {
               "Successfully fetched teeth products:",
               teethProductData
             );
-            teethProducts = teethProductData;
+            teethProducts = teethProductData.map((item: any) => item);
           }
         } else {
           console.log("No caseProductId found for fetching teeth products.");
@@ -313,12 +376,12 @@ const CaseDetails: React.FC = () => {
         });
 
         // Step 6: Combine case details, products, and teethProducts
-        const caseDetailWithProducts = {
-          ...caseData,
+
+        setCaseDetail({
+          ...(caseData as any),
           products: productsWithDiscounts,
           teethProducts,
-        };
-        setCaseDetail(caseDetailWithProducts);
+        });
       } catch (error) {
         console.error("Error fetching case data:", error);
         setError(
@@ -415,11 +478,16 @@ const CaseDetails: React.FC = () => {
                     className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize",
                       {
-                        "bg-blue-50 text-blue-700": caseDetail.status === "in_progress",
-                        "bg-gray-100 text-gray-700": caseDetail.status === "in_queue",
-                        "bg-green-50 text-green-700": caseDetail.status === "completed",
-                        "bg-yellow-50 text-yellow-700": caseDetail.status === "on_hold",
-                        "bg-red-50 text-red-700": caseDetail.status === "cancelled",
+                        "bg-blue-50 text-blue-700":
+                          caseDetail.status === "in_progress",
+                        "bg-gray-100 text-gray-700":
+                          caseDetail.status === "in_queue",
+                        "bg-green-50 text-green-700":
+                          caseDetail.status === "completed",
+                        "bg-yellow-50 text-yellow-700":
+                          caseDetail.status === "on_hold",
+                        "bg-red-50 text-red-700":
+                          caseDetail.status === "cancelled",
                       }
                     )}
                   >
@@ -466,7 +534,7 @@ const CaseDetails: React.FC = () => {
                 <div className="flex flex-col items-center">
                   <span className="text-sm text-gray-500">Received Date</span>
                   <span className="font-medium">
-                    {new Date(caseDetail.received_date).toLocaleDateString()}
+                    {new Date(caseDetail.updated_at).toLocaleDateString()}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-8" />
@@ -512,8 +580,7 @@ const CaseDetails: React.FC = () => {
                         "Case has been created and is ready for processing",
                     },
                     {
-                      date:
-                        caseDetail.received_date || new Date().toISOString(),
+                      date: caseDetail.updated_at || new Date().toISOString(),
                       condition: "In Queue",
                       treatment: "Waiting for technician",
                       status:
@@ -531,7 +598,7 @@ const CaseDetails: React.FC = () => {
                           : "pending",
                     },
                     {
-                      date: caseDetail.ship_date || new Date().toISOString(),
+                      date: caseDetail.due_date || new Date().toISOString(),
                       condition: "Quality Check",
                       treatment: "Final Inspection",
                       status:
@@ -554,9 +621,9 @@ const CaseDetails: React.FC = () => {
                   <div>
                     <p className="text-gray-600">Occlusal Details</p>
                     <p className="font-medium">
-                      {caseDetail.custom_occulusal_details
-                        ? caseDetail.custom_occulusal_details
-                        : caseDetail.occlusal_type}
+                      {caseDetail?.case_products?.length > 0
+                        ? caseDetail.custom_occlusal_details
+                        : caseDetail.case_products?.[0]?.occlusal_type}
                     </p>
                   </div>
                   <div>
@@ -572,7 +639,7 @@ const CaseDetails: React.FC = () => {
                   <div className="mb-4">
                     <p className="text-gray-600">Lab Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.lab_notes || "No notes"}
+                      {caseDetail.lab_notes || "No notes"}
                     </p>
                   </div>
                   <div className="mb-4">
@@ -588,9 +655,9 @@ const CaseDetails: React.FC = () => {
                     {caseDetail?.otherItems || "No notes"}
                   </p>
                 </div>
-                {caseDetail.teethProducts?.map((product) => (
+                {caseDetail.teethProducts?.map((product, index) => (
                   <div
-                    key={product.id}
+                    key={index}
                     className="border-b last:border-b-0 pb-4 mb-4"
                   >
                     <div>
@@ -658,7 +725,9 @@ const CaseDetails: React.FC = () => {
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
                         <User className="h-5 w-5" />
-                        <span className="font-semibold">Doctor Information</span>
+                        <span className="font-semibold">
+                          Doctor Information
+                        </span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
@@ -679,8 +748,7 @@ const CaseDetails: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Phone Number</p>
                           <p className="font-medium">
-                            {caseDetail.doctor?.client?.phone ||
-                              "Not provided"}
+                            {caseDetail.doctor?.client?.phone || "Not provided"}
                           </p>
                         </div>
                       </div>
@@ -693,7 +761,11 @@ const CaseDetails: React.FC = () => {
             {/* Instructions */}
             <Card>
               <CardContent className="py-2 px-3">
-                <Accordion type="single" defaultValue="instructions" collapsible>
+                <Accordion
+                  type="single"
+                  defaultValue="instructions"
+                  collapsible
+                >
                   <AccordionItem value="instructions" className="border-none">
                     <AccordionTrigger className="hover:no-underline">
                       <div className="flex items-center gap-2">
@@ -754,9 +826,12 @@ const CaseDetails: React.FC = () => {
                           </p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Technician Notes</p>
+                          <p className="text-sm text-gray-500">
+                            Technician Notes
+                          </p>
                           <p className="font-medium">
-                            {caseDetail.technician_notes || "No technician notes"}
+                            {caseDetail.technician_notes ||
+                              "No technician notes"}
                           </p>
                         </div>
                       </div>
@@ -777,7 +852,11 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Enclosed Items</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {Object.values(caseDetail.enclosed_case || {}).filter(Boolean).length}
+                            {
+                              Object.values(
+                                caseDetail.enclosed_items || {}
+                              ).filter(Boolean).length
+                            }
                           </span>
                         </div>
                       </div>
@@ -785,18 +864,32 @@ const CaseDetails: React.FC = () => {
                     <AccordionContent className="pt-4">
                       <div className="grid grid-cols-2 gap-4">
                         {[
-                          { key: 'impression', label: 'Impression' },
-                          { key: 'biteRegistration', label: 'Bite Registration' },
-                          { key: 'photos', label: 'Photos' },
-                          { key: 'jig', label: 'Jig' },
-                          { key: 'opposingModel', label: 'Opposing Model' },
-                          { key: 'articulator', label: 'Articulator' },
-                          { key: 'returnArticulator', label: 'Return Articulator' },
-                          { key: 'cadcamFiles', label: 'CAD/CAM Files' },
-                          { key: 'consultRequested', label: 'Consult Requested' },
+                          { key: "impression", label: "Impression" },
+                          {
+                            key: "biteRegistration",
+                            label: "Bite Registration",
+                          },
+                          { key: "photos", label: "Photos" },
+                          { key: "jig", label: "Jig" },
+                          { key: "opposingModel", label: "Opposing Model" },
+                          { key: "articulator", label: "Articulator" },
+                          {
+                            key: "returnArticulator",
+                            label: "Return Articulator",
+                          },
+                          { key: "cadcamFiles", label: "CAD/CAM Files" },
+                          {
+                            key: "consultRequested",
+                            label: "Consult Requested",
+                          },
                         ].map((item) => (
-                          <div key={item.key} className="flex items-center gap-2">
-                            {caseDetail.enclosed_case?.[item.key] ? (
+                          <div
+                            key={item.key}
+                            className="flex items-center gap-2"
+                          >
+                            {caseDetail?.enclosed_items?.[
+                              item.key as keyof typeof caseDetail.enclosed_items
+                            ] ? (
                               <CheckCircle2 className="h-4 w-4 text-green-500" />
                             ) : (
                               <X className="h-4 w-4 text-red-500" />
@@ -822,13 +915,17 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Attachments</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {caseDetail.case_files?.length || 0}
+                            {/* {caseDetail.case_files?.length || 0} */}
+                            // // Need to fix this error //
                           </span>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                      <p className="text-sm text-gray-500">Files and photos will be implemented when DB is connected</p>
+                      <p className="text-sm text-gray-500">
+                        Files and photos will be implemented when DB is
+                        connected
+                      </p>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

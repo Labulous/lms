@@ -33,24 +33,31 @@ export interface Client {
   created_at?: string;
   updated_at?: string;
 }
+export interface ClientType {
+  id?: string;
+  client_name?: string;
+  account_number?: string;
+}
 
 export interface ClientInput
   extends Omit<
     Client,
-    "id" | "accountNumber" | "doctors" | "createdAt" | "updatedAt"
+    "id" | "accountNumber" | "doctors" | "created_at" | "updated_at"
   > {
-  doctors?: Omit<Doctor, "id">[];
+  accountNumber?: string;
+  account_number?: string;
+
+  doctors?: Omit<Doctor, "id">[]; // doctors is now an optional array of Doctors excluding their id.
 }
-
 class ClientsService {
-  private async generateAccountNumber(): Promise<string> {
-    const { count } = await supabase
-      .from("clients")
-      .select("*", { count: "exact", head: true });
+  // private async generateAccountNumber(): Promise<string> {
+  //   const { count } = await supabase
+  //     .from("clients")
+  //     .select("*", { count: "exact", head: true });
 
-    const nextNumber = (count ?? 0) + 1;
-    return `24${String(nextNumber).padStart(4, "0")}`;
-  }
+  //   const nextNumber = (count ?? 0) + 1;
+  //   return `24${String(nextNumber).padStart(4, "0")}`;
+  // }
 
   private transformClientFromDB(client: any, doctors: any[] = []): Client {
     try {
@@ -197,7 +204,7 @@ class ClientsService {
 
       // Step 8: Get doctors for each client
       const clientsWithDoctors = await Promise.all(
-        clients.map(async (client) => {
+        clients.map(async (client: any) => {
           try {
             const { data: doctors, error: doctorsError } = await supabase
               .from("doctors")
@@ -255,25 +262,32 @@ class ClientsService {
 
       console.log("DEBUG: Raw client query result:", { client, error });
 
+      // Handle the error properly before accessing `client`
       if (error) {
         logger.error("Error fetching client from database", { id, error });
-        throw error;
+        throw new Error(`Error fetching client: ${error.message}`);
       }
 
+      // If client is null (no data found), return null
       if (!client) {
         logger.warn("No client found with id", { id });
         return null;
       }
 
+      // TypeScript will now treat `client` as the correct type after this point.
+      // Assert the client type (assuming `client` is guaranteed to be of type `Client` here)
+      const typedClient = client as unknown as ClientType;
+
       logger.info("Raw client data from DB", {
-        client,
-        hasData: !!client,
-        fields: client ? Object.keys(client) : [],
-        id: client?.id,
-        accountNumber: client?.account_number,
-        clientName: client?.client_name,
+        client: typedClient, // Use `typedClient` for proper typing
+        hasData: !!typedClient,
+        fields: typedClient ? Object.keys(typedClient) : [],
+        id: typedClient.id, // Safe access
+        accountNumber: typedClient.account_number, // Safe access
+        clientName: typedClient.client_name, // Safe access
       });
 
+      // Fetch the doctors related to this client
       const { data: doctors, error: doctorsError } = await supabase
         .from("doctors")
         .select("*")
@@ -284,16 +298,18 @@ class ClientsService {
         doctorsError,
       });
 
+      // Handle errors in fetching doctors
       if (doctorsError) {
         logger.error("Error fetching doctors for client", {
           clientId: id,
           error: doctorsError,
         });
-        return this.transformClientFromDB(client, []);
+        return this.transformClientFromDB(typedClient, []); // Return transformed client with empty doctors array
       }
 
+      // Transform the client and return it
       const transformedClient = this.transformClientFromDB(
-        client,
+        typedClient,
         doctors || []
       );
       console.log("DEBUG: Transformed client:", transformedClient);
@@ -319,13 +335,13 @@ class ClientsService {
         .from("clients")
         .insert({
           ...this.transformClientToDB(clientData),
-          account_number: nextNumber,
+          account_number: nextNumber as number,
         } as any)
         .select()
         .single();
 
       if (error) throw error;
-
+      const clients = client as unknown as ClientType;
       // Add doctors if provided
       if (clientData.doctors && clientData.doctors.length > 0) {
         const { error: doctorsError } = await supabase.from("doctors").insert(
@@ -333,7 +349,7 @@ class ClientsService {
             (doctor) =>
               ({
                 ...this.transformDoctorToDB(doctor),
-                client_id: client.id,
+                client_id: clients.id,
               } as any)
           )
         );
@@ -341,7 +357,7 @@ class ClientsService {
         if (doctorsError) throw doctorsError;
       }
 
-      return this.getClientById(client.id) as Promise<Client>;
+      return this.getClientById(clients.id as string) as Promise<Client>;
     } catch (error) {
       logger.error("Error adding client", { error });
       throw error;
@@ -352,8 +368,8 @@ class ClientsService {
     try {
       // Validate account number if it's being updated
       if (
-        clientData.accountNumber &&
-        !validateAccountNumber(clientData.accountNumber)
+        clientData &&
+        !validateAccountNumber(clientData.accountNumber as string)
       ) {
         throw new Error("Invalid account number format");
       }
@@ -361,7 +377,7 @@ class ClientsService {
       // Update client
       const { error: clientError } = await supabase
         .from("clients")
-        .update(this.transformClientToDB(clientData))
+        .update(this.transformClientToDB(clientData) as any)
         .eq("id", id);
 
       if (clientError) throw clientError;

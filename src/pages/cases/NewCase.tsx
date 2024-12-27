@@ -179,6 +179,7 @@ const NewCase: React.FC = () => {
           custom_contact_details: formData.caseDetails?.customContact,
           custom_occulusal_details: formData.caseDetails?.customOcclusal,
           custom_pontic_details: formData.caseDetails?.customPontic,
+          assignedTechnicians: [""],
         },
         // labId: user?.labId || "",
         products: selectedProducts,

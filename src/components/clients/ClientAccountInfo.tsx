@@ -1,12 +1,17 @@
-import React from "react";
-import { Client, ClientInput, Doctor } from "../../services/clientsService";
+import React, { Dispatch, SetStateAction } from "react";
+import {
+  Address,
+  Client,
+  ClientInput,
+  Doctor,
+} from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 
 interface ClientAccountInfoProps {
   client: Client;
   isEditing: boolean;
   editedData: ClientInput | null;
-  setEditedData: (data: ClientInput | null) => void;
+  setEditedData: Dispatch<SetStateAction<ClientInput | null>>;
   onEdit: (clientData: ClientInput) => void;
   onDelete: () => void;
   setIsEditing: (isEditing: boolean) => void;
@@ -31,18 +36,23 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    setEditedData((prev) => {
-      if (!prev) return null;
+
+    setEditedData((prev: ClientInput | null) => {
+      if (!prev) return null; // If prev is null, return null
+
+      // If the input field is related to "address", handle it separately
       if (name.startsWith("address.")) {
-        const addressField = name.split(".")[1];
+        const addressField = name.split(".")[1]; // Extract the specific address field
         return {
           ...prev,
           address: {
             ...prev.address,
-            [addressField]: value,
+            [addressField]: value, // Dynamically update the address field
           },
         };
       }
+
+      // For other fields, update them directly
       return {
         ...prev,
         [name]: value,
@@ -111,8 +121,12 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     setEditedData(null);
   };
 
-  const renderField = (label: string, name: string, value: string) => {
-    if (name === "accountNumber") {
+  const renderField = (
+    label: string,
+    name: keyof ClientInput,
+    value: string
+  ) => {
+    if (name === ("accountNumber" as keyof ClientInput)) {
       return isEditing ? (
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -143,7 +157,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         <input
           type="text"
           name={name}
-          value={editedData?.[name] || ""}
+          value={(editedData?.[name] as keyof Client) || ""}
           onChange={handleInputChange}
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
         />
@@ -158,7 +172,12 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     );
   };
 
-  const renderAddressField = (label: string, field: string, value: string) => {
+  const renderAddressField = (
+    label: string,
+    field: keyof Address,
+    value: string
+  ) => {
+    // Check if editedData and address are defined
     return isEditing ? (
       <div className="mb-4">
         <label className="block text-gray-700 text-sm font-bold mb-2">
@@ -167,7 +186,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         <input
           type="text"
           name={`address.${field}`}
-          value={editedData?.address?.[field] || ""}
+          value={editedData?.address?.[field] || ""} // Correct dynamic property access
           onChange={handleInputChange}
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
         />
@@ -223,7 +242,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          {renderField("Account Number", "accountNumber", client.accountNumber)}
+          {renderField(
+            "Account Number",
+            "accountNumber" as keyof ClientInput,
+            client.accountNumber
+          )}
           {renderField("Client Name", "clientName", client.clientName)}
           {renderField("Contact Name", "contactName", client.contactName)}
           {renderField("Phone", "phone", client.phone)}
