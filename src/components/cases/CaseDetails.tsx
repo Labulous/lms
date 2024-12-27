@@ -9,6 +9,8 @@ import {
   CircleDot,
   MoreHorizontal,
   Printer,
+  CheckCircle2,
+  X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import {
@@ -37,6 +39,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 // Define TypeScript interfaces for our data structure
 interface CaseFile {
@@ -551,70 +559,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Basic Information Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <User className="mr-2" size={20} /> Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-gray-600">Patient Name</p>
-                    <p className="font-medium">{caseDetail.patient_name}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">PAN Number</p>
-                    <p className="font-medium">{caseDetail.pan_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">RX Number</p>
-                    <p className="font-medium">{caseDetail.rx_number}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Billing Type</p>
-                    <p className="font-medium capitalize">
-                      {caseDetail.billing_type}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Dates Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <Clock className="mr-2" size={20} /> Important Dates
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-gray-600">Received Date</p>
-                    <p className="font-medium">
-                      {new Date(caseDetail.received_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Due Date</p>
-                    <p className="font-medium">
-                      {new Date(caseDetail.due_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Ship Date</p>
-                    <p className="font-medium">
-                      {caseDetail.ship_date
-                        ? new Date(caseDetail.ship_date).toLocaleDateString()
-                        : "Not shipped"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Products Section */}
             <Card>
               <CardHeader>
@@ -660,7 +604,7 @@ const CaseDetails: React.FC = () => {
                   <p className="font-medium">
                     {caseDetail?.otherItems || "No notes"}
                   </p>
-                </div>{" "}
+                </div>
                 {caseDetail.teethProducts?.map((product) => (
                   <div
                     key={product.id}
@@ -681,7 +625,6 @@ const CaseDetails: React.FC = () => {
                               : product.tooth_number[0]}
                           </p>
                           <div className="text-sm">
-                            {/* {Object.entries(product.shades).map( */}
                             <div className="flex justify-between">
                               <span className="text-gray-600 capitalize">
                                 Body Shade:
@@ -712,8 +655,6 @@ const CaseDetails: React.FC = () => {
                                 {product.stump_shade_id.name || "N/A"}
                               </span>
                             </div>
-
-                            {/* )} */}
                           </div>
                         </div>
                       </div>
@@ -725,84 +666,171 @@ const CaseDetails: React.FC = () => {
           </div>
 
           {/* Right Column */}
-          <div>
-            {/* Doctor Info Card */}
+          <div className="space-y-6">
+            {/* Doctor Information */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <User className="mr-2" size={20} /> Doctor Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-lg font-medium text-gray-900">
-                      {caseDetail.doctor?.name || "Unknown Doctor"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {caseDetail.doctor?.client?.client_name ||
-                        "Unknown Clinic"}
-                    </p>
-                  </div>
-                  {caseDetail.doctor?.client?.phone && (
-                    <div className="flex items-center text-gray-600">
-                      <p className="text-sm">
-                        Phone: {caseDetail.doctor.client.phone}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Files Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <FileText className="mr-2" size={20} /> Files
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {caseDetail.case_files && caseDetail.case_files.length > 0 ? (
-                    <div className="space-y-2">
-                      {caseDetail.case_files.map((file) => (
-                        <div
-                          key={file.id}
-                          className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
-                        >
-                          <span className="text-sm text-gray-600">
-                            {file.file_name}
-                          </span>
-                          <a
-                            href={file.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            View
-                          </a>
+              <CardContent className="pt-6">
+                <Accordion type="single" defaultValue="doctor-info">
+                  <AccordionItem value="doctor-info" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        <span className="font-semibold">Doctor Information</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Client Name</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.client?.client_name || "Unknown Clinic"}
+                          </p>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No files uploaded yet</p>
-                  )}
-                </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Doctor Name</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.name || "Unknown Doctor"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Phone Number</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.client?.phone || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
             </Card>
 
-            {/* Photos Section */}
+            {/* Enclosed Items */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <Camera className="mr-2" size={20} /> Photos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <PhotoUpload caseId={caseId} />
-                </div>
+              <CardContent className="pt-6">
+                <Accordion type="single">
+                  <AccordionItem value="enclosed" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        <span className="font-semibold">Enclosed Items</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { key: 'impression', label: 'Impression' },
+                          { key: 'biteRegistration', label: 'Bite Registration' },
+                          { key: 'photos', label: 'Photos' },
+                          { key: 'jig', label: 'Jig' },
+                          { key: 'opposingModel', label: 'Opposing Model' },
+                          { key: 'articulator', label: 'Articulator' },
+                          { key: 'returnArticulator', label: 'Return Articulator' },
+                          { key: 'cadcamFiles', label: 'CAD/CAM Files' },
+                          { key: 'consultRequested', label: 'Consult Requested' },
+                        ].map((item) => (
+                          <div key={item.key} className="flex items-center gap-2">
+                            {caseDetail.enclosed_case?.[item.key] ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className="text-sm">{item.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            {/* Instructions */}
+            <Card>
+              <CardContent className="pt-6">
+                <Accordion type="single">
+                  <AccordionItem value="instructions" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Instructions</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Occlusal Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_occulusal_details || caseDetail.occlusal_type || "Not specified"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Contact Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_contact_details || caseDetail.contact_type || "Not specified"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Pontic Type</p>
+                          <p className="font-medium">
+                            {caseDetail.custom_pontic_details || caseDetail.pontic_type || "Not specified"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            {/* Case Notes */}
+            <Card>
+              <CardContent className="pt-6">
+                <Accordion type="single">
+                  <AccordionItem value="notes" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Case Notes</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Lab Notes</p>
+                          <p className="font-medium">
+                            {caseDetail.lab_notes || "No lab notes"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Technician Notes</p>
+                          <p className="font-medium">
+                            {caseDetail.technician_notes || "No technician notes"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            {/* Attachments */}
+            <Card>
+              <CardContent className="pt-6">
+                <Accordion type="single">
+                  <AccordionItem value="attachments" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Attachments</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <p className="text-sm text-gray-500">Files and photos will be implemented when DB is connected</p>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
             </Card>
           </div>
