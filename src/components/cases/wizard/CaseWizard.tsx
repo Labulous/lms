@@ -40,7 +40,7 @@ export interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string[];
+  assignedTechnicians?: string[];
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -229,7 +229,6 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
         : formData.dueDate || formData.orderDate,
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
-      assignedTechnicians: formData?.assignedTechnicians ?? "",
       deliveryMethod: formData.deliveryMethod,
       notes: formData.notes,
       stages: [

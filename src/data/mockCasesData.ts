@@ -18,7 +18,7 @@ export interface Case {
   dueDate: string;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string[];
+  assignedTechnicians?: string[];
   deliveryMethod: DeliveryMethod;
   notes?: {
     labNotes?: string;
@@ -301,7 +301,7 @@ export const getCasesByStatus = (status: CaseStatus): Case[] => {
 // Function to get cases by technician
 export const getCasesByTechnician = (technicianId: string): Case[] => {
   return cases.filter((caseItem) =>
-    caseItem.assignedTechnicians.includes(technicianId)
+    caseItem.assignedTechnicians?.includes(technicianId)
   );
 };
 
