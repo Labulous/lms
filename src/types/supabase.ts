@@ -594,7 +594,7 @@ export interface FormData {
   isDueDateTBD?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
-  assignedTechnicians: string[];
+  assignedTechnicians?: string[];
   workingPanName?: string;
   workingPanColor?: string;
   enclosedItems: {

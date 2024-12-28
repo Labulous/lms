@@ -182,6 +182,7 @@ const CaseDetails: React.FC = () => {
               occlusal_type,
               contact_type,
               pontic_type,
+              qr_code,
               custom_contact_details,
               custom_occulusal_details,
               custom_pontic_details,
@@ -443,7 +444,6 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-  console.log(caseDetail, "caseDetail.qr_code");
   return (
     <div className="w-full">
       {/* Full-width Header */}
@@ -453,7 +453,7 @@ const CaseDetails: React.FC = () => {
             <div className="flex items-start space-x-6">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={caseDetail.qr_code}
+                  value={`/cases/${caseDetail.qr_code}`}
                   size={64}
                   level="H"
                   includeMargin={true}
