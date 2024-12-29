@@ -5,6 +5,8 @@ import { productsService } from "../../services/productsService";
 import { Database } from "../../types/supabase";
 import toast from "react-hot-toast"; // Import toast
 import { SavedProduct } from "@/data/mockProductData";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
@@ -54,7 +56,23 @@ const ProductWizard: React.FC<ProductWizardProps> = ({
     requires_shade: false,
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [labId, setLabId] = useState("");
+  const { user } = useAuth();
 
+  useEffect(() => {
+    const getLabId = async () => {
+      try {
+        const data = await getLabIdByUserId(user?.id as string);
+        setLabId(data as string);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        toast.error("Failed to load clients");
+      } finally {
+      }
+    };
+
+    getLabId();
+  }, []);
   // Initialize form data with product data when editing
   useEffect(() => {
     if (product) {
@@ -120,6 +138,7 @@ const ProductWizard: React.FC<ProductWizardProps> = ({
         product_type_id: formData.product_type_id || "",
         billing_type_id: formData.billing_type_id || "",
         requires_shade: formData.requires_shade,
+        lab_id: labId,
       };
 
       console.log("Saving product with data:", productData);

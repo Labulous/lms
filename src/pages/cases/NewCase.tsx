@@ -12,6 +12,7 @@ import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
+import { getLabIdByUserId } from "@/services/authService";
 
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
@@ -47,7 +48,7 @@ const NewCase: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-
+  const [labId, setLabId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
@@ -134,7 +135,21 @@ const NewCase: React.FC = () => {
         setLoading(false);
       }
     };
+    const getLabId = async () => {
+      try {
+        setLoading(true);
+        const data = await getLabIdByUserId(user?.id as string);
+        console.log(data, "data lab id");
+        setLabId(data as string);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        toast.error("Failed to load clients");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    getLabId();
     fetchClients();
   }, []);
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,6 +197,7 @@ const NewCase: React.FC = () => {
           custom_contact_details: formData.caseDetails?.customContact,
           custom_occulusal_details: formData.caseDetails?.customOcclusal,
           custom_pontic_details: formData.caseDetails?.customPontic,
+          lab_id: labId, // need to get the lab ID here.
         },
         // labId: user?.labId || "",
         products: selectedProducts,

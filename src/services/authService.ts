@@ -164,10 +164,18 @@ export const signUp = async (
   email: string,
   password: string,
   name: string,
-  role: "client" | "technician"
+  role: "super_admin"
 ): Promise<void> => {
   try {
     logger.info("Starting user signup", { email, role });
+
+    const labDetails = {
+      super_admin_id: "", // This will be updated after the user's ID is created
+      admin_ids: [],
+      client_ids: [],
+      technician_ids: [],
+      office_address_id: "",
+    };
 
     // Attempt to sign up the user in Supabase Auth
     const { data, error } = await supabase.auth.signUp({
@@ -194,6 +202,7 @@ export const signUp = async (
       .from("users")
       .insert([
         {
+          id: userId,
           email,
           name,
           role,
@@ -206,6 +215,26 @@ export const signUp = async (
     }
 
     logger.info("User profile created successfully", { userId, insertedUser });
+
+    // Create a lab entry with empty fields for the super admin
+    const { data: labData, error: labError } = await supabase
+      .from("lab")
+      .insert([
+        {
+          super_admin_id: userId, // Link the super admin to this lab
+          admin_ids: labDetails.admin_ids,
+          client_ids: labDetails.client_ids,
+          technician_ids: labDetails.technician_ids,
+          office_address_id: labDetails.office_address_id,
+        },
+      ] as any);
+
+    if (labError) {
+      logger.error("Error creating lab entry", labError);
+      throw labError;
+    }
+
+    logger.info("Lab entry created successfully", { labData });
   } catch (error) {
     logger.error("Unexpected error during signup", {
       error:
@@ -217,6 +246,214 @@ export const signUp = async (
             }
           : error,
     });
+    throw error;
+  }
+};
+export const createUserByAdmins = async (
+  labId: string,
+  role: "admin" | "technician" | "client",
+  name: string,
+  email: string,
+  password: string,
+  additionalClientFields?: {
+    accountNumber: string;
+    clientName: string;
+    contactName: string;
+    phone: string;
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    clinicRegistrationNumber: string;
+    notes: string;
+  }
+): Promise<void> => {
+  try {
+    // 1. Check if the email already exists in Auth and Users table
+    const { data: authData, error: authError } = await supabase
+      .from("auth.users")
+      .select("id")
+      .eq("email", email);
+
+    if (authError) {
+      console.error("Error checking auth for existing email:", authError);
+      throw new Error("Error checking for existing email in auth.");
+    }
+
+    if (authData.length > 0) {
+      throw new Error("User already exists in Supabase Auth.");
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email);
+
+    if (userError) {
+      console.error(
+        "Error checking users table for existing email:",
+        userError
+      );
+      throw new Error("Error checking for existing email in users table.");
+    }
+
+    if (userData.length > 0) {
+      throw new Error("User already exists in users table.");
+    }
+
+    // 2. Sign up the new user in Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      console.error("Signup failed:", error);
+      throw new Error("Signup failed for the new user.");
+    }
+
+    const newUserId = data.user?.id;
+    if (!newUserId) {
+      throw new Error("No user ID returned after signup.");
+    }
+
+    // 3. Insert the new user into the 'users' table with the specified role
+    const { error: insertError } = await supabase.from("users").insert([
+      {
+        id: newUserId,
+        name: name,
+        email: email,
+        role: role, // Set the role as provided
+      },
+    ]);
+
+    if (insertError) {
+      console.error("Error inserting user into users table:", insertError);
+      throw insertError;
+    }
+
+    if (role === "client") {
+      // 4. Insert additional fields into the `clients` table
+      if (!additionalClientFields) {
+        throw new Error(
+          "Additional client fields are required for client role."
+        );
+      }
+
+      const { error: clientInsertError } = await supabase
+        .from("clients")
+        .insert([
+          {
+            lab_id: labId,
+            account_number: additionalClientFields.accountNumber,
+            client_name: additionalClientFields.clientName,
+            contact_name: additionalClientFields.contactName,
+            phone: additionalClientFields.phone,
+            email: email,
+            street: additionalClientFields.street,
+            city: additionalClientFields.city,
+            state: additionalClientFields.state,
+            zip_code: additionalClientFields.zipCode,
+            clinic_registration_number:
+              additionalClientFields.clinicRegistrationNumber,
+            notes: additionalClientFields.notes,
+          },
+        ]);
+
+      if (clientInsertError) {
+        console.error(
+          "Error inserting client into clients table:",
+          clientInsertError
+        );
+        throw clientInsertError;
+      }
+    }
+
+    // 5. Update the lab table to add the user ID or email to the appropriate field based on the role
+    const fieldToUpdate =
+      role === "admin"
+        ? "admin_ids"
+        : role === "technician"
+        ? "technician_ids"
+        : "client_ids"; // Add to client_ids for clients
+
+    // Fetch the current IDs/emails for the specified field
+    const { data: labData, error: fetchError } = await supabase
+      .from("labs")
+      .select(fieldToUpdate)
+      .eq("id", labId)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching lab data:", fetchError);
+      throw new Error("Error fetching lab data.");
+    }
+    const labResponse: any = labData;
+    const currentIds = labResponse?.[fieldToUpdate] || [];
+    const updatedIds =
+      role === "client"
+        ? [...currentIds, email] // For clients, use email
+        : [...currentIds, newUserId]; // For others, use user ID
+
+    // Update the lab table with the new list of IDs/emails
+    const { error: updateError } = await supabase
+      .from("labs")
+      .update({ [fieldToUpdate]: updatedIds })
+      .eq("id", labId);
+
+    if (updateError) {
+      console.error(`Error updating lab with new ${role} ID:`, updateError);
+      throw updateError;
+    }
+
+    console.log(
+      `${
+        role.charAt(0).toUpperCase() + role.slice(1)
+      } created and lab updated successfully!`
+    );
+  } catch (error) {
+    console.error("Error in createUser function:", error);
+    throw error;
+  }
+};
+
+export const getLabIdByUserId = async (
+  userId: string
+): Promise<string | null> => {
+  try {
+    // Fetch all labs
+    const { data: labs, error } = await supabase
+      .from("labs")
+      .select("id, super_admin_id, admin_ids, client_ids");
+
+    if (error) {
+      console.error("Error fetching labs:", error);
+      throw new Error("Failed to fetch labs.");
+    }
+
+    if (!labs || labs.length === 0) {
+      console.warn("No labs found.");
+      return null;
+    }
+
+    // Check each lab for a matching userId
+    for (const lab of labs) {
+      const { id: labId, super_admin_id, admin_ids, client_ids } = lab;
+
+      // Check if the userId matches any of the super_admin_id, admin_ids, or client_ids
+      if (
+        super_admin_id === userId ||
+        (admin_ids && admin_ids.includes(userId)) ||
+        (client_ids && client_ids.includes(userId))
+      ) {
+        return labId; // Return the matching lab_id
+      }
+    }
+
+    // If no match is found, return null
+    return null;
+  } catch (error) {
+    console.error("Error in getLabIdByUserId function:", error);
     throw error;
   }
 };

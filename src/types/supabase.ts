@@ -281,6 +281,30 @@ export interface Database {
           role: "client" | "technician";
         };
       };
+      lab: {
+        Row: {
+          id: string;
+          super_admin_id: string;
+          admin_ids: string[];
+          client_ids: string[];
+          technician_ids: string[];
+          office_address: {
+            address_1: string;
+            address_2: string;
+            city: string;
+            state_province: string;
+            zip_postal: string;
+            country: string;
+            phone_number: string;
+            email: string;
+          };
+        };
+        Insert: {
+          admin_ids?: string[];
+          client_ids?: string[];
+          technician_ids?: string[];
+        };
+      };
       cases: {
         Row: {
           id: string;
