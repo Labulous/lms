@@ -56,32 +56,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       icon: Home,
       label: "Dashboard",
       href: "/",
-      roles: ["admin", "technician", "client"],
+      roles: ["admin", "super_admin", "technician", "client"],
     },
     {
       icon: Briefcase,
       label: "Cases",
       href: "/cases",
-      roles: ["admin", "technician"],
+      roles: ["admin", "super_admin", "technician"],
     },
-    { icon: Truck, label: "Shipping", href: "/shipping", roles: ["admin"] },
+    { icon: Truck, label: "Shipping", href: "/shipping", roles: ["admin", "super_admin"] },
     {
       icon: Users,
       label: "Clients",
       href: "/clients",
-      roles: ["admin", "technician"],
+      roles: ["admin", "super_admin", "technician"],
     },
     {
       icon: Activity,
       label: "Client Activity",
       href: "/client-activity",
-      roles: ["admin"],
+      roles: ["admin", "super_admin"],
     },
     {
       icon: DollarSign,
       label: "Billing",
       href: "/billing",
-      roles: ["admin"],
+      roles: ["admin", "super_admin"],
       subItems: [
         { label: "Invoices", href: "/billing/invoices", icon: FileText },
         { label: "Payments", href: "/billing/payments", icon: CreditCard },
@@ -94,8 +94,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         },
       ],
     },
-    { icon: BarChart2, label: "Reports", href: "/reports", roles: ["admin"] },
-    { icon: Package, label: "Inventory", href: "/inventory", roles: ["admin"] },
+    { icon: BarChart2, label: "Reports", href: "/reports", roles: ["admin", "super_admin"] },
+    { icon: Package, label: "Inventory", href: "/inventory", roles: ["admin", "super_admin"] },
   ];
 
   const quickActions = [

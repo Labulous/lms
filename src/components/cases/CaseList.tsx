@@ -331,7 +331,7 @@ const CaseList: React.FC = () => {
     if (!authLoading && user && labId) {
       fetchCases();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, labId]);
   console.log(labId, "lab ID");
   useEffect(() => {
     if (cases.length > 0) {
