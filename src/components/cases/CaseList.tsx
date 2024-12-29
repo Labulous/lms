@@ -314,6 +314,7 @@ const CaseList: React.FC = () => {
           setLoading(false);
           return;
         }
+        setLoading(false);
 
         // Transform and set initial cases
         console.log(casesData, "casesData");
