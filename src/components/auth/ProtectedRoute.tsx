@@ -1,21 +1,21 @@
-import React, { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { createLogger } from '../../utils/logger';
-import { supabase } from '@/lib/supabase';
+import React, { useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+import { createLogger } from "../../utils/logger";
+import { supabase } from "@/lib/supabase";
 
-const logger = createLogger({ module: 'ProtectedRoute' });
+const logger = createLogger({ module: "ProtectedRoute" });
 
-type Role = 'admin' | 'technician' | 'client';
+type Role = "admin" | "technician" | "client" | "super_admin";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: Role | Role[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole,
 }) => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
@@ -23,24 +23,27 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (error) {
-          logger.error('Session check failed:', error);
+          logger.error("Session check failed:", error);
           return;
         }
 
         if (!session) {
-          logger.debug('No active session found during check');
+          logger.debug("No active session found during check");
           return;
         }
 
-        logger.debug('Session check successful', { 
+        logger.debug("Session check successful", {
           userId: session.user.id,
-          expiresAt: session.expires_at
+          expiresAt: session.expires_at,
         });
       } catch (err) {
-        logger.error('Error checking session:', err);
+        logger.error("Error checking session:", err);
       }
     };
 
@@ -58,9 +61,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if no user
   if (!user) {
-    logger.info('Redirecting to login - no authenticated user', { 
+    logger.info("Redirecting to login - no authenticated user", {
       path: location.pathname,
-      from: location.state?.from?.pathname || location.pathname 
+      from: location.state?.from?.pathname || location.pathname,
     });
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
@@ -69,25 +72,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     const userRole = user.role as Role;
-    
-    if (!roles.includes(userRole) && userRole !== 'admin') {
-      logger.warn('Insufficient role for access', { 
-        userRole, 
+
+    if (!roles.includes(userRole) && userRole !== "admin") {
+      logger.warn("Insufficient role for access", {
+        userRole,
         requiredRole,
         path: location.pathname,
-        userId: user.id
+        userId: user.id,
       });
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  logger.debug('Access granted', { 
+  logger.debug("Access granted", {
     userId: user.id,
-    userRole: user.role, 
+    userRole: user.role,
     requiredRole,
-    path: location.pathname 
+    path: location.pathname,
   });
-  
+
   return <>{children}</>;
 };
 

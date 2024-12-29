@@ -29,6 +29,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { createLogger } from "@/utils/logger";
 import { Plus } from "lucide-react";
+import { getLabIdByUserId } from "@/services/authService";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -51,7 +52,21 @@ const CaseList: React.FC = () => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [labId, setLabId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const getLabId = async () => {
+      try {
+        const data = await getLabIdByUserId(user?.id as string);
+        setLabId(data as string);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      } finally {
+        console.log("done");
+      }
+    };
+    getLabId();
+  }, []);
   const columns: ColumnDef<Case>[] = [
     {
       id: "select",
@@ -226,58 +241,59 @@ const CaseList: React.FC = () => {
           .from("cases")
           .select(
             `
+          id,
+          created_at,
+          received_date,
+          ship_date,
+          status,
+          patient_name,
+          due_date,
+          client:clients!client_id (
             id,
-            created_at,
-            received_date,
-            ship_date,
-            status,
-            patient_name,
-            due_date,
+            client_name,
+            phone
+          ),
+          doctor:doctors!doctor_id (
+            id,
+            name,
             client:clients!client_id (
               id,
               client_name,
               phone
-            ),
-            doctor:doctors!doctor_id (
-              id,
-              name,
-              client:clients!client_id (
-                id,
-                client_name,
-                phone
-              )
-            ),
-            pan_number,
-            rx_number,
-            isDueDateTBD,
-            appointment_date,
-            otherItems,
-            lab_notes,
-            technician_notes,
-            occlusal_type,
-            contact_type,
-            pontic_type,
-            custom_contact_details,
-            custom_occulusal_details,
-            custom_pontic_details,
-            enclosed_items:enclosed_case!enclosed_case_id (
-              impression,
-              biteRegistration,
-              photos,
-              jig,
-              opposingModel,
-              articulator,
-              returnArticulator,
-              cadcamFiles,
-              consultRequested,
-              user_id
-            ),
-            product_ids:case_products!id (
-              products_id,
-              id
             )
+          ),
+          pan_number,
+          rx_number,
+          isDueDateTBD,
+          appointment_date,
+          otherItems,
+          lab_notes,
+          technician_notes,
+          occlusal_type,
+          contact_type,
+          pontic_type,
+          custom_contact_details,
+          custom_occulusal_details,
+          custom_pontic_details,
+          enclosed_items:enclosed_case!enclosed_case_id (
+            impression,
+            biteRegistration,
+            photos,
+            jig,
+            opposingModel,
+            articulator,
+            returnArticulator,
+            cadcamFiles,
+            consultRequested,
+            user_id
+          ),
+          product_ids:case_products!id (
+            products_id,
+            id
+          )
           `
           )
+          .eq("lab_id", labId) // Filter by lab_id
           .order("created_at", { ascending: false });
 
         logger.debug("All cases query:", {
@@ -311,11 +327,11 @@ const CaseList: React.FC = () => {
     };
 
     // Only fetch cases if auth is not loading and we have a user
-    if (!authLoading && user) {
+    if (!authLoading && user && labId) {
       fetchCases();
     }
   }, [user, authLoading]);
-
+  console.log(labId, "lab ID");
   useEffect(() => {
     if (cases.length > 0) {
       let filtered = [...cases];
