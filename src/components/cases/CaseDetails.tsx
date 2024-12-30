@@ -810,6 +810,112 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
+            {/* Invoice Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <FileText className="mr-2" size={20} /> Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">Tooth</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Billing Item</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Price</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Discount</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Final Price</TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator orientation="vertical" className="h-full" />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail.teethProducts?.map((product, index) => {
+                        const price = product.price || 0;
+                        const discount = product.discounted_price?.discount || 0;
+                        const finalPrice = product.discounted_price?.final_price || price;
+                        const quantity = product.tooth_number?.length || 1;
+                        const subtotal = finalPrice * quantity;
+
+                        return (
+                          <TableRow key={index}>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.tooth_number.length > 1
+                                ? formatTeethRange(product.tooth_number)
+                                : product.tooth_number[0]}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator orientation="vertical" className="h-full" />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.material?.name || "-"}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator orientation="vertical" className="h-full" />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              ${price.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator orientation="vertical" className="h-full" />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {discount > 0 ? (
+                                <span className="text-green-600">-${discount.toFixed(2)}</span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator orientation="vertical" className="h-full" />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                              ${finalPrice.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator orientation="vertical" className="h-full" />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                              ${subtotal.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {/* Total Row */}
+                      <TableRow className="border-t border-gray-200 bg-gray-50">
+                        <TableCell colSpan={9} className="text-xs py-2 pl-4 pr-0 text-right">
+                          Total:
+                        </TableCell>
+                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                          ${caseDetail.teethProducts?.reduce((total, product) => {
+                            const finalPrice = product.discounted_price?.final_price || product.price || 0;
+                            const quantity = product.tooth_number?.length || 1;
+                            return total + (finalPrice * quantity);
+                          }, 0).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Products Section */}
             <Card>
               <CardHeader>
