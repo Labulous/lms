@@ -51,7 +51,7 @@ export function EditInvoiceModal({
         discount: item.discounted_price.discount,
         quantity: 1,
         toothNumber: item.teethProducts[0]?.tooth_number?.join(",") || null,
-        description:item.name
+        description: item.name,
       }));
       setItems(transformedItems);
       setNotes(invoice.notes || "");
@@ -130,7 +130,11 @@ export function EditInvoiceModal({
         <DialogHeader>
           <DialogTitle>
             {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #
-            {invoice?.id}
+            {(() => {
+              const parts = invoice.case_number.split("-");
+              parts[0] = "INV"; // Replace the first part
+              return parts.join("-");
+            })()}
           </DialogTitle>
           <div id="dialog-description" className="text-sm text-gray-500">
             {mode === "edit"
@@ -318,7 +322,9 @@ export function EditInvoiceModal({
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
                     currency: "USD",
-                  }).format(calculateSubtotal("tooth") + calculateSubtotal("alloy"))}
+                  }).format(
+                    calculateSubtotal("tooth") + calculateSubtotal("alloy")
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
