@@ -63,7 +63,7 @@ const ProductWizard: React.FC<ProductWizardProps> = ({
     const getLabId = async () => {
       try {
         const data = await getLabIdByUserId(user?.id as string);
-        setLabId(data as string);
+        setLabId(data?.labId as string);
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");

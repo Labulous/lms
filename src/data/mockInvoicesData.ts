@@ -41,6 +41,7 @@ export interface Invoice {
   balance: number;
   status:
     | "draft"
+    | "unpaid"
     | "pending"
     | "paid"
     | "partially_paid"

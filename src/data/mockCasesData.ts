@@ -190,74 +190,94 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
 };
 
 const saveCases = async (cases: any, navigate?: any) => {
-  const enclosedCaseRow = {
-    impression: cases.enclosedItems?.impression || 0,
-    biteRegistration: cases.enclosedItems?.biteRegistration || 0,
-    photos: cases.enclosedItems?.photos || 0,
-    jig: cases.enclosedItems?.jig || 0,
-    opposingModel: cases.enclosedItems?.opposingModel || 0,
-    articulator: cases.enclosedItems?.articulator || 0,
-    returnArticulator: cases.enclosedItems?.returnArticulator || 0,
-    cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
-    consultRequested: cases.enclosedItems?.consultRequested || 0,
-    user_id: cases.overview.created_by,
-  };
+  try {
+    // Step 1: Save enclosed case details
+    const enclosedCaseRow = {
+      impression: cases.enclosedItems?.impression || 0,
+      biteRegistration: cases.enclosedItems?.biteRegistration || 0,
+      photos: cases.enclosedItems?.photos || 0,
+      jig: cases.enclosedItems?.jig || 0,
+      opposingModel: cases.enclosedItems?.opposingModel || 0,
+      articulator: cases.enclosedItems?.articulator || 0,
+      returnArticulator: cases.enclosedItems?.returnArticulator || 0,
+      cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
+      consultRequested: cases.enclosedItems?.consultRequested || 0,
+      user_id: cases.overview.created_by,
+    };
 
-  const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
-    .from("enclosed_case")
-    .insert(enclosedCaseRow)
-    .select("*");
+    const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
+      .from("enclosed_case")
+      .insert(enclosedCaseRow)
+      .select("*");
 
-  if (enclosedCaseError) {
-    console.error("Error saving enclosed case:", enclosedCaseError);
-    return;
-  }
-
-  const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
-
-  // Step 2: Save cases overview, adding enclosed_case_id to the overview
-  const overviewWithEnclosedCaseId = {
-    ...cases.overview,
-    enclosed_case_id: enclosedCaseId,
-  };
-
-  const { data, error } = await supabase
-    .from("cases")
-    .upsert(overviewWithEnclosedCaseId, { onConflict: "id" })
-    .select("*");
-
-  if (error) {
-    console.error("Error saving cases:", error);
-    localStorage.setItem("cases", JSON.stringify(cases)); // Save to localStorage as a fallback
-    return;
-  }
-
-  console.log("Cases saved successfully:", data);
-  if (data) {
-    const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
-    console.log(
-      cases.products.map((item: any) => item.id),
-      " cases.products"
-    );
-    const productIds = cases.products.map((item: any) => item.id);
-    // Map products and save case_products
-    try {
-      const caseProduct = {
-        user_id: cases.overview.created_by,
-        case_id: savedCaseId,
-        products_id: productIds,
-
-        // Include other necessary fields here
-      };
-      await saveCaseProduct(caseProduct, cases, navigate); // Save each case product
-      console.log("All case products saved successfully.");
-    } catch (productError) {
-      console.error("Error saving case products:", productError);
+    if (enclosedCaseError) {
+      console.error("Error saving enclosed case:", enclosedCaseError);
+      return;
     }
-  }
 
-  // Save the overview to localStorage
-  localStorage.setItem("cases", JSON.stringify(cases));
+    const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
+
+    // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    const overviewWithEnclosedCaseId = {
+      ...cases.overview,
+      enclosed_case_id: enclosedCaseId,
+    };
+
+    const { data, error } = await supabase
+      .from("cases")
+      .upsert(overviewWithEnclosedCaseId, { onConflict: "id" })
+      .select("*");
+
+    if (error) {
+      console.error("Error saving cases:", error);
+      localStorage.setItem("cases", JSON.stringify(cases)); // Save to localStorage as a fallback
+      return;
+    }
+
+    console.log("Cases saved successfully:", data);
+
+    if (data) {
+      const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
+      const productIds = cases.products.map((item: any) => item.id);
+
+      // Step 3: Save case products
+      try {
+        const caseProduct = {
+          user_id: cases.overview.created_by,
+          case_id: savedCaseId,
+          products_id: productIds,
+        };
+        await saveCaseProduct(caseProduct, cases, navigate); // Save each case product
+        console.log("All case products saved successfully.");
+      } catch (productError) {
+        console.error("Error saving case products:", productError);
+      }
+
+      // Step 4: Create invoice for the case
+      const newInvoice = {
+        case_id: savedCaseId,
+        client_id: cases.overview.client_id,
+        lab_id: cases.overview.lab_id,
+        status: "Unpaid",
+      };
+
+      const { data: invoiceData, error: invoiceError } = await supabase
+        .from("invoices")
+        .insert(newInvoice)
+        .select("*");
+
+      if (invoiceError) {
+        console.error("Error creating invoice:", invoiceError);
+      } else {
+        console.log("Invoice created successfully:", invoiceData);
+      }
+    }
+
+    // Step 5: Save the overview to localStorage
+    localStorage.setItem("cases", JSON.stringify(cases));
+  } catch (error) {
+    console.error("Error in saveCases function:", error);
+  }
 };
 
 // In-memory store initialized from localStorage

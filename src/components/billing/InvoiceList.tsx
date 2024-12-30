@@ -63,6 +63,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { supabase } from "@/lib/supabase";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { da } from "date-fns/locale";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -96,6 +100,7 @@ const BATCH_SIZE = 50; // Process 50 items at a time
 const InvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoicesData, setInvoicesData] = useState<any>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -122,15 +127,202 @@ const InvoiceList: React.FC = () => {
   const [processingFeedback, setProcessingFeedback] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
+  const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+  const { user } = useAuth();
 
   // Initialize invoices
   useEffect(() => {
+    const getCompletedInvoices = async () => {
+      setLoading(true); // Set loading state to true when fetching data
+
+      try {
+        const lab = await getLabIdByUserId(user?.id as string);
+        setLab(lab);
+
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
+        const { data: casesData, error: casesError } = await supabase
+          .from("cases")
+          .select(
+            `
+            id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            client:clients!client_id (
+              id,
+              client_name,
+              phone
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            pan_number,
+            rx_number,
+            isDueDateTBD,
+            appointment_date,
+            otherItems,
+            lab_notes,
+            technician_notes,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            )
+            `
+          )
+          .eq("lab_id", lab.labId)
+          .eq("status", "completed")
+          .order("created_at", { ascending: false });
+
+        if (casesError) {
+          console.error("Error fetching completed invoices:", casesError);
+          return;
+        }
+
+        const enhancedCases = await Promise.all(
+          casesData.map(async (singleCase) => {
+            const productsIdArray =
+              singleCase?.product_ids?.map((p) => p.products_id) || [];
+
+            if (productsIdArray.length === 0) {
+              return { ...singleCase, products: [] }; // No products for this case
+            }
+
+            // Fetch products for the current case
+            const { data: productData, error: productsError } = await supabase
+              .from("products")
+              .select(
+                `
+                id,
+                name,
+                price,
+                lead_time,
+                is_client_visible,
+                is_taxable,
+                created_at,
+                updated_at,
+                requires_shade,
+                material:materials!material_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                product_type:product_types!product_type_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                billing_type:billing_types!billing_type_id (
+                  name,
+                  label,
+                  description,
+                  is_active
+                )
+              `
+              )
+              .in("id", productsIdArray);
+
+            if (productsError) {
+              console.error("Error fetching products for case:", productsError);
+            }
+
+            // Fetch discounted prices for each product in the case
+            const { data: discountedPriceData, error: discountedPriceError } =
+              await supabase
+                .from("discounted_price")
+                .select(
+                  `
+                  product_id,
+                  discount,
+                  final_price,
+                  price
+                `
+                )
+                .in("product_id", productsIdArray);
+
+            if (discountedPriceError) {
+              console.error(
+                "Error fetching discounted prices for case:",
+                discountedPriceError
+              );
+            }
+
+            // Create a map of discounted prices based on product_id
+            const discountedPriceMap: any = discountedPriceData?.reduce(
+              (acc: any, item) => {
+                acc[item.product_id] = item;
+                return acc;
+              },
+              {}
+            );
+
+            // Attach the discounted price to each product
+            const products =
+              productData?.map((product) => {
+                const discountedPrice = discountedPriceMap[product.id];
+
+                return {
+                  ...product,
+                  discounted_price: discountedPrice || null, // Attach the discounted price to product
+                };
+              }) || [];
+
+            return {
+              ...singleCase,
+              products, // Include the products with discounted prices
+            };
+          })
+        );
+
+        console.log(
+          "Enhanced Cases with Products and Discounted Prices:",
+          enhancedCases
+        );
+        setInvoicesData(enhancedCases);
+      } catch (error) {
+        console.error("Error fetching completed invoices:", error);
+      } finally {
+        setLoading(false); // Set loading state to false when the data is loaded
+      }
+    };
+
+    getCompletedInvoices();
     const initialInvoices = mockInvoices;
     setInvoices(initialInvoices);
     setFilteredInvoices(initialInvoices);
-  }, []);
-
+  }, [user?.id]);
   // Update filtered invoices when search or date filters change
   useEffect(() => {
     const filtered = getFilteredInvoices();
@@ -145,12 +337,14 @@ const InvoiceList: React.FC = () => {
   /* eslint-disable no-unused-vars */
   const getStatusBadgeVariant = (
     status: Invoice["status"],
-  /* eslint-disable no-unused-vars */
-  _invoice: Invoice
+    /* eslint-disable no-unused-vars */
+    _invoice: Invoice
   ): string => {
     switch (status) {
       case "draft":
         return "draft";
+      case "unpaid":
+        return "UnPaid";
       case "pending":
         return "pending";
       case "paid":
@@ -412,13 +606,15 @@ const InvoiceList: React.FC = () => {
 
     return filtered;
   };
-
   const getSortedAndPaginatedData = () => {
-    const sortedData = sortData(filteredInvoices);
+    const sortedData = sortData(invoicesData);
+    console.log(sortedData,"sorteddata")
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, sortedData.length);
+    console.log(startIndex,endIndex,"index")
     return sortedData.slice(startIndex, endIndex);
   };
+  console.log(getSortedAndPaginatedData(), "data");
 
   // const startIndex = (currentPage - 1) * itemsPerPage;
   // const endIndex = Math.min(startIndex + itemsPerPage, filteredInvoices.length);
@@ -802,7 +998,7 @@ const InvoiceList: React.FC = () => {
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice.date), "dd/MM/yy")}
+                      {format(new Date(invoice.received_date), "dd/MM/yy")}
                     </TableCell>
                     <TableCell>
                       <Badge

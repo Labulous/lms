@@ -13,6 +13,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
+import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
 
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
@@ -48,7 +49,8 @@ const NewCase: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [labId, setLabId] = useState("");
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+  const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
@@ -135,12 +137,41 @@ const NewCase: React.FC = () => {
         setLoading(false);
       }
     };
-    const getLabId = async () => {
+    const getlab = async () => {
       try {
         setLoading(true);
         const data = await getLabIdByUserId(user?.id as string);
         console.log(data, "data lab id");
-        setLabId(data as string);
+        setLab(data);
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+        toast.error("Failed to load clients");
+      } finally {
+        setLoading(false);
+      }
+    };
+    const getCasesLength = async () => {
+      try {
+        setLoading(true);
+        const number = await fetchCaseCount(); // Fetch current case count
+        console.log(number, "cases length");
+
+        if (typeof number === "number") {
+          // Generate case number
+          const identifier = lab?.name?.substring(0, 3).toUpperCase(); // Extract first 3 characters and convert to uppercase
+          const currentYear = new Date().getFullYear().toString().slice(-2); // Last 2 digits of the year
+          const currentMonth = String(new Date().getMonth() + 1).padStart(
+            2,
+            "0"
+          ); // Current month as 2 digits
+          const sequentialNumber = String(number + 1).padStart(5, "0"); // Sequential number with 5 digits
+
+          const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
+          console.log(caseNumber, "Generated Case Number");
+          setCaseNumber(caseNumber); // Assuming setCaseNumber updates the state
+        } else {
+          setCaseNumber(null); // Handle case where count is not valid
+        }
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
@@ -149,7 +180,8 @@ const NewCase: React.FC = () => {
       }
     };
 
-    getLabId();
+    getlab();
+    getCasesLength();
     fetchClients();
   }, []);
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,48 +204,53 @@ const NewCase: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
-    try {
-      // Create case object
-      const newCase: any = {
-        overview: {
-          client_id: formData.clientId,
-          doctor_id: formData.doctorId || "",
-          created_by: user?.id || "",
-          patient_name:
-            formData.patientFirstName + " " + formData.patientLastName,
-          pan_number: "",
-          rx_number: "",
-          received_date: formData.orderDate,
-          status: "in_queue",
-          due_date: formData.isDueDateTBD ? null : formData.dueDate,
-          isDueDateTBD: formData.isDueDateTBD || false,
-          appointment_date: formData.appointmentDate,
-          otherItems: formData.otherItems || "",
-          lab_notes: formData.notes?.labNotes,
-          technician_notes: formData.notes?.technicianNotes,
-          occlusal_type: formData.caseDetails?.occlusalType,
-          contact_type: formData.caseDetails?.contactType,
-          pontic_type: formData.caseDetails?.ponticType,
-          custom_contact_details: formData.caseDetails?.customContact,
-          custom_occulusal_details: formData.caseDetails?.customOcclusal,
-          custom_pontic_details: formData.caseDetails?.customPontic,
-          lab_id: labId, // need to get the lab ID here.
-        },
-        // labId: user?.labId || "",
-        products: selectedProducts,
-        enclosedItems: formData.enclosedItems,
-        files: selectedFiles,
-        // caseDetails: formData.caseDetails,
-      };
+    if (caseNumber) {
+      try {
+        // Create case object
+        const newCase: any = {
+          overview: {
+            client_id: formData.clientId,
+            doctor_id: formData.doctorId || "",
+            created_by: user?.id || "",
+            patient_name:
+              formData.patientFirstName + " " + formData.patientLastName,
+            pan_number: "",
+            rx_number: "",
+            received_date: formData.orderDate,
+            status: "in_queue",
+            due_date: formData.isDueDateTBD ? null : formData.dueDate,
+            isDueDateTBD: formData.isDueDateTBD || false,
+            appointment_date: formData.appointmentDate,
+            otherItems: formData.otherItems || "",
+            lab_notes: formData.notes?.labNotes,
+            technician_notes: formData.notes?.technicianNotes,
+            occlusal_type: formData.caseDetails?.occlusalType,
+            contact_type: formData.caseDetails?.contactType,
+            pontic_type: formData.caseDetails?.ponticType,
+            custom_contact_details: formData.caseDetails?.customContact,
+            custom_occulusal_details: formData.caseDetails?.customOcclusal,
+            custom_pontic_details: formData.caseDetails?.customPontic,
+            lab_id: lab?.labId, // need to get the lab ID here.
+            case_number: caseNumber,
+          },
+          // lab: user?.lab || "",
+          products: selectedProducts,
+          enclosedItems: formData.enclosedItems,
+          files: selectedFiles,
+          // caseDetails: formData.caseDetails,
+        };
 
-      // Add case to database
-      await addCase(newCase, navigate);
-    } catch (error) {
-      console.error("Error creating case:", error);
-      toast.error("Failed to create case");
+        // Add case to database
+        await addCase(newCase, navigate);
+      } catch (error) {
+        console.error("Error creating case:", error);
+        toast.error("Failed to create case");
+      }
+    } else {
+      toast.error("Unable to Create Case Number");
     }
   };
-
+  // console.log(caseNumber, "caseNumber");
   return (
     <div className="p-6">
       <div className="space-y-4">
