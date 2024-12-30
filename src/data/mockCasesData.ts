@@ -141,6 +141,7 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
       stump_shade_id: product.shades.stump || "",
       notes: product.notes || "",
       tooth_number: product.teeth || "",
+      product_id: product.product.id,
     }));
 
     // Calculate discounted prices for products

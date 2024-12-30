@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import InvoiceList from '@/components/billing/InvoiceList';
-import InvoiceForm from '@/components/billing/InvoiceForm';
 
 const InvoicesPage: React.FC = () => {
   const location = useLocation();
@@ -15,14 +14,6 @@ const InvoicesPage: React.FC = () => {
           element={
             <React.Suspense fallback={<div>Loading invoice list...</div>}>
               <InvoiceList />
-            </React.Suspense>
-          } 
-        />
-        <Route 
-          path="new" 
-          element={
-            <React.Suspense fallback={<div>Loading invoice form...</div>}>
-              <InvoiceForm />
             </React.Suspense>
           } 
         />

@@ -129,6 +129,31 @@ The **Billing Module** is designed to streamline invoice management, payment pro
   - Priority flags for aging or overdue invoices.
   - Actionable icons for settings and editing.
 
+##### 8. Action Permissions:
+- **Draft Status:** 
+    Can be approved
+    Can be approved + printed
+    Fully editable
+    Can be deleted
+    All actions available
+- **Overdue Status:**
+    Fully editable (to handle payment plans/corrections)
+    Can be deleted
+    Cannot be approved (needs to be set back to draft first)
+- **Approved/Partially Paid Status:**
+    Limited editing (only payment details)
+    Cannot be deleted
+    Cannot be approved again
+    Shows "Edit Payment Details" instead of "Edit Invoice"
+- **Paid/Cancelled Status:**
+    View only
+    Can download PDF
+    No editing or deletion allowed
+    No approval actions
+- **Common actions for all statuses:**
+    View Details
+    Download PDF
+
 #### Front-End Components for the "Payments" Page
 
 ##### 1. Header Section

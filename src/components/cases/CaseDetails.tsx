@@ -19,6 +19,19 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -127,6 +140,59 @@ interface ExtendedCase extends Case {
     returnArticulator: number;
   };
 }
+
+const TYPE_COLORS = {
+  Crown: "rgb(59 130 246)", // blue-500
+  Bridge: "rgb(168 85 247)", // purple-500
+  Removable: "rgb(77 124 15)", // lime-700
+  Implant: "rgb(6 182 212)", // cyan-500
+  Other: "rgb(107 114 128)", // gray-500
+  Veneer: "rgb(236 72 153)", // pink-500
+  Inlay: "rgb(249 115 22)", // orange-500
+  Onlay: "rgb(234 179 8)", // yellow-500
+};
+
+const formatTeethRange = (teeth: number[]): string => {
+  if (!teeth.length) return "";
+
+  // Check if it's an arch selection
+  const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
+  const hasLower = teeth.some((t) => t >= 31 && t <= 48);
+  const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+
+  if (isFullArch) {
+    if (hasUpper && hasLower) return "All";
+    if (hasUpper) return "Upper";
+    if (hasLower) return "Lower";
+  }
+
+  // For non-arch selections, use the original range formatting
+  if (teeth.length === 1) return teeth[0].toString();
+
+  // Sort teeth numbers
+  const sortedTeeth = [...teeth].sort((a, b) => a - b);
+
+  // Find continuous ranges
+  let ranges: string[] = [];
+  let rangeStart = sortedTeeth[0];
+  let prev = sortedTeeth[0];
+
+  for (let i = 1; i <= sortedTeeth.length; i++) {
+    const current = sortedTeeth[i];
+    if (current !== prev + 1) {
+      // End of a range
+      if (rangeStart === prev) {
+        ranges.push(rangeStart.toString());
+      } else {
+        ranges.push(`${rangeStart}-${prev}`);
+      }
+      rangeStart = current;
+    }
+    prev = current;
+  }
+
+  return ranges.join(", ");
+};
 
 const CaseDetails: React.FC = () => {
   const { caseId } = useParams<{ caseId: string }>();
@@ -444,6 +510,8 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
+
+  console.log(caseDetail, "case detail");
   return (
     <div className="w-full">
       {/* Full-width Header */}
@@ -606,6 +674,346 @@ const CaseDetails: React.FC = () => {
                     },
                   ]}
                 />
+              </CardContent>
+            </Card>
+
+            {/* Case Items Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <Package className="mr-2" size={20} /> Case Items
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Type
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Material/Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Shade
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Notes
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail.teethProducts?.map((product, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            <span
+                              className="px-2 py-1 rounded text-white"
+                              style={{
+                                backgroundColor:
+                                  TYPE_COLORS[
+                                    product.type as keyof typeof TYPE_COLORS
+                                  ] || TYPE_COLORS.Other,
+                              }}
+                            >
+                              {product.type}
+                            </span>
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product.tooth_number.length > 1
+                              ? formatTeethRange(product.tooth_number)
+                              : product.tooth_number[0]}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product.material?.name || "-"}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            <div className="space-y-1">
+                              {product.body_shade?.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Body:</span>
+                                  <span>{product.body_shade.name}</span>
+                                </div>
+                              )}
+                              {product.gingival_shade?.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">
+                                    Gingival:
+                                  </span>
+                                  <span>{product.gingival_shade.name}</span>
+                                </div>
+                              )}
+                              {product.occlusal_shade?.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">
+                                    Occlusal:
+                                  </span>
+                                  <span>{product.occlusal_shade.name}</span>
+                                </div>
+                              )}
+                              {product.stump_shade_id?.name && (
+                                <div className="flex justify-between">
+                                  <span className="text-gray-500">Stump:</span>
+                                  <span>{product.stump_shade_id.name}</span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product.notes ? (
+                              <div className="max-w-xs">
+                                <p className="text-gray-600 line-clamp-2">
+                                  {product.notes}
+                                </p>
+                                {product.notes.length > 100 && (
+                                  <HoverCard>
+                                    <HoverCardTrigger asChild>
+                                      <Button
+                                        variant="link"
+                                        className="h-auto p-0 text-xs text-blue-500 hover:text-blue-600"
+                                      >
+                                        Show more
+                                      </Button>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent
+                                      className="w-80 p-4"
+                                      align="start"
+                                      side="left"
+                                    >
+                                      <div className="space-y-2">
+                                        <p className="font-medium text-sm">
+                                          Product Notes
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {product.notes}
+                                        </p>
+                                      </div>
+                                    </HoverCardContent>
+                                  </HoverCard>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Invoice Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <FileText className="mr-2" size={20} /> Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Billing Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Discount
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Final Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Subtotal
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail.teethProducts?.map((product, index) => {
+                        const price = product.price || 0;
+                        const discount =
+                          product.discounted_price?.discount || 0;
+                        const finalPrice =
+                          product.discounted_price?.final_price || price;
+                        const quantity = product.tooth_number?.length || 1;
+                        const subtotal = finalPrice * quantity;
+
+                        return (
+                          <TableRow key={index}>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.tooth_number.length > 1
+                                ? formatTeethRange(product.tooth_number)
+                                : product.tooth_number[0]}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.material?.name || "-"}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              ${price.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {discount > 0 ? (
+                                <span className="text-green-600">
+                                  -${discount.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                              ${finalPrice.toFixed(2)}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                              ${subtotal.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      {/* Total Row */}
+                      <TableRow className="border-t border-gray-200 bg-gray-50">
+                        <TableCell
+                          colSpan={9}
+                          className="text-xs py-2 pl-4 pr-0 text-right"
+                        >
+                          Total:
+                        </TableCell>
+                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                          $
+                          {caseDetail.teethProducts
+                            ?.reduce((total, product) => {
+                              const finalPrice =
+                                product.discounted_price?.final_price ||
+                                product.price ||
+                                0;
+                              const quantity =
+                                product.tooth_number?.length || 1;
+                              return total + finalPrice * quantity;
+                            }, 0)
+                            .toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
 
@@ -830,7 +1238,7 @@ const CaseDetails: React.FC = () => {
                             Technician Notes
                           </p>
                           <p className="font-medium">
-                            {caseDetail.technician_notes ||
+                            {caseDetail?.technician_notes ||
                               "No technician notes"}
                           </p>
                         </div>

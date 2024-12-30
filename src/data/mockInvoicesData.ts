@@ -1,5 +1,6 @@
 import { format, addDays } from "date-fns";
 import { mockClients } from "./mockClientsData";
+import { Case } from "./mockCasesData";
 
 export interface InvoiceItem {
   id: string;
@@ -10,13 +11,54 @@ export interface InvoiceItem {
   caseId?: string;
 }
 
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  lead_time: number | null;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  created_at: string;
+  updated_at: string;
+  requires_shade: boolean;
+  material: {
+    name: string;
+    is_active: boolean;
+    description: string;
+  };
+  product_type: {
+    name: string;
+    is_active: boolean;
+    description: string;
+  };
+  billing_type: {
+    name: string;
+    label: string;
+    is_active: boolean;
+    description: string;
+  };
+  discounted_price: {
+    product_id: string;
+    discount: number;
+    final_price: number;
+    price: number;
+  };
+  teethProducts:{
+    tooth_number:number[]
+  }[]
+};
+
+type ProductArray = Product[];
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
   clientId: string;
   clientName: string;
   patient: string;
-  client: string;
+  client: {
+    client_name: string;
+  };
   clientAddress: {
     street: string;
     city: string;
@@ -25,6 +67,7 @@ export interface Invoice {
   };
   date: string;
   dueDate: string;
+  case: Case;
   items: InvoiceItem[];
   subTotal: number;
   discount?: {
@@ -43,14 +86,21 @@ export interface Invoice {
     | "draft"
     | "unpaid"
     | "pending"
+    | "approved"
     | "paid"
-    | "partially_paid"
     | "overdue"
+    | "partially_paid"
     | "cancelled";
   paymentTerms: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // new types
+  received_date: string;
+  case_number: string;
+  products: ProductArray;
+  due_date: string;
+  
 }
 
 const today = new Date();
@@ -93,6 +143,28 @@ const createDefaultInvoices = (): Invoice[] => {
         addDays(today, Math.floor(Math.random() * 30)),
         "yyyy-MM-dd"
       ),
+      case: {
+        id: `case-${i}`,
+        caseId: `CASE-${String(i).padStart(4, "0")}`,
+        clientId: client.id,
+        clientName: client.clientName,
+        caseType: "Crown",
+        caseStatus: "completed",
+        startDate: format(
+          addDays(today, -Math.floor(Math.random() * 30)),
+          "yyyy-MM-dd"
+        ),
+        dueDate: format(
+          addDays(today, Math.floor(Math.random() * 30)),
+          "yyyy-MM-dd"
+        ),
+        deliveryMethod: "Pickup",
+        stages: [
+          { name: "Impression", status: "completed" },
+          { name: "Modeling", status: "completed" },
+          { name: "Finishing", status: "completed" },
+        ],
+      },
       items: [
         {
           id: `item-${i}-1`,
@@ -112,14 +184,14 @@ const createDefaultInvoices = (): Invoice[] => {
       balance: amount - paidAmount,
       status: [
         "draft",
-        "pending",
+        "approved",
         "paid",
         "overdue",
         "cancelled",
         "partially_paid",
       ][Math.floor(Math.random() * 6)] as
         | "draft"
-        | "pending"
+        | "approved"
         | "paid"
         | "overdue"
         | "cancelled"
@@ -215,4 +287,23 @@ export const updateInvoice = (id: string, data: Partial<Invoice>): Invoice => {
 export const deleteInvoice = (id: string): void => {
   invoices = invoices.filter((invoice) => invoice.id !== id);
   saveInvoices(invoices);
+};
+
+export const getStatusColor = (status: Invoice["status"]) => {
+  switch (status) {
+    case "draft":
+      return "bg-gray-500";
+    case "approved":
+      return "bg-blue-500";
+    case "paid":
+      return "bg-green-500";
+    case "overdue":
+      return "bg-red-500";
+    case "partially_paid":
+      return "bg-orange-500";
+    case "cancelled":
+      return "bg-red-500";
+    default:
+      return "bg-gray-500";
+  }
 };
