@@ -175,6 +175,7 @@ export const signUp = async (
       client_ids: [],
       technician_ids: [],
       office_address_id: "",
+      name: "",
     };
 
     // Attempt to sign up the user in Supabase Auth
@@ -419,12 +420,12 @@ export const createUserByAdmins = async (
 
 export const getLabIdByUserId = async (
   userId: string
-): Promise<string | null> => {
+): Promise<{ labId: string; name: string } | null> => {
   try {
     // Fetch all labs
     const { data: labs, error } = await supabase
       .from("labs")
-      .select("id, super_admin_id, admin_ids, client_ids");
+      .select("id, super_admin_id, admin_ids, client_ids, name");
 
     if (error) {
       console.error("Error fetching labs:", error);
@@ -438,7 +439,7 @@ export const getLabIdByUserId = async (
 
     // Check each lab for a matching userId
     for (const lab of labs) {
-      const { id: labId, super_admin_id, admin_ids, client_ids } = lab;
+      const { id: labId, super_admin_id, admin_ids, client_ids, name } = lab;
 
       // Check if the userId matches any of the super_admin_id, admin_ids, or client_ids
       if (
@@ -446,7 +447,7 @@ export const getLabIdByUserId = async (
         (admin_ids && admin_ids.includes(userId)) ||
         (client_ids && client_ids.includes(userId))
       ) {
-        return labId; // Return the matching lab_id
+        return { labId, name }; // Return the matching lab_id
       }
     }
 

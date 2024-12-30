@@ -510,6 +510,8 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
+
+  console.log(caseDetail, "case detail");
   return (
     <div className="w-full">
       {/* Full-width Header */}
@@ -687,40 +689,68 @@ const CaseDetails: React.FC = () => {
                   <Table>
                     <TableHeader className="bg-slate-100 border-b border-slate-200">
                       <TableRow>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Type</TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Type
                         </TableHead>
-                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">Tooth</TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Material/Item</TableHead>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Shade</TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Material/Item
+                        </TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Notes</TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Shade
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Notes
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {caseDetail.teethProducts?.map((product, index) => (
                         <TableRow key={index}>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            <span 
+                            <span
                               className="px-2 py-1 rounded text-white"
-                              style={{ 
-                                backgroundColor: TYPE_COLORS[product.type as keyof typeof TYPE_COLORS] || TYPE_COLORS.Other 
+                              style={{
+                                backgroundColor:
+                                  TYPE_COLORS[
+                                    product.type as keyof typeof TYPE_COLORS
+                                  ] || TYPE_COLORS.Other,
                               }}
                             >
                               {product.type}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
-                            <Separator orientation="vertical" className="h-full" />
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {product.tooth_number.length > 1
@@ -728,13 +758,19 @@ const CaseDetails: React.FC = () => {
                               : product.tooth_number[0]}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
-                            <Separator orientation="vertical" className="h-full" />
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {product.material?.name || "-"}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
-                            <Separator orientation="vertical" className="h-full" />
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
@@ -746,13 +782,17 @@ const CaseDetails: React.FC = () => {
                               )}
                               {product.gingival_shade?.name && (
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">Gingival:</span>
+                                  <span className="text-gray-500">
+                                    Gingival:
+                                  </span>
                                   <span>{product.gingival_shade.name}</span>
                                 </div>
                               )}
                               {product.occlusal_shade?.name && (
                                 <div className="flex justify-between">
-                                  <span className="text-gray-500">Occlusal:</span>
+                                  <span className="text-gray-500">
+                                    Occlusal:
+                                  </span>
                                   <span>{product.occlusal_shade.name}</span>
                                 </div>
                               )}
@@ -765,7 +805,10 @@ const CaseDetails: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
-                            <Separator orientation="vertical" className="h-full" />
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {product.notes ? (
@@ -783,13 +826,15 @@ const CaseDetails: React.FC = () => {
                                         Show more
                                       </Button>
                                     </HoverCardTrigger>
-                                    <HoverCardContent 
-                                      className="w-80 p-4" 
+                                    <HoverCardContent
+                                      className="w-80 p-4"
                                       align="start"
                                       side="left"
                                     >
                                       <div className="space-y-2">
-                                        <p className="font-medium text-sm">Product Notes</p>
+                                        <p className="font-medium text-sm">
+                                          Product Notes
+                                        </p>
                                         <p className="text-sm text-gray-600">
                                           {product.notes}
                                         </p>
@@ -822,34 +867,63 @@ const CaseDetails: React.FC = () => {
                   <Table>
                     <TableHeader className="bg-slate-100 border-b border-slate-200">
                       <TableRow>
-                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">Tooth</TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
                         </TableHead>
-                        <TableHead className="text-xs py-0.5 pl-4 pr-0">Billing Item</TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Price</TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Billing Item
+                        </TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Discount</TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Price
+                        </TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Final Price</TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Discount
+                        </TableHead>
                         <TableHead className="w-[1px] p-0">
-                          <Separator orientation="vertical" className="h-full" />
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
                         </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">Subtotal</TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Final Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Subtotal
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {caseDetail.teethProducts?.map((product, index) => {
                         const price = product.price || 0;
-                        const discount = product.discounted_price?.discount || 0;
-                        const finalPrice = product.discounted_price?.final_price || price;
+                        const discount =
+                          product.discounted_price?.discount || 0;
+                        const finalPrice =
+                          product.discounted_price?.final_price || price;
                         const quantity = product.tooth_number?.length || 1;
                         const subtotal = finalPrice * quantity;
 
@@ -861,35 +935,52 @@ const CaseDetails: React.FC = () => {
                                 : product.tooth_number[0]}
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
-                              <Separator orientation="vertical" className="h-full" />
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
                               {product.material?.name || "-"}
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
-                              <Separator orientation="vertical" className="h-full" />
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
                               ${price.toFixed(2)}
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
-                              <Separator orientation="vertical" className="h-full" />
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
                               {discount > 0 ? (
-                                <span className="text-green-600">-${discount.toFixed(2)}</span>
+                                <span className="text-green-600">
+                                  -${discount.toFixed(2)}
+                                </span>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
-                              <Separator orientation="vertical" className="h-full" />
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
                               ${finalPrice.toFixed(2)}
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
-                              <Separator orientation="vertical" className="h-full" />
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
                               ${subtotal.toFixed(2)}
@@ -899,15 +990,25 @@ const CaseDetails: React.FC = () => {
                       })}
                       {/* Total Row */}
                       <TableRow className="border-t border-gray-200 bg-gray-50">
-                        <TableCell colSpan={9} className="text-xs py-2 pl-4 pr-0 text-right">
+                        <TableCell
+                          colSpan={9}
+                          className="text-xs py-2 pl-4 pr-0 text-right"
+                        >
                           Total:
                         </TableCell>
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
-                          ${caseDetail.teethProducts?.reduce((total, product) => {
-                            const finalPrice = product.discounted_price?.final_price || product.price || 0;
-                            const quantity = product.tooth_number?.length || 1;
-                            return total + (finalPrice * quantity);
-                          }, 0).toFixed(2)}
+                          $
+                          {caseDetail.teethProducts
+                            ?.reduce((total, product) => {
+                              const finalPrice =
+                                product.discounted_price?.final_price ||
+                                product.price ||
+                                0;
+                              const quantity =
+                                product.tooth_number?.length || 1;
+                              return total + finalPrice * quantity;
+                            }, 0)
+                            .toFixed(2)}
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -952,8 +1053,7 @@ const CaseDetails: React.FC = () => {
                   <div className="mb-4">
                     <p className="text-gray-600">Technician Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.technician_notes ||
-                        "No technician notes"}
+                      {caseDetail?.technician_notes || "No technician notes"}
                     </p>
                   </div>
                 </div>

@@ -288,6 +288,7 @@ export interface Database {
           admin_ids: string[];
           client_ids: string[];
           technician_ids: string[];
+          name: string;
           office_address: {
             address_1: string;
             address_2: string;

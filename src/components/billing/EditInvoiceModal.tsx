@@ -46,16 +46,19 @@ export function EditInvoiceModal({
 
   useEffect(() => {
     if (invoice) {
-      const transformedItems = invoice.items.map((item) => ({
-        ...item,
-        category: item.caseId ? "tooth" : "alloy",
+      const transformedItems = invoice.products.map((item) => ({
+        unitPrice: item.discounted_price.price,
+        discount: item.discounted_price.discount,
+        quantity: 1,
+        toothNumber: item.teethProducts[0]?.tooth_number?.join(",") || null,
+        description: item.name,
       }));
       setItems(transformedItems);
       setNotes(invoice.notes || "");
       setDiscount(invoice.discount?.value || 0);
     }
   }, [invoice]);
-
+  console.log(items, "items");
   const calculateSubtotal = (category: "tooth" | "alloy") => {
     return items
       .filter((item) => item.category === category)
@@ -89,14 +92,20 @@ export function EditInvoiceModal({
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          total: item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
+          total:
+            item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
           caseId: item.category === "tooth" ? invoice.case.id : undefined,
         })),
         notes: notes,
         discount: {
           type: "percentage",
           value: discount,
-          amount: items.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0) * (discount / 100),
+          amount:
+            items.reduce(
+              (sum, item) => sum + item.unitPrice * item.quantity,
+              0
+            ) *
+            (discount / 100),
         },
         updatedAt: new Date().toISOString(),
       };
@@ -113,21 +122,23 @@ export function EditInvoiceModal({
   };
 
   return (
-    <Dialog 
-      open={true} 
-      onOpenChange={(open) => !open && onClose()}
-    >
-      <DialogContent 
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
         className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto"
         aria-describedby="dialog-description"
       >
         <DialogHeader>
           <DialogTitle>
-            {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #{invoice?.id}
+            {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #
+            {(() => {
+              const parts = invoice.case_number.split("-");
+              parts[0] = "INV"; // Replace the first part
+              return parts.join("-");
+            })()}
           </DialogTitle>
           <div id="dialog-description" className="text-sm text-gray-500">
-            {mode === "edit" 
-              ? "Edit invoice details including items, prices, and discounts." 
+            {mode === "edit"
+              ? "Edit invoice details including items, prices, and discounts."
               : "Record payment details for this invoice."}
           </div>
         </DialogHeader>
@@ -137,11 +148,18 @@ export function EditInvoiceModal({
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-lg font-medium">{invoice?.clientName}</h3>
-              <p className="text-sm text-gray-500">Case #{invoice?.case.caseId}</p>
+              <p className="text-sm text-gray-500">
+                Case #{invoice?.case_number}
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-500">Date: {new Date(invoice?.createdAt || "").toLocaleDateString()}</p>
-              <p className="text-sm text-gray-500">Due: {new Date(invoice?.dueDate || "").toLocaleDateString()}</p>
+              <p className="text-sm text-gray-500">
+                Date:{" "}
+                {new Date(invoice?.received_date || "").toLocaleDateString()}
+              </p>
+              <p className="text-sm text-gray-500">
+                Due: {new Date(invoice?.due_date || "").toLocaleDateString()}
+              </p>
             </div>
           </div>
 
@@ -178,7 +196,9 @@ export function EditInvoiceModal({
                     <TableHead className="w-[100px]">Unit Price</TableHead>
                     <TableHead className="w-[100px]">Qty</TableHead>
                     <TableHead className="w-[100px]">Discount %</TableHead>
-                    <TableHead className="w-[100px] text-right">Amount</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Amount
+                    </TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -186,7 +206,7 @@ export function EditInvoiceModal({
                   {items.map((item, index) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {item.category === "tooth" && (
+                        {
                           <Input
                             value={item.toothNumber || ""}
                             onChange={(e) => {
@@ -199,7 +219,7 @@ export function EditInvoiceModal({
                             }}
                             className="w-20"
                           />
-                        )}
+                        }
                       </TableCell>
                       <TableCell>
                         <Input
@@ -261,7 +281,8 @@ export function EditInvoiceModal({
                           style: "currency",
                           currency: "USD",
                         }).format(
-                          (item.unitPrice * item.quantity) *
+                          item.unitPrice *
+                            item.quantity *
                             (1 - (item.discount || 0) / 100)
                         )}
                       </TableCell>
@@ -301,7 +322,9 @@ export function EditInvoiceModal({
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
                     currency: "USD",
-                  }).format(calculateSubtotal("tooth") + calculateSubtotal("alloy"))}
+                  }).format(
+                    calculateSubtotal("tooth") + calculateSubtotal("alloy")
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -330,11 +353,15 @@ export function EditInvoiceModal({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="button" variant="outline" onClick={() => navigate(`/cases/${invoice?.case.id}`)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(`/cases/${invoice?.case.id}`)}
+          >
             Case Notes
           </Button>
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             variant="default"
             disabled={isSubmitting}
             onClick={handleSave}

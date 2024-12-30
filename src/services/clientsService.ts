@@ -174,6 +174,7 @@ class ClientsService {
         throw userRoleError;
       }
       const uthenicated: any = userRoleData;
+      console.log(uthenicated.role, "uthenicated role");
       // Check if the result is an error or if role is present
       if (!userRoleData || !uthenicated.role) {
         logger.error("User role not found in the database", {
@@ -185,7 +186,7 @@ class ClientsService {
       const userRole: any = userRoleData; // Now we get the role from the database
 
       // Step 3: Check if the user has required permissions (admin or technician)
-      if (!["admin", "technician"].includes(userRole.role)) {
+      if (!["admin", "technician", "super_admin"].includes(userRole.role)) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
@@ -216,7 +217,11 @@ class ClientsService {
         return [];
       }
 
-      logger.debug("Successfully fetched clients", { count: clients.length });
+      logger.debug("Successfully fetched clients", {
+        count: clients.length,
+        clients,
+        clientsError,
+      });
 
       // Step 7: Get doctors for each client
       const clientsWithDoctors = await Promise.all(

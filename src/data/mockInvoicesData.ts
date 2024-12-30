@@ -1,6 +1,6 @@
 import { format, addDays } from "date-fns";
 import { mockClients } from "./mockClientsData";
-import { Case } from './mockCasesData';
+import { Case } from "./mockCasesData";
 
 export interface InvoiceItem {
   id: string;
@@ -11,13 +11,54 @@ export interface InvoiceItem {
   caseId?: string;
 }
 
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  lead_time: number | null;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  created_at: string;
+  updated_at: string;
+  requires_shade: boolean;
+  material: {
+    name: string;
+    is_active: boolean;
+    description: string;
+  };
+  product_type: {
+    name: string;
+    is_active: boolean;
+    description: string;
+  };
+  billing_type: {
+    name: string;
+    label: string;
+    is_active: boolean;
+    description: string;
+  };
+  discounted_price: {
+    product_id: string;
+    discount: number;
+    final_price: number;
+    price: number;
+  };
+  teethProducts:{
+    tooth_number:number[]
+  }[]
+};
+
+type ProductArray = Product[];
+
 export interface Invoice {
   id: string;
   invoiceNumber: string;
   clientId: string;
   clientName: string;
   patient: string;
-  client: string;
+  client: {
+    client_name: string;
+  };
   clientAddress: {
     street: string;
     city: string;
@@ -43,6 +84,8 @@ export interface Invoice {
   balance: number;
   status:
     | "draft"
+    | "unpaid"
+    | "pending"
     | "approved"
     | "paid"
     | "overdue"
@@ -52,6 +95,12 @@ export interface Invoice {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // new types
+  received_date: string;
+  case_number: string;
+  products: ProductArray;
+  due_date: string;
+  
 }
 
 const today = new Date();
@@ -240,21 +289,21 @@ export const deleteInvoice = (id: string): void => {
   saveInvoices(invoices);
 };
 
-export const getStatusColor = (status: Invoice['status']) => {
+export const getStatusColor = (status: Invoice["status"]) => {
   switch (status) {
-    case 'draft':
-      return 'bg-gray-500';
-    case 'approved':
-      return 'bg-blue-500';
-    case 'paid':
-      return 'bg-green-500';
-    case 'overdue':
-      return 'bg-red-500';
-    case 'partially_paid':
-      return 'bg-orange-500';
-    case 'cancelled':
-      return 'bg-red-500';
+    case "draft":
+      return "bg-gray-500";
+    case "approved":
+      return "bg-blue-500";
+    case "paid":
+      return "bg-green-500";
+    case "overdue":
+      return "bg-red-500";
+    case "partially_paid":
+      return "bg-orange-500";
+    case "cancelled":
+      return "bg-red-500";
     default:
-      return 'bg-gray-500';
+      return "bg-gray-500";
   }
 };
