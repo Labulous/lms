@@ -19,13 +19,26 @@ import {
   Loader2,
   X,
   Pencil,
+  MoreHorizontal,
+  Check,
+  Printer,
+  Banknote,
+  FileText,
+  Table,
+  Bell,
+  Calendar,
+  Percent as PercentIcon,
+  Clock as ClockIcon,
+  Trash2,
+  CheckCircle,
+  Printer as PrinterIcon,
 } from "lucide-react";
 import { mockInvoices, Invoice } from "../../data/mockInvoicesData";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Table,
+  Table as TableComponent,
   TableBody,
   TableCell,
   TableHead,
@@ -38,6 +51,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,7 +76,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { EditInvoiceModal } from "./EditInvoiceModal";
+import { toast } from "react-hot-toast";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -78,7 +94,9 @@ type BulkAction =
   | "exportCSV"
   | "changeDueDate"
   | "applyDiscount"
-  | "changePaymentTerms";
+  | "changePaymentTerms"
+  | "approve"
+  | "approvePrint";
 
 interface ModalState {
   isOpen: boolean;
@@ -123,46 +141,109 @@ const InvoiceList: React.FC = () => {
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
+  const [caseFilter, setCaseFilter] = useState<string>("");
+
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editMode, setEditMode] = useState<"edit" | "payment">("edit");
+
+  const handleOpenEditModal = (invoice: Invoice, mode: "edit" | "payment" = "edit") => {
+    // Delay setting the invoice to avoid focus issues
+    setTimeout(() => {
+      setEditingInvoice(invoice);
+      setEditMode(mode);
+    }, 0);
+  };
+
+  const handleCloseEditModal = () => {
+    // Delay cleanup to avoid focus issues
+    setTimeout(() => {
+      setEditingInvoice(null);
+      setEditMode("edit");
+    }, 0);
+  };
+
+  const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+      // TODO: API call to save invoice
+      console.log("Saving invoice:", updatedInvoice);
+      
+      // Show success message
+      toast.success("Invoice updated successfully");
+      
+      // Close modal and reset state
+      handleCloseEditModal();
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      toast.error("Failed to update invoice");
+    } finally {
+      setLoadingState({ isLoading: false, action: null });
+    }
+  };
+
+  // Cleanup function for modal state
+  useEffect(() => {
+    return () => {
+      setEditingInvoice(null);
+      setEditMode("edit");
+    };
+  }, []);
+
+  // Focus management
+  useEffect(() => {
+    let lastActiveElement: HTMLElement | null = null;
+    
+    if (editingInvoice) {
+      lastActiveElement = document.activeElement as HTMLElement;
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+      if (lastActiveElement && 'focus' in lastActiveElement) {
+        lastActiveElement.focus();
+      }
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      if (lastActiveElement && 'focus' in lastActiveElement) {
+        lastActiveElement.focus();
+      }
+    };
+  }, [editingInvoice]);
 
   // Initialize invoices
   useEffect(() => {
-    const initialInvoices = mockInvoices;
-    setInvoices(initialInvoices);
-    setFilteredInvoices(initialInvoices);
+    // Filter for completed cases only
+    const completedCaseInvoices = mockInvoices.filter(
+      (invoice) => invoice.case.caseStatus === "completed"
+    );
+    setInvoices(completedCaseInvoices);
+    setFilteredInvoices(completedCaseInvoices);
   }, []);
 
   // Update filtered invoices when search or date filters change
   useEffect(() => {
     const filtered = getFilteredInvoices();
     setFilteredInvoices(filtered);
-  }, [searchTerm, dateFilter, dueDateFilter, statusFilter, invoices]);
+  }, [searchTerm, dateFilter, dueDateFilter, statusFilter, caseFilter, invoices]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
   };
 
-  /* eslint-disable no-unused-vars */
-  const getStatusBadgeVariant = (
-    status: Invoice["status"],
-  /* eslint-disable no-unused-vars */
-  _invoice: Invoice
-  ): string => {
+  const getStatusBadgeVariant = (status: Invoice["status"]): string => {
     switch (status) {
       case "draft":
-        return "draft";
-      case "pending":
-        return "pending";
+        return "secondary";
+      case "approved":
+        return "info";
       case "paid":
         return "success";
-      case "partially_paid":
-        return "warning";
       case "overdue":
         return "destructive";
-      case "cancelled":
-        return "cancelled";
       default:
-        return "default";
+        return "secondary";
     }
   };
 
@@ -190,7 +271,7 @@ const InvoiceList: React.FC = () => {
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
 
-      if (sortConfig.key === "amount" || sortConfig.key === "balance") {
+      if (sortConfig.key === "amount") {
         const numA = Number(a[sortConfig.key]) || 0;
         const numB = Number(b[sortConfig.key]) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
@@ -282,6 +363,18 @@ const InvoiceList: React.FC = () => {
           });
           setInvoices(paidInvoices);
           setFilteredInvoices(paidInvoices);
+          break;
+        case "approve":
+        case "approvePrint":
+          const updatedInvoices = invoices.map((invoice) => {
+            if (selectedInvoices.includes(invoice.id)) {
+              return { ...invoice, status: "approved" as const };
+            }
+            return invoice;
+          });
+          setInvoices(updatedInvoices);
+          setFilteredInvoices(updatedInvoices);
+          setSelectedInvoices([]);
           break;
       }
 
@@ -396,7 +489,8 @@ const InvoiceList: React.FC = () => {
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.patient.toLowerCase().includes(searchTerm.toLowerCase())
+          invoice.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.case.caseId.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -407,6 +501,13 @@ const InvoiceList: React.FC = () => {
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
         statusFilter.includes(invoice.status)
+      );
+    }
+
+    // Apply case filter
+    if (caseFilter) {
+      filtered = filtered.filter(
+        (invoice) => invoice.case.caseId === caseFilter
       );
     }
 
@@ -431,6 +532,7 @@ const InvoiceList: React.FC = () => {
     "partially_paid",
     "overdue",
     "cancelled",
+    "approved",
   ];
 
   const EmptyState = () => (
@@ -457,6 +559,27 @@ const InvoiceList: React.FC = () => {
   const handleDelete = (_id: string) => {
     console.log("download clciked");
   };
+  const handleApprove = (id: string) => {
+    updateInvoice(id, { status: 'approved' });
+  };
+
+  const handleApproveAndPrint = async (id: string) => {
+    await updateInvoice(id, { status: 'approved' });
+    handleDownload(id);
+  };
+
+  const canApproveBulk = selectedInvoices.length > 0 && 
+    selectedInvoices.every(id => {
+      const invoice = invoices.find(inv => inv.id === id);
+      return invoice?.status === 'draft';
+    });
+
+  const canDeleteBulk = selectedInvoices.length > 0 && 
+    selectedInvoices.every(id => {
+      const invoice = invoices.find(inv => inv.id === id);
+      return ['draft', 'overdue'].includes(invoice?.status || '');
+    });
+
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -468,78 +591,129 @@ const InvoiceList: React.FC = () => {
                 {selectedInvoices.length}{" "}
                 {selectedInvoices.length === 1 ? "item" : "items"} selected
               </span>
+              {canApproveBulk && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkAction("approve")}
+                    disabled={loadingState.isLoading}
+                  >
+                    {loadingState.action === "approve" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="mr-2 h-4 w-4" />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleBulkAction("approvePrint")}
+                    disabled={loadingState.isLoading}
+                  >
+                    {loadingState.action === "approvePrint" ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <PrinterIcon className="mr-2 h-4 w-4" />
+                    )}
+                    Approve + Print
+                  </Button>
+                </>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Export As
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={loadingState.isLoading}
+                  >
+                    <MoreHorizontal className="h-4 w-4 mr-2" />
+                    More Actions
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleBulkAction("markPaid")}
+                    className="flex items-center"
+                  >
+                    <Banknote className="mr-2 h-4 w-4" />
+                    <span>Mark as Paid</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
                     onClick={() => handleBulkAction("exportPDF")}
+                    className="flex items-center"
                   >
-                    Export as PDF
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>Export as PDF</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
+                  <DropdownMenuItem 
                     onClick={() => handleBulkAction("exportCSV")}
+                    className="flex items-center"
                   >
-                    Export as CSV
+                    <Table className="mr-2 h-4 w-4" />
+                    <span>Export as CSV</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleBulkAction("sendReminder")}
+                    className="flex items-center"
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    <span>Send Reminder</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <DropdownMenuItem 
+                        className="flex items-center cursor-pointer"
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span>Change Due Date</span>
+                      </DropdownMenuItem>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={dateFilter}
+                        onSelect={(date) => {
+                          setDateFilter(date);
+                          handleBulkAction("changeDueDate");
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+
+                  <DropdownMenuItem 
+                    onClick={() => handleBulkAction("applyDiscount")}
+                    className="flex items-center"
+                  >
+                    <PercentIcon className="mr-2 h-4 w-4" />
+                    <span>Apply Discount</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => handleBulkAction("changePaymentTerms")}
+                    className="flex items-center"
+                  >
+                    <ClockIcon className="mr-2 h-4 w-4" />
+                    <span>Change Payment Terms</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  {canDeleteBulk && (
+                    <DropdownMenuItem 
+                      onClick={() => handleBulkAction("delete")}
+                      className="flex items-center text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkAction("changeDueDate")}
-                disabled={loadingState.isLoading}
-              >
-                {loadingState.action === "changeDueDate" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                )}
-                Change Due Date
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkAction("applyDiscount")}
-                disabled={loadingState.isLoading}
-              >
-                {loadingState.action === "applyDiscount" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Percent className="mr-2 h-4 w-4" />
-                )}
-                Apply Discount
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkAction("changePaymentTerms")}
-                disabled={loadingState.isLoading}
-              >
-                {loadingState.action === "changePaymentTerms" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Clock className="mr-2 h-4 w-4" />
-                )}
-                Change Terms
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => handleBulkAction("delete")}
-                disabled={loadingState.isLoading}
-              >
-                {loadingState.action === "delete" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash className="mr-2 h-4 w-4" />
-                )}
-                Delete
-              </Button>
             </>
           ) : null}
         </div>
@@ -555,7 +729,7 @@ const InvoiceList: React.FC = () => {
 
       <div className="rounded-md border overflow-hidden">
         <div className="overflow-x-auto">
-          <Table>
+          <TableComponent>
             <TableHeader>
               <TableRow className="bg-muted hover:bg-muted">
                 <TableHead className="w-[40px]">
@@ -568,51 +742,39 @@ const InvoiceList: React.FC = () => {
                     }
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedInvoices((prev) => [
-                          ...prev,
-                          ...getSortedAndPaginatedData().map((i) => i.id),
-                        ]);
-                      } else {
-                        setSelectedInvoices((prev) =>
-                          prev.filter(
-                            (id) =>
-                              !getSortedAndPaginatedData().find(
-                                (i) => i.id === id
-                              )
+                        setSelectedInvoices(
+                          getSortedAndPaginatedData().map(
+                            (invoice) => invoice.id
                           )
                         );
+                      } else {
+                        setSelectedInvoices([]);
                       }
                     }}
                   />
                 </TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div className="flex items-center hover:text-primary">
-                        Date
-                        {getSortIcon("date")}
-                        {dateFilter && (
-                          <X
-                            className="ml-2 h-4 w-4 hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDateFilter(undefined);
-                            }}
-                          />
-                        )}
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateFilter}
-                        onSelect={setDateFilter}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                <TableHead
+                  onClick={() => handleSort("date")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
+                  <div className="flex items-center">
+                    Date
+                    {getSortIcon("date")}
+                  </div>
                 </TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap">
+                <TableHead
+                  onClick={() => handleSort("invoiceNumber")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
+                  <div className="flex items-center">
+                    Invoice #
+                    {getSortIcon("invoiceNumber")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort("status")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
                   <Popover>
                     <PopoverTrigger asChild>
                       <div className="flex items-center hover:text-primary">
@@ -628,9 +790,7 @@ const InvoiceList: React.FC = () => {
                     <PopoverContent className="w-[200px] p-2" align="start">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                          <span className="text-sm font-medium">
-                            Filter by Status
-                          </span>
+                          <span className="text-sm font-medium">Filter by Status</span>
                           {statusFilter.length > 0 && (
                             <Button
                               variant="ghost"
@@ -642,11 +802,15 @@ const InvoiceList: React.FC = () => {
                             </Button>
                           )}
                         </div>
-                        {allStatuses.map((status) => (
-                          <div
-                            key={status}
-                            className="flex items-center space-x-2"
-                          >
+                        {[
+                          "draft",
+                          "approved",
+                          "paid",
+                          "partially_paid",
+                          "overdue",
+                          "cancelled",
+                        ].map((status) => (
+                          <div key={status} className="flex items-center space-x-2">
                             <Checkbox
                               id={`status-${status}`}
                               checked={statusFilter.includes(status)}
@@ -664,32 +828,10 @@ const InvoiceList: React.FC = () => {
                               htmlFor={`status-${status}`}
                               className="flex items-center text-sm font-medium cursor-pointer"
                             >
-                              <Badge
-                                variant={
-                                  getStatusBadgeVariant(
-                                    status,
-                                    {} as Invoice
-                                  ) as
-                                    | "filter"
-                                    | "default"
-                                    | "success"
-                                    | "warning"
-                                    | "destructive"
-                                    | "outline"
-                                    | "secondary"
-                                    | "Crown"
-                                    | "Bridge"
-                                    | "Removable"
-                                    | "Implant"
-                                    | "Coping"
-                                    | "Appliance"
-                                    | null
-                                    | undefined
-                                }
-                                className="ml-1"
-                              >
-                                {status.charAt(0).toUpperCase() +
-                                  status.slice(1).replace("_", " ")}
+                              <Badge variant={getStatusBadgeVariant(status as Invoice["status"])}>
+                                {status === "partially_paid"
+                                  ? "Partially Paid"
+                                  : status.charAt(0).toUpperCase() + status.slice(1)}
                               </Badge>
                             </label>
                           </div>
@@ -699,29 +841,21 @@ const InvoiceList: React.FC = () => {
                   </Popover>
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort("invoiceNumber")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Invoice #{getSortIcon("invoiceNumber")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("patient")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Patient
-                    {getSortIcon("patient")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("client")}
+                  onClick={() => handleSort("clientName")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
                     Client
-                    {getSortIcon("client")}
+                    {getSortIcon("clientName")}
+                  </div>
+                </TableHead>
+                <TableHead
+                  onClick={() => handleSort("case.caseId")}
+                  className="cursor-pointer whitespace-nowrap"
+                >
+                  <div className="flex items-center">
+                    Case #
+                    {getSortIcon("case.caseId")}
                   </div>
                 </TableHead>
                 <TableHead
@@ -734,42 +868,15 @@ const InvoiceList: React.FC = () => {
                   </div>
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort("balance")}
-                  className="cursor-pointer text-right whitespace-nowrap"
+                  onClick={() => handleSort("dueDate")}
+                  className="cursor-pointer whitespace-nowrap"
                 >
-                  <div className="flex items-center justify-end">
-                    Balance
-                    {getSortIcon("balance")}
+                  <div className="flex items-center">
+                    Due Date
+                    {getSortIcon("dueDate")}
                   </div>
                 </TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div className="flex items-center hover:text-primary">
-                        Due Date
-                        {getSortIcon("dueDate")}
-                        {dueDateFilter && (
-                          <X
-                            className="ml-2 h-4 w-4 hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDueDateFilter(undefined);
-                            }}
-                          />
-                        )}
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dueDateFilter}
-                        onSelect={setDueDateFilter}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </TableHead>
-                <TableHead className="w-[40px]" />
+                <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -804,31 +911,6 @@ const InvoiceList: React.FC = () => {
                     <TableCell className="whitespace-nowrap">
                       {format(new Date(invoice.date), "dd/MM/yy")}
                     </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          getStatusBadgeVariant(invoice.status, invoice) as
-                            | "filter"
-                            | "default"
-                            | "success"
-                            | "warning"
-                            | "destructive"
-                            | "outline"
-                            | "secondary"
-                            | "Crown"
-                            | "Bridge"
-                            | "Removable"
-                            | "Implant"
-                            | "Coping"
-                            | "Appliance"
-                            | null
-                            | undefined
-                        }
-                      >
-                        {invoice.status.charAt(0).toUpperCase() +
-                          invoice.status.slice(1)}
-                      </Badge>
-                    </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <Link
                         to={`/billing/${invoice.id}`}
@@ -837,21 +919,25 @@ const InvoiceList: React.FC = () => {
                         {invoice.invoiceNumber}
                       </Link>
                     </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {invoice.patient}
+                    <TableCell>
+                      <Badge
+                        variant={getStatusBadgeVariant(
+                          invoice.status
+                        )}
+                      >
+                        {invoice.status.charAt(0).toUpperCase() +
+                          invoice.status.slice(1)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {invoice.client}
+                      {invoice.clientName}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {invoice.case.caseId}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
                       $
                       {invoice.amount.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      $
-                      {invoice.balance.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                       })}
                     </TableCell>
@@ -871,6 +957,25 @@ const InvoiceList: React.FC = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-[160px]">
+                          {invoice.status === 'draft' && (
+                            <>
+                              <DropdownMenuItem
+                                onClick={() => handleApprove(invoice.id)}
+                                className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Approve
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleApproveAndPrint(invoice.id)}
+                                className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                              >
+                                <PrinterIcon className="mr-2 h-4 w-4" />
+                                Approve + Print
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                            </>
+                          )}
                           <DropdownMenuItem
                             onClick={() => navigate(`/billing/${invoice.id}`)}
                             className="cursor-pointer"
@@ -878,15 +983,24 @@ const InvoiceList: React.FC = () => {
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate(`/billing/${invoice.id}/edit`)
-                            }
-                            className="cursor-pointer"
-                          >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit Invoice
-                          </DropdownMenuItem>
+                          {['draft', 'overdue'].includes(invoice.status) && (
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditModal(invoice, "edit")}
+                              className="cursor-pointer"
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Invoice
+                            </DropdownMenuItem>
+                          )}
+                          {['approved', 'partially_paid'].includes(invoice.status) && (
+                            <DropdownMenuItem
+                              onClick={() => handleOpenEditModal(invoice, "payment")}
+                              className="cursor-pointer"
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Record Payment
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => handleDownload(invoice.id)}
                             className="cursor-pointer"
@@ -894,14 +1008,18 @@ const InvoiceList: React.FC = () => {
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(invoice.id)}
-                            className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground"
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Delete Invoice
-                          </DropdownMenuItem>
+                          {['draft', 'overdue'].includes(invoice.status) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(invoice.id)}
+                                className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                              >
+                                <Trash className="mr-2 h-4 w-4" />
+                                Delete Invoice
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -909,7 +1027,7 @@ const InvoiceList: React.FC = () => {
                 ))
               )}
             </TableBody>
-          </Table>
+          </TableComponent>
         </div>
       </div>
 
@@ -985,6 +1103,8 @@ const InvoiceList: React.FC = () => {
                 "Applying discount..."}
               {loadingState.action === "changePaymentTerms" &&
                 "Changing payment terms..."}
+              {loadingState.action === "approve" && "Approving..."}
+              {loadingState.action === "approvePrint" && "Approving and printing..."}
               <br />
               {processingFeedback}
               <br />
@@ -994,108 +1114,15 @@ const InvoiceList: React.FC = () => {
         </div>
       )}
 
-      <Dialog
-        open={modalState.isOpen}
-        onOpenChange={(open) =>
-          !open && setModalState({ isOpen: false, type: null })
-        }
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {modalState.type === "changeDueDate" && "Change Due Date"}
-              {modalState.type === "applyDiscount" && "Apply Discount"}
-              {modalState.type === "changePaymentTerms" &&
-                "Change Payment Terms"}
-            </DialogTitle>
-          </DialogHeader>
-
-          {modalState.type === "changeDueDate" && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="dueDate" className="text-right">
-                  New Due Date
-                </Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  className="col-span-3"
-                  onChange={(e) => setNewDueDate(new Date(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
-
-          {modalState.type === "applyDiscount" && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="discountType" className="text-right">
-                  Discount Type
-                </Label>
-                <Select
-                  value={discountType}
-                  onValueChange={(value: "percentage" | "fixed") =>
-                    setDiscountType(value)
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed Amount</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="discountValue" className="text-right">
-                  Value
-                </Label>
-                <Input
-                  id="discountValue"
-                  type="number"
-                  className="col-span-3"
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(Number(e.target.value))}
-                />
-              </div>
-            </div>
-          )}
-
-          {modalState.type === "changePaymentTerms" && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="paymentTerms" className="text-right">
-                  Payment Terms
-                </Label>
-                <Select value={paymentTerms} onValueChange={setPaymentTerms}>
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="net30">Net 30</SelectItem>
-                    <SelectItem value="net60">Net 60</SelectItem>
-                    <SelectItem value="net90">Net 90</SelectItem>
-                    <SelectItem value="due_on_receipt">
-                      Due on Receipt
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setModalState({ isOpen: false, type: null })}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleModalSubmit}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Invoice Modal */}
+      {editingInvoice && (
+        <EditInvoiceModal
+          invoice={editingInvoice}
+          mode={editMode}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveInvoice}
+        />
+      )}
     </div>
   );
 };
