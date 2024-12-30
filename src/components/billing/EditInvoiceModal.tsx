@@ -313,21 +313,12 @@ export function EditInvoiceModal({
 
             <div className="w-1/3 space-y-4">
               <div className="flex justify-between">
-                <span>Subtotal (Tooth Items):</span>
+                <span>Subtotal:</span>
                 <span>
                   {new Intl.NumberFormat("en-US", {
                     style: "currency",
                     currency: "USD",
-                  }).format(calculateSubtotal("tooth"))}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Subtotal (Alloy Items):</span>
-                <span>
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  }).format(calculateSubtotal("alloy"))}
+                  }).format(calculateSubtotal("tooth") + calculateSubtotal("alloy"))}
                 </span>
               </div>
               <div className="flex justify-between items-center">
