@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
-import { DateTimePicker } from "@/components/ui/date-time-picker"; // Import DateTimePicker component
-import { Separator } from "@/components/ui/separator"; // Import Separator component
+import { DateTimePicker } from "@/components/ui/date-time-picker"; 
+import { Separator } from "@/components/ui/separator"; 
 import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
 import { FormData } from "@/types/supabase";
@@ -229,11 +229,6 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           </div>
         </div>
 
-        {/* Separator between columns 1 and 2 */}
-        <div className="absolute left-[33.33%] top-0 h-full">
-          <Separator orientation="vertical" className="h-full" />
-        </div>
-
         {/* Column 2: Order Details */}
         <div className="col-span-4 px-4">
           <div className="space-y-4">
@@ -242,14 +237,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 Order Date *
               </Label>
               <DatePicker
-                date={
-                  formData.orderDate ? new Date(formData.orderDate) : undefined
-                }
-                onSelect={handleDateChange("orderDate")}
-                className={cn(
-                  "bg-white [&>button]:bg-white",
-                  errors.orderDate ? "border-red-500" : ""
-                )}
+                date={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                onSelect={(date) => onChange("orderDate", date?.toISOString())}
+                className={cn(errors.orderDate ? "border-red-500" : "")}
+                minDate={new Date(2020, 0, 1)}
+                maxDate={new Date()}
+                dateFormat="MM/dd/yyyy"
+                placeholder="Select order date"
               />
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
@@ -257,7 +251,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex justify-between items-center">
                 <Label htmlFor="dueDate" className="text-xs">
                   Due Date
                 </Label>
@@ -280,14 +274,12 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               </div>
               {!formData.isDueDateTBD && (
                 <DatePicker
-                  date={
-                    formData.dueDate ? new Date(formData.dueDate) : undefined
-                  }
-                  onSelect={handleDateChange("dueDate")}
-                  className={cn(
-                    "bg-white [&>button]:bg-white",
-                    errors.dueDate ? "border-red-500" : ""
-                  )}
+                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  onSelect={(date) => onChange("dueDate", date?.toISOString())}
+                  className={cn(errors.dueDate ? "border-red-500" : "")}
+                  minDate={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                  dateFormat="MM/dd/yyyy"
+                  placeholder="Select due date"
                 />
               )}
               {errors.dueDate && (
@@ -306,17 +298,15 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       ? new Date(formData.appointmentDate)
                       : undefined
                   }
-                  onSelect={(date) => handleDateChange("appointmentDate")(date)}
-                  className={cn(errors.appointmentDate && "border-red-500")}
+                  onSelect={(date) => onChange("appointmentDate", date?.toISOString())}
+                  className={cn(errors.appointmentDate ? "border-red-500" : "")}
+                  minDate={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                  dateFormat="MM/dd/yyyy h:mm aa"
+                  placeholder="Select appointment date & time"
                 />
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Separator between columns 2 and 3 */}
-        <div className="absolute left-[66.66%] top-0 h-full">
-          <Separator orientation="vertical" className="h-full" />
         </div>
 
         {/* Column 3: Status & Delivery */}

@@ -260,7 +260,7 @@ const NewCase: React.FC = () => {
         </h1>
 
         {/* Order Details Section */}
-        <div className="bg-white shadow overflow-hidden">
+        <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>
           </div>
