@@ -588,6 +588,26 @@ export interface Database {
           billing_type_id?: string;
         };
       };
+      labs: {
+        Row: {
+          name: string;
+          office_address: {
+            address_1: string;
+            address_2: string;
+            city: string;
+            state?: string;
+          };
+        };
+        Insert: {
+          name?: string;
+          office_address?: {
+            address_1?: string;
+            address_2?: string;
+            city?: string;
+            state?: string;
+          };
+        };
+      };
     };
     headers: {
       Accept: string;

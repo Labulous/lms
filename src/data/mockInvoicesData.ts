@@ -52,7 +52,7 @@ type Product = {
   };
   teethProducts: {
     tooth_number: number[];
-  }[];
+  };
 };
 
 type ProductArray = Product[];
@@ -153,7 +153,9 @@ const createDefaultInvoices = (): Invoice[] => {
       clientId: client.id,
       clientName: client.clientName,
       patient: patients[Math.floor(Math.random() * patients.length)],
-      client: client.clientName,
+      client: {
+        client_name: client.clientName as string,
+      },
       clientAddress: client.address,
       date: format(
         addDays(today, -Math.floor(Math.random() * 30)),
@@ -192,8 +194,8 @@ const createDefaultInvoices = (): Invoice[] => {
           quantity: 1,
           unitPrice: amount,
           totalPrice: amount,
-          toothNumber: 0,
           discount: 0,
+          toothNumber: "",
         },
       ],
       subTotal: amount,
@@ -270,7 +272,8 @@ export const getOverdueInvoices = (): Invoice[] => {
   return invoices.filter(
     (invoice) =>
       invoice.status === "overdue" ||
-      (invoice.status === "pending" && new Date(invoice.dueDate) < today)
+      (invoice.status === "pending" &&
+        new Date(invoice.dueDate as string) < today)
   );
 };
 

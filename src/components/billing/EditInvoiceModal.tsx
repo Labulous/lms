@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/table";
 import { Invoice, InvoiceItem } from "@/data/mockInvoicesData";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
 import {
   DropdownMenuContent,
@@ -62,7 +61,7 @@ export function EditInvoiceModal({
         unitPrice: item?.discounted_price?.price ?? 0,
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,
-        toothNumber: item.teethProducts[0]?.tooth_number?.join(",") || "",
+        toothNumber: item.teethProducts?.tooth_number?.join(",") || "1",
         description: item.name,
         id: item.id,
       }));
@@ -74,20 +73,10 @@ export function EditInvoiceModal({
       setDiscount(invoice.discount?.value || 0);
     }
   }, [invoice]);
-  console.log(invoice?.id, "case_id");
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const fetchedProducts = await productsService.getProducts();
-        console.log(
-          "Fetched products:",
-          fetchedProducts.map((p) => ({
-            id: p.id,
-            name: p.name,
-            material: p.material,
-            type: p.product_type,
-          }))
-        );
         setProducts(fetchedProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -98,17 +87,11 @@ export function EditInvoiceModal({
     };
 
     fetchProducts();
-    if (invoice) {
-      console.log(invoice, "notes here");
-    }
   }, []);
 
   const calculateTotal = () => {
-    console.log(items, "itemsitems");
-
     const subtotal = items.reduce((sum, item) => {
       const itemTotal = item.unitPrice * item.quantity;
-      console.log(itemTotal, "itemTotal");
       const discountAmount = (itemTotal * (item.discount || 0)) / 100;
       return sum + (itemTotal - discountAmount);
     }, 0);
@@ -165,7 +148,6 @@ export function EditInvoiceModal({
     }
   };
   const clients = [{ id: "1", clientName: "zahid" }];
-  console.log(selectedProduct, "products");
 
   const handleSelectedProduct = async (product: any) => {
     try {
@@ -188,7 +170,6 @@ export function EditInvoiceModal({
         setSelectedProduct(product);
         return;
       }
-      console.log(data, "datadiscount");
       if (data.length > 0) {
         setSelectedProduct({ ...product, data });
         setItems((items) =>
@@ -205,7 +186,6 @@ export function EditInvoiceModal({
               : item
           )
         );
-        console.log(`Discounted Price: da`, data);
       } else {
         console.warn("No discounted price found for this product.");
         setSelectedProduct(product);
@@ -228,10 +208,7 @@ export function EditInvoiceModal({
       console.error("An unexpected error occurred:", err);
       setSelectedProduct(product);
     }
-
-    console.log(items, "items");
   };
-  console.log(items, "notes here");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -374,18 +351,20 @@ export function EditInvoiceModal({
                                     No clients found
                                   </DropdownMenuItem>
                                 ) : (
-                                  products.map((c) => (
-                                    <div
-                                      key={c.id}
-                                      onClick={() =>
-                                        // navigate(`/clients/${c.id}`)
-                                        handleSelectedProduct(c)
-                                      }
-                                      className="cursor-pointer w-full hover:bg-red-400"
-                                    >
-                                      {c.name}
-                                    </div>
-                                  ))
+                                  <div className="">
+                                    {products.map((c) => (
+                                      <div
+                                        key={c.id}
+                                        onClick={() =>
+                                          // navigate(`/clients/${c.id}`)
+                                          handleSelectedProduct(c)
+                                        }
+                                        className="cursor-pointer w-full hover:bg-gray-200"
+                                      >
+                                        {c.name}
+                                      </div>
+                                    ))}
+                                  </div>
                                 )}
                               </div>
                             </DropdownMenuContent>

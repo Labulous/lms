@@ -139,6 +139,7 @@ interface ExtendedCase extends Case {
     consultRequested: number;
     returnArticulator: number;
   };
+  products: any[];
 }
 
 const TYPE_COLORS = {

@@ -33,6 +33,17 @@ interface MenuItem {
   }[];
 }
 
+interface OfficeAddress {
+  address_1: string;
+  address_2: string;
+  city: string;
+}
+
+interface OfficeData {
+  name: string;
+  office_address: OfficeAddress; // office_address should be an array of objects
+}
+
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
@@ -43,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const { user } = useAuth();
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
-  const [labs, setLabs] = useState([]);
+  const [labs, setLabs] = useState<OfficeData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   useEffect(() => {
@@ -74,8 +85,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           throw new Error(error.message);
         }
 
-        setLabs(data || []);
-      } catch (err) {
+        setLabs(data as any);
+      } catch (err: any) {
         console.error("Error fetching labs data:", err.message);
         setError(err.message);
       } finally {
@@ -230,7 +241,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               {labs[0]?.name}
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {labs[0]?.office_address?.address_1},{labs[0]?.office_address?.city}
+              {labs[0]?.office_address.address_1},
+              {labs[0]?.office_address?.city}
             </p>
           </div>
         </div>

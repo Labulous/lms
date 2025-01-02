@@ -33,6 +33,8 @@ const defaultItem: InvoiceItem = {
   quantity: 1,
   unitPrice: 1,
   totalPrice: 1,
+  toothNumber: "",
+  discount: 0,
 };
 
 const InvoiceForm: React.FC = () => {
@@ -48,7 +50,6 @@ const InvoiceForm: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get client's cases
   const clientCases = formData.clientId
     ? getCases().filter((c) => c.clientId === formData.clientId)
     : [];
@@ -124,23 +125,20 @@ const InvoiceForm: React.FC = () => {
   const handlePreview = async () => {
     const { clientId, items, discount, taxRate, notes } = formData;
 
-    // Ensure items is an array, even if formData.items is undefined or null
     const result = await generateInvoice(
-      clientId, // clientId as a string
-      items || [], // Ensure items is at least an empty array if not provided
+      clientId,
+      [],
       discount?.value,
-      discount?.type, // Default discount type to "percentage" if not provided
-      taxRate || 0, // Default tax to 0 if not provided
-      notes // Notes (string or undefined)
+      discount?.type,
+      taxRate || 0,
+      notes
     );
 
-    // Handle errors if any
     if ("errors" in result) {
       toast.error("Please fill in all required fields correctly");
       return;
     }
 
-    // Set the preview to be shown
     setShowPreview(true);
   };
 
@@ -151,26 +149,22 @@ const InvoiceForm: React.FC = () => {
     try {
       const { clientId, items, discount, taxRate, notes } = formData;
 
-      // Ensure items is an array, even if formData.items is undefined or null
       const result = await generateInvoice(
-        clientId, // clientId as a string
-        items || [], // Ensure items is at least an empty array if not provided
+        clientId,
+        [],
         discount?.value,
-        discount?.type, // Default discount type to "percentage" if not provided
-        taxRate || 0, // Default tax to 0 if not provided
-        notes // Notes (string or undefined)
+        discount?.type,
+        taxRate || 0,
+        notes
       );
 
-      // Handle errors if any
       if ("errors" in result) {
         toast.error("Please fill in all required fields correctly");
         return;
       }
 
-      // Here you would typically save the invoice
       toast.success("Invoice generated successfully");
 
-      // Reset form
       setFormData({
         clientId: "",
         items: [{ ...defaultItem }],
