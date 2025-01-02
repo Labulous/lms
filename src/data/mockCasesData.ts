@@ -115,7 +115,12 @@ const loadCases = (): Case[] => {
 // const saveCases = (cases: Case[]) => {
 //   localStorage.setItem("cases", JSON.stringify(cases));
 // };
-const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
+const saveCaseProduct = async (
+  overview: any,
+  cases: any,
+  navigate?: any,
+  savedCaseId?: string
+) => {
   // Step 1: Create a row in the enclosed_case table
   try {
     const { data: caseProductData, error: caseProductError } = await supabase
@@ -141,7 +146,7 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
       stump_shade_id: product.shades.stump || "",
       notes: product.notes || "",
       tooth_number: product.teeth || "",
-      product_id: product.product.id,
+      product_id: product.id,
     }));
 
     // Calculate discounted prices for products
@@ -150,6 +155,8 @@ const saveCaseProduct = async (overview: any, cases: any, navigate?: any) => {
       price: product.price,
       discount: product.discount,
       final_price: product.price - (product.price * product.discount) / 100,
+      case_id: savedCaseId as string,
+      user_id: cases.overview.created_by,
     }));
 
     // Insert case_product_teeth rows
@@ -240,6 +247,25 @@ const saveCases = async (cases: any, navigate?: any) => {
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
+      const updateDueDate = () => {
+        const currentDate = new Date(); // Get the current date
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth(); // 0-indexed (0 = January, 11 = December)
+
+        // Create a new date object for the 28th of the current month and year
+        const dueDate = new Date(currentYear, currentMonth, 28);
+
+        // Format the date as "DD/MM/YYYY"
+        const formattedDueDate = `${String(dueDate.getDate()).padStart(
+          2,
+          "0"
+        )}/${String(dueDate.getMonth() + 1).padStart(
+          2,
+          "0"
+        )}/${dueDate.getFullYear()}`;
+
+        return formattedDueDate;
+      };
 
       // Step 3: Save case products
       try {
@@ -248,7 +274,7 @@ const saveCases = async (cases: any, navigate?: any) => {
           case_id: savedCaseId,
           products_id: productIds,
         };
-        await saveCaseProduct(caseProduct, cases, navigate); // Save each case product
+        await saveCaseProduct(caseProduct, cases, navigate, savedCaseId); // Save each case product
         console.log("All case products saved successfully.");
       } catch (productError) {
         console.error("Error saving case products:", productError);
@@ -260,6 +286,7 @@ const saveCases = async (cases: any, navigate?: any) => {
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
         status: "Unpaid",
+        due_date: updateDueDate(),
       };
 
       const { data: invoiceData, error: invoiceError } = await supabase

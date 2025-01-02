@@ -66,13 +66,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
@@ -87,6 +80,7 @@ import { da } from "date-fns/locale";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
+import { DiscountedPrice } from "@/types/supabase";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -104,6 +98,7 @@ type BulkAction =
   | "applyDiscount"
   | "changePaymentTerms"
   | "approve"
+  | "save"
   | "approvePrint";
 
 interface ModalState {
@@ -116,7 +111,9 @@ interface LoadingState {
   isLoading: boolean;
   progress?: number;
 }
-
+type DiscountedPriceMap = {
+  [key: string]: DiscountedPrice; // Assuming product_id is a string; use `number` if it's a number
+};
 const BATCH_SIZE = 50; // Process 50 items at a time
 
 const InvoiceList: React.FC = () => {
@@ -151,7 +148,7 @@ const InvoiceList: React.FC = () => {
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+  const [reFreshData, setRefreshData] = useState(false);
   const { user } = useAuth();
 
   // Initialize invoices
@@ -161,7 +158,6 @@ const InvoiceList: React.FC = () => {
 
       try {
         const lab = await getLabIdByUserId(user?.id as string);
-        setLab(lab);
 
         if (!lab?.labId) {
           console.error("Lab ID not found.");
@@ -200,6 +196,7 @@ const InvoiceList: React.FC = () => {
             case_number,
             otherItems,
             lab_notes,
+            invoice_notes,
             technician_notes,
             occlusal_type,
             contact_type,
@@ -218,6 +215,12 @@ const InvoiceList: React.FC = () => {
               cadcamFiles,
               consultRequested,
               user_id
+            ),
+            invoicesData:invoices!case_id (
+            case_id,
+            amount,
+            status,
+            due_date
             ),
             product_ids:case_products!id (
               products_id,
@@ -291,10 +294,12 @@ const InvoiceList: React.FC = () => {
      product_id,
      discount,
      final_price,
-     price
+     price,
+     quantity
    `
                 )
-                .in("product_id", productsIdArray);
+                .in("product_id", productsIdArray)
+                .eq("case_id", singleCase.id);
 
             if (discountedPriceError) {
               console.error(
@@ -341,23 +346,17 @@ const InvoiceList: React.FC = () => {
                 teethProductsError
               );
             }
-            const discountedPriceMap = discountedPriceData?.reduce(
-              (acc, item) => {
+            const discountedPriceMap: DiscountedPriceMap = (
+              discountedPriceData ?? []
+            ) // Default to an empty array if `discountedPriceData` is undefined or null
+              .reduce((acc: DiscountedPriceMap, item: DiscountedPrice) => {
                 acc[item.product_id] = item;
                 return acc;
-              },
-              {}
-            );
-            // Map teeth products to their respective product IDs
-            const teethProductsMap = teethProductData?.reduce((acc, item) => {
-              acc[item.product_id] = acc[item.product_id] || [];
-              acc[item.product_id].push(item);
-              return acc;
-            }, {});
+              }, {} as DiscountedPriceMap);
 
             // Attach the teeth products to each product
             const products = productData?.map((product) => {
-              const teethProducts = teethProductsMap[product.id] || [];
+              const teethProducts = teethProductData?.[product.id] || [];
               return {
                 ...product,
                 discounted_price: discountedPriceMap[product.id] || null, // Attach the discounted price to product
@@ -388,7 +387,7 @@ const InvoiceList: React.FC = () => {
     const initialInvoices = mockInvoices;
     setInvoices(initialInvoices);
     setFilteredInvoices(initialInvoices);
-  }, [user?.id]);
+  }, [user?.id, reFreshData]);
 
   const [caseFilter, setCaseFilter] = useState<string>("");
 
@@ -415,13 +414,206 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    const updatedProductIds = updatedInvoice.items.map((item) => item.id);
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
-      // TODO: API call to save invoice
-      console.log("Saving invoice:", updatedInvoice);
+
+      // Update the case_products table
+      const { data: updatedCaseProducts, error: updateCaseProductsError } =
+        await supabase
+          .from("case_products")
+          .update({ products_id: updatedProductIds })
+          .eq("case_id", updatedInvoice.caseId)
+          .select(); // Fetch updated rows
+
+      if (updateCaseProductsError) {
+        throw new Error(updateCaseProductsError.message);
+      }
+
+      console.log("Updated case_products:", updatedCaseProducts);
+
+      // Process each updated case product
+      for (const updatedCaseProduct of updatedCaseProducts) {
+        const { id: caseProductId, products_id } = updatedCaseProduct;
+
+        if (Array.isArray(products_id)) {
+          for (const product_id of products_id) {
+            // Update or insert into case_product_teeth
+            const { data: existingTeeth, error: fetchError } = await supabase
+              .from("case_product_teeth")
+              .select("id")
+              .eq("case_product_id", caseProductId)
+              .eq("product_id", product_id)
+              .single();
+
+            if (fetchError && fetchError.code !== "PGRST116") {
+              throw new Error(fetchError.message);
+            }
+
+            if (existingTeeth) {
+              const { error: updateTeethError } = await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0]?.toothNumber,
+                  ],
+                })
+                .eq("case_product_id", caseProductId)
+                .eq("product_id", product_id);
+
+              if (updateTeethError) throw new Error(updateTeethError.message);
+
+              console.log(
+                `Updated case_product_teeth for case_product_id: ${caseProductId}, product_id: ${product_id}`
+              );
+            } else {
+              const { error: insertTeethError } = await supabase
+                .from("case_product_teeth")
+                .insert({
+                  case_product_id: caseProductId,
+                  product_id,
+                  tooth_number: [
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].toothNumber,
+                  ],
+                });
+
+              if (insertTeethError) throw new Error(insertTeethError.message);
+
+              console.log(
+                `Inserted new case_product_teeth for case_product_id: ${caseProductId}, product_id: ${product_id}`
+              );
+            }
+
+            // Update or insert into discounted_price
+            const { data: existingDiscount, error: discountFetchError } =
+              await supabase
+                .from("discounted_price")
+                .select("id")
+                .eq("case_id", updatedInvoice.caseId)
+                .eq("product_id", product_id)
+                .single();
+
+            if (discountFetchError && discountFetchError.code !== "PGRST116") {
+              throw new Error(discountFetchError.message);
+            }
+
+            if (existingDiscount) {
+              const { data: updatedDiscount, error: updateDiscountError } =
+                await supabase
+                  .from("discounted_price")
+                  .update({
+                    discount: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].discount,
+                    quantity: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].quantity,
+                    price: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].unitPrice,
+                    final_price:
+                      updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].quantity *
+                      updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].unitPrice *
+                      (1 -
+                        (updatedInvoice.items.filter(
+                          (item) => item.id === product_id
+                        )[0].discount || 0) /
+                          100),
+                  }) // Update discount value
+                  .eq("case_id", updatedInvoice.caseId)
+                  .eq("product_id", product_id)
+                  .select();
+
+              if (updateDiscountError)
+                throw new Error(updateDiscountError.message);
+
+              console.log(
+                `Updated discounted_price for case_id: ${updatedInvoice.caseId}, product_id: ${product_id}`
+              );
+              console.log(updatedDiscount, "updatedDiscount");
+            } else {
+              const { error: insertDiscountError } = await supabase
+                .from("discounted_price")
+                .insert({
+                  case_id: updatedInvoice.caseId,
+                  product_id,
+                  discount: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].discount, // New discount value
+                  quantity: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].quantity,
+                  price: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].unitPrice,
+                  final_price:
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].quantity *
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].unitPrice *
+                    (1 -
+                      (updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].discount || 0) /
+                        100),
+                })
+                .select();
+              setRefreshData(true);
+              if (insertDiscountError)
+                throw new Error(insertDiscountError.message);
+
+              console.log(
+                `Inserted new discounted_price for case_id: ${updatedInvoice.caseId}, product_id: ${product_id}`
+              );
+            }
+          }
+        } else {
+          console.warn(
+            `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+          );
+        }
+      }
+
+      // Update cases table with invoice_notes and lab_notes
+      const { error: updateCasesError } = await supabase
+        .from("cases")
+        .update({
+          invoice_notes: updatedInvoice?.notes?.invoiceNotes, // Assuming this field is available in updatedInvoice
+          lab_notes: updatedInvoice?.notes?.labNotes, // Assuming this field is available in updatedInvoice
+        })
+        .eq("id", updatedInvoice.caseId);
+
+      if (updateCasesError) {
+        throw new Error(updateCasesError.message);
+      }
+
+      // update invocies
+      const { error: updateInvoicesError } = await supabase
+        .from("invoices")
+        .update({
+          amount: updatedInvoice.totalAmount, // Assuming this field is available in updatedInvoice
+        })
+        .eq("case_id", updatedInvoice.caseId);
+
+      if (updateInvoicesError) {
+        throw new Error(updateInvoicesError.message);
+      }
+
+      console.log("Updated cases with invoice_notes and lab_notes");
 
       // Show success message
-      toast.success("Invoice updated successfully");
+      toast.success("Invoice and related data updated successfully");
 
       // Close modal and reset state
       handleCloseEditModal();
@@ -441,7 +633,6 @@ const InvoiceList: React.FC = () => {
     };
   }, []);
 
-  // Focus management
   useEffect(() => {
     let lastActiveElement: HTMLElement | null = null;
 
@@ -450,6 +641,7 @@ const InvoiceList: React.FC = () => {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
+      const lastActiveElement = document.activeElement as HTMLElement | null;
       if (lastActiveElement && "focus" in lastActiveElement) {
         lastActiveElement.focus();
       }
@@ -463,9 +655,7 @@ const InvoiceList: React.FC = () => {
     };
   }, [editingInvoice]);
 
-  // Initialize invoices
   useEffect(() => {
-    // Filter for completed cases only
     const completedCaseInvoices = mockInvoices.filter(
       (invoice) => invoice.case.caseStatus === "completed"
     );
@@ -498,8 +688,6 @@ const InvoiceList: React.FC = () => {
     _invoice?: Invoice
   ): string => {
     switch (status) {
-      case "draft":
-        return "draft";
       case "unpaid":
         return "UnPaid";
       case "pending":
@@ -798,7 +986,7 @@ const InvoiceList: React.FC = () => {
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 
   const allStatuses: Invoice["status"][] = [
-    "draft",
+    "unpaid",
     "pending",
     "paid",
     "partially_paid",
@@ -1078,7 +1266,7 @@ const InvoiceList: React.FC = () => {
                           )}
                         </div>
                         {[
-                          "draft",
+                          "unpaid",
                           "approved",
                           "paid",
                           "partially_paid",
@@ -1164,11 +1352,11 @@ const InvoiceList: React.FC = () => {
                   </div>
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort("case.caseId")}
+                  onClick={() => handleSort("caseId")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
-                    Case #{getSortIcon("case.caseId")}
+                    Case #{getSortIcon("caseId")}
                   </div>
                 </TableHead>
                 <TableHead
@@ -1239,7 +1427,17 @@ const InvoiceList: React.FC = () => {
                     <TableCell>
                       <Badge
                         variant={
-                          getStatusBadgeVariant(invoice.status) as
+                          getStatusBadgeVariant(
+                            invoice?.invoicesData[0]?.status as
+                              | "draft"
+                              | "unpaid"
+                              | "pending"
+                              | "approved"
+                              | "paid"
+                              | "overdue"
+                              | "partially_paid"
+                              | "cancelled"
+                          ) as
                             | "filter"
                             | "secondary"
                             | "success"
@@ -1255,8 +1453,10 @@ const InvoiceList: React.FC = () => {
                             | "Appliance"
                         }
                       >
-                        {invoice.status.charAt(0).toUpperCase() +
-                          invoice.status.slice(1)}
+                        {invoice?.invoicesData[0]?.status
+                          .charAt(0)
+                          .toUpperCase() +
+                          invoice?.invoicesData[0]?.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
@@ -1271,7 +1471,7 @@ const InvoiceList: React.FC = () => {
                         (typeof invoice.amount === "number"
                           ? invoice.amount
                           : 0) +
-                        invoice.products.reduce(
+                        invoice?.products.reduce(
                           (sum, item) =>
                             sum +
                             (typeof item.discounted_price?.final_price ===
@@ -1285,7 +1485,7 @@ const InvoiceList: React.FC = () => {
                       })}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice.due_date), "dd/MM/yy")}
+                      {new Date(invoice?.due_date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>

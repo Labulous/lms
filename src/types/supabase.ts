@@ -39,7 +39,7 @@ export interface ProductType {
   id: string;
   name: string;
   description: string | null;
-  is_active: boolean;
+  is_active?: boolean;
   is_default?: boolean; // true for DefaultProductType entries
   created_at: string;
   updated_at: string;

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Home,
@@ -20,7 +20,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import logomark from "../../assets/logomark.svg";
 import logotext from "../../assets/logotext.svg";
-
+import { supabase } from "@/lib/supabase";
 interface MenuItem {
   icon: any;
   label: string;
@@ -43,6 +43,48 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const { user } = useAuth();
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
+  const [labs, setLabs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchLabs = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error } = await supabase
+          .from("labs")
+          .select(
+            `
+            name,
+            office_address:office_address!office_address_id (
+              address_1,
+              address_2,
+              city
+            )
+          `
+          )
+          .or(
+            `super_admin_id.eq.${user?.id},admin_ids.cs.{${user?.id}},technician_ids.cs.{${user?.id}},client_ids.cs.{${user?.id}}`
+          );
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        setLabs(data || []);
+      } catch (err) {
+        console.error("Error fetching labs data:", err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLabs();
+  }, [user?.id]);
   const toggleDropdown = (label: string) => {
     setOpenDropdowns((prev) =>
       prev.includes(label)
@@ -50,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         : [...prev, label]
     );
   };
-
+  console.log(labs, "labslabs");
   const menuItems: MenuItem[] = [
     {
       icon: Home,
@@ -64,7 +106,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       href: "/cases",
       roles: ["admin", "super_admin", "technician"],
     },
-    { icon: Truck, label: "Shipping", href: "/shipping", roles: ["admin", "super_admin"] },
+    {
+      icon: Truck,
+      label: "Shipping",
+      href: "/shipping",
+      roles: ["admin", "super_admin"],
+    },
     {
       icon: Users,
       label: "Clients",
@@ -94,8 +141,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         },
       ],
     },
-    { icon: BarChart2, label: "Reports", href: "/reports", roles: ["admin", "super_admin"] },
-    { icon: Package, label: "Inventory", href: "/inventory", roles: ["admin", "super_admin"] },
+    {
+      icon: BarChart2,
+      label: "Reports",
+      href: "/reports",
+      roles: ["admin", "super_admin"],
+    },
+    {
+      icon: Package,
+      label: "Inventory",
+      href: "/inventory",
+      roles: ["admin", "super_admin"],
+    },
   ];
 
   const quickActions = [
@@ -170,10 +227,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             }`}
           >
             <h3 className="font-semibold text-xs text-gray-900">
-              Solaris Dental Design
+              {labs[0]?.name}
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              17 Fawcett Rd, Coquitlam
+              {labs[0]?.office_address?.address_1},{labs[0]?.office_address?.city}
             </p>
           </div>
         </div>
