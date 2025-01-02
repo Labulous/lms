@@ -195,16 +195,99 @@ The **Billing Module** is designed to streamline invoice management, payment pro
 #### New Payment Modal Components
 
 ##### 1. Payment Information Section
-- **Client Dropdown:** Select the client making the payment.
-- **Date Picker:** Set the date for the payment.
-- **Payment Method Dropdown:** Choose from options like:
-  - Check
-  - Credit Card
-  - Bank Transfer
-  - Cash
-  - PayPal
-  - Other
-- **Memo Field:** Text input for notes or descriptions about the payment.
+- Implement a "New Payment" modal in React for the Payments page. The modal should include the following sections and features:
+
+###### **1. Modal Header**
+- **Title**: Display "New Payment."
+- **Action Buttons**:
+  - "Cancel" button to close the modal without saving changes.
+  - "Create" button to save the payment details.
+
+---
+
+###### **2. Payment Information Section**
+Include the following input fields in a form:
+1. **Client Dropdown**: Dropdown to select the client making the payment. Fetch the list of clients from the backend API.
+2. **Date Picker**: Date selector to set the payment date.
+3. **Payment Method Dropdown**: Dropdown with options like:
+   - Check
+   - Credit Card
+   - Bank Transfer
+   - Cash
+   - PayPal
+   - Other
+4. **Memo Field**: Text input for any additional notes or descriptions about the payment.
+
+---
+
+###### **3. Balance Summary Section**
+- **Static Balance Overview**:
+  - Show the following balance categories:
+    - Current Balance
+    - This Month
+    - Last Month
+    - 30+ Days
+    - 60+ Days
+    - 90+ Days
+    - Credit (if applicable).
+- **Dynamic Payment Calculator**:
+  - Update the "Payment Calculator" field in real-time as the user adjusts the "Payment Amount" field.
+
+---
+
+###### **4. Invoice and Statements Section**
+Tabs for toggling between two views:
+- **Invoices Tab**:
+  - Display a table of unpaid invoices for the selected client.
+  - Columns:
+    - Date
+    - Invoice #
+    - Patient Name
+    - Original Amount
+    - Amount Due
+    - Checkbox to select invoices for payment.
+  - Automatically calculate and update the "Payment Amount" field when one or more invoices are selected.
+- **Statements Tab**:
+  - Display a summary of the client’s payment history and previous statements.
+
+---
+
+###### **5. Real-Time Calculations and Validations**
+1. Ensure that selecting invoices automatically updates the "Payment Amount" field in the Payment Calculator.
+2. Validate that the "Payment Amount" does not exceed the client's current balance.
+3. Disable the "Create" button if mandatory fields (Client, Date, Payment Method, etc.) are not filled out.
+
+---
+
+###### **6. Technical Details**
+- Use a React modal library (e.g., React-Modal or Bootstrap Modal) for the modal implementation.
+- Fetch data for the Client Dropdown and Invoices Table from the backend API.
+- Use React State or Context to manage:
+  - Selected client.
+  - Selected invoices.
+  - Real-time balance calculations.
+- Ensure responsiveness for both desktop and mobile devices.
+- Include error handling for API calls (e.g., loading errors for client data or invoices).
+
+---
+
+###### **7. Styling**
+- Use the Shadcn or tailwind React popover/modal component we used for @EditInvoiceModal and @MultiProductUpload comonents.
+- Follow the provided example for styling benchmarks.
+- Ensure consistent spacing, alignment, and font sizes.
+- Use a CSS framework (e.g., TailwindCSS or Bootstrap) or custom styles for polished design.
+
+---
+
+###### **9. Behavior Summary**
+When "Create" is clicked:
+1. Validate the form fields.
+3. Update the invoice statuses for selected invoices to reflect partial or full payment.
+4. Close the modal and refresh the Payments page with updated data.
+
+### **Output:**
+Implement this functionality with clean and modular React code. Include comments for clarity.
+
 
 ---
 
