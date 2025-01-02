@@ -1,6 +1,8 @@
 import { format, addDays } from "date-fns";
 import { createClient } from "@supabase/supabase-js";
 import toast from "react-hot-toast";
+import { SetStateAction } from "react";
+import { LoadingState } from "@/pages/cases/NewCase";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -197,7 +199,11 @@ const saveCaseProduct = async (
   }
 };
 
-const saveCases = async (cases: any, navigate?: any) => {
+const saveCases = async (
+  cases: any,
+  navigate?: any,
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+) => {
   try {
     // Step 1: Save enclosed case details
     const enclosedCaseRow = {
@@ -298,6 +304,8 @@ const saveCases = async (cases: any, navigate?: any) => {
         console.error("Error creating invoice:", invoiceError);
       } else {
         console.log("Invoice created successfully:", invoiceData);
+        setLoadingState &&
+          setLoadingState({ isLoading: false, action: "save" });
       }
     }
 
@@ -322,9 +330,13 @@ export const getCaseById = (id: string): Case | undefined => {
 };
 
 // Function to add a new case
-export const addCase = (newCase: Case, navigate?: any): void => {
+export const addCase = (
+  newCase: Case,
+  navigate?: any,
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+): void => {
   cases = [newCase];
-  saveCases(newCase, navigate);
+  saveCases(newCase, navigate, setLoadingState);
 };
 
 // Function to update a case

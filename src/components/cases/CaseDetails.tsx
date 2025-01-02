@@ -210,9 +210,6 @@ const CaseDetails: React.FC = () => {
 
     const fetchCaseData = async () => {
       try {
-        console.log("Fetching case data for ID:", caseId);
-
-        // Step 1: Fetch case details
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -286,20 +283,15 @@ const CaseDetails: React.FC = () => {
           return;
         }
 
-        console.log("Successfully fetched case data:", caseData);
         const caseDetails: any = caseData;
-        // Extract products_id array and caseProductId
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
-        console.log(productsIdArray, "productsIdArray");
-        console.log(caseProductId, "caseProductId");
 
         let products: Product[] = [];
         let teethProducts: ToothInfo[] = [];
         let discountedPrices: DiscountedPrice[];
 
         if (productsIdArray?.length > 0) {
-          // Step 2: Fetch products based on products_id array
           const { data: productData, error: productsError } = await supabase
             .from("products")
             .select(
@@ -334,10 +326,8 @@ const CaseDetails: React.FC = () => {
             .in("id", productsIdArray);
 
           if (productsError) {
-            console.error("Error fetching products:", productsError);
             setError(productsError.message);
           } else {
-            console.log(productData, "productData");
             const productsData: any[] = productData.map((item: any) => ({
               ...item,
               material: {
@@ -346,7 +336,6 @@ const CaseDetails: React.FC = () => {
                 is_active: item.is_active,
               },
             }));
-            console.log("Successfully fetched products:", productData);
             products = productsData;
           }
 
@@ -373,19 +362,13 @@ const CaseDetails: React.FC = () => {
             );
             setError(discountedPriceError.message);
           } else {
-            console.log(
-              "Successfully fetched discounted prices:",
-              discountedPriceData
-            );
             discountedPrices = discountedPriceData.map((item: any) => item);
-            console.log(discountedPrices, "discountedPrices");
           }
         } else {
           console.log("No products associated with this case.");
         }
 
         if (caseProductId) {
-          // Step 4: Fetch case_teeth_products based on caseProductId
           const { data: teethProductData, error: teethProductsError } =
             await supabase
               .from("case_product_teeth")
@@ -420,38 +403,26 @@ const CaseDetails: React.FC = () => {
               .eq("case_product_id", caseProductId);
 
           if (teethProductsError) {
-            console.error("Error fetching teeth products:", teethProductsError);
             setError(teethProductsError.message);
           } else {
-            console.log(
-              "Successfully fetched teeth products:",
-              teethProductData
-            );
             teethProducts = teethProductData.map((item: any) => item);
           }
         } else {
           console.log("No caseProductId found for fetching teeth products.");
         }
-
-        // Step 5: Combine the products with their respective discounted price data
         const productsWithDiscounts = products.map((product: any) => {
-          // Find the matching discounted price for the product
           const discountedPrice = discountedPrices.find(
             (discount: any) => discount.product_id === product.id
           );
           const productTeeth = teethProducts.find(
             (teeth: any) => teeth.product_id === product.id
           );
-          console.log(discountedPrice, "discountedPrice");
-          // Combine the product data with the discounted price details
           return {
             ...product,
             discounted_price: discountedPrice,
             teethProduct: productTeeth,
           };
         });
-
-        // Step 6: Combine case details, products, and teethProducts
 
         setCaseDetail({
           ...(caseData as any),
@@ -473,12 +444,10 @@ const CaseDetails: React.FC = () => {
   }, [caseId]);
 
   const handleCompleteStage = async (stageName: string) => {
-    // Implement stage completion logic here
     console.log(`Completing stage: ${stageName}`);
   };
 
   const handlePhotoUpload = async (file: File) => {
-    // Implement photo upload logic here
     console.log(`Uploading photo: ${file.name}`);
   };
 
@@ -519,7 +488,6 @@ const CaseDetails: React.FC = () => {
     );
   }
 
-  console.log(caseDetail, "case detail");
   return (
     <div className="w-full">
       {/* Full-width Header */}

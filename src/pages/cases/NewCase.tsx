@@ -15,6 +15,12 @@ import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
 
+export interface LoadingState {
+  action: "save" | null;
+  isLoading: boolean;
+  progress?: number;
+}
+
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -55,7 +61,10 @@ const NewCase: React.FC = () => {
     null
   );
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
-
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    action: null,
+    isLoading: false,
+  });
   const handleSaveProduct = (product: SavedProduct) => {
     setSelectedProducts((prev) => [...prev, product]);
   };
@@ -194,6 +203,7 @@ const NewCase: React.FC = () => {
     }
     if (caseNumber) {
       try {
+        setLoadingState({ isLoading: true, action: "save" });
         const newCase: any = {
           overview: {
             client_id: formData.clientId,
@@ -226,7 +236,7 @@ const NewCase: React.FC = () => {
         };
 
         // Add case to database
-        await addCase(newCase, navigate);
+        await addCase(newCase, navigate, setLoadingState);
       } catch (error) {
         console.error("Error creating case:", error);
         toast.error("Failed to create case");
@@ -235,6 +245,8 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
+
+  // console.log(loadingState,"loadingState");
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -308,10 +320,16 @@ const NewCase: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4">
-          <Button variant="outline" onClick={() => navigate("/cases")}>
+          <Button
+            variant="outline"
+            disabled={loadingState.isLoading}
+            onClick={() => navigate("/cases")}
+          >
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Save Case</Button>
+          <Button onClick={handleSubmit} disabled={loadingState.isLoading}>
+            {loadingState.isLoading ? "Saving..." : "Save Case"}
+          </Button>
         </div>
       </div>
     </div>
