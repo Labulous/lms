@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Clock,
   User,
   FileText,
   Package,
@@ -18,6 +17,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "react-router-dom";
+
 import {
   Table,
   TableBody,
@@ -45,7 +46,6 @@ import {
 } from "@/components/ui/accordion";
 import cn from "classnames";
 
-// Define TypeScript interfaces for our data structure
 interface CaseFile {
   id: string;
   file_name: string;
@@ -58,11 +58,11 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  lead_time: string | null; // Assuming the lead time can be a string or null
+  lead_time: string | null;
   is_client_visible: boolean;
   is_taxable: boolean;
-  created_at: string; // ISO date string
-  updated_at: string; // ISO date string
+  created_at: string;
+  updated_at: string;
   requires_shade: boolean;
   material?: Material;
   product_type: ProductType;
@@ -156,10 +156,9 @@ const TYPE_COLORS = {
 const formatTeethRange = (teeth: number[]): string => {
   if (!teeth.length) return "";
 
-  // Check if it's an arch selection
   const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
   const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-  const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+  const isFullArch = teeth.length >= 16;
 
   if (isFullArch) {
     if (hasUpper && hasLower) return "All";
@@ -167,13 +166,10 @@ const formatTeethRange = (teeth: number[]): string => {
     if (hasLower) return "Lower";
   }
 
-  // For non-arch selections, use the original range formatting
   if (teeth.length === 1) return teeth[0].toString();
 
-  // Sort teeth numbers
   const sortedTeeth = [...teeth].sort((a, b) => a - b);
 
-  // Find continuous ranges
   let ranges: string[] = [];
   let rangeStart = sortedTeeth[0];
   let prev = sortedTeeth[0];
@@ -200,7 +196,7 @@ const CaseDetails: React.FC = () => {
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  let location = useLocation();
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -339,7 +335,6 @@ const CaseDetails: React.FC = () => {
             products = productsData;
           }
 
-          // Step 3: Fetch discounted price data for products
           const { data: discountedPriceData, error: discountedPriceError } =
             await supabase
               .from("discounted_price")
@@ -412,7 +407,8 @@ const CaseDetails: React.FC = () => {
         }
         const productsWithDiscounts = products.map((product: any) => {
           const discountedPrice = discountedPrices.find(
-            (discount: any) => discount.product_id === product.id
+            (discount: { product_id: string }) =>
+              discount.product_id === product.id
           );
           const productTeeth = teethProducts.find(
             (teeth: any) => teeth.product_id === product.id
@@ -490,14 +486,13 @@ const CaseDetails: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Full-width Header */}
       <div className="w-full bg-white border-b border-gray-200">
         <div className="w-full px-16 py-6">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-6">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={`/cases/${caseDetail.qr_code}`}
+                  value={`/${location.pathname}`}
                   size={64}
                   level="H"
                   includeMargin={true}
@@ -599,13 +594,9 @@ const CaseDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content with max-width container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Basic Info and Products */}
           <div className="md:col-span-2 space-y-6">
-            {/* Case Progress Stepper */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -653,7 +644,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Case Items Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -842,7 +832,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Invoice Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -914,89 +903,94 @@ const CaseDetails: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {caseDetail.products?.map((product, index) => {
-                        const price = product.discounted_price.price || 0;
-                        const discount =
-                          product.discounted_price?.discount || 0;
-                        const finalPrice =
-                          product.discounted_price?.final_price || price;
-                        const quantity = product.tooth_number?.length || 1;
-                        const subtotal = finalPrice * quantity;
+                      {caseDetail?.products &&
+                        caseDetail?.products?.map((product, index) => {
+                          const price = product?.discounted_price?.price || 0;
+                          const discount =
+                            product?.discounted_price?.discount || 0;
+                          const finalPrice =
+                            product?.discounted_price?.final_price || price;
+                          const quantity = product?.tooth_number?.length || 1;
+                          const subtotal = finalPrice * quantity;
 
-                        return (
-                          <TableRow key={index}>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {product.tooth_number?.length > 1
-                                ? formatTeethRange(
-                                    product.teethProduct?.tooth_number
-                                  )
-                                : product.teethProduct?.tooth_number[0]}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {product.name || "-"}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {product.discounted_price.quantity || "-"}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              ${product.discounted_price.price}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {discount > 0 ? (
-                                <span className="text-green-600">
-                                  {product.discounted_price.discount.toFixed(2)}
-                                  %
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                              ${product.discounted_price.final_price.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                              ${subtotal.toFixed(2)}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {/* Total Row */}
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.tooth_number?.length > 1
+                                  ? formatTeethRange(
+                                      product.teethProduct?.tooth_number
+                                    )
+                                  : product.teethProduct?.tooth_number[0]}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.name || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product?.discounted_price?.quantity || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                ${product?.discounted_price?.price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {discount > 0 ? (
+                                  <span className="text-green-600">
+                                    {product.discounted_price.discount.toFixed(
+                                      2
+                                    )}
+                                    %
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                $
+                                {product?.discounted_price?.final_price.toFixed(
+                                  2
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${subtotal.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
                         <TableCell className="w-[1px] p-0">
                           <Separator
@@ -1042,7 +1036,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Products Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -1148,9 +1141,7 @@ const CaseDetails: React.FC = () => {
             </Card>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-3">
-            {/* Doctor Information */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" defaultValue="doctor-info" collapsible>
@@ -1191,7 +1182,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Instructions */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion
@@ -1239,7 +1229,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Case Notes */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>
@@ -1274,7 +1263,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Enclosed Items */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>
@@ -1337,7 +1325,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Attachments */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>

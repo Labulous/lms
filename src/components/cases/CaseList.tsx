@@ -100,19 +100,19 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => <div>{row.getValue("patient_name") || "N/A"}</div>,
     },
     {
-      accessorKey: "client", // Directly refer to the client object
+      accessorKey: "client",
       header: "Client",
       cell: ({ row }) => {
         const client = row.getValue("client") as { client_name: string } | null;
-        return <div>{client?.client_name || "N/A"}</div>; // Access client_name from client object
+        return <div>{client?.client_name || "N/A"}</div>;
       },
     },
     {
-      accessorKey: "doctor", // Directly refer to the client object
+      accessorKey: "doctor",
       header: "Doctor",
       cell: ({ row }) => {
-        const doctor = row.getValue("doctor") as { name: string } | null; // Type assertion
-        return <div>{doctor?.name || "N/A"}</div>; // Access client_name from client object
+        const doctor = row.getValue("doctor") as { name: string } | null;
+        return <div>{doctor?.name || "N/A"}</div>;
       },
     },
     {
@@ -140,7 +140,6 @@ const CaseList: React.FC = () => {
       header: "Due Date",
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        console.log(date, "date here");
         return <div>{formatDate(date)}</div>;
       },
     },
@@ -316,8 +315,6 @@ const CaseList: React.FC = () => {
         }
         setLoading(false);
 
-        // Transform and set initial cases
-        console.log(casesData, "casesData");
         setCases(casesData as unknown as Case[]);
       } catch (err) {
         logger.error("Error fetching cases:", err);
@@ -327,12 +324,10 @@ const CaseList: React.FC = () => {
       }
     };
 
-    // Only fetch cases if auth is not loading and we have a user
     if (!authLoading && user && labId) {
       fetchCases();
     }
   }, [user, authLoading, labId]);
-  console.log(labId, "lab ID");
   useEffect(() => {
     if (cases.length > 0) {
       let filtered = [...cases];
@@ -474,7 +469,6 @@ const CaseList: React.FC = () => {
                   data-state={row.getIsSelected() ? "selected" : undefined}
                 >
                   {row.getVisibleCells().map((cell) => {
-                    // console.log(cell, "cell");
                     return (
                       <TableCell key={cell.id}>
                         {flexRender(

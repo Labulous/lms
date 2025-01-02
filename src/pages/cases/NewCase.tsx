@@ -70,12 +70,10 @@ const NewCase: React.FC = () => {
   };
 
   const handleCategoryChange = (category: SavedProduct | null) => {
-    console.log("Category changed:", category);
     setSelectedCategory(category);
   };
 
   const handleProductsChange = (products: SavedProduct[]) => {
-    console.log("Products changed:", products);
     setSelectedProducts(products);
   };
 
@@ -120,8 +118,8 @@ const NewCase: React.FC = () => {
           newData[key] = value;
         }
       });
-      console.log(newData, "newData");
-      return newData;
+      return newData;      console.log(newData, "newData");
+
     });
   };
 
@@ -130,7 +128,6 @@ const NewCase: React.FC = () => {
       try {
         setLoading(true);
         const data = await clientsService.getClients();
-        console.log(data, "data client");
 
         if (Array.isArray(data)) {
           setClients(data);
@@ -150,7 +147,6 @@ const NewCase: React.FC = () => {
         const labData = await getLabIdByUserId(user?.id as string);
         setLab(labData);
         const number = await fetchCaseCount(); // Fetch current case count
-        console.log(number, "cases length");
 
         if (typeof number === "number") {
           // Generate case number
@@ -165,7 +161,6 @@ const NewCase: React.FC = () => {
           const sequentialNumber = String(number + 1).padStart(5, "0");
 
           const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
-          console.log(caseNumber, "Generated Case Number");
           setCaseNumber(caseNumber);
         } else {
           setCaseNumber(null);
@@ -246,16 +241,13 @@ const NewCase: React.FC = () => {
     }
   };
 
-  // console.log(loadingState,"loadingState");
   return (
     <div className="p-6">
       <div className="space-y-4">
-        {/* Page Heading */}
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Create a New Case
         </h1>
 
-        {/* Order Details Section */}
         <div className="bg-white shadow overflow-hidden">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>

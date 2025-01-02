@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
-  Clock,
   Eye,
   Download,
   ChevronLeft,
@@ -14,19 +13,16 @@ import {
   ChevronUp,
   ChevronDown,
   Calendar as CalendarIcon,
-  Percent,
   Trash,
   Loader2,
   X,
   Pencil,
   MoreHorizontal,
   Check,
-  Printer,
   Banknote,
   FileText,
   Table,
   Bell,
-  Calendar,
   Percent as PercentIcon,
   Clock as ClockIcon,
   Trash2,
@@ -66,7 +62,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -76,7 +71,6 @@ import {
 import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { da } from "date-fns/locale";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
@@ -378,7 +372,7 @@ const InvoiceList: React.FC = () => {
         console.error("Error fetching completed invoices:", error);
       } finally {
         setLoading(false);
-        setRefreshData(false); // Set loading state to false when the data is loaded
+        setRefreshData(false);
       }
     };
 
@@ -397,7 +391,6 @@ const InvoiceList: React.FC = () => {
     invoice: Invoice,
     mode: "edit" | "payment" = "edit"
   ) => {
-    // Delay setting the invoice to avoid focus issues
     setTimeout(() => {
       setEditingInvoice(invoice);
       setEditMode(mode);
@@ -405,7 +398,6 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleCloseEditModal = () => {
-    // Delay cleanup to avoid focus issues
     setTimeout(() => {
       setEditingInvoice(null);
       setEditMode("edit");
@@ -418,7 +410,6 @@ const InvoiceList: React.FC = () => {
     try {
       setLoadingState({ isLoading: true, action: "save" });
 
-      // Update the case_products table
       const { data: updatedCaseProducts, error: updateCaseProductsError } =
         await supabase
           .from("case_products")
@@ -476,7 +467,6 @@ const InvoiceList: React.FC = () => {
               if (insertTeethError) throw new Error(insertTeethError.message);
             }
 
-            // Update or insert into discounted_price
             const { data: existingDiscount, error: discountFetchError } =
               await supabase
                 .from("discounted_price")
@@ -562,12 +552,11 @@ const InvoiceList: React.FC = () => {
         }
       }
 
-      // Update cases table with invoice_notes and lab_notes
       const { error: updateCasesError } = await supabase
         .from("cases")
         .update({
-          invoice_notes: updatedInvoice?.notes?.invoiceNotes, // Assuming this field is available in updatedInvoice
-          lab_notes: updatedInvoice?.notes?.labNotes, // Assuming this field is available in updatedInvoice
+          invoice_notes: updatedInvoice?.notes?.invoiceNotes,
+          lab_notes: updatedInvoice?.notes?.labNotes,
         })
         .eq("id", updatedInvoice.caseId);
 
@@ -636,7 +625,6 @@ const InvoiceList: React.FC = () => {
     setFilteredInvoices(completedCaseInvoices);
   }, []);
 
-  // Update filtered invoices when search or date filters change
   useEffect(() => {
     const filtered = getFilteredInvoices();
     setFilteredInvoices(filtered);
@@ -751,12 +739,12 @@ const InvoiceList: React.FC = () => {
     switch (action) {
       case "exportPDF":
       case "exportCSV":
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate export processing
+        await new Promise((resolve) => setTimeout(resolve, 500));
         break;
       case "delete":
       case "markPaid":
       case "sendReminder":
-        await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 200));
         break;
     }
   };
@@ -844,7 +832,6 @@ const InvoiceList: React.FC = () => {
         await processBatch(batch, action, i + 1, batches);
       }
 
-      // Apply changes after all batches are processed
       switch (action) {
         case "changeDueDate":
           if (newDueDate) {
@@ -925,7 +912,6 @@ const InvoiceList: React.FC = () => {
   const getFilteredInvoices = () => {
     let filtered = [...invoices];
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (invoice) =>
@@ -948,10 +934,8 @@ const InvoiceList: React.FC = () => {
       );
     }
 
-    // Apply date filters
     filtered = filterByDates(filtered);
 
-    // Apply status filter
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
         statusFilter.includes(invoice.status)
@@ -973,8 +957,6 @@ const InvoiceList: React.FC = () => {
     return sortedData.slice(startIndex, endIndex);
   };
 
-  // const startIndex = (currentPage - 1) * itemsPerPage;
-  // const endIndex = Math.min(startIndex + itemsPerPage, filteredInvoices.length);
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 
   const allStatuses: Invoice["status"][] = [
@@ -1036,7 +1018,6 @@ const InvoiceList: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Filters and Actions */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
           {selectedInvoices.length > 0 ? (
@@ -1264,9 +1245,9 @@ const InvoiceList: React.FC = () => {
                           "partially_paid",
                           "overdue",
                           "cancelled",
-                        ].map((status) => (
+                        ].map((status, index) => (
                           <div
-                            key={status}
+                            key={index}
                             className="flex items-center space-x-2"
                           >
                             <Checkbox
@@ -1376,9 +1357,9 @@ const InvoiceList: React.FC = () => {
               {getSortedAndPaginatedData().length === 0 ? (
                 <EmptyState />
               ) : (
-                getSortedAndPaginatedData().map((invoice) => (
+                getSortedAndPaginatedData().map((invoice, index) => (
                   <TableRow
-                    key={invoice.caseId as string}
+                    key={index}
                     className={cn(
                       selectedInvoices.includes(invoice.caseId as string) &&
                         "bg-muted/50",
@@ -1712,7 +1693,6 @@ const InvoiceList: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Invoice Modal */}
       {editingInvoice && (
         <EditInvoiceModal
           invoice={editingInvoice}

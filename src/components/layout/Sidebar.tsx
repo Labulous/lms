@@ -103,7 +103,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         : [...prev, label]
     );
   };
-  console.log(labs, "labslabs");
   const menuItems: MenuItem[] = [
     {
       icon: Home,
