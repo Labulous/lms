@@ -17,8 +17,16 @@ import {
 } from "@/components/ui/table";
 import { Invoice, InvoiceItem } from "@/data/mockInvoicesData";
 import { toast } from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
+import {
+  DropdownMenuContent,
+  DropdownMenu,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { productsService } from "@/services/productsService";
+import { supabase } from "@/lib/supabase";
+import { ProductType } from "@/types/supabase";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
@@ -27,9 +35,8 @@ interface EditInvoiceModalProps {
   onSave: (invoice: Invoice) => void;
 }
 
-interface LineItem extends InvoiceItem {
-  category: "tooth" | "alloy";
-  toothNumber?: string;
+export interface LineItem extends InvoiceItem {
+  category?: string;
 }
 
 export function EditInvoiceModal({
@@ -38,36 +45,49 @@ export function EditInvoiceModal({
   onClose,
   onSave,
 }: EditInvoiceModalProps) {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [items, setItems] = useState<LineItem[]>([]);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState<{
+    labNotes: string;
+    invoiceNotes: string;
+  } | null>();
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<any>();
   useEffect(() => {
     if (invoice) {
-      const transformedItems = invoice.products.map((item) => ({
-        unitPrice: item.discounted_price.price,
-        discount: item.discounted_price.discount,
-        quantity: 1,
-        toothNumber: item.teethProducts[0]?.tooth_number?.join(",") || null,
+      const transformedItems = (invoice?.products ?? []).map((item) => ({
+        unitPrice: item?.discounted_price?.price ?? 0,
+        discount: item?.discounted_price?.discount ?? 0,
+        quantity: item?.discounted_price?.quantity ?? 0,
+        toothNumber: item.teethProducts?.tooth_number?.join(",") || "1",
         description: item.name,
+        id: item.id,
       }));
       setItems(transformedItems);
-      setNotes(invoice.notes || "");
+      setNotes({
+        labNotes: invoice.lab_notes as string,
+        invoiceNotes: invoice.invoice_notes as string,
+      });
       setDiscount(invoice.discount?.value || 0);
     }
   }, [invoice]);
-  console.log(items, "items");
-  const calculateSubtotal = (category: "tooth" | "alloy") => {
-    return items
-      .filter((item) => item.category === category)
-      .reduce((sum, item) => {
-        const itemTotal = item.unitPrice * item.quantity;
-        const discountAmount = (itemTotal * (item.discount || 0)) / 100;
-        return sum + (itemTotal - discountAmount);
-      }, 0);
-  };
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const fetchedProducts = await productsService.getProducts();
+        setProducts(fetchedProducts);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        toast.error("Failed to load products");
+      } finally {
+        console.log("");
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const calculateTotal = () => {
     const subtotal = items.reduce((sum, item) => {
@@ -75,7 +95,9 @@ export function EditInvoiceModal({
       const discountAmount = (itemTotal * (item.discount || 0)) / 100;
       return sum + (itemTotal - discountAmount);
     }, 0);
+
     const discountAmount = (subtotal * discount) / 100;
+
     return subtotal - discountAmount;
   };
 
@@ -86,17 +108,21 @@ export function EditInvoiceModal({
       setIsSubmitting(true);
 
       const updatedInvoice: Invoice = {
-        ...invoice,
         items: items.map((item) => ({
           id: item.id,
           description: item.description,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          discount: item.discount,
+          toothNumber: item.toothNumber,
           total:
             item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
-          caseId: item.category === "tooth" ? invoice.case.id : undefined,
+          caseId: invoice.id,
         })),
-        notes: notes,
+        notes: notes as {
+          labNotes: string;
+          invoiceNotes: string;
+        },
         discount: {
           type: "percentage",
           value: discount,
@@ -107,12 +133,13 @@ export function EditInvoiceModal({
             ) *
             (discount / 100),
         },
+        caseId: invoice.id,
         updatedAt: new Date().toISOString(),
+        totalAmount: calculateTotal(),
       };
 
       await onSave(updatedInvoice);
       toast.success("Invoice updated successfully");
-      onClose();
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast.error("Failed to update invoice");
@@ -120,7 +147,68 @@ export function EditInvoiceModal({
       setIsSubmitting(false);
     }
   };
+  const clients = [{ id: "1", clientName: "zahid" }];
 
+  const handleSelectedProduct = async (product: any) => {
+    try {
+      // Fetch discounted_price from Supabase
+      const { data, error } = await supabase
+        .from("discounted_price")
+        .select(
+          `
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity
+              `
+        )
+        .in("product_id", [product.id]);
+
+      if (error) {
+        console.error("Error fetching discounted price:", error.message);
+        setSelectedProduct(product);
+        return;
+      }
+      if (data.length > 0) {
+        setSelectedProduct({ ...product, data });
+        setItems((items) =>
+          items.map((item) =>
+            item.id === ""
+              ? {
+                  ...item,
+                  discount: data[0].discount,
+                  unitPrice: data[0].price,
+                  id: data[0].product_id,
+                  description: product.name,
+                  quantity: data[0]?.quantity ?? 1,
+                }
+              : item
+          )
+        );
+      } else {
+        console.warn("No discounted price found for this product.");
+        setSelectedProduct(product);
+        setItems((items) =>
+          items.map((item) =>
+            item.id === ""
+              ? {
+                  ...item,
+                  discount: 0,
+                  unitPrice: 0,
+                  id: product.id,
+                  description: product.name,
+                  quantity: 1,
+                }
+              : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error("An unexpected error occurred:", err);
+      setSelectedProduct(product);
+    }
+  };
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -131,9 +219,12 @@ export function EditInvoiceModal({
           <DialogTitle>
             {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #
             {(() => {
-              const parts = invoice.case_number.split("-");
-              parts[0] = "INV"; // Replace the first part
-              return parts.join("-");
+              if (invoice?.case_number) {
+                const parts = invoice.case_number.split("-");
+                parts[0] = "INV";
+                return parts.join("-");
+              }
+              return "";
             })()}
           </DialogTitle>
           <div id="dialog-description" className="text-sm text-gray-500">
@@ -171,16 +262,22 @@ export function EditInvoiceModal({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  const newItem: LineItem = {
-                    id: crypto.randomUUID(),
-                    description: "",
-                    quantity: 1,
-                    unitPrice: 0,
-                    discount: 0,
-                    total: 0,
-                    category: "tooth",
-                  };
-                  setItems([...items, newItem]);
+                  const hasNullId = items.some((item) => item.id === "");
+
+                  if (hasNullId) {
+                    toast.error("Please select the item first.");
+                  } else {
+                    const newItem: LineItem = {
+                      id: "",
+                      description: "",
+                      quantity: 1,
+                      unitPrice: 0,
+                      discount: 0,
+                      category: "tooth",
+                      toothNumber: "",
+                    };
+                    setItems([...items, newItem]);
+                  }
                 }}
               >
                 Add Item
@@ -221,8 +318,9 @@ export function EditInvoiceModal({
                           />
                         }
                       </TableCell>
-                      <TableCell>
-                        <Input
+                      <TableCell className="">
+                        {/* change this to dropdown */}
+                        {/* <Input
                           value={item.description}
                           onChange={(e) => {
                             const updatedItems = [...items];
@@ -232,7 +330,46 @@ export function EditInvoiceModal({
                             };
                             setItems(updatedItems);
                           }}
-                        />
+                        /> */}
+                        <div className="">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger className="flex justify-between items-center p-2 border w-full gap-2 hover:text-gray-600 focus:outline-none">
+                              <h2 className="text-gray-900">
+                                {item.description ?? "select the product"}
+                              </h2>
+                              <ChevronDown className="h-5 w-5 text-gray-500" />
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent
+                              align="start"
+                              className="bg-white border"
+                              style={{ width: "w-full", minWidth: "100%" }} // Ensure it takes 100% width, but can grow based on content
+                            >
+                              <div className="w-full overflow-y-scroll max-h-[400px]">
+                                {clients.length === 0 ? (
+                                  <DropdownMenuItem disabled>
+                                    No clients found
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <div className="">
+                                    {products.map((c) => (
+                                      <div
+                                        key={c.id}
+                                        onClick={() =>
+                                          // navigate(`/clients/${c.id}`)
+                                          handleSelectedProduct(c)
+                                        }
+                                        className="cursor-pointer w-full hover:bg-gray-200"
+                                      >
+                                        {c.name}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Input
@@ -305,38 +442,48 @@ export function EditInvoiceModal({
           </div>
 
           {/* Totals and Notes */}
-          <div className="flex justify-between items-start">
+          <div className="flex gap-5 flex-col md:flex-row justify-between items-start">
             <div className="w-1/2">
               <h3 className="text-lg font-medium mb-2">Invoice Notes</h3>
               <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={notes?.invoiceNotes}
+                onChange={(e) =>
+                  setNotes(
+                    (prevNotes) =>
+                      ({
+                        ...prevNotes,
+                        invoiceNotes: e.target.value,
+                      } as {
+                        labNotes: string;
+                        invoiceNotes: string;
+                      })
+                  )
+                }
+                className="w-full h-32 p-2 border rounded-md"
+              />
+            </div>
+            <div className="w-1/2">
+              <h3 className="text-lg font-medium mb-2">Lab Notes</h3>
+              <textarea
+                value={notes?.labNotes}
+                onChange={(e) =>
+                  setNotes(
+                    (prevNotes) =>
+                      ({
+                        ...prevNotes,
+                        labNotes: e.target.value,
+                      } as {
+                        labNotes: string;
+                        invoiceNotes: string;
+                      })
+                  )
+                }
                 className="w-full h-32 p-2 border rounded-md"
               />
             </div>
 
-            <div className="w-1/3 space-y-4">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  }).format(
-                    calculateSubtotal("tooth") + calculateSubtotal("alloy")
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Invoice Discount (%):</span>
-                <Input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(parseFloat(e.target.value))}
-                  className="w-24"
-                />
-              </div>
-              <div className="flex justify-between font-bold">
+            <div className="w-1/3 space-y-4 h-[150px] flex justify-end items-end">
+              <div className="flex border-t-2 border-b-2 py-5 font-bold">
                 <span>Total:</span>
                 <span>
                   {new Intl.NumberFormat("en-US", {
@@ -352,13 +499,6 @@ export function EditInvoiceModal({
         <div className="flex justify-end gap-2 mt-6">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate(`/cases/${invoice?.case.id}`)}
-          >
-            Case Notes
           </Button>
           <Button
             type="button"

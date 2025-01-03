@@ -577,3 +577,8 @@ This breakdown ensures consistency with the "Invoices," "Payments," and "Balance
 ---
 
 This document is intended as a living reference to inform development, testing, and future iterations of the **Billing Module**.
+
+
+ (EXISTS ( SELECT 1
+   FROM auth.users u
+  WHERE ((u.id = auth.uid()) AND ((u.raw_user_meta_data ->> 'role'::text) = ANY (ARRAY['admin'::text, 'technician'::text, 'super_admin'::text])))))

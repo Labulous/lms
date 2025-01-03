@@ -39,7 +39,7 @@ export interface ProductType {
   id: string;
   name: string;
   description: string | null;
-  is_active: boolean;
+  is_active?: boolean;
   is_default?: boolean; // true for DefaultProductType entries
   created_at: string;
   updated_at: string;
@@ -586,6 +586,26 @@ export interface Database {
           material_id?: string;
           product_type_id?: string;
           billing_type_id?: string;
+        };
+      };
+      labs: {
+        Row: {
+          name: string;
+          office_address: {
+            address_1: string;
+            address_2: string;
+            city: string;
+            state?: string;
+          };
+        };
+        Insert: {
+          name?: string;
+          office_address?: {
+            address_1?: string;
+            address_2?: string;
+            city?: string;
+            state?: string;
+          };
         };
       };
     };

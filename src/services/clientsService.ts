@@ -47,7 +47,7 @@ export interface ClientInput
   accountNumber?: string;
   account_number?: string;
 
-  doctors?: Omit<Doctor, "id">[]; // doctors is now an optional array of Doctors excluding their id.
+  doctors?: Omit<Doctor, "id">[];
 }
 class ClientsService {
   // private async generateAccountNumber(): Promise<string> {
@@ -141,7 +141,6 @@ class ClientsService {
     try {
       logger.debug("Starting getClients request");
 
-      // Get current user's info from Supabase Auth
       const {
         data: { user: authUser },
         error: authError,
@@ -153,7 +152,6 @@ class ClientsService {
       }
       console.log(authUser, "authUser");
 
-      // If no authenticated user found, return an empty array
       if (!authUser) {
         logger.debug("No authenticated user found");
         return [];
@@ -161,21 +159,18 @@ class ClientsService {
 
       logger.debug("Authenticated user found", { userId: authUser.id });
 
-      // Step 1: Fetch the user role from the users table
       const { data: userRoleData, error: userRoleError } = await supabase
         .from("users")
         .select("role")
         .eq("id", authUser.id)
-        .single(); // assuming there is only one row with that user id
+        .single();
 
-      // Step 2: Handle errors or ensure the query result is valid
       if (userRoleError) {
         logger.error("Error fetching user role", { userRoleError });
         throw userRoleError;
       }
       const uthenicated: any = userRoleData;
       console.log(uthenicated.role, "uthenicated role");
-      // Check if the result is an error or if role is present
       if (!userRoleData || !uthenicated.role) {
         logger.error("User role not found in the database", {
           userId: authUser.id,
@@ -183,9 +178,8 @@ class ClientsService {
         throw new Error("User role not found");
       }
 
-      const userRole: any = userRoleData; // Now we get the role from the database
+      const userRole: any = userRoleData;
 
-      // Step 3: Check if the user has required permissions (admin or technician)
       if (!["admin", "technician", "super_admin"].includes(userRole.role)) {
         logger.error("User does not have required role", {
           role: userRole.role,
@@ -193,14 +187,12 @@ class ClientsService {
         throw new Error("Insufficient permissions to view clients");
       }
 
-      // Step 4: Fetch all clients from the 'clients' table
       logger.debug("Fetching all clients...");
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("*")
         .order("client_name", { ascending: true });
 
-      // Step 5: Handle clients fetch error
       if (clientsError) {
         logger.error("Error fetching clients", {
           error: clientsError,
@@ -211,7 +203,6 @@ class ClientsService {
         throw new Error(`Failed to fetch clients: ${clientsError.message}`);
       }
 
-      // Step 6: If no clients are found, return an empty array
       if (!clients) {
         logger.warn("No clients found in database");
         return [];
@@ -223,7 +214,6 @@ class ClientsService {
         clientsError,
       });
 
-      // Step 7: Get doctors for each client
       const clientsWithDoctors = await Promise.all(
         clients.map(async (client: any) => {
           try {
@@ -232,13 +222,11 @@ class ClientsService {
               .select("*")
               .eq("client_id", client.id);
 
-            // Handle doctors fetch error
             if (doctorsError) {
               logger.error("Error fetching doctors for client", {
                 clientId: client.id,
                 error: doctorsError,
               });
-              // Continue with empty doctors array if there's an error
               return this.transformClientFromDB(client, []);
             }
 
@@ -248,7 +236,6 @@ class ClientsService {
               clientId: client.id,
               error,
             });
-            // Continue with the client even if doctor fetch fails
             return this.transformClientFromDB(client, []);
           }
         })
@@ -283,32 +270,27 @@ class ClientsService {
 
       console.log("DEBUG: Raw client query result:", { client, error });
 
-      // Handle the error properly before accessing `client`
       if (error) {
         logger.error("Error fetching client from database", { id, error });
         throw new Error(`Error fetching client: ${error.message}`);
       }
 
-      // If client is null (no data found), return null
       if (!client) {
         logger.warn("No client found with id", { id });
         return null;
       }
 
-      // TypeScript will now treat `client` as the correct type after this point.
-      // Assert the client type (assuming `client` is guaranteed to be of type `Client` here)
       const typedClient = client as unknown as ClientType;
 
       logger.info("Raw client data from DB", {
-        client: typedClient, // Use `typedClient` for proper typing
+        client: typedClient,
         hasData: !!typedClient,
         fields: typedClient ? Object.keys(typedClient) : [],
-        id: typedClient.id, // Safe access
-        accountNumber: typedClient.account_number, // Safe access
-        clientName: typedClient.client_name, // Safe access
+        id: typedClient.id,
+        accountNumber: typedClient.account_number,
+        clientName: typedClient.client_name,
       });
 
-      // Fetch the doctors related to this client
       const { data: doctors, error: doctorsError } = await supabase
         .from("doctors")
         .select("*")
@@ -319,16 +301,14 @@ class ClientsService {
         doctorsError,
       });
 
-      // Handle errors in fetching doctors
       if (doctorsError) {
         logger.error("Error fetching doctors for client", {
           clientId: id,
           error: doctorsError,
         });
-        return this.transformClientFromDB(typedClient, []); // Return transformed client with empty doctors array
+        return this.transformClientFromDB(typedClient, []);
       }
 
-      // Transform the client and return it
       const transformedClient = this.transformClientFromDB(
         typedClient,
         doctors || []
@@ -344,14 +324,12 @@ class ClientsService {
 
   async addClient(clientData: ClientInput): Promise<Client> {
     try {
-      // Get the next account number first
       const { data: nextNumber, error: numberError } = await supabase.rpc(
         "get_next_account_number"
       );
 
       if (numberError) throw numberError;
 
-      // Insert client with the pre-fetched account number
       const { data: client, error } = await supabase
         .from("clients")
         .insert({
@@ -363,7 +341,6 @@ class ClientsService {
 
       if (error) throw error;
       const clients = client as unknown as ClientType;
-      // Add doctors if provided
       if (clientData.doctors && clientData.doctors.length > 0) {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
@@ -387,7 +364,6 @@ class ClientsService {
 
   async updateClient(id: string, clientData: ClientInput): Promise<Client> {
     try {
-      // Validate account number if it's being updated
       if (
         clientData &&
         !validateAccountNumber(clientData.accountNumber as string)
@@ -395,7 +371,6 @@ class ClientsService {
         throw new Error("Invalid account number format");
       }
 
-      // Update client
       const { error: clientError } = await supabase
         .from("clients")
         .update(this.transformClientToDB(clientData) as any)
@@ -403,9 +378,7 @@ class ClientsService {
 
       if (clientError) throw clientError;
 
-      // Update doctors
       if (clientData.doctors) {
-        // Delete existing doctors
         const { error: deleteError } = await supabase
           .from("doctors")
           .delete()
@@ -413,7 +386,6 @@ class ClientsService {
 
         if (deleteError) throw deleteError;
 
-        // Add new doctors
         if (clientData.doctors.length > 0) {
           const { error: doctorsError } = await supabase.from("doctors").insert(
             clientData.doctors.map(

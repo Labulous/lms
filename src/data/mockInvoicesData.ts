@@ -7,8 +7,14 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  totalPrice: number;
+  totalPrice?: number;
   caseId?: string;
+  toothNumber: string;
+  discount: number;
+  notes?: {
+    labNotes: string;
+    invoiceNotes: string;
+  };
 }
 
 type Product = {
@@ -42,47 +48,50 @@ type Product = {
     discount: number;
     final_price: number;
     price: number;
+    quantity: number;
   };
-  teethProducts:{
-    tooth_number:number[]
-  }[]
+  teethProducts: {
+    tooth_number: number[];
+  };
 };
 
 type ProductArray = Product[];
 
 export interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientId: string;
-  clientName: string;
-  patient: string;
-  client: {
+  id?: string;
+  invoiceNumber?: string;
+  clientId?: string;
+  clientName?: string;
+  patient?: string;
+  lab_notes?: string;
+  client?: {
     client_name: string;
   };
-  clientAddress: {
+  clientAddress?: {
     street: string;
     city: string;
     state: string;
     zipCode: string;
   };
-  date: string;
-  dueDate: string;
-  case: Case;
+  date?: string;
+  dueDate?: string;
+  case?: Case;
+  invoice_notes?: string;
   items: InvoiceItem[];
-  subTotal: number;
+  subTotal?: number;
   discount?: {
     type: "percentage" | "fixed";
     value: number;
     amount?: number;
   };
-  tax: {
+  tax?: {
     value: number;
     amount: number;
   };
-  totalAmount: number;
-  amount: number;
-  balance: number;
-  status:
+  totalAmount?: number;
+  amount?: number;
+  balance?: number;
+  status?:
     | "draft"
     | "unpaid"
     | "pending"
@@ -91,16 +100,27 @@ export interface Invoice {
     | "overdue"
     | "partially_paid"
     | "cancelled";
-  paymentTerms: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  paymentTerms?: string;
+  notes?: {
+    labNotes: string;
+    invoiceNotes: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
   // new types
-  received_date: string;
-  case_number: string;
-  products: ProductArray;
-  due_date: string;
-  
+  received_date?: string;
+  case_number?: string;
+  products?: ProductArray;
+  due_date?: string;
+  caseId?: string;
+  invoicesData?: {
+    status: string;
+    amount: number;
+    due_date: string;
+    lab_id: string;
+    case_id: string;
+    client_id: string;
+  }[];
 }
 
 const today = new Date();
@@ -133,7 +153,9 @@ const createDefaultInvoices = (): Invoice[] => {
       clientId: client.id,
       clientName: client.clientName,
       patient: patients[Math.floor(Math.random() * patients.length)],
-      client: client.clientName,
+      client: {
+        client_name: client.clientName as string,
+      },
       clientAddress: client.address,
       date: format(
         addDays(today, -Math.floor(Math.random() * 30)),
@@ -172,6 +194,8 @@ const createDefaultInvoices = (): Invoice[] => {
           quantity: 1,
           unitPrice: amount,
           totalPrice: amount,
+          discount: 0,
+          toothNumber: "",
         },
       ],
       subTotal: amount,
@@ -248,7 +272,8 @@ export const getOverdueInvoices = (): Invoice[] => {
   return invoices.filter(
     (invoice) =>
       invoice.status === "overdue" ||
-      (invoice.status === "pending" && new Date(invoice.dueDate) < today)
+      (invoice.status === "pending" &&
+        new Date(invoice.dueDate as string) < today)
   );
 };
 

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
-  Clock,
   Eye,
   Download,
   ChevronLeft,
@@ -14,19 +13,16 @@ import {
   ChevronUp,
   ChevronDown,
   Calendar as CalendarIcon,
-  Percent,
   Trash,
   Loader2,
   X,
   Pencil,
   MoreHorizontal,
   Check,
-  Printer,
   Banknote,
   FileText,
   Table,
   Bell,
-  Calendar,
   Percent as PercentIcon,
   Clock as ClockIcon,
   Trash2,
@@ -66,14 +62,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -83,10 +71,10 @@ import {
 import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { da } from "date-fns/locale";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
+import { DiscountedPrice } from "@/types/supabase";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -104,6 +92,7 @@ type BulkAction =
   | "applyDiscount"
   | "changePaymentTerms"
   | "approve"
+  | "save"
   | "approvePrint";
 
 interface ModalState {
@@ -116,7 +105,9 @@ interface LoadingState {
   isLoading: boolean;
   progress?: number;
 }
-
+type DiscountedPriceMap = {
+  [key: string]: DiscountedPrice; // Assuming product_id is a string; use `number` if it's a number
+};
 const BATCH_SIZE = 50; // Process 50 items at a time
 
 const InvoiceList: React.FC = () => {
@@ -151,7 +142,7 @@ const InvoiceList: React.FC = () => {
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+  const [reFreshData, setRefreshData] = useState(false);
   const { user } = useAuth();
 
   // Initialize invoices
@@ -161,7 +152,6 @@ const InvoiceList: React.FC = () => {
 
       try {
         const lab = await getLabIdByUserId(user?.id as string);
-        setLab(lab);
 
         if (!lab?.labId) {
           console.error("Lab ID not found.");
@@ -200,6 +190,7 @@ const InvoiceList: React.FC = () => {
             case_number,
             otherItems,
             lab_notes,
+            invoice_notes,
             technician_notes,
             occlusal_type,
             contact_type,
@@ -218,6 +209,12 @@ const InvoiceList: React.FC = () => {
               cadcamFiles,
               consultRequested,
               user_id
+            ),
+            invoicesData:invoices!case_id (
+            case_id,
+            amount,
+            status,
+            due_date
             ),
             product_ids:case_products!id (
               products_id,
@@ -282,7 +279,6 @@ const InvoiceList: React.FC = () => {
             if (productsError) {
               console.error("Error fetching products for case:", productsError);
             }
-            // Fetch discounted prices for each product in the case
             const { data: discountedPriceData, error: discountedPriceError } =
               await supabase
                 .from("discounted_price")
@@ -291,10 +287,12 @@ const InvoiceList: React.FC = () => {
      product_id,
      discount,
      final_price,
-     price
+     price,
+     quantity
    `
                 )
-                .in("product_id", productsIdArray);
+                .in("product_id", productsIdArray)
+                .eq("case_id", singleCase.id);
 
             if (discountedPriceError) {
               console.error(
@@ -302,7 +300,6 @@ const InvoiceList: React.FC = () => {
                 discountedPriceError
               );
             }
-            // Fetch teeth products based on productsIdArray
             const { data: teethProductData, error: teethProductsError } =
               await supabase
                 .from("case_product_teeth")
@@ -333,7 +330,8 @@ const InvoiceList: React.FC = () => {
                 product_id
               `
                 )
-                .in("product_id", productsIdArray);
+                .in("product_id", productsIdArray)
+                .eq("case_product_id", singleCase?.product_ids[0].id);
 
             if (teethProductsError) {
               console.error(
@@ -341,46 +339,40 @@ const InvoiceList: React.FC = () => {
                 teethProductsError
               );
             }
-            const discountedPriceMap = discountedPriceData?.reduce(
-              (acc, item) => {
+            const discountedPriceMap: DiscountedPriceMap = (
+              discountedPriceData ?? []
+            ).reduce((acc: DiscountedPriceMap, item: DiscountedPrice) => {
+              acc[item.product_id] = item;
+              return acc;
+            }, {} as DiscountedPriceMap);
+            const teethProductMap: any = (teethProductData ?? []).reduce(
+              (acc: any, item: any) => {
                 acc[item.product_id] = item;
                 return acc;
               },
-              {}
+              {} as any
             );
-            // Map teeth products to their respective product IDs
-            const teethProductsMap = teethProductData?.reduce((acc, item) => {
-              acc[item.product_id] = acc[item.product_id] || [];
-              acc[item.product_id].push(item);
-              return acc;
-            }, {});
 
-            // Attach the teeth products to each product
             const products = productData?.map((product) => {
-              const teethProducts = teethProductsMap[product.id] || [];
               return {
                 ...product,
-                discounted_price: discountedPriceMap[product.id] || null, // Attach the discounted price to product
-                teethProducts, // Attach teeth products here
+                discounted_price: discountedPriceMap[product.id] || null,
+                teethProducts: teethProductMap[product.id] || null,
               };
             });
-
             return {
               ...singleCase,
-              products, // Include the products with teeth products
+              products,
             };
           })
         );
 
-        console.log(
-          "Enhanced Cases with Products and Teeth Products:",
-          enhancedCases
-        );
         setInvoicesData(enhancedCases);
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
       } finally {
-        setLoading(false); // Set loading state to false when the data is loaded
+        setLoading(false);
+        setRefreshData(false);
       }
     };
 
@@ -388,7 +380,7 @@ const InvoiceList: React.FC = () => {
     const initialInvoices = mockInvoices;
     setInvoices(initialInvoices);
     setFilteredInvoices(initialInvoices);
-  }, [user?.id]);
+  }, [user?.id, reFreshData]);
 
   const [caseFilter, setCaseFilter] = useState<string>("");
 
@@ -399,7 +391,6 @@ const InvoiceList: React.FC = () => {
     invoice: Invoice,
     mode: "edit" | "payment" = "edit"
   ) => {
-    // Delay setting the invoice to avoid focus issues
     setTimeout(() => {
       setEditingInvoice(invoice);
       setEditMode(mode);
@@ -407,7 +398,6 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleCloseEditModal = () => {
-    // Delay cleanup to avoid focus issues
     setTimeout(() => {
       setEditingInvoice(null);
       setEditMode("edit");
@@ -415,21 +405,185 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    const updatedProductIds = updatedInvoice.items.map((item) => item.id);
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
-      // TODO: API call to save invoice
-      console.log("Saving invoice:", updatedInvoice);
 
-      // Show success message
-      toast.success("Invoice updated successfully");
+      const { data: updatedCaseProducts, error: updateCaseProductsError } =
+        await supabase
+          .from("case_products")
+          .update({ products_id: updatedProductIds })
+          .eq("case_id", updatedInvoice.caseId)
+          .select();
 
-      // Close modal and reset state
+      if (updateCaseProductsError) {
+        throw new Error(updateCaseProductsError.message);
+      }
+
+      for (const updatedCaseProduct of updatedCaseProducts) {
+        const { id: caseProductId, products_id } = updatedCaseProduct;
+
+        if (Array.isArray(products_id)) {
+          for (const product_id of products_id) {
+            const { data: existingTeeth, error: fetchError } = await supabase
+              .from("case_product_teeth")
+              .select("id")
+              .eq("case_product_id", caseProductId)
+              .eq("product_id", product_id)
+              .single();
+
+            if (fetchError && fetchError.code !== "PGRST116") {
+              throw new Error(fetchError.message);
+            }
+
+            if (existingTeeth) {
+              const { error: updateTeethError } = await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0]?.toothNumber,
+                  ],
+                })
+                .eq("case_product_id", caseProductId)
+                .eq("product_id", product_id);
+
+              if (updateTeethError) throw new Error(updateTeethError.message);
+            } else {
+              const { error: insertTeethError } = await supabase
+                .from("case_product_teeth")
+                .insert({
+                  case_product_id: caseProductId,
+                  product_id,
+                  tooth_number: [
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].toothNumber,
+                  ],
+                });
+
+              if (insertTeethError) throw new Error(insertTeethError.message);
+            }
+
+            const { data: existingDiscount, error: discountFetchError } =
+              await supabase
+                .from("discounted_price")
+                .select("id")
+                .eq("case_id", updatedInvoice.caseId)
+                .eq("product_id", product_id)
+                .single();
+
+            if (discountFetchError && discountFetchError.code !== "PGRST116") {
+              throw new Error(discountFetchError.message);
+            }
+
+            if (existingDiscount) {
+              const { data: updatedDiscount, error: updateDiscountError } =
+                await supabase
+                  .from("discounted_price")
+                  .update({
+                    discount: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].discount,
+                    quantity: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].quantity,
+                    price: updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].unitPrice,
+                    final_price:
+                      updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].quantity *
+                      updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].unitPrice *
+                      (1 -
+                        (updatedInvoice.items.filter(
+                          (item) => item.id === product_id
+                        )[0].discount || 0) /
+                          100),
+                  }) // Update discount value
+                  .eq("case_id", updatedInvoice.caseId)
+                  .eq("product_id", product_id)
+                  .select();
+
+              if (updateDiscountError)
+                throw new Error(updateDiscountError.message);
+            } else {
+              const { error: insertDiscountError } = await supabase
+                .from("discounted_price")
+                .insert({
+                  case_id: updatedInvoice.caseId,
+                  product_id,
+                  discount: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].discount, // New discount value
+                  quantity: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].quantity,
+                  price: updatedInvoice.items.filter(
+                    (item) => item.id === product_id
+                  )[0].unitPrice,
+                  final_price:
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].quantity *
+                    updatedInvoice.items.filter(
+                      (item) => item.id === product_id
+                    )[0].unitPrice *
+                    (1 -
+                      (updatedInvoice.items.filter(
+                        (item) => item.id === product_id
+                      )[0].discount || 0) /
+                        100),
+                })
+                .select();
+              if (insertDiscountError)
+                throw new Error(insertDiscountError.message);
+            }
+          }
+        } else {
+          console.warn(
+            `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+          );
+        }
+      }
+
+      const { error: updateCasesError } = await supabase
+        .from("cases")
+        .update({
+          invoice_notes: updatedInvoice?.notes?.invoiceNotes,
+          lab_notes: updatedInvoice?.notes?.labNotes,
+        })
+        .eq("id", updatedInvoice.caseId);
+
+      if (updateCasesError) {
+        throw new Error(updateCasesError.message);
+      }
+
+      const { error: updateInvoicesError } = await supabase
+        .from("invoices")
+        .update({
+          amount: updatedInvoice.totalAmount,
+        })
+        .eq("case_id", updatedInvoice.caseId);
+
+      if (updateInvoicesError) {
+        throw new Error(updateInvoicesError.message);
+      }
+
+      toast.success("Invoice and related data updated successfully");
+
       handleCloseEditModal();
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast.error("Failed to update invoice");
     } finally {
       setLoadingState({ isLoading: false, action: null });
+      setRefreshData(true);
     }
   };
 
@@ -441,7 +595,6 @@ const InvoiceList: React.FC = () => {
     };
   }, []);
 
-  // Focus management
   useEffect(() => {
     let lastActiveElement: HTMLElement | null = null;
 
@@ -450,6 +603,7 @@ const InvoiceList: React.FC = () => {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "";
+      const lastActiveElement = document.activeElement as HTMLElement | null;
       if (lastActiveElement && "focus" in lastActiveElement) {
         lastActiveElement.focus();
       }
@@ -463,17 +617,14 @@ const InvoiceList: React.FC = () => {
     };
   }, [editingInvoice]);
 
-  // Initialize invoices
   useEffect(() => {
-    // Filter for completed cases only
     const completedCaseInvoices = mockInvoices.filter(
-      (invoice) => invoice.case.caseStatus === "completed"
+      (invoice) => invoice?.case?.caseStatus === "completed"
     );
     setInvoices(completedCaseInvoices);
     setFilteredInvoices(completedCaseInvoices);
   }, []);
 
-  // Update filtered invoices when search or date filters change
   useEffect(() => {
     const filtered = getFilteredInvoices();
     setFilteredInvoices(filtered);
@@ -498,8 +649,6 @@ const InvoiceList: React.FC = () => {
     _invoice?: Invoice
   ): string => {
     switch (status) {
-      case "draft":
-        return "draft";
       case "unpaid":
         return "UnPaid";
       case "pending":
@@ -536,9 +685,15 @@ const InvoiceList: React.FC = () => {
 
     return [...data].sort((a, b) => {
       if (sortConfig.key === "date" || sortConfig.key === "dueDate") {
-        const dateA = new Date(a[sortConfig.key]).getTime();
-        const dateB = new Date(b[sortConfig.key]).getTime();
-        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+        const aDate = a[sortConfig.key];
+        const bDate = b[sortConfig.key];
+        if (aDate && bDate) {
+          const dateA = new Date(aDate).getTime();
+          const dateB = new Date(bDate).getTime();
+          return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+        } else {
+          return 0;
+        }
       }
 
       if (sortConfig.key === "amount") {
@@ -584,12 +739,12 @@ const InvoiceList: React.FC = () => {
     switch (action) {
       case "exportPDF":
       case "exportCSV":
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate export processing
+        await new Promise((resolve) => setTimeout(resolve, 500));
         break;
       case "delete":
       case "markPaid":
       case "sendReminder":
-        await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 200));
         break;
     }
   };
@@ -617,16 +772,17 @@ const InvoiceList: React.FC = () => {
       // Apply changes after all batches are processed
       switch (action) {
         case "delete":
-          const remainingInvoices = invoices.filter(
-            (invoice) => !selectedInvoices.includes(invoice.id)
+          const remainingInvoices = invoicesData.filter(
+            (invoice: Invoice) =>
+              !selectedInvoices.includes(invoice.caseId as string)
           );
           setInvoices(remainingInvoices);
           setFilteredInvoices(remainingInvoices);
           setSelectedInvoices([]);
           break;
         case "markPaid":
-          const paidInvoices = invoices.map((invoice) => {
-            if (selectedInvoices.includes(invoice.id)) {
+          const paidInvoices = invoicesData.map((invoice: Invoice) => {
+            if (selectedInvoices.includes(invoice.caseId as string)) {
               return { ...invoice, status: "paid" as const };
             }
             return invoice;
@@ -636,8 +792,8 @@ const InvoiceList: React.FC = () => {
           break;
         case "approve":
         case "approvePrint":
-          const updatedInvoices = invoices.map((invoice) => {
-            if (selectedInvoices.includes(invoice.id)) {
+          const updatedInvoices = invoicesData.map((invoice: Invoice) => {
+            if (selectedInvoices.includes(invoice.caseId as string)) {
               return { ...invoice, status: "approved" as const };
             }
             return invoice;
@@ -676,42 +832,46 @@ const InvoiceList: React.FC = () => {
         await processBatch(batch, action, i + 1, batches);
       }
 
-      // Apply changes after all batches are processed
       switch (action) {
         case "changeDueDate":
           if (newDueDate) {
             const updatedInvoices = invoices.map((invoice) => {
-              if (selectedInvoices.includes(invoice.id)) {
+              if (selectedInvoices.includes(invoice.caseId as string)) {
                 return { ...invoice, dueDate: newDueDate as unknown as string };
               }
               return invoice;
             });
-            console.log(updatedInvoices, "updatedInvoices");
             setInvoices(updatedInvoices);
             setFilteredInvoices(updatedInvoices);
           }
           break;
         case "applyDiscount":
           const updatedInvoices = invoices.map((invoice) => {
-            if (selectedInvoices.includes(invoice.id)) {
+            if (invoice.caseId && selectedInvoices.includes(invoice.caseId)) {
               const discount =
                 discountType === "percentage"
-                  ? invoice.totalAmount * (discountValue / 100)
+                  ? invoice.totalAmount
+                    ? invoice.totalAmount * (discountValue / 100)
+                    : 0
                   : discountValue;
+
               return {
                 ...invoice,
-                totalAmount: invoice.totalAmount - discount,
+                totalAmount: invoice.totalAmount
+                  ? invoice.totalAmount - discount
+                  : 0,
                 discount: { type: discountType, value: discountValue },
               };
             }
             return invoice;
           });
+
           setInvoices(updatedInvoices);
           setFilteredInvoices(updatedInvoices);
           break;
         case "changePaymentTerms":
           const updatedTermsInvoices = invoices.map((invoice) => {
-            if (selectedInvoices.includes(invoice.id)) {
+            if (selectedInvoices.includes(invoice.caseId as string)) {
               return { ...invoice, paymentTerms };
             }
             return invoice;
@@ -733,17 +893,18 @@ const InvoiceList: React.FC = () => {
       }, 2000);
     }
   };
-
   const filterByDates = (invoices: Invoice[]) => {
     return invoices.filter((invoice) => {
       const matchesDate =
         !dateFilter ||
-        format(new Date(invoice.date), "yyyy-MM-dd") ===
-          format(dateFilter, "yyyy-MM-dd");
+        (invoice.date &&
+          format(new Date(invoice.date), "yyyy-MM-dd") ===
+            format(dateFilter, "yyyy-MM-dd"));
       const matchesDueDate =
         !dueDateFilter ||
-        format(new Date(invoice.dueDate), "yyyy-MM-dd") ===
-          format(dueDateFilter, "yyyy-MM-dd");
+        (invoice.dueDate &&
+          format(new Date(invoice.dueDate), "yyyy-MM-dd") ===
+            format(dueDateFilter, "yyyy-MM-dd"));
       return matchesDate && matchesDueDate;
     });
   };
@@ -751,33 +912,39 @@ const InvoiceList: React.FC = () => {
   const getFilteredInvoices = () => {
     let filtered = [...invoices];
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (invoice) =>
-          invoice.invoiceNumber
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.case.caseId.toLowerCase().includes(searchTerm.toLowerCase())
+          (invoice?.invoiceNumber
+            ?.toLowerCase()
+            ?.includes(searchTerm.toLowerCase()) ??
+            false) ||
+          (invoice?.clientName
+            ?.toLowerCase()
+            ?.includes(searchTerm.toLowerCase()) ??
+            false) ||
+          (invoice?.patient
+            ?.toLowerCase()
+            ?.includes(searchTerm.toLowerCase()) ??
+            false) ||
+          (invoice?.case?.caseId
+            ?.toLowerCase()
+            ?.includes(searchTerm.toLowerCase()) ??
+            false)
       );
     }
 
-    // Apply date filters
     filtered = filterByDates(filtered);
 
-    // Apply status filter
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
         statusFilter.includes(invoice.status)
       );
     }
 
-    // Apply case filter
     if (caseFilter) {
       filtered = filtered.filter(
-        (invoice) => invoice.case.caseId === caseFilter
+        (invoice) => invoice.case?.caseId === caseFilter
       );
     }
 
@@ -785,20 +952,15 @@ const InvoiceList: React.FC = () => {
   };
   const getSortedAndPaginatedData = () => {
     const sortedData = sortData(invoicesData);
-    console.log(sortedData, "sorteddata");
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, sortedData.length);
-    console.log(startIndex, endIndex, "index");
     return sortedData.slice(startIndex, endIndex);
   };
-  console.log(getSortedAndPaginatedData(), "data");
 
-  // const startIndex = (currentPage - 1) * itemsPerPage;
-  // const endIndex = Math.min(startIndex + itemsPerPage, filteredInvoices.length);
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
 
   const allStatuses: Invoice["status"][] = [
-    "draft",
+    "unpaid",
     "pending",
     "paid",
     "partially_paid",
@@ -856,7 +1018,6 @@ const InvoiceList: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Filters and Actions */}
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
           {selectedInvoices.length > 0 ? (
@@ -1011,14 +1172,14 @@ const InvoiceList: React.FC = () => {
                     checked={
                       getSortedAndPaginatedData().length > 0 &&
                       getSortedAndPaginatedData().every((invoice) =>
-                        selectedInvoices.includes(invoice.id)
+                        selectedInvoices.includes(invoice.caseId as string)
                       )
                     }
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedInvoices(
                           getSortedAndPaginatedData().map(
-                            (invoice) => invoice.id
+                            (invoice) => invoice.caseId as string
                           )
                         );
                       } else {
@@ -1078,15 +1239,15 @@ const InvoiceList: React.FC = () => {
                           )}
                         </div>
                         {[
-                          "draft",
+                          "unpaid",
                           "approved",
                           "paid",
                           "partially_paid",
                           "overdue",
                           "cancelled",
-                        ].map((status) => (
+                        ].map((status, index) => (
                           <div
-                            key={status}
+                            key={index}
                             className="flex items-center space-x-2"
                           >
                             <Checkbox
@@ -1164,11 +1325,11 @@ const InvoiceList: React.FC = () => {
                   </div>
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort("case.caseId")}
+                  onClick={() => handleSort("caseId")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
-                    Case #{getSortIcon("case.caseId")}
+                    Case #{getSortIcon("caseId")}
                   </div>
                 </TableHead>
                 <TableHead
@@ -1196,41 +1357,51 @@ const InvoiceList: React.FC = () => {
               {getSortedAndPaginatedData().length === 0 ? (
                 <EmptyState />
               ) : (
-                getSortedAndPaginatedData().map((invoice) => (
+                getSortedAndPaginatedData().map((invoice, index) => (
                   <TableRow
-                    key={invoice.id}
+                    key={index}
                     className={cn(
-                      selectedInvoices.includes(invoice.id) && "bg-muted/50",
+                      selectedInvoices.includes(invoice.caseId as string) &&
+                        "bg-muted/50",
                       "hover:bg-muted/50 transition-colors"
                     )}
                   >
                     <TableCell>
                       <Checkbox
-                        checked={selectedInvoices.includes(invoice.id)}
+                        checked={selectedInvoices.includes(
+                          invoice.caseId as string
+                        )}
                         onCheckedChange={() => {
-                          if (selectedInvoices.includes(invoice.id)) {
+                          if (
+                            selectedInvoices.includes(invoice.caseId as string)
+                          ) {
                             setSelectedInvoices((prev) =>
-                              prev.filter((id) => id !== invoice.id)
+                              prev.filter(
+                                (id) => id !== (invoice.caseId as string)
+                              )
                             );
                           } else {
                             setSelectedInvoices((prev) => [
                               ...prev,
-                              invoice.id,
+                              invoice.caseId as string,
                             ]);
                           }
                         }}
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice?.received_date), "dd/MM/yy")}
+                      {invoice?.received_date
+                        ? format(new Date(invoice?.received_date), "dd/MM/yy")
+                        : "No Date"}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <Link
-                        to={`/billing/${invoice.id}`}
+                        to={`/billing/${invoice.caseId as string}`}
                         className="text-primary hover:underline"
                       >
                         {(() => {
-                          const parts = invoice.case_number.split("-");
+                          const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
+                          const parts = caseNumber.split("-");
                           parts[0] = "INV"; // Replace the first part
                           return parts.join("-");
                         })()}
@@ -1239,28 +1410,44 @@ const InvoiceList: React.FC = () => {
                     <TableCell>
                       <Badge
                         variant={
-                          getStatusBadgeVariant(invoice.status) as
-                            | "filter"
-                            | "secondary"
-                            | "success"
-                            | "destructive"
-                            | "default"
-                            | "warning"
-                            | "outline"
-                            | "Crown"
-                            | "Bridge"
-                            | "Removable"
-                            | "Implant"
-                            | "Coping"
-                            | "Appliance"
+                          invoice?.invoicesData?.[0]?.status
+                            ? (getStatusBadgeVariant(
+                                invoice.invoicesData[0].status as
+                                  | "draft"
+                                  | "unpaid"
+                                  | "pending"
+                                  | "approved"
+                                  | "paid"
+                                  | "overdue"
+                                  | "partially_paid"
+                                  | "cancelled"
+                              ) as
+                                | "filter"
+                                | "secondary"
+                                | "success"
+                                | "destructive"
+                                | "default"
+                                | "warning"
+                                | "outline"
+                                | "Crown"
+                                | "Bridge"
+                                | "Removable"
+                                | "Implant"
+                                | "Coping"
+                                | "Appliance")
+                            : "Bridge"
                         }
                       >
-                        {invoice.status.charAt(0).toUpperCase() +
-                          invoice.status.slice(1)}
+                        {invoice?.invoicesData?.[0]?.status
+                          ? invoice.invoicesData[0].status
+                              .charAt(0)
+                              .toUpperCase() +
+                            invoice.invoicesData[0].status.slice(1)
+                          : "No Status"}
                       </Badge>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {invoice.client.client_name}
+                      {invoice?.client?.client_name || "Unknown Client"}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {invoice.case_number}
@@ -1271,7 +1458,7 @@ const InvoiceList: React.FC = () => {
                         (typeof invoice.amount === "number"
                           ? invoice.amount
                           : 0) +
-                        invoice.products.reduce(
+                        (invoice?.products?.reduce(
                           (sum, item) =>
                             sum +
                             (typeof item.discounted_price?.final_price ===
@@ -1279,13 +1466,15 @@ const InvoiceList: React.FC = () => {
                               ? item.discounted_price.final_price
                               : 0),
                           0
-                        )
+                        ) ?? 0)
                       ).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                       })}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {format(new Date(invoice.due_date), "dd/MM/yy")}
+                      {new Date(
+                        invoice?.due_date ?? "2000-01-01"
+                      ).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -1303,7 +1492,9 @@ const InvoiceList: React.FC = () => {
                           {invoice.status === "draft" && (
                             <>
                               <DropdownMenuItem
-                                onClick={() => handleApprove(invoice.id)}
+                                onClick={() =>
+                                  handleApprove(invoice.caseId as string)
+                                }
                                 className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
@@ -1311,7 +1502,9 @@ const InvoiceList: React.FC = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleApproveAndPrint(invoice.id)
+                                  handleApproveAndPrint(
+                                    invoice.caseId as string
+                                  )
                                 }
                                 className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
                               >
@@ -1322,13 +1515,25 @@ const InvoiceList: React.FC = () => {
                             </>
                           )}
                           <DropdownMenuItem
-                            onClick={() => navigate(`/billing/${invoice.id}`)}
+                            onClick={() =>
+                              navigate(`/billing/${invoice.caseId as string}`)
+                            }
                             className="cursor-pointer"
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View Details
                           </DropdownMenuItem>
-                          {["draft", "overdue"].includes(invoice.status) && (
+                          {["draft", "overdue"].includes(
+                            invoice.status as
+                              | "draft"
+                              | "unpaid"
+                              | "pending"
+                              | "approved"
+                              | "paid"
+                              | "overdue"
+                              | "partially_paid"
+                              | "cancelled"
+                          ) && (
                             <DropdownMenuItem
                               onClick={() =>
                                 handleOpenEditModal(invoice, "edit")
@@ -1340,7 +1545,15 @@ const InvoiceList: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           {["approved", "partially_paid", "completed"].includes(
-                            invoice.status
+                            invoice.status as
+                              | "draft"
+                              | "unpaid"
+                              | "pending"
+                              | "approved"
+                              | "paid"
+                              | "overdue"
+                              | "partially_paid"
+                              | "cancelled"
                           ) && (
                             <DropdownMenuItem
                               onClick={() =>
@@ -1353,17 +1566,31 @@ const InvoiceList: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => handleDownload(invoice.id)}
+                            onClick={() =>
+                              handleDownload(invoice.caseId as string)
+                            }
                             className="cursor-pointer"
                           >
                             <Download className="mr-2 h-4 w-4" />
                             Download PDF
                           </DropdownMenuItem>
-                          {["draft", "overdue"].includes(invoice.status) && (
+                          {["draft", "overdue"].includes(
+                            invoice.status as
+                              | "draft"
+                              | "unpaid"
+                              | "pending"
+                              | "approved"
+                              | "paid"
+                              | "overdue"
+                              | "partially_paid"
+                              | "cancelled"
+                          ) && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => handleDelete(invoice.id)}
+                                onClick={() =>
+                                  handleDelete(invoice.caseId as string)
+                                }
                                 className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
                               >
                                 <Trash className="mr-2 h-4 w-4" />
@@ -1466,7 +1693,6 @@ const InvoiceList: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Invoice Modal */}
       {editingInvoice && (
         <EditInvoiceModal
           invoice={editingInvoice}

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import {
-  Clock,
   User,
   FileText,
   Package,
@@ -18,6 +17,8 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "react-router-dom";
+
 import {
   Table,
   TableBody,
@@ -45,7 +46,6 @@ import {
 } from "@/components/ui/accordion";
 import cn from "classnames";
 
-// Define TypeScript interfaces for our data structure
 interface CaseFile {
   id: string;
   file_name: string;
@@ -58,11 +58,11 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  lead_time: string | null; // Assuming the lead time can be a string or null
+  lead_time: string | null;
   is_client_visible: boolean;
   is_taxable: boolean;
-  created_at: string; // ISO date string
-  updated_at: string; // ISO date string
+  created_at: string;
+  updated_at: string;
   requires_shade: boolean;
   material?: Material;
   product_type: ProductType;
@@ -139,6 +139,7 @@ interface ExtendedCase extends Case {
     consultRequested: number;
     returnArticulator: number;
   };
+  products: any[];
 }
 
 const TYPE_COLORS = {
@@ -155,10 +156,9 @@ const TYPE_COLORS = {
 const formatTeethRange = (teeth: number[]): string => {
   if (!teeth.length) return "";
 
-  // Check if it's an arch selection
   const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
   const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-  const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+  const isFullArch = teeth.length >= 16;
 
   if (isFullArch) {
     if (hasUpper && hasLower) return "All";
@@ -166,13 +166,10 @@ const formatTeethRange = (teeth: number[]): string => {
     if (hasLower) return "Lower";
   }
 
-  // For non-arch selections, use the original range formatting
   if (teeth.length === 1) return teeth[0].toString();
 
-  // Sort teeth numbers
   const sortedTeeth = [...teeth].sort((a, b) => a - b);
 
-  // Find continuous ranges
   let ranges: string[] = [];
   let rangeStart = sortedTeeth[0];
   let prev = sortedTeeth[0];
@@ -199,7 +196,7 @@ const CaseDetails: React.FC = () => {
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  let location = useLocation();
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -209,9 +206,6 @@ const CaseDetails: React.FC = () => {
 
     const fetchCaseData = async () => {
       try {
-        console.log("Fetching case data for ID:", caseId);
-
-        // Step 1: Fetch case details
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -285,20 +279,15 @@ const CaseDetails: React.FC = () => {
           return;
         }
 
-        console.log("Successfully fetched case data:", caseData);
         const caseDetails: any = caseData;
-        // Extract products_id array and caseProductId
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
-        console.log(productsIdArray, "productsIdArray");
-        console.log(caseProductId, "caseProductId");
 
         let products: Product[] = [];
         let teethProducts: ToothInfo[] = [];
         let discountedPrices: DiscountedPrice[];
 
         if (productsIdArray?.length > 0) {
-          // Step 2: Fetch products based on products_id array
           const { data: productData, error: productsError } = await supabase
             .from("products")
             .select(
@@ -333,10 +322,8 @@ const CaseDetails: React.FC = () => {
             .in("id", productsIdArray);
 
           if (productsError) {
-            console.error("Error fetching products:", productsError);
             setError(productsError.message);
           } else {
-            console.log(productData, "productData");
             const productsData: any[] = productData.map((item: any) => ({
               ...item,
               material: {
@@ -345,11 +332,9 @@ const CaseDetails: React.FC = () => {
                 is_active: item.is_active,
               },
             }));
-            console.log("Successfully fetched products:", productData);
             products = productsData;
           }
 
-          // Step 3: Fetch discounted price data for products
           const { data: discountedPriceData, error: discountedPriceError } =
             await supabase
               .from("discounted_price")
@@ -358,10 +343,12 @@ const CaseDetails: React.FC = () => {
                 product_id,
                 discount,
                 final_price,
-                price
+                price,
+                quantity
               `
               )
-              .in("product_id", productsIdArray);
+              .in("product_id", productsIdArray)
+              .eq("case_id", caseDetails.id);
 
           if (discountedPriceError) {
             console.error(
@@ -370,19 +357,13 @@ const CaseDetails: React.FC = () => {
             );
             setError(discountedPriceError.message);
           } else {
-            console.log(
-              "Successfully fetched discounted prices:",
-              discountedPriceData
-            );
             discountedPrices = discountedPriceData.map((item: any) => item);
-            console.log(discountedPrices, "discountedPrices");
           }
         } else {
           console.log("No products associated with this case.");
         }
 
         if (caseProductId) {
-          // Step 4: Fetch case_teeth_products based on caseProductId
           const { data: teethProductData, error: teethProductsError } =
             await supabase
               .from("case_product_teeth")
@@ -409,45 +390,39 @@ const CaseDetails: React.FC = () => {
                   category,
                   is_active
                 ),
-                tooth_number
+                tooth_number,
+                notes,
+                product_id
               `
               )
               .eq("case_product_id", caseProductId);
 
           if (teethProductsError) {
-            console.error("Error fetching teeth products:", teethProductsError);
             setError(teethProductsError.message);
           } else {
-            console.log(
-              "Successfully fetched teeth products:",
-              teethProductData
-            );
             teethProducts = teethProductData.map((item: any) => item);
           }
         } else {
           console.log("No caseProductId found for fetching teeth products.");
         }
-
-        // Step 5: Combine the products with their respective discounted price data
         const productsWithDiscounts = products.map((product: any) => {
-          // Find the matching discounted price for the product
           const discountedPrice = discountedPrices.find(
-            (discount: any) => discount.product_id === product.id
+            (discount: { product_id: string }) =>
+              discount.product_id === product.id
           );
-          console.log(discountedPrice, "discountedPrice");
-          // Combine the product data with the discounted price details
+          const productTeeth = teethProducts.find(
+            (teeth: any) => teeth.product_id === product.id
+          );
           return {
             ...product,
             discounted_price: discountedPrice,
+            teethProduct: productTeeth,
           };
         });
-
-        // Step 6: Combine case details, products, and teethProducts
 
         setCaseDetail({
           ...(caseData as any),
           products: productsWithDiscounts,
-          teethProducts,
         });
       } catch (error) {
         console.error("Error fetching case data:", error);
@@ -465,12 +440,10 @@ const CaseDetails: React.FC = () => {
   }, [caseId]);
 
   const handleCompleteStage = async (stageName: string) => {
-    // Implement stage completion logic here
     console.log(`Completing stage: ${stageName}`);
   };
 
   const handlePhotoUpload = async (file: File) => {
-    // Implement photo upload logic here
     console.log(`Uploading photo: ${file.name}`);
   };
 
@@ -511,17 +484,15 @@ const CaseDetails: React.FC = () => {
     );
   }
 
-  console.log(caseDetail, "case detail");
   return (
     <div className="w-full">
-      {/* Full-width Header */}
       <div className="w-full bg-white border-b border-gray-200">
         <div className="w-full px-16 py-6">
           <div className="flex justify-between items-start">
             <div className="flex items-start space-x-6">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={`/cases/${caseDetail.qr_code}`}
+                  value={`/${location.pathname}`}
                   size={64}
                   level="H"
                   includeMargin={true}
@@ -623,13 +594,9 @@ const CaseDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content with max-width container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column - Basic Info and Products */}
           <div className="md:col-span-2 space-y-6">
-            {/* Case Progress Stepper */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -677,7 +644,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Case Items Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -731,7 +697,7 @@ const CaseDetails: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {caseDetail.teethProducts?.map((product, index) => (
+                      {caseDetail.products?.map((product, index) => (
                         <TableRow key={index}>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <span
@@ -739,11 +705,12 @@ const CaseDetails: React.FC = () => {
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product.type as keyof typeof TYPE_COLORS
+                                    product.product_type
+                                      ?.name as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
-                              {product.type}
+                              {product.product_type?.name ?? "Null"}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -753,9 +720,11 @@ const CaseDetails: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.tooth_number.length > 1
-                              ? formatTeethRange(product.tooth_number)
-                              : product.tooth_number[0]}
+                            {product.teethProduct.tooth_number.length > 1
+                              ? formatTeethRange(
+                                  product.teethProduct.tooth_number
+                                )
+                              : product.teethProduct.tooth_number[0]}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
                             <Separator
@@ -774,32 +743,40 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              {product.body_shade?.name && (
+                              {product.teethProduct.body_shade?.name && (
                                 <div className="flex justify-between">
                                   <span className="text-gray-500">Body:</span>
-                                  <span>{product.body_shade.name}</span>
+                                  <span>
+                                    {product.teethProduct.body_shade.name}
+                                  </span>
                                 </div>
                               )}
-                              {product.gingival_shade?.name && (
+                              {product.teethProduct.gingival_shade?.name && (
                                 <div className="flex justify-between">
                                   <span className="text-gray-500">
                                     Gingival:
                                   </span>
-                                  <span>{product.gingival_shade.name}</span>
+                                  <span>
+                                    {product.teethProduct.gingival_shade.name}
+                                  </span>
                                 </div>
                               )}
-                              {product.occlusal_shade?.name && (
+                              {product.teethProduct.occlusal_shade?.name && (
                                 <div className="flex justify-between">
                                   <span className="text-gray-500">
                                     Occlusal:
                                   </span>
-                                  <span>{product.occlusal_shade.name}</span>
+                                  <span>
+                                    {product.teethProduct.occlusal_shade.name}{" "}
+                                  </span>
                                 </div>
                               )}
-                              {product.stump_shade_id?.name && (
+                              {product.teethProduct.stump_shade_id?.name && (
                                 <div className="flex justify-between">
                                   <span className="text-gray-500">Stump:</span>
-                                  <span>{product.stump_shade_id.name}</span>
+                                  <span>
+                                    {product.teethProduct.stump_shade_id.name}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -811,12 +788,12 @@ const CaseDetails: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.notes ? (
+                            {product.teethProduct?.notes ? (
                               <div className="max-w-xs">
                                 <p className="text-gray-600 line-clamp-2">
-                                  {product.notes}
+                                  {product.teethProduct?.notes}
                                 </p>
-                                {product.notes.length > 100 && (
+                                {product.teethProduct?.notes.length > 100 && (
                                   <HoverCard>
                                     <HoverCardTrigger asChild>
                                       <Button
@@ -855,7 +832,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Invoice Card */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
@@ -878,6 +854,15 @@ const CaseDetails: React.FC = () => {
                         </TableHead>
                         <TableHead className="text-xs py-0.5 pl-4 pr-0">
                           Billing Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Quantity
                         </TableHead>
                         <TableHead className="w-[1px] p-0">
                           <Separator
@@ -918,78 +903,114 @@ const CaseDetails: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {caseDetail.teethProducts?.map((product, index) => {
-                        const price = product.price || 0;
-                        const discount =
-                          product.discounted_price?.discount || 0;
-                        const finalPrice =
-                          product.discounted_price?.final_price || price;
-                        const quantity = product.tooth_number?.length || 1;
-                        const subtotal = finalPrice * quantity;
+                      {caseDetail?.products &&
+                        caseDetail?.products?.map((product, index) => {
+                          const price = product?.discounted_price?.price || 0;
+                          const discount =
+                            product?.discounted_price?.discount || 0;
+                          const finalPrice =
+                            product?.discounted_price?.final_price || price;
+                          const quantity = product?.tooth_number?.length || 1;
+                          const subtotal = finalPrice * quantity;
 
-                        return (
-                          <TableRow key={index}>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {product.tooth_number.length > 1
-                                ? formatTeethRange(product.tooth_number)
-                                : product.tooth_number[0]}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {product.material?.name || "-"}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              ${price.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              {discount > 0 ? (
-                                <span className="text-green-600">
-                                  -${discount.toFixed(2)}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                              ${finalPrice.toFixed(2)}
-                            </TableCell>
-                            <TableCell className="w-[1px] p-0">
-                              <Separator
-                                orientation="vertical"
-                                className="h-full"
-                              />
-                            </TableCell>
-                            <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                              ${subtotal.toFixed(2)}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {/* Total Row */}
-                      <TableRow className="border-t border-gray-200 bg-gray-50">
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.tooth_number?.length > 1
+                                  ? formatTeethRange(
+                                      product.teethProduct?.tooth_number
+                                    )
+                                  : product.teethProduct?.tooth_number[0]}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.name || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product?.discounted_price?.quantity || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                ${product?.discounted_price?.price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {discount > 0 ? (
+                                  <span className="text-green-600">
+                                    {product.discounted_price.discount.toFixed(
+                                      2
+                                    )}
+                                    %
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                $
+                                {product?.discounted_price?.final_price.toFixed(
+                                  2
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${subtotal.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
+
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
                         <TableCell
                           colSpan={9}
                           className="text-xs py-2 pl-4 pr-0 text-right"
@@ -998,15 +1019,13 @@ const CaseDetails: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
                           $
-                          {caseDetail.teethProducts
+                          {caseDetail.products
                             ?.reduce((total, product) => {
                               const finalPrice =
                                 product.discounted_price?.final_price ||
                                 product.price ||
                                 0;
-                              const quantity =
-                                product.tooth_number?.length || 1;
-                              return total + finalPrice * quantity;
+                              return total + finalPrice;
                             }, 0)
                             .toFixed(2)}
                         </TableCell>
@@ -1016,11 +1035,113 @@ const CaseDetails: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <Package className="mr-2" size={20} /> Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <p className="text-gray-600">Occlusal Details</p>
+                    <p className="font-medium">
+                      {caseDetail?.case_products?.length > 0
+                        ? caseDetail.custom_occlusal_details
+                        : caseDetail.case_products?.[0]?.occlusal_type}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Contact Type</p>
+                    <p className="font-medium">
+                      {caseDetail.custom_contact_details
+                        ? caseDetail.custom_contact_details
+                        : caseDetail.contact_type}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="mb-4">
+                    <p className="text-gray-600">Lab Notes</p>
+                    <p className="font-medium">
+                      {caseDetail.lab_notes || "No notes"}
+                    </p>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Technician Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.technician_notes || "No technician notes"}
+                    </p>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <p className="text-gray-600">Other Items</p>
+                  <p className="font-medium">
+                    {caseDetail?.otherItems || "No notes"}
+                  </p>
+                </div>
+                {caseDetail.teethProducts?.map((product, index) => (
+                  <div
+                    key={index}
+                    className="border-b last:border-b-0 pb-4 mb-4"
+                  >
+                    <div>
+                      <h3 className="text-lg font-medium mb-2 flex items-center">
+                        <CircleDot className="mr-2" size={16} /> Selected Teeth
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="bg-gray-50 p-3 rounded">
+                          <p className="font-medium mb-2">
+                            Tooth #
+                            {product.tooth_number.length > 1
+                              ? product.tooth_number
+                                  .map((i) => `${i}`)
+                                  .join(", ")
+                              : product.tooth_number[0]}
+                          </p>
+                          <div className="text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Body Shade:
+                              </span>
+                              <span>{product.body_shade?.name || "N/A"}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Gingival Shade:
+                              </span>
+                              <span>
+                                {product.gingival_shade?.name || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Occlusal Shade:
+                              </span>
+                              <span>
+                                {product.occlusal_shade?.name || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 capitalize">
+                                Stump Shade:
+                              </span>
+                              <span>
+                                {product.stump_shade_id?.name || "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-3">
-            {/* Doctor Information */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" defaultValue="doctor-info" collapsible>
@@ -1061,7 +1182,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Instructions */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion
@@ -1109,7 +1229,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Case Notes */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>
@@ -1144,7 +1263,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Enclosed Items */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>
@@ -1207,7 +1325,6 @@ const CaseDetails: React.FC = () => {
               </CardContent>
             </Card>
 
-            {/* Attachments */}
             <Card>
               <CardContent className="py-2 px-3">
                 <Accordion type="single" collapsible>
@@ -1219,7 +1336,6 @@ const CaseDetails: React.FC = () => {
                           <span className="font-semibold">Attachments</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
                             {/* {caseDetail.case_files?.length || 0} */}
-                            // // Need to fix this error //
                           </span>
                         </div>
                       </div>
