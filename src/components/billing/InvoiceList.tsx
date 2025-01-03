@@ -941,9 +941,7 @@ const InvoiceList: React.FC = () => {
     }
 
     if (caseFilter) {
-      filtered = filtered.filter(
-        (invoice) => invoice.case?.id === caseFilter
-      );
+      filtered = filtered.filter((invoice) => invoice.case?.id === caseFilter);
     }
 
     return filtered;
@@ -1370,13 +1368,9 @@ const InvoiceList: React.FC = () => {
                           invoice.id as string
                         )}
                         onCheckedChange={() => {
-                          if (
-                            selectedInvoices.includes(invoice.id as string)
-                          ) {
+                          if (selectedInvoices.includes(invoice.id as string)) {
                             setSelectedInvoices((prev) =>
-                              prev.filter(
-                                (id) => id !== (invoice.id as string)
-                              )
+                              prev.filter((id) => id !== (invoice.id as string))
                             );
                           } else {
                             setSelectedInvoices((prev) => [
@@ -1500,9 +1494,7 @@ const InvoiceList: React.FC = () => {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleApproveAndPrint(
-                                    invoice.id as string
-                                  )
+                                  handleApproveAndPrint(invoice.id as string)
                                 }
                                 className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
                               >
@@ -1564,9 +1556,7 @@ const InvoiceList: React.FC = () => {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleDownload(invoice.id as string)
-                            }
+                            onClick={() => handleDownload(invoice.id as string)}
                             className="cursor-pointer"
                           >
                             <Download className="mr-2 h-4 w-4" />
