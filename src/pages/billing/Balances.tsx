@@ -22,7 +22,6 @@ const Balances = () => {
               <SelectItem value="print-selected">Print Selected</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">Finance Charges</Button>
           <Select>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Payment Reminder" />
