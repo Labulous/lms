@@ -441,11 +441,10 @@ const InvoiceList: React.FC = () => {
               const { error: updateTeethError } = await supabase
                 .from("case_product_teeth")
                 .update({
-                  tooth_number: [
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0]?.toothNumber,
-                  ],
+                  tooth_number: updatedInvoice.items
+                    .filter((item) => item.id === product_id)[0]
+                    ?.toothNumber.split(",")
+                    .map(Number),
                 })
                 .eq("case_product_id", caseProductId)
                 .eq("product_id", product_id);
@@ -457,11 +456,10 @@ const InvoiceList: React.FC = () => {
                 .insert({
                   case_product_id: caseProductId,
                   product_id,
-                  tooth_number: [
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].toothNumber,
-                  ],
+                  tooth_number: updatedInvoice.items
+                    .filter((item) => item.id === product_id)[0]
+                    ?.toothNumber.split(",")
+                    .map(Number),
                 });
 
               if (insertTeethError) throw new Error(insertTeethError.message);

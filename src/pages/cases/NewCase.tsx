@@ -118,8 +118,7 @@ const NewCase: React.FC = () => {
           newData[key] = value;
         }
       });
-      return newData;      console.log(newData, "newData");
-
+      return newData;
     });
   };
 
