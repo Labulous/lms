@@ -1,14 +1,14 @@
-import React from 'react';
-import { generateInvoice } from '../../services/invoiceService';
-import { InvoiceItem } from '../../data/mockInvoiceData';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import React from "react";
+import { generateInvoice } from "../../services/invoiceService";
+import { InvoiceItem } from "../../data/mockInvoiceData";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 interface InvoicePreviewProps {
   clientId: string;
   items: InvoiceItem[];
   discount: number;
-  discountType: 'percentage' | 'fixed';
+  discountType: "percentage" | "fixed";
   tax: number;
   notes?: string;
   onClose: () => void;
@@ -21,26 +21,32 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
   discountType,
   tax,
   notes,
-  onClose
+  onClose,
 }) => {
-  const invoice = generateInvoice(clientId, items, discount, discountType, tax, notes);
+  const invoice = generateInvoice(
+    clientId,
+    items,
+    discount,
+    discountType,
+    tax,
+    notes
+  );
 
   const handleDownloadPDF = async () => {
-    const element = document.getElementById('invoice-preview');
+    const element = document.getElementById("invoice-preview");
     if (!element) return;
-
     try {
       const canvas = await html2canvas(element);
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF();
       const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`invoice-${invoice.invoiceId}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      console.error("Error generating PDF:", error);
+      alert("Error generating PDF. Please try again.");
     }
   };
 
@@ -65,9 +71,15 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-800">INVOICE</h1>
             <div className="mt-4">
-              <p><strong>Invoice #:</strong> {invoice.invoiceId}</p>
-              <p><strong>Date:</strong> {invoice.date}</p>
-              <p><strong>Due Date:</strong> {invoice.dueDate}</p>
+              <p>
+                <strong>Invoice #:</strong> {invoice.invoiceId}
+              </p>
+              <p>
+                <strong>Date:</strong> {invoice.date}
+              </p>
+              <p>
+                <strong>Due Date:</strong> {invoice.dueDate}
+              </p>
             </div>
           </div>
 
@@ -90,8 +102,12 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
                 <tr key={item.id} className="border-b">
                   <td className="py-2">{item.description}</td>
                   <td className="text-right py-2">{item.quantity}</td>
-                  <td className="text-right py-2">${item.unitPrice.toFixed(2)}</td>
-                  <td className="text-right py-2">${item.totalPrice.toFixed(2)}</td>
+                  <td className="text-right py-2">
+                    ${item.unitPrice.toFixed(2)}
+                  </td>
+                  <td className="text-right py-2">
+                    ${item.totalPrice.toFixed(2)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -106,12 +122,23 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <div className="flex justify-between mb-2">
                 <span>Discount:</span>
                 <span>
-                  {discountType === 'percentage' ? `${discount}%` : `$${discount}`}
+                  {discountType === "percentage"
+                    ? `${discount}%`
+                    : `$${discount}`}
                 </span>
               </div>
               <div className="flex justify-between mb-2">
                 <span>Tax ({tax}%):</span>
-                <span>${(invoice.totalAmount - (invoice.subTotal - (discountType === 'percentage' ? (invoice.subTotal * discount / 100) : discount))).toFixed(2)}</span>
+                <span>
+                  $
+                  {(
+                    invoice.totalAmount -
+                    (invoice.subTotal -
+                      (discountType === "percentage"
+                        ? (invoice.subTotal * discount) / 100
+                        : discount))
+                  ).toFixed(2)}
+                </span>
               </div>
               <div className="flex justify-between font-bold">
                 <span>Total:</span>
