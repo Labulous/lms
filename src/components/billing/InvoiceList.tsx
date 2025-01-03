@@ -414,7 +414,7 @@ const InvoiceList: React.FC = () => {
         await supabase
           .from("case_products")
           .update({ products_id: updatedProductIds })
-          .eq("case_id", updatedInvoice.caseId)
+          .eq("case_id", updatedInvoice.id)
           .select();
 
       if (updateCaseProductsError) {
@@ -469,7 +469,7 @@ const InvoiceList: React.FC = () => {
               await supabase
                 .from("discounted_price")
                 .select("id")
-                .eq("case_id", updatedInvoice.caseId)
+                .eq("case_id", updatedInvoice.id)
                 .eq("product_id", product_id)
                 .single();
 
@@ -504,7 +504,7 @@ const InvoiceList: React.FC = () => {
                         )[0].discount || 0) /
                           100),
                   }) // Update discount value
-                  .eq("case_id", updatedInvoice.caseId)
+                  .eq("case_id", updatedInvoice.id)
                   .eq("product_id", product_id)
                   .select();
 
@@ -514,7 +514,7 @@ const InvoiceList: React.FC = () => {
               const { error: insertDiscountError } = await supabase
                 .from("discounted_price")
                 .insert({
-                  case_id: updatedInvoice.caseId,
+                  case_id: updatedInvoice.id,
                   product_id,
                   discount: updatedInvoice.items.filter(
                     (item) => item.id === product_id
@@ -556,7 +556,7 @@ const InvoiceList: React.FC = () => {
           invoice_notes: updatedInvoice?.notes?.invoiceNotes,
           lab_notes: updatedInvoice?.notes?.labNotes,
         })
-        .eq("id", updatedInvoice.caseId);
+        .eq("id", updatedInvoice.id);
 
       if (updateCasesError) {
         throw new Error(updateCasesError.message);
@@ -567,7 +567,7 @@ const InvoiceList: React.FC = () => {
         .update({
           amount: updatedInvoice.totalAmount,
         })
-        .eq("case_id", updatedInvoice.caseId);
+        .eq("case_id", updatedInvoice.id);
 
       if (updateInvoicesError) {
         throw new Error(updateInvoicesError.message);
@@ -772,7 +772,7 @@ const InvoiceList: React.FC = () => {
         case "delete":
           const remainingInvoices = invoicesData.filter(
             (invoice: Invoice) =>
-              !selectedInvoices.includes(invoice.caseId as string)
+              !selectedInvoices.includes(invoice.id as string)
           );
           setInvoices(remainingInvoices);
           setFilteredInvoices(remainingInvoices);
@@ -780,7 +780,7 @@ const InvoiceList: React.FC = () => {
           break;
         case "markPaid":
           const paidInvoices = invoicesData.map((invoice: Invoice) => {
-            if (selectedInvoices.includes(invoice.caseId as string)) {
+            if (selectedInvoices.includes(invoice.id as string)) {
               return { ...invoice, status: "paid" as const };
             }
             return invoice;
@@ -791,7 +791,7 @@ const InvoiceList: React.FC = () => {
         case "approve":
         case "approvePrint":
           const updatedInvoices = invoicesData.map((invoice: Invoice) => {
-            if (selectedInvoices.includes(invoice.caseId as string)) {
+            if (selectedInvoices.includes(invoice.id as string)) {
               return { ...invoice, status: "approved" as const };
             }
             return invoice;
@@ -834,7 +834,7 @@ const InvoiceList: React.FC = () => {
         case "changeDueDate":
           if (newDueDate) {
             const updatedInvoices = invoices.map((invoice) => {
-              if (selectedInvoices.includes(invoice.caseId as string)) {
+              if (selectedInvoices.includes(invoice.id as string)) {
                 return { ...invoice, dueDate: newDueDate as unknown as string };
               }
               return invoice;
@@ -845,7 +845,7 @@ const InvoiceList: React.FC = () => {
           break;
         case "applyDiscount":
           const updatedInvoices = invoices.map((invoice) => {
-            if (invoice.caseId && selectedInvoices.includes(invoice.caseId)) {
+            if (invoice.id && selectedInvoices.includes(invoice.id)) {
               const discount =
                 discountType === "percentage"
                   ? invoice.totalAmount
@@ -869,7 +869,7 @@ const InvoiceList: React.FC = () => {
           break;
         case "changePaymentTerms":
           const updatedTermsInvoices = invoices.map((invoice) => {
-            if (selectedInvoices.includes(invoice.caseId as string)) {
+            if (selectedInvoices.includes(invoice.id as string)) {
               return { ...invoice, paymentTerms };
             }
             return invoice;
@@ -925,7 +925,7 @@ const InvoiceList: React.FC = () => {
             ?.toLowerCase()
             ?.includes(searchTerm.toLowerCase()) ??
             false) ||
-          (invoice?.case?.caseId
+          (invoice?.case?.id
             ?.toLowerCase()
             ?.includes(searchTerm.toLowerCase()) ??
             false)
@@ -942,7 +942,7 @@ const InvoiceList: React.FC = () => {
 
     if (caseFilter) {
       filtered = filtered.filter(
-        (invoice) => invoice.case?.caseId === caseFilter
+        (invoice) => invoice.case?.id === caseFilter
       );
     }
 
@@ -1013,7 +1013,7 @@ const InvoiceList: React.FC = () => {
       const invoice = invoices.find((inv) => inv.id === id);
       return ["draft", "overdue"].includes(invoice?.status || "");
     });
-
+  console.log(invoicesData, "invoicesData");
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -1170,14 +1170,14 @@ const InvoiceList: React.FC = () => {
                     checked={
                       getSortedAndPaginatedData().length > 0 &&
                       getSortedAndPaginatedData().every((invoice) =>
-                        selectedInvoices.includes(invoice.caseId as string)
+                        selectedInvoices.includes(invoice.id as string)
                       )
                     }
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedInvoices(
                           getSortedAndPaginatedData().map(
-                            (invoice) => invoice.caseId as string
+                            (invoice) => invoice.id as string
                           )
                         );
                       } else {
@@ -1323,11 +1323,11 @@ const InvoiceList: React.FC = () => {
                   </div>
                 </TableHead>
                 <TableHead
-                  onClick={() => handleSort("caseId")}
+                  onClick={() => handleSort("id")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
-                    Case #{getSortIcon("caseId")}
+                    Case #{getSortIcon("id")}
                   </div>
                 </TableHead>
                 <TableHead
@@ -1359,7 +1359,7 @@ const InvoiceList: React.FC = () => {
                   <TableRow
                     key={index}
                     className={cn(
-                      selectedInvoices.includes(invoice.caseId as string) &&
+                      selectedInvoices.includes(invoice.id as string) &&
                         "bg-muted/50",
                       "hover:bg-muted/50 transition-colors"
                     )}
@@ -1367,21 +1367,21 @@ const InvoiceList: React.FC = () => {
                     <TableCell>
                       <Checkbox
                         checked={selectedInvoices.includes(
-                          invoice.caseId as string
+                          invoice.id as string
                         )}
                         onCheckedChange={() => {
                           if (
-                            selectedInvoices.includes(invoice.caseId as string)
+                            selectedInvoices.includes(invoice.id as string)
                           ) {
                             setSelectedInvoices((prev) =>
                               prev.filter(
-                                (id) => id !== (invoice.caseId as string)
+                                (id) => id !== (invoice.id as string)
                               )
                             );
                           } else {
                             setSelectedInvoices((prev) => [
                               ...prev,
-                              invoice.caseId as string,
+                              invoice.id as string,
                             ]);
                           }
                         }}
@@ -1394,7 +1394,7 @@ const InvoiceList: React.FC = () => {
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <Link
-                        to={`/billing/${invoice.caseId as string}`}
+                        to={`/billing/${invoice.id as string}`}
                         className="text-primary hover:underline"
                       >
                         {(() => {
@@ -1491,7 +1491,7 @@ const InvoiceList: React.FC = () => {
                             <>
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleApprove(invoice.caseId as string)
+                                  handleApprove(invoice.id as string)
                                 }
                                 className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
                               >
@@ -1501,7 +1501,7 @@ const InvoiceList: React.FC = () => {
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleApproveAndPrint(
-                                    invoice.caseId as string
+                                    invoice.id as string
                                   )
                                 }
                                 className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
@@ -1514,7 +1514,7 @@ const InvoiceList: React.FC = () => {
                           )}
                           <DropdownMenuItem
                             onClick={() =>
-                              navigate(`/billing/${invoice.caseId as string}`)
+                              navigate(`/billing/${invoice.id as string}`)
                             }
                             className="cursor-pointer"
                           >
@@ -1565,7 +1565,7 @@ const InvoiceList: React.FC = () => {
                           )}
                           <DropdownMenuItem
                             onClick={() =>
-                              handleDownload(invoice.caseId as string)
+                              handleDownload(invoice.id as string)
                             }
                             className="cursor-pointer"
                           >
@@ -1587,7 +1587,7 @@ const InvoiceList: React.FC = () => {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleDelete(invoice.caseId as string)
+                                  handleDelete(invoice.id as string)
                                 }
                                 className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
                               >
