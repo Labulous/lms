@@ -31,6 +31,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { BalanceTracking } from "@/types/supabase";
 interface NewPaymentModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
@@ -59,18 +60,13 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
   const [remainingBalance, setRemainingBalance] = useState(0);
   const [clients, setClients] = useState<Client[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [updatedInvoices, setUpdatedInvoices] = useState<any[]>([]);
+  const [balanceSummary, setBalanceSummary] = useState<BalanceTracking | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   // Mock data - replace with API calls
-  const balanceSummary = {
-    thisMonth: 1900.0,
-    lastMonth: 0.0,
-    days30: 0.0,
-    days60: 0.0,
-    days90: 0.0,
-    credit: 0.0,
-    currentBalance: 1900.0,
-  };
 
   const mockInvoices = [
     {
@@ -81,85 +77,143 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
       amountDue: 1900.0,
     },
   ];
-
+  console.log(selectedInvoices, "selectedInvoices");
+  console.log(updatedInvoices, "selectedInvoices");
   // Calculate payment distribution when amount changes
   const handlePaymentAmountChange = (newAmount: number) => {
-    const totalDue = mockInvoices
-      .filter((inv) => selectedInvoices.includes(inv.id))
-      .reduce((sum, inv) => sum + inv.amountDue, 0);
+    // Reset tempNewAmount with the input amount
+    let tempNewAmount = newAmount;
 
+    console.log(tempNewAmount, "Initial tempNewAmount");
+
+    const freshInvoices = JSON.parse(JSON.stringify(invoices)); // Deep clone to ensure immutability
+
+    const newUpdatedInvoices: any = freshInvoices.map((inv) => {
+      const updatedInvoice = { ...inv, invoicesData: [...inv.invoicesData] };
+
+      if (tempNewAmount > 0) {
+        const dueAmount = updatedInvoice.invoicesData[0].due_amount;
+
+        if (tempNewAmount >= dueAmount) {
+          // Full payment for this invoice
+          tempNewAmount -= dueAmount;
+          updatedInvoice.invoicesData[0].due_amount = 0; // Mark as fully paid
+        } else {
+          // Partial payment for this invoice
+          updatedInvoice.invoicesData[0].due_amount -= tempNewAmount;
+          tempNewAmount = 0; // Exhaust remaining payment
+        }
+      }
+
+      return updatedInvoice;
+    });
+
+    // Log the remaining payment amount after processing all invoices
+    console.log(
+      tempNewAmount,
+      "Remaining tempNewAmount after mapping invoices"
+    );
+
+    setUpdatedInvoices(newUpdatedInvoices);
     setPaymentAmount(newAmount);
 
-    // Handle overpayment
+    // Calculate total due (remaining due_amount)
+    const totalDue = newUpdatedInvoices.reduce(
+      (sum, inv) => sum + inv.invoicesData[0].due_amount,
+      0
+    );
+    console.log(totalDue, "totalDue");
+    // Handle overpayment and remaining balance
     if (newAmount > totalDue) {
       setOverpaymentAmount(newAmount - totalDue);
       setRemainingBalance(0);
-
-      // Allocate full payment to each invoice
-      const newAllocation = selectedInvoices.reduce((acc, invId) => {
-        const invoice = mockInvoices.find((inv) => inv.id === invId);
-        if (invoice) {
-          acc[invId] = invoice.amountDue;
-        }
-        return acc;
-      }, {} as Record<string, number>);
-      setPaymentAllocation(newAllocation);
-    }
-    // Handle partial payment
-    else if (newAmount < totalDue) {
+    } else if (newAmount < totalDue) {
       setOverpaymentAmount(0);
       setRemainingBalance(totalDue - newAmount);
-
-      // Distribute payment proportionally
-      const newAllocation = {} as Record<string, number>;
-      let remainingPayment = newAmount;
-
-      selectedInvoices.forEach((invId) => {
-        const invoice = mockInvoices.find((inv) => inv.id === invId);
-        if (invoice && remainingPayment > 0) {
-          const proportion = invoice.amountDue / totalDue;
-          const allocation = Math.min(
-            invoice.amountDue,
-            newAmount * proportion
-          );
-          newAllocation[invId] = Number(allocation.toFixed(2));
-          remainingPayment -= allocation;
-        } else {
-          newAllocation[invId] = 0;
-        }
-      });
-      setPaymentAllocation(newAllocation);
-    }
-    // Exact payment
-    else {
+    } else {
       setOverpaymentAmount(0);
       setRemainingBalance(0);
-
-      const newAllocation = selectedInvoices.reduce((acc, invId) => {
-        const invoice = mockInvoices.find((inv) => inv.id === invId);
-        if (invoice) {
-          acc[invId] = invoice.amountDue;
-        }
-        return acc;
-      }, {} as Record<string, number>);
-      setPaymentAllocation(newAllocation);
     }
+
+    // Update payment allocation
+    const newAllocation = newUpdatedInvoices.reduce((acc, inv) => {
+      const amountAllocated =
+        inv.invoicesData[0].amount - inv.invoicesData[0].due_amount;
+      acc[inv.id] = Number(amountAllocated.toFixed(2));
+      return acc;
+    }, {} as Record<string, number>);
+
+    setPaymentAllocation(newAllocation);
+
+    // Log for debugging
+    console.log(newUpdatedInvoices, "Updated Invoices");
+    console.log(newAllocation, "Payment Allocation");
   };
 
   // Update payment allocation when invoices are selected
   const handleInvoiceSelect = (invoiceId: string, checked: boolean) => {
-    const updatedInvoices = checked
-      ? [...selectedInvoices, invoiceId]
-      : selectedInvoices.filter((id) => id !== invoiceId);
+    const invoice = invoices.find((invoice) => invoice.id === invoiceId);
+    if (invoice) {
+      const due_amount = invoice.invoicesData[0].due_amount;
 
-    setSelectedInvoices(updatedInvoices);
+      if (checked) {
+        // If checked, add the due amount to paymentAmount
+        setPaymentAmount((prevAmount) => prevAmount + due_amount);
 
-    // Recalculate total amount based on selected invoices
-    const totalAmount = mockInvoices
-      .filter((invoice) => updatedInvoices.includes(invoice.id))
-      .reduce((sum, invoice) => sum + invoice.amountDue, 0);
+        // Add or update the invoiceId in paymentAllocation
+        setPaymentAllocation((prevAllocation) => ({
+          ...prevAllocation,
+          [invoiceId]: due_amount, // Add or update the allocation
+        }));
 
-    handlePaymentAmountChange(totalAmount);
+        // Check if the invoice already exists in updatedInvoices
+        setUpdatedInvoices((prevInvoices) => {
+          const existingInvoiceIndex = prevInvoices.findIndex(
+            (inv) => inv.id === invoiceId
+          );
+
+          if (existingInvoiceIndex !== -1) {
+            // If it exists, update the invoice's due_amount
+            const updatedInvoices = [...prevInvoices];
+            updatedInvoices[existingInvoiceIndex] = {
+              ...updatedInvoices[existingInvoiceIndex],
+              invoicesData: [
+                {
+                  ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
+                  due_amount: 0,
+                },
+              ],
+            };
+            return updatedInvoices;
+          } else {
+            // If it doesn't exist, add the new invoice
+            return [
+              ...prevInvoices,
+              {
+                ...invoice,
+                invoicesData: [
+                  { ...invoice.invoicesData[0], due_amount: due_amount },
+                ],
+              },
+            ];
+          }
+        });
+      } else {
+        // If unchecked, subtract the due amount from paymentAmount
+        setPaymentAmount((prevAmount) => prevAmount - due_amount);
+
+        // Remove the invoiceId from paymentAllocation when unchecked
+        setPaymentAllocation((prevAllocation) => {
+          const { [invoiceId]: _, ...rest } = prevAllocation; // Destructure to remove the invoiceId
+          return rest; // Return the updated state without the invoiceId
+        });
+
+        // Update the updatedInvoices by removing this invoice
+        setUpdatedInvoices((prevInvoices) =>
+          prevInvoices.filter((inv) => inv.id !== invoiceId)
+        );
+      }
+    }
   };
 
   const handleSubmit = () => {
@@ -173,6 +227,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
       paymentAllocation,
       overpaymentAmount,
       remainingBalance,
+      updatedInvoices,
     };
     onSubmit(paymentData);
   };
@@ -187,7 +242,9 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
         const data = await clientsService.getClients();
 
         if (Array.isArray(data)) {
+          setPaymentAmount(0);
           setClients(data);
+          setUpdatedInvoices([]);
         }
       } catch (error) {
         console.error("Error fetching clients:", error);
@@ -199,7 +256,6 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
 
     fetchClients();
   }, []);
-
   useEffect(() => {
     const getCompletedInvoices = async () => {
       setLoading(true); // Set loading state to true when fetching data
@@ -212,6 +268,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           return;
         }
 
+        // Fetch completed cases with invoice data
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
@@ -228,6 +285,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
               ),
               case_number,
               invoicesData:invoices!case_id (
+              id,
                 case_id,
                 amount,
                 status,
@@ -244,7 +302,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           .eq("lab_id", lab.labId)
           .eq("status", "completed")
           .eq("client_id", selectedClient)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: true });
 
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
@@ -263,6 +321,22 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
 
         console.log("Filtered Cases:", filteredCases);
         setInvoices(filteredCases);
+
+        // Fetch balance_tracking data for the selected client
+        const { data: balanceData, error: balanceError } = await supabase
+          .from("balance_tracking")
+          .select("*")
+          .eq("client_id", selectedClient)
+          .single();
+
+        if (balanceError) {
+          console.error("Error fetching balance tracking data:", balanceError);
+          return;
+        }
+
+        console.log("Balance Data:", balanceData);
+        setBalanceSummary(balanceData);
+        console.log(balanceData, "balanceData");
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
       } finally {
@@ -363,31 +437,31 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
             <div className="space-y-2 bg-muted/50 p-4 rounded-lg">
               <div className="flex justify-between">
                 <span>This Month</span>
-                <span>${balanceSummary.thisMonth.toFixed(2)}</span>
+                <span>${(balanceSummary?.this_month ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Last Month</span>
-                <span>${balanceSummary.lastMonth.toFixed(2)}</span>
+                <span>${(balanceSummary?.last_month ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>30+ Days</span>
-                <span>${balanceSummary.days30.toFixed(2)}</span>
+                <span>${(balanceSummary?.days_30_plus ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>60+ Days</span>
-                <span>${balanceSummary.days60.toFixed(2)}</span>
+                <span>${(balanceSummary?.days_60_plus ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>90+ Days</span>
-                <span>${balanceSummary.days90.toFixed(2)}</span>
+                <span>${(balanceSummary?.days_90_plus ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Credit</span>
-                <span>${balanceSummary.credit.toFixed(2)}</span>
+                <span>${(balanceSummary?.credit_balance ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-medium pt-2 border-t">
                 <span>Current Balance</span>
-                <span>${balanceSummary.currentBalance.toFixed(2)}</span>
+                <span>${(balanceSummary?.total ?? 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -458,39 +532,43 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {invoices.map((invoice) => (
-                    <TableRow key={invoice.id}>
-                      <TableCell>
-                        {invoice.invoicesData[0].created_at}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
-                          const parts = caseNumber.split("-");
-                          parts[0] = "INV"; // Replace the first part
-                          return parts.join("-");
-                        })()}
-                      </TableCell>
-                      <TableCell>{invoice.patient_name}</TableCell>
-                      <TableCell className="text-right">
-                        ${invoice.invoicesData[0].amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${invoice.invoicesData[0].amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${(paymentAllocation[invoice.id] || 0).toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedInvoices.includes(invoice.id)}
-                          onCheckedChange={(checked) =>
-                            handleInvoiceSelect(invoice.id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {invoices &&
+                    invoices?.map((invoice) => (
+                      <TableRow key={invoice.id}>
+                        <TableCell>
+                          {invoice.invoicesData[0]?.created_at}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
+                            const parts = caseNumber.split("-");
+                            parts[0] = "INV"; // Replace the first part
+                            return parts.join("-");
+                          })()}
+                        </TableCell>
+                        <TableCell>{invoice.patient_name}</TableCell>
+                        <TableCell className="text-right">
+                          ${invoice?.invoicesData[0]?.amount.toFixed(2) ?? 0}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ${invoice.invoicesData[0].amount.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          ${(paymentAllocation[invoice.id] || 0).toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Checkbox
+                            checked={paymentAllocation[invoice.id] > 0}
+                            onCheckedChange={(checked) =>
+                              handleInvoiceSelect(
+                                invoice.id,
+                                checked as boolean
+                              )
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
             </TabsContent>

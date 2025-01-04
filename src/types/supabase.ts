@@ -179,6 +179,19 @@ export interface ShadeDataDisplay {
 /**
  * Product type definition
  */
+export interface BalanceTracking {
+  created_at: string; // ISO timestamp for the record creation
+  client_id: string; // UUID of the client
+  outstanding_balance: number; // Total outstanding balance
+  credit_balance: number | null; // Credit balance, can be null
+  this_month: number; // Balance for this month
+  last_month: number; // Balance for last month
+  days_30_plus: number; // Balance for 30+ days overdue
+  days_60_plus: number; // Balance for 60+ days overdue
+  days_90_plus: number; // Balance for 90+ days overdue
+  total: number; // Total balance
+  id: string; // UUID for the record
+}
 
 interface Product {
   id: string;

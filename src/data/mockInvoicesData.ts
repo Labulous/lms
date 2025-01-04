@@ -3,7 +3,7 @@ import { mockClients } from "./mockClientsData";
 import { Case } from "./mockCasesData";
 
 export interface InvoiceItem {
-  id: string;
+  id?: string;
   description: string;
   quantity: number;
   unitPrice: number;

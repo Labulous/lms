@@ -117,7 +117,6 @@ export function EditInvoiceModal({
           toothNumber: item.toothNumber,
           total:
             item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
-          caseId: invoice.id,
         })),
         notes: notes as {
           labNotes: string;
@@ -133,7 +132,7 @@ export function EditInvoiceModal({
             ) *
             (discount / 100),
         },
-        caseId: invoice.id,
+        id: invoice.id,
         updatedAt: new Date().toISOString(),
         totalAmount: calculateTotal(),
       };
