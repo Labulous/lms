@@ -261,16 +261,8 @@ const saveCases = async (
         // Create a new date object for the 28th of the current month and year
         const dueDate = new Date(currentYear, currentMonth, 28);
 
-        // Format the date as "DD/MM/YYYY"
-        const formattedDueDate = `${String(dueDate.getDate()).padStart(
-          2,
-          "0"
-        )}/${String(dueDate.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}/${dueDate.getFullYear()}`;
-
-        return formattedDueDate;
+        // Return the timestamp in milliseconds since the Unix epoch
+        return dueDate.getTime();
       };
 
       // Step 3: Save case products

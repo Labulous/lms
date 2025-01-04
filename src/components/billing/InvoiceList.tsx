@@ -406,7 +406,7 @@ const InvoiceList: React.FC = () => {
 
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice.items.map((item) => item.id);
-
+    console.log(updatedInvoice, "updatedInvoice");
     try {
       setLoadingState({ isLoading: true, action: "save" });
 
@@ -566,6 +566,7 @@ const InvoiceList: React.FC = () => {
         .from("invoices")
         .update({
           amount: updatedInvoice.totalAmount,
+          due_amount: updatedInvoice.totalAmount,
         })
         .eq("case_id", updatedInvoice.id);
 
