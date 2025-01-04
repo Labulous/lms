@@ -4,6 +4,7 @@ import CaseFilters from "./CaseFilters";
 import PrintButtonWithDropdown from "./PrintButtonWithDropdown";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/supabase";
+import { CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -185,17 +192,31 @@ const CaseList: React.FC = () => {
       },
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
+        const statusLower = status.toLowerCase() as CaseStatus;
         return (
-          <Badge
-            className={cn(
-              "bg-opacity-10 capitalize",
-              status === "completed" && "bg-green-500 text-green-500",
-              status === "in_progress" && "bg-blue-500 text-blue-500",
-              status === "pending" && "bg-yellow-500 text-yellow-500"
-            )}
-          >
-            {status?.toLowerCase().replace("_", " ")}
-          </Badge>
+          <TooltipProvider key={row.id}>
+            <Tooltip>
+              <TooltipTrigger>
+                <Badge
+                  className={cn(
+                    "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                    {
+                      "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": statusLower === "in_queue",
+                      "bg-blue-500 text-blue-500 hover:bg-blue-500": statusLower === "in_progress",
+                      "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": statusLower === "on_hold",
+                      "bg-green-500 text-green-500 hover:bg-green-500": statusLower === "completed",
+                      "bg-red-500 text-red-500 hover:bg-red-500": statusLower === "cancelled"
+                    }
+                  )}
+                >
+                  {status}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{CASE_STATUS_DESCRIPTIONS[statusLower]}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       },
     },

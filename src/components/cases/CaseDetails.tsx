@@ -11,10 +11,11 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Case, CaseProduct, ToothInfo } from "@/types/supabase";
+import { Case, CaseProduct, ToothInfo, CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 import CaseProgress from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "react-router-dom";
@@ -44,6 +45,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import cn from "classnames";
 
 interface CaseFile {
@@ -112,6 +119,7 @@ interface ExtendedCase extends Case {
       phone: string;
     };
   };
+  case_number: string;
   case_products: CaseProduct[];
   product_ids: {
     id: string;
@@ -140,6 +148,13 @@ interface ExtendedCase extends Case {
     returnArticulator: number;
   };
   products: any[];
+  invoice: {
+    id: string;
+    case_id: string;
+    amount: number;
+    status: string;
+    due_date: string;
+  };
 }
 
 const TYPE_COLORS = {
@@ -154,38 +169,22 @@ const TYPE_COLORS = {
 };
 
 const formatTeethRange = (teeth: number[]): string => {
-  if (!teeth.length) return "";
+  if (!teeth || teeth.length === 0) return "";
 
-  const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
-  const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-  const isFullArch = teeth.length >= 16;
+  const ranges: string[] = [];
+  let start = teeth[0];
+  let end = teeth[0];
 
-  if (isFullArch) {
-    if (hasUpper && hasLower) return "All";
-    if (hasUpper) return "Upper";
-    if (hasLower) return "Lower";
-  }
-
-  if (teeth.length === 1) return teeth[0].toString();
-
-  const sortedTeeth = [...teeth].sort((a, b) => a - b);
-
-  let ranges: string[] = [];
-  let rangeStart = sortedTeeth[0];
-  let prev = sortedTeeth[0];
-
-  for (let i = 1; i <= sortedTeeth.length; i++) {
-    const current = sortedTeeth[i];
-    if (current !== prev + 1) {
-      // End of a range
-      if (rangeStart === prev) {
-        ranges.push(rangeStart.toString());
-      } else {
-        ranges.push(`${rangeStart}-${prev}`);
+  for (let i = 1; i <= teeth.length; i++) {
+    if (i < teeth.length && teeth[i] === end + 1) {
+      end = teeth[i];
+    } else {
+      ranges.push(start === end ? start.toString() : `${start}-${end}`);
+      if (i < teeth.length) {
+        start = teeth[i];
+        end = teeth[i];
       }
-      rangeStart = current;
     }
-    prev = current;
   }
 
   return ranges.join(", ");
@@ -216,7 +215,15 @@ const CaseDetails: React.FC = () => {
               ship_date,
               status,
               patient_name,
+              case_number,
               due_date,
+              invoice:invoices!case_id (
+                id,
+                case_id,
+                amount,
+                status,
+                due_date
+              ),
               client:clients!client_id (
                 id,
                 client_name,
@@ -499,39 +506,50 @@ const CaseDetails: React.FC = () => {
                 />
               </div>
               <div>
-                <h1 className="text-3xl font-semibold text-gray-800">
+                <h1 className="text-2xl font-semibold tracking-tight mb-4">
                   {caseDetail.patient_name
                     ? caseDetail.patient_name
                     : "Unknown Patient"}
                 </h1>
-                <div className="mt-2 flex items-center space-x-4 text-gray-500">
-                  <span>Case ID: {caseDetail?.id.slice(0, 8)}...</span>
-                  <span>
-                    {caseDetail?.doctor?.name || "Unknown Doctor"},
-                    {caseDetail?.doctor?.client?.client_name ||
-                      "Unknown Clinic"}
-                  </span>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Case #:</span>
+                    <span className="text-sm font-medium text-primary">
+                      {caseDetail?.case_number || "N/A"}
+                    </span>
+                  </div>
+                  <Separator orientation="vertical" className="h-4" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Invoice #:</span>
+                    <span className="text-sm font-medium text-primary">
+                      {caseDetail?.invoice?.case_id || "Not Invoiced"}
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-2">
-                  <span
-                    className={cn(
-                      "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium capitalize",
-                      {
-                        "bg-blue-50 text-blue-700":
-                          caseDetail.status === "in_progress",
-                        "bg-gray-100 text-gray-700":
-                          caseDetail.status === "in_queue",
-                        "bg-green-50 text-green-700":
-                          caseDetail.status === "completed",
-                        "bg-yellow-50 text-yellow-700":
-                          caseDetail.status === "on_hold",
-                        "bg-red-50 text-red-700":
-                          caseDetail.status === "cancelled",
-                      }
-                    )}
-                  >
-                    {caseDetail.status.replace("_", " ")}
-                  </span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge
+                          className={cn(
+                            "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                            {
+                              "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": caseDetail.status === "in_queue",
+                              "bg-blue-500 text-blue-500 hover:bg-blue-500": caseDetail.status === "in_progress",
+                              "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": caseDetail.status === "on_hold",
+                              "bg-green-500 text-green-500 hover:bg-green-500": caseDetail.status === "completed",
+                              "bg-red-500 text-red-500 hover:bg-red-500": caseDetail.status === "cancelled"
+                            }
+                          )}
+                        >
+                          {caseDetail.status.toLowerCase().replace(/_/g, " ")}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS[caseDetail.status as CaseStatus]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
@@ -1071,7 +1089,8 @@ const CaseDetails: React.FC = () => {
                   <div className="mb-4">
                     <p className="text-gray-600">Technician Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.technician_notes || "No technician notes"}
+                      {caseDetail?.technician_notes ||
+                        "No technician notes"}
                     </p>
                   </div>
                 </div>
