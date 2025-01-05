@@ -7,7 +7,7 @@ import ProductConfiguration from "../../components/cases/wizard/ProductConfigura
 import FilesStep from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData } from "@/types/supabase";
-import { DeliveryMethod, addCase } from "../../data/mockCasesData";
+import { DeliveryMethod } from "../../data/mockCasesData";
 import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
@@ -198,34 +198,38 @@ const NewCase: React.FC = () => {
     if (caseNumber) {
       try {
         setLoadingState({ isLoading: true, action: "save" });
+        const transformedData = {
+          ...formData,
+          status: formData.status.toLowerCase() as CaseStatus,
+        };
         const newCase: any = {
           overview: {
-            client_id: formData.clientId,
-            doctor_id: formData.doctorId || "",
+            client_id: transformedData.clientId,
+            doctor_id: transformedData.doctorId || "",
             created_by: user?.id || "",
             patient_name:
-              formData.patientFirstName + " " + formData.patientLastName,
+              transformedData.patientFirstName + " " + transformedData.patientLastName,
             pan_number: "",
             rx_number: "",
-            received_date: formData.orderDate,
-            status: "in_queue",
-            due_date: formData.isDueDateTBD ? null : formData.dueDate,
-            isDueDateTBD: formData.isDueDateTBD || false,
-            appointment_date: formData.appointmentDate,
-            otherItems: formData.otherItems || "",
-            invoice_notes: formData.notes?.labNotes,
-            technician_notes: formData.notes?.technicianNotes,
-            occlusal_type: formData.caseDetails?.occlusalType,
-            contact_type: formData.caseDetails?.contactType,
-            pontic_type: formData.caseDetails?.ponticType,
-            custom_contact_details: formData.caseDetails?.customContact,
-            custom_occulusal_details: formData.caseDetails?.customOcclusal,
-            custom_pontic_details: formData.caseDetails?.customPontic,
+            received_date: transformedData.orderDate,
+            status: transformedData.status,
+            due_date: transformedData.isDueDateTBD ? null : transformedData.dueDate,
+            isDueDateTBD: transformedData.isDueDateTBD || false,
+            appointment_date: transformedData.appointmentDate,
+            otherItems: transformedData.otherItems || "",
+            invoice_notes: transformedData.notes?.labNotes,
+            technician_notes: transformedData.notes?.technicianNotes,
+            occlusal_type: transformedData.caseDetails?.occlusalType,
+            contact_type: transformedData.caseDetails?.contactType,
+            pontic_type: transformedData.caseDetails?.ponticType,
+            custom_contact_details: transformedData.caseDetails?.customContact,
+            custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+            custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
             case_number: caseNumber,
           },
           products: selectedProducts,
-          enclosedItems: formData.enclosedItems,
+          enclosedItems: transformedData.enclosedItems,
           files: selectedFiles,
         };
 
@@ -247,7 +251,7 @@ const NewCase: React.FC = () => {
           Create a New Case
         </h1>
 
-        <div className="bg-white shadow overflow-hidden">
+        <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>
           </div>
@@ -279,7 +283,7 @@ const NewCase: React.FC = () => {
         {/* Files and Notes Section Grid */}
         <div className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
-          <div className="bg-white shadow overflow-hidden">
+          <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
               <h2 className="text-sm font-medium text-white">Notes</h2>
             </div>
@@ -293,7 +297,7 @@ const NewCase: React.FC = () => {
           </div>
 
           {/* Files Section */}
-          <div className="bg-white shadow overflow-hidden">
+          <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
               <h2 className="text-sm font-medium text-white">Files</h2>
             </div>

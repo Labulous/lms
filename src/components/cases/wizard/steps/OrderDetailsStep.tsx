@@ -22,6 +22,13 @@ import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
 import { FormData } from "@/types/supabase";
 import { FormData as CaseFormData } from "../CaseWizard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 interface OrderDetailsStepProps {
@@ -319,9 +326,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               <Select
                 name="status"
                 value={formData.status}
-                onValueChange={(value) => {
-                  onChange("status", value);
-                }}
+                onValueChange={(value) => onChange("status", value)}
               >
                 <SelectTrigger
                   className={cn(
@@ -332,11 +337,48 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {CASE_STATUSES.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="in_queue">In Queue</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["in_queue"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["in_progress"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["on_hold"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["completed"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["cancelled"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </SelectContent>
               </Select>
               {errors.status && (

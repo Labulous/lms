@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import CaseFilters from "./CaseFilters";
 import PrintButtonWithDropdown from "./PrintButtonWithDropdown";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/supabase";
-import { format, isEqual, parseISO, isValid } from "date-fns";
+import { CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,20 +25,93 @@ import {
   ColumnFiltersState,
   getFilteredRowModel,
   VisibilityState,
+  getPaginationRowModel,
+  PaginationState,
 } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { createLogger } from "@/utils/logger";
-import { Plus } from "lucide-react";
+import { 
+  Plus, 
+  ChevronsUpDown, 
+  MoreHorizontal, 
+  Eye, 
+  Pencil, 
+  PrinterIcon 
+} from "lucide-react";
 import { getLabIdByUserId } from "@/services/authService";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const logger = createLogger({ module: "CaseList" });
 
-type Case = Database["public"]["Tables"]["cases"]["Row"] & {
+type Case = {
+  id: string;
+  created_at: string;
+  received_date: string | null;
+  ship_date: string | null;
+  status: string;
+  patient_name: string;
+  due_date: string;
+  case_number: string;
   client: {
     id: string;
+    client_name: string;
+    phone: string | null;
+  } | null;
+  doctor: {
+    id: string;
     name: string;
-  };
+    client: {
+      id: string;
+      client_name: string;
+      phone: string | null;
+    } | null;
+  } | null;
+  pan_number: string | null;
+  rx_number: string | null;
+  isDueDateTBD: boolean;
+  appointment_date: string | null;
+  otherItems: string | null;
+  lab_notes: string | null;
+  technician_notes: string | null;
+  occlusal_type: string | null;
+  contact_type: string | null;
+  pontic_type: string | null;
+  custom_contact_details: string | null;
+  custom_occulusal_details: string | null;
+  custom_pontic_details: string | null;
+  enclosed_items: {
+    impression: boolean;
+    biteRegistration: boolean;
+    photos: boolean;
+    jig: boolean;
+    opposingModel: boolean;
+    articulator: boolean;
+    returnArticulator: boolean;
+    cadcamFiles: boolean;
+    consultRequested: boolean;
+    user_id: string;
+  } | null;
+  product_ids: {
+    products_id: string[];
+    id: string;
+  }[] | null;
 };
 
 const CaseList: React.FC = () => {
@@ -53,20 +127,20 @@ const CaseList: React.FC = () => {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [labId, setLabId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
 
-  useEffect(() => {
-    const getLabId = async () => {
-      try {
-        const data = await getLabIdByUserId(user?.id as string);
-        setLabId(data?.labId as string);
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-      } finally {
-        console.log("done");
-      }
-    };
-    getLabId();
-  }, []);
+  const pagination = useMemo(
+    () => ({
+      pageIndex,
+      pageSize,
+    }),
+    [pageIndex, pageSize]
+  );
+
   const columns: ColumnDef<Case>[] = [
     {
       id: "select",
@@ -75,6 +149,7 @@ const CaseList: React.FC = () => {
           checked={table.getIsAllPageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
+          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
@@ -82,110 +157,307 @@ const CaseList: React.FC = () => {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="translate-y-[2px]"
         />
       ),
       enableSorting: false,
       enableHiding: false,
     },
     {
-      accessorKey: "id",
-      header: "Invoice ID",
+      accessorKey: "case_number",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Case #
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => (
-        <div className="font-semibold">{row.getValue("id")}</div>
+        <Link
+          to={`/cases/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.getValue("case_number")}
+        </Link>
       ),
     },
     {
       accessorKey: "patient_name",
-      header: "Patient",
-      cell: ({ row }) => <div>{row.getValue("patient_name") || "N/A"}</div>,
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Patient Name
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div>{row.getValue("patient_name")}</div>
+      ),
     },
     {
-      accessorKey: "client",
-      header: "Client",
+      accessorKey: "status",
+      header: ({ column }) => (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="p-0 hover:bg-transparent"
+            >
+              <div className="flex items-center">
+                Status
+                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                {statusFilter.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {statusFilter.length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2" align="start">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                <span className="text-sm font-medium">Filter by Status</span>
+                {statusFilter.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStatusFilter([])}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {["in_queue", "in_progress", "on_hold", "completed", "cancelled"].map(
+                (status) => (
+                  <div key={status} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`status-${status}`}
+                      checked={statusFilter.includes(status as CaseStatus)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setStatusFilter((prev) => [...prev, status as CaseStatus]);
+                        } else {
+                          setStatusFilter((prev) =>
+                            prev.filter((s) => s !== status)
+                          );
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`status-${status}`}
+                      className="flex items-center text-sm font-medium capitalize cursor-pointer"
+                    >
+                      <Badge
+                        className={cn(
+                          "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                          {
+                            "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": status === "in_queue",
+                            "bg-blue-500 text-blue-500 hover:bg-blue-500": status === "in_progress",
+                            "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": status === "on_hold",
+                            "bg-green-500 text-green-500 hover:bg-green-500": status === "completed",
+                            "bg-red-500 text-red-500 hover:bg-red-500": status === "cancelled"
+                          }
+                        )}
+                      >
+                        {status.replace("_", " ")}
+                      </Badge>
+                    </label>
+                  </div>
+                )
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ),
       cell: ({ row }) => {
-        const client = row.getValue("client") as { client_name: string } | null;
-        return <div>{client?.client_name || "N/A"}</div>;
+        const status = row.getValue("status") as string;
+        const statusLower = status.toLowerCase() as CaseStatus;
+        return (
+          <TooltipProvider key={row.id}>
+            <Tooltip>
+              <TooltipTrigger>
+                <Badge
+                  className={cn(
+                    "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                    {
+                      "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": statusLower === "in_queue",
+                      "bg-blue-500 text-blue-500 hover:bg-blue-500": statusLower === "in_progress",
+                      "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": statusLower === "on_hold",
+                      "bg-green-500 text-green-500 hover:bg-green-500": statusLower === "completed",
+                      "bg-red-500 text-red-500 hover:bg-red-500": statusLower === "cancelled"
+                    }
+                  )}
+                >
+                  {status}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                {CASE_STATUS_DESCRIPTIONS[statusLower]}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
+      filterFn: (row, id, value: CaseStatus[]) => {
+        if (value.length === 0) return true;
+        const status = (row.getValue(id) as string).toLowerCase() as CaseStatus;
+        return value.includes(status);
       },
     },
     {
       accessorKey: "doctor",
-      header: "Doctor",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Doctor
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const doctor = row.getValue("doctor") as { name: string } | null;
         return <div>{doctor?.name || "N/A"}</div>;
       },
     },
     {
-      accessorKey: "status",
-      header: "Status",
+      accessorKey: "client",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Client
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
-        const status = row.getValue("status") as string;
-        return (
-          <span
-            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-              status === "Completed"
-                ? "bg-green-100 text-green-800"
-                : status === "In Progress"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-yellow-100 text-yellow-800"
-            }`}
-          >
-            {status}
-          </span>
-        );
+        const client = row.getValue("client") as { client_name: string } | null;
+        return <div>{client?.client_name || "N/A"}</div>;
       },
     },
     {
       accessorKey: "due_date",
-      header: "Due Date",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Due Date
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        return <div>{formatDate(date)}</div>;
+        return date ? format(new Date(date), "MMM d, yyyy") : "TBD";
+      },
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Ordered Date
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = row.getValue("created_at") as string;
+        return <div>{format(new Date(date), "MM/dd/yyyy")}</div>;
       },
     },
     {
       id: "actions",
-      header: "Actions",
-      cell: ({ row }) => {
-        const caseId = row.original.id;
-        return (
-          <div className="space-x-4">
-            <Link
-              to={`/cases/${caseId}`}
-              className="text-indigo-600 hover:text-indigo-900"
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
             >
-              View
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px]">
+            <Link to={`/cases/${row.original.id}`}>
+              <DropdownMenuItem>
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
+              </DropdownMenuItem>
             </Link>
-            <Link
-              to={`/cases/${caseId}/edit`}
-              className="text-indigo-600 hover:text-indigo-900"
-            >
-              Edit
+            <Link to={`/cases/${row.original.id}/edit`}>
+              <DropdownMenuItem>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
             </Link>
-          </div>
-        );
-      },
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handlePrint(row.original)}>
+              <PrinterIcon className="mr-2 h-4 w-4" />
+              Print
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
   const table = useReactTable({
-    data: filteredCases,
+    data: cases,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination,
     },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   });
+
+  useEffect(() => {
+    if (statusFilter.length > 0) {
+      table.getColumn("status")?.setFilterValue(statusFilter);
+    } else {
+      table.getColumn("status")?.setFilterValue(undefined);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    const getLabId = async () => {
+      try {
+        const data = await getLabIdByUserId(user?.id as string);
+        setLabId(data?.labId as string);
+      } catch (error) {
+        console.error("Error fetching lab ID:", error);
+      }
+    };
+    getLabId();
+  }, [user?.id]);
+
   useEffect(() => {
     const fetchCases = async () => {
       setLoading(true);
@@ -206,13 +478,6 @@ const CaseList: React.FC = () => {
           throw new Error("User is missing required fields");
         }
 
-        logger.debug("Starting case fetch with user:", {
-          userId: user.id,
-          role: user.role,
-          email: user.email,
-        });
-
-        // First verify the user's session
         const {
           data: { session },
           error: sessionError,
@@ -228,94 +493,78 @@ const CaseList: React.FC = () => {
           throw new Error("No active session");
         }
 
-        logger.debug("Current session:", {
-          id: session.user.id,
-          role: session.user.role,
-          email: session.user.email,
-          expires_at: session.expires_at,
-        });
-
-        // Then fetch all cases
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
             `
-          id,
-          created_at,
-          received_date,
-          ship_date,
-          status,
-          patient_name,
-          due_date,
-          client:clients!client_id (
             id,
-            client_name,
-            phone
-          ),
-          doctor:doctors!doctor_id (
-            id,
-            name,
-            client:clients!client_id (
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            case_number,
+            client:clients (
               id,
               client_name,
               phone
+            ),
+            doctor:doctors (
+              id,
+              name,
+              client:clients (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            pan_number,
+            rx_number,
+            isDueDateTBD,
+            appointment_date,
+            otherItems,
+            lab_notes,
+            technician_notes,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            product_ids:case_products (
+              products_id,
+              id
             )
-          ),
-          pan_number,
-          rx_number,
-          isDueDateTBD,
-          appointment_date,
-          otherItems,
-          lab_notes,
-          technician_notes,
-          occlusal_type,
-          contact_type,
-          pontic_type,
-          custom_contact_details,
-          custom_occulusal_details,
-          custom_pontic_details,
-          enclosed_items:enclosed_case!enclosed_case_id (
-            impression,
-            biteRegistration,
-            photos,
-            jig,
-            opposingModel,
-            articulator,
-            returnArticulator,
-            cadcamFiles,
-            consultRequested,
-            user_id
-          ),
-          product_ids:case_products!id (
-            products_id,
-            id
+            `
           )
-          `
-          )
-          .eq("lab_id", labId) // Filter by lab_id
+          .eq("lab_id", labId)
           .order("created_at", { ascending: false });
-
-        logger.debug("All cases query:", {
-          data: casesData,
-          error: casesError?.message,
-          details: casesError?.details,
-          hint: casesError?.hint,
-        });
 
         if (casesError) {
           throw casesError;
         }
 
-        if (!casesData || casesData.length === 0) {
-          logger.debug("No cases found");
+        if (!casesData) {
           setCases([]);
           setFilteredCases([]);
-          setLoading(false);
           return;
         }
-        setLoading(false);
 
         setCases(casesData as unknown as Case[]);
+        setFilteredCases(casesData as unknown as Case[]);
       } catch (err) {
         logger.error("Error fetching cases:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch cases");
@@ -328,6 +577,7 @@ const CaseList: React.FC = () => {
       fetchCases();
     }
   }, [user, authLoading, labId]);
+
   useEffect(() => {
     if (cases.length > 0) {
       let filtered = [...cases];
@@ -335,7 +585,7 @@ const CaseList: React.FC = () => {
 
       if (dueDateParam) {
         filtered = filtered.filter((caseItem) => {
-          const caseDate = format(parseISO(caseItem.due_date), "yyyy-MM-dd");
+          const caseDate = format(new Date(caseItem.due_date), "yyyy-MM-dd");
           return caseDate === dueDateParam;
         });
       }
@@ -344,112 +594,47 @@ const CaseList: React.FC = () => {
     }
   }, [cases, searchParams]);
 
-  const handleFilterChange = (filters: any) => {
-    let filtered = [...cases];
-
-    if (filters.dueDate) {
-      const today = new Date();
-      filtered = filtered.filter((caseItem) => {
-        const dueDate = parseISO(caseItem.due_date);
-        return isValid(dueDate) && isEqual(dueDate, today);
-      });
-    }
-
-    if (filters.status) {
-      filtered = filtered.filter(
-        (caseItem) => caseItem.status === filters.status
-      );
-    }
-
-    setFilteredCases(filtered);
-  };
-
-  const handleSearch = (searchTerm: string) => {
-    const filtered = cases.filter(
-      (caseItem) =>
-        caseItem.client.client_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        caseItem.patient_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        caseItem.id.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredCases(filtered);
-  };
-
-  const handlePrintOptionSelect = (option: string) => {
-    const selectedIds = Object.keys(rowSelection);
-    logger.debug(`Print option selected: ${option} for cases:`, selectedIds);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      logger.error("Error formatting date:", err);
-      return "Invalid Date";
-    }
-  };
-
   if (loading) {
-    return <div className="text-center py-4">Loading cases...</div>;
+    return <div>Loading...</div>;
   }
 
   if (error) {
-    return (
-      <div
-        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-        role="alert"
-      >
-        <strong className="font-bold">Error!</strong>
-        <span className="block sm:inline"> {error}</span>
-      </div>
-    );
+    return <div>Error: {error}</div>;
   }
 
-  const dueDateParam = searchParams.get("dueDate");
-  const headerText =
-    dueDateParam && isValid(parseISO(dueDateParam))
-      ? `Cases Due on ${format(parseISO(dueDateParam), "MMMM d, yyyy")}`
-      : "Case Management";
   return (
-    <div className="container mx-auto px-4 py-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">{headerText}</h1>
-        <Button
-          onClick={() => navigate("/cases/new")}
-          className="inline-flex items-center"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Add New Case
-        </Button>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-1 items-center space-x-2">
+          <Input
+            placeholder="Filter cases..."
+            value={(table.getColumn("case_number")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("case_number")?.setFilterValue(event.target.value)
+            }
+            className="h-8 w-[150px] lg:w-[250px]"
+          />
+        </div>
+        <div className="flex items-center space-x-2">
+          <Link to="/cases/new">
+            <Button className="h-8" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              New Case
+            </Button>
+          </Link>
+          <PrintButtonWithDropdown selectedRows={table.getSelectedRowModel().rows} />
+        </div>
       </div>
-
-      <CaseFilters
-        onFilterChange={handleFilterChange}
-        onSearch={handleSearch}
-      />
-
-      <div className="mb-4">
-        <PrintButtonWithDropdown
-          caseId=""
-          onPrintOptionSelect={handlePrintOptionSelect}
-          disabled={Object.keys(rowSelection).length === 0}
-        />
-      </div>
-
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className="whitespace-nowrap bg-muted hover:bg-muted"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -466,18 +651,16 @@ const CaseList: React.FC = () => {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() ? "selected" : undefined}
+                  data-state={row.getIsSelected() && "selected"}
                 >
-                  {row.getVisibleCells().map((cell) => {
-                    return (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    );
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))
             ) : (
@@ -486,12 +669,36 @@ const CaseList: React.FC = () => {
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  No cases found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );

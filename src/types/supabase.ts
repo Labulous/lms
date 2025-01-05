@@ -144,9 +144,17 @@ export enum ContactType {
 export type CaseStatus =
   | "in_queue"
   | "in_progress"
+  | "on_hold"
   | "completed"
-  | "cancelled"
-  | "In Queue";
+  | "cancelled";
+
+export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
+  "in_queue": "Case has been received and is waiting to be assigned",
+  "in_progress": "Case is currently being worked on by technicians",
+  "on_hold": "Case work has been temporarily paused",
+  "completed": "Case has been finished and is ready for delivery",
+  "cancelled": "Case has been cancelled and will not be processed"
+};
 
 /**
  * Shade data structure for dental products
