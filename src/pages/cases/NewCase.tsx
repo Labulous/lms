@@ -251,7 +251,7 @@ const NewCase: React.FC = () => {
           Create a New Case
         </h1>
 
-        <div className="bg-white shadow overflow-hidden">
+        <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>
           </div>
@@ -283,7 +283,7 @@ const NewCase: React.FC = () => {
         {/* Files and Notes Section Grid */}
         <div className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
-          <div className="bg-white shadow overflow-hidden">
+          <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
               <h2 className="text-sm font-medium text-white">Notes</h2>
             </div>
@@ -297,7 +297,7 @@ const NewCase: React.FC = () => {
           </div>
 
           {/* Files Section */}
-          <div className="bg-white shadow overflow-hidden">
+          <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
               <h2 className="text-sm font-medium text-white">Files</h2>
             </div>

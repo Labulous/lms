@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import CaseFilters from "./CaseFilters";
 import PrintButtonWithDropdown from "./PrintButtonWithDropdown";
@@ -25,6 +25,8 @@ import {
   ColumnFiltersState,
   getFilteredRowModel,
   VisibilityState,
+  getPaginationRowModel,
+  PaginationState,
 } from "@tanstack/react-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +55,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -123,6 +127,19 @@ const CaseList: React.FC = () => {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [labId, setLabId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
+  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const pagination = useMemo(
+    () => ({
+      pageIndex,
+      pageSize,
+    }),
+    [pageIndex, pageSize]
+  );
 
   const columns: ColumnDef<Case>[] = [
     {
@@ -132,6 +149,7 @@ const CaseList: React.FC = () => {
           checked={table.getIsAllPageRowsSelected()}
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
+          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
@@ -139,6 +157,7 @@ const CaseList: React.FC = () => {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
+          className="translate-y-[2px]"
         />
       ),
       enableSorting: false,
@@ -146,50 +165,118 @@ const CaseList: React.FC = () => {
     },
     {
       accessorKey: "case_number",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Case Number
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => <div className="font-medium">{row.getValue("case_number")}</div>,
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Case #
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <Link
+          to={`/cases/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.getValue("case_number")}
+        </Link>
+      ),
     },
     {
       accessorKey: "patient_name",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Patient Name
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => <div>{row.getValue("patient_name")}</div>,
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Patient Name
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div>{row.getValue("patient_name")}</div>
+      ),
     },
     {
       accessorKey: "status",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Status
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="p-0 hover:bg-transparent"
+            >
+              <div className="flex items-center">
+                Status
+                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                {statusFilter.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {statusFilter.length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2" align="start">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                <span className="text-sm font-medium">Filter by Status</span>
+                {statusFilter.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setStatusFilter([])}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              {["in_queue", "in_progress", "on_hold", "completed", "cancelled"].map(
+                (status) => (
+                  <div key={status} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`status-${status}`}
+                      checked={statusFilter.includes(status as CaseStatus)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setStatusFilter((prev) => [...prev, status as CaseStatus]);
+                        } else {
+                          setStatusFilter((prev) =>
+                            prev.filter((s) => s !== status)
+                          );
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`status-${status}`}
+                      className="flex items-center text-sm font-medium capitalize cursor-pointer"
+                    >
+                      <Badge
+                        className={cn(
+                          "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                          {
+                            "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": status === "in_queue",
+                            "bg-blue-500 text-blue-500 hover:bg-blue-500": status === "in_progress",
+                            "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": status === "on_hold",
+                            "bg-green-500 text-green-500 hover:bg-green-500": status === "completed",
+                            "bg-red-500 text-red-500 hover:bg-red-500": status === "cancelled"
+                          }
+                        )}
+                      >
+                        {status.replace("_", " ")}
+                      </Badge>
+                    </label>
+                  </div>
+                )
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+      ),
       cell: ({ row }) => {
         const status = row.getValue("status") as string;
         const statusLower = status.toLowerCase() as CaseStatus;
@@ -213,27 +300,30 @@ const CaseList: React.FC = () => {
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{CASE_STATUS_DESCRIPTIONS[statusLower]}</p>
+                {CASE_STATUS_DESCRIPTIONS[statusLower]}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         );
       },
+      filterFn: (row, id, value: CaseStatus[]) => {
+        if (value.length === 0) return true;
+        const status = (row.getValue(id) as string).toLowerCase() as CaseStatus;
+        return value.includes(status);
+      },
     },
     {
       accessorKey: "doctor",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Doctor
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Doctor
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const doctor = row.getValue("doctor") as { name: string } | null;
         return <div>{doctor?.name || "N/A"}</div>;
@@ -241,115 +331,120 @@ const CaseList: React.FC = () => {
     },
     {
       accessorKey: "client",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Client
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Client
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const client = row.getValue("client") as { client_name: string } | null;
         return <div>{client?.client_name || "N/A"}</div>;
       },
     },
     {
-      accessorKey: "created_at",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Ordered Date
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
+      accessorKey: "due_date",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Due Date
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const date = row.getValue("due_date") as string;
+        return date ? format(new Date(date), "MMM d, yyyy") : "TBD";
       },
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Ordered Date
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const date = row.getValue("created_at") as string;
         return <div>{format(new Date(date), "MM/dd/yyyy")}</div>;
       },
     },
     {
-      accessorKey: "due_date",
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="p-0 hover:bg-transparent"
-          >
-            Due Date
-            <ChevronsUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        const date = row.getValue("due_date") as string;
-        return <div>{format(new Date(date), "MM/dd/yyyy")}</div>;
-      },
-    },
-    {
       id: "actions",
-      cell: ({ row }) => {
-        const caseId = row.original.id;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to={`/cases/${caseId}`}>
-                  <Eye className="mr-2 h-4 w-4" />
-                  View
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={`/cases/${caseId}/edit`}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[160px]">
+            <Link to={`/cases/${row.original.id}`}>
               <DropdownMenuItem>
-                <PrinterIcon className="mr-2 h-4 w-4" />
-                Print
+                <Eye className="mr-2 h-4 w-4" />
+                View Details
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+            </Link>
+            <Link to={`/cases/${row.original.id}/edit`}>
+              <DropdownMenuItem>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handlePrint(row.original)}>
+              <PrinterIcon className="mr-2 h-4 w-4" />
+              Print
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
   const table = useReactTable({
-    data: filteredCases,
+    data: cases,
     columns,
+    getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination,
     },
-    enableRowSelection: true,
-    onRowSelectionChange: setRowSelection,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
   });
+
+  useEffect(() => {
+    if (statusFilter.length > 0) {
+      table.getColumn("status")?.setFilterValue(statusFilter);
+    } else {
+      table.getColumn("status")?.setFilterValue(undefined);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     const getLabId = async () => {
@@ -508,23 +603,38 @@ const CaseList: React.FC = () => {
   }
 
   return (
-    <div className="w-full space-y-4 p-8">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Cases</h2>
+        <div className="flex flex-1 items-center space-x-2">
+          <Input
+            placeholder="Filter cases..."
+            value={(table.getColumn("case_number")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("case_number")?.setFilterValue(event.target.value)
+            }
+            className="h-8 w-[150px] lg:w-[250px]"
+          />
+        </div>
         <div className="flex items-center space-x-2">
-          <Button onClick={() => navigate("/cases/new")}>
-            <Plus className="mr-2 h-4 w-4" /> New Case
-          </Button>
+          <Link to="/cases/new">
+            <Button className="h-8" size="sm">
+              <Plus className="mr-2 h-4 w-4" />
+              New Case
+            </Button>
+          </Link>
+          <PrintButtonWithDropdown selectedRows={table.getSelectedRowModel().rows} />
         </div>
       </div>
-      
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead
+                    key={header.id}
+                    className="whitespace-nowrap bg-muted hover:bg-muted"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -565,6 +675,30 @@ const CaseList: React.FC = () => {
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex items-center justify-end space-x-2 py-4">
+        <div className="flex-1 text-sm text-muted-foreground">
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
+        </div>
+        <div className="space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
       </div>
     </div>
   );
