@@ -11,7 +11,13 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
-import { Case, CaseProduct, ToothInfo, CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
+import {
+  Case,
+  CaseProduct,
+  ToothInfo,
+  CaseStatus,
+  CASE_STATUS_DESCRIPTIONS,
+} from "@/types/supabase";
 import CaseProgress from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -493,7 +499,7 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-
+  console.log(caseDetail, "caseDetail");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -525,7 +531,12 @@ const CaseDetails: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">Invoice #:</span>
                     <span className="text-sm font-medium text-primary">
-                      {caseDetail?.invoice?.case_id || "Not Invoiced"}
+                      {(() => {
+                        const caseNumber = caseDetail?.case_number ?? ""; // Default to an empty string if undefined
+                        const parts = caseNumber.split("-");
+                        parts[0] = "INV"; // Replace the first part
+                        return parts.join("-");
+                      })()}
                     </span>
                   </div>
                 </div>
@@ -537,11 +548,16 @@ const CaseDetails: React.FC = () => {
                           className={cn(
                             "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
                             {
-                              "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": caseDetail.status === "in_queue",
-                              "bg-blue-500 text-blue-500 hover:bg-blue-500": caseDetail.status === "in_progress",
-                              "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": caseDetail.status === "on_hold",
-                              "bg-green-500 text-green-500 hover:bg-green-500": caseDetail.status === "completed",
-                              "bg-red-500 text-red-500 hover:bg-red-500": caseDetail.status === "cancelled"
+                              "bg-neutral-500 text-neutral-500 hover:bg-neutral-500":
+                                caseDetail.status === "in_queue",
+                              "bg-blue-500 text-blue-500 hover:bg-blue-500":
+                                caseDetail.status === "in_progress",
+                              "bg-yellow-500 text-yellow-500 hover:bg-yellow-500":
+                                caseDetail.status === "on_hold",
+                              "bg-green-500 text-green-500 hover:bg-green-500":
+                                caseDetail.status === "completed",
+                              "bg-red-500 text-red-500 hover:bg-red-500":
+                                caseDetail.status === "cancelled",
                             }
                           )}
                         >
@@ -549,7 +565,13 @@ const CaseDetails: React.FC = () => {
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>{CASE_STATUS_DESCRIPTIONS[caseDetail.status as CaseStatus]}</p>
+                        <p>
+                          {
+                            CASE_STATUS_DESCRIPTIONS[
+                              caseDetail.status as CaseStatus
+                            ]
+                          }
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -859,7 +881,7 @@ const CaseDetails: React.FC = () => {
                   <CardTitle className="flex items-center text-xl">
                     <FileText className="mr-2" size={20} /> Invoice
                   </CardTitle>
-                  <InvoiceActions 
+                  <InvoiceActions
                     caseStatus={caseDetail.status as CaseStatus}
                     invoiceStatus={caseDetail.invoice?.status || null}
                     onEditInvoice={() => {
@@ -869,20 +891,27 @@ const CaseDetails: React.FC = () => {
                     onApproveInvoice={async () => {
                       try {
                         // Validate case is completed
-                        if (caseDetail.status !== 'completed') {
-                          throw new Error('Case must be completed before approving invoice');
+                        if (caseDetail.status !== "completed") {
+                          throw new Error(
+                            "Case must be completed before approving invoice"
+                          );
                         }
 
                         // Validate invoice is in draft
-                        if (!caseDetail.invoice || caseDetail.invoice.status !== 'draft') {
-                          throw new Error('Only draft invoices can be approved');
+                        if (
+                          !caseDetail.invoice ||
+                          caseDetail.invoice.status !== "draft"
+                        ) {
+                          throw new Error(
+                            "Only draft invoices can be approved"
+                          );
                         }
 
                         // Update invoice status to unpaid
                         const { error } = await supabase
-                          .from('invoices')
-                          .update({ status: 'unpaid' })
-                          .eq('id', caseDetail.invoice.id);
+                          .from("invoices")
+                          .update({ status: "unpaid" })
+                          .eq("id", caseDetail.invoice.id);
 
                         if (error) throw error;
 
@@ -1137,8 +1166,7 @@ const CaseDetails: React.FC = () => {
                   <div className="mb-4">
                     <p className="text-gray-600">Technician Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.technician_notes ||
-                        "No technician notes"}
+                      {caseDetail?.technician_notes || "No technician notes"}
                     </p>
                   </div>
                 </div>
