@@ -91,7 +91,6 @@ const PaymentList = () => {
   const [dateRange, setDateRange] = useState<DateRange>();
   const [paymentMethod, setPaymentMethod] = useState<string>("all");
   const [paymentStatus, setPaymentStatus] = useState<string>("all");
-
   // Custom styles for active select
   const activeSelectStyles = "bg-blue-50 border-blue-600 hover:bg-blue-100";
 

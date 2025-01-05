@@ -168,9 +168,20 @@ export interface ShadeDataDisplay {
   stump?: string;
 }
 
+export interface PaymentListItem {
+  id: string;
+  payment_date: string; // ISO 8601 date string
+  amount: number;
+  payment_method: string;
+  status: string;
+  over_payment: number;
+  remaining_payment: number;
+  clients: { client_name: string };
+}
 /**
  * Product type definition
  */
+
 export interface BalanceTracking {
   created_at: string; // ISO timestamp for the record creation
   client_id: string; // UUID of the client
@@ -620,6 +631,27 @@ export interface Database {
             state?: string;
           };
         };
+      };
+      payments: {
+        Row: {
+          id: string;
+          payment_date: string; // ISO 8601 date string
+          amount: number;
+          payment_method: string;
+          status: string;
+          over_payment: number;
+          remaining_payment: number;
+          clients: { client_name: string };
+        };
+      };
+      Insert: {
+        payment_date?: string; // ISO 8601 date string
+        amount?: number;
+        payment_method?: string;
+        status?: string;
+        over_payment?: number;
+        remaining_payment?: number;
+        clients?: { client_name?: string };
       };
     };
     headers: {

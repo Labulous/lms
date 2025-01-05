@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NewPaymentModal } from "./NewPaymentModal";
 import {
@@ -13,10 +13,17 @@ import { Plus } from "lucide-react";
 import { InvoiceItem } from "@/data/mockInvoicesData";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
-
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { PaymentListItem } from "@/types/supabase";
+import { isValid, parseISO, format } from "date-fns";
+import { Logger } from "html2canvas/dist/types/core/logger";
 export function PaymentsList() {
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
+  const [paymentsList, setPaymentList] = useState<PaymentListItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
+  const { user } = useAuth();
   // Mock data - replace with API call
   const payments = [
     {
@@ -136,7 +143,69 @@ export function PaymentsList() {
       setShowNewPaymentModal(false);
     }
   };
+  useEffect(() => {
+    const getPaymentList = async () => {
+      setLoading(true);
 
+      try {
+        const lab = await getLabIdByUserId(user?.id as string);
+
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
+        const { data: paymentList, error: paymentListError } = await supabase
+          .from("payments")
+          .select(
+            `
+              id,
+              payment_date,
+              amount,
+              payment_method,
+              status,
+              over_payment,
+              remaining_payment,
+              clients!client_id ( client_name )
+            `
+          )
+          .eq("lab_id", lab.labId);
+
+        if (paymentListError) {
+          console.error("Error fetching products for case:", paymentListError);
+          return;
+        }
+
+        console.log("paymentList (raw data)", paymentList);
+
+        // Transform the data to align with the expected type
+        const transformedPaymentList = paymentList?.map((payment: any) => ({
+          ...payment,
+          client_name: payment.clients?.client_name, // Directly access client_name
+        }));
+
+        setPaymentList(transformedPaymentList as PaymentListItem[]);
+      } catch (err) {
+        console.error("Error fetching payment list:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getPaymentList();
+  }, []);
+
+    const formatDate = (dateString: string) => {
+      try {
+        const date = parseISO(dateString);
+        if (!isValid(date)) {
+          return "Invalid Date";
+        }
+        return format(date, "MMM d, yyyy");
+      } catch (err) {
+        return "Invalid Date";
+      }
+    };
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -158,23 +227,38 @@ export function PaymentsList() {
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Client</TableHead>
-            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="text-center">Amount</TableHead>
             <TableHead>Method</TableHead>
+            <TableHead>Over Payment</TableHead>
+            <TableHead>Remaining Payment</TableHead>
             <TableHead>Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {payments.map((payment) => (
-            <TableRow key={payment.id}>
-              <TableCell>{payment.date}</TableCell>
-              <TableCell>{payment.client}</TableCell>
-              <TableCell className="text-right">
-                ${payment.amount.toFixed(2)}
-              </TableCell>
-              <TableCell>{payment.method}</TableCell>
-              <TableCell>{payment.status}</TableCell>
-            </TableRow>
-          ))}
+          {paymentsList?.map((payment) => {
+            console.log(payment, "payment");
+            return (
+              <TableRow key={payment.id}>
+                <TableCell>
+                 {formatDate(payment.payment_date)}
+                </TableCell>
+                <TableCell>
+                  {payment?.clients?.client_name ?? "hello"}
+                </TableCell>
+                <TableCell className="text-center">
+                  ${payment.amount.toFixed(2)}
+                </TableCell>
+                <TableCell>{payment.payment_method}</TableCell>
+                <TableCell className="text-center">
+                  ${payment.over_payment.toFixed(2)}
+                </TableCell>
+                <TableCell className="text-center">
+                  ${payment.remaining_payment.toFixed(2)}
+                </TableCell>
+                <TableCell>{payment.status}</TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 
