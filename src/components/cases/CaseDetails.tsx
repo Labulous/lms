@@ -915,19 +915,11 @@ const CaseDetails: React.FC = () => {
 
                         if (error) throw error;
 
-                        toast({
-                          title: "Success",
-                          description: "Invoice has been approved",
-                        });
-
+                        toast.success("Invoice has been approved");
                         // Refresh the page to show updated status
                         window.location.reload();
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: error.message,
-                          variant: "destructive",
-                        });
+                      } catch (error: any) {
+                        toast.error(error.message);
                       }
                     }}
                   />
