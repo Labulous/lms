@@ -99,8 +99,8 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     useState<BalanceTrackingItem | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
-
   const handlePaymentAmountChange = (newAmount: number) => {
+    let remainingAmount = newAmount; // Payment amount to be allocated
     let tempNewAmount = newAmount;
 
     const freshInvoices = JSON.parse(JSON.stringify(invoices));
@@ -124,37 +124,59 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     });
 
     setUpdatedInvoices(newUpdatedInvoices);
-    setPaymentAmount(newAmount);
+    // Allocate payments based on the remaining amount
+    const newAllocation = invoices.reduce(
+      (acc: Record<string, number>, inv: any) => {
+        if (remainingAmount > 0 && inv.invoicesData?.[0]) {
+          const dueAmount = inv.invoicesData[0].due_amount;
 
-    // Calculate total due (remaining due_amount)
-    const totalDue = newUpdatedInvoices.reduce(
-      (sum: number, inv: any) => sum + inv?.invoicesData[0].due_amount,
+          if (remainingAmount >= dueAmount) {
+            // Fully allocate to this invoice
+            acc[inv.id] = dueAmount;
+            remainingAmount -= dueAmount;
+          } else {
+            // Partially allocate to this invoice
+            acc[inv.id] = remainingAmount;
+            remainingAmount = 0;
+          }
+        } else {
+          // No allocation if there's no remaining amount
+          acc[inv.id] = 0;
+        }
+        return acc;
+      },
+      {}
+    );
+
+    // Calculate total due
+    const totalDue = invoices.reduce(
+      (sum: number, inv: any) =>
+        sum + (inv?.invoicesData?.[0]?.due_amount || 0),
       0
     );
-    console.log(totalDue, "totalDue");
-    // Handle overpayment and remaining balance
-    if (newAmount > totalDue) {
-      setOverpaymentAmount(newAmount - totalDue);
-      setRemainingBalance(0);
-    } else if (newAmount < totalDue) {
-      setOverpaymentAmount(0);
-      setRemainingBalance(totalDue - newAmount);
-    } else {
-      setOverpaymentAmount(0);
-      setRemainingBalance(0);
-    }
 
-    // Update payment allocation
-    const newAllocation = newUpdatedInvoices.reduce((acc: any, inv: any) => {
-      const amountAllocated =
-        inv.invoicesData[0].amount - inv.invoicesData[0].due_amount;
-      acc[inv.id] = Number(amountAllocated.toFixed(2));
-      return acc;
-    }, {} as Record<string, number>);
+    // Calculate overpayment and remaining balance
+    const overpayment = Math.max(0, remainingAmount); // Remaining amount after covering all invoices
+    const remainingBalance = Math.max(0, totalDue - newAmount); // Unpaid balance if the entered amount is less than total due
 
+    // Update state
     setPaymentAllocation(newAllocation);
+    setOverpaymentAmount(overpayment);
+    setRemainingBalance(remainingBalance); // Update remaining balance
+    setPaymentAmount(newAmount); // Update the processed payment amount
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+
+    // Allow only valid numbers
+    if (!isNaN(Number(value)) && Number(value) >= 0) {
+      setPaymentAmount(Number(value));
+      handlePaymentAmountChange(Number(value)); // Process new value
+    }
+  };
+
+  console.log(updatedInvoices, "updated");
   const handleInvoiceSelect = (invoiceId: string, checked: boolean) => {
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {
@@ -313,23 +335,14 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
         }
 
         // Filter cases where invoicesData contains statuses not "draft", "paid", or "cancelled"
-        const filteredCases = casesData
-          ?.filter((caseItem) =>
-            caseItem.invoicesData.some(
-              (invoice) =>
-                invoice.status !== "draft" &&
-                invoice.status !== "paid" &&
-                invoice.status !== "cancelled"
-            )
+        const filteredCases: any = casesData?.filter((caseItem) =>
+          caseItem.invoicesData.some(
+            (invoice) =>
+              invoice.status !== "draft" &&
+              invoice.status !== "paid" &&
+              invoice.status !== "cancelled"
           )
-          .map((item) => ({
-            ...item,
-            client: {
-              id: item.client[0].id,
-              client_name: item.client[0].client_name,
-            },
-            invoicesData: item.invoicesData,
-          }));
+        );
 
         console.log("Filtered Cases:", filteredCases);
         setInvoices(filteredCases);
@@ -361,7 +374,8 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     }
     console.log(selectedClient, "selected");
   }, [selectedClient]);
-
+  console.log(invoices, "invoices");
+  console.log(paymentAllocation, "paymentAllocation");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">
@@ -489,9 +503,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                 <Input
                   type="number"
                   value={paymentAmount}
-                  onChange={(e) =>
-                    handlePaymentAmountChange(Number(e.target.value))
-                  }
+                  onChange={handleInputChange}
                   className="text-right"
                 />
               </div>
@@ -559,7 +571,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                           ${invoice?.invoicesData[0]?.amount.toFixed(2) ?? 0}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${invoice.invoicesData[0].amount.toFixed(2)}
+                          ${invoice.invoicesData[0].due_amount.toFixed(2)}
                         </TableCell>
                         <TableCell className="text-right">
                           ${(paymentAllocation[invoice.id] || 0).toFixed(2)}
