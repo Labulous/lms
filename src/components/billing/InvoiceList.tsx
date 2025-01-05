@@ -15,7 +15,6 @@ import {
   Calendar as CalendarIcon,
   Trash,
   Loader2,
-  X,
   Pencil,
   MoreHorizontal,
   Check,
