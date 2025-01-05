@@ -176,21 +176,31 @@ export interface ShadeDataDisplay {
   stump?: string;
 }
 
-/**
- * Product type definition
- */
-export interface BalanceTracking {
-  created_at: string; // ISO timestamp for the record creation
-  client_id: string; // UUID of the client
-  outstanding_balance: number; // Total outstanding balance
-  credit_balance: number | null; // Credit balance, can be null
-  this_month: number; // Balance for this month
-  last_month: number; // Balance for last month
-  days_30_plus: number; // Balance for 30+ days overdue
-  days_60_plus: number; // Balance for 60+ days overdue
-  days_90_plus: number; // Balance for 90+ days overdue
-  total: number; // Total balance
-  id: string; // UUID for the record
+export interface PaymentListItem {
+  id: string;
+  payment_date: string; // ISO 8601 date string
+  amount: number;
+  payment_method: string;
+  status: string;
+  over_payment: number;
+  remaining_payment: number;
+  clients: { client_name: string };
+}
+
+export interface BalanceTrackingItem {
+  created_at: string;
+  client_id: string;
+  credit: number;
+  client_name: string;
+  outstanding_balance: number;
+  this_month: number;
+  last_month: number;
+  days_30_plus: number;
+  days_60_plus: number;
+  days_90_plus: number;
+  total: number;
+  lab_id: string;
+  id: string;
 }
 
 interface Product {
@@ -628,6 +638,27 @@ export interface Database {
             state?: string;
           };
         };
+      };
+      payments: {
+        Row: {
+          id: string;
+          payment_date: string; // ISO 8601 date string
+          amount: number;
+          payment_method: string;
+          status: string;
+          over_payment: number;
+          remaining_payment: number;
+          clients: { client_name: string };
+        };
+      };
+      Insert: {
+        payment_date?: string; // ISO 8601 date string
+        amount?: number;
+        payment_method?: string;
+        status?: string;
+        over_payment?: number;
+        remaining_payment?: number;
+        clients?: { client_name?: string };
       };
     };
     headers: {
