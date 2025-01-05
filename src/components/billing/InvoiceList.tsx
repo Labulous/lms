@@ -147,7 +147,7 @@ const InvoiceList: React.FC = () => {
   // Initialize invoices
   useEffect(() => {
     const getCompletedInvoices = async () => {
-      setLoading(true); // Set loading state to true when fetching data
+      setLoading(true);
 
       try {
         const lab = await getLabIdByUserId(user?.id as string);
