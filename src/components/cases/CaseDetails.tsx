@@ -60,6 +60,7 @@ import {
 } from "@/components/ui/tooltip";
 import cn from "classnames";
 import InvoiceActions from "@/components/cases/InvoiceActions";
+import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 
 interface CaseFile {
   id: string;
@@ -205,6 +206,8 @@ const CaseDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
   const navigate = useNavigate();
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -530,14 +533,39 @@ const CaseDetails: React.FC = () => {
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">Invoice #:</span>
-                    <span className="text-sm font-medium text-primary">
-                      {(() => {
-                        const caseNumber = caseDetail?.case_number ?? ""; // Default to an empty string if undefined
-                        const parts = caseNumber.split("-");
-                        parts[0] = "INV"; // Replace the first part
-                        return parts.join("-");
-                      })()}
-                    </span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="link"
+                            className={cn(
+                              "text-sm font-medium text-primary p-0 h-auto",
+                              "hover:text-primary/80 hover:underline transition-colors",
+                              "flex items-center gap-1",
+                              { "opacity-50 cursor-wait": isLoadingPreview }
+                            )}
+                            onClick={async () => {
+                              setIsLoadingPreview(true);
+                              setIsPreviewModalOpen(true);
+                            }}
+                            disabled={isLoadingPreview}
+                          >
+                            {(() => {
+                              const caseNumber = caseDetail?.case_number ?? "";
+                              const parts = caseNumber.split("-");
+                              parts[0] = "INV";
+                              return parts.join("-");
+                            })()}
+                            {isLoadingPreview && (
+                              <span className="animate-spin">⟳</span>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Click to preview invoice</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </div>
                 <div className="mt-2">
@@ -1448,6 +1476,24 @@ const CaseDetails: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Invoice Preview Modal */}
+      {caseDetail && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setIsLoadingPreview(false);
+          }}
+          formData={{
+            clientId: caseDetail.client?.id,
+            items: caseDetail.invoice?.items || [],
+            discount: caseDetail.invoice?.discount || 0,
+            discountType: caseDetail.invoice?.discount_type || 'percentage',
+            tax: caseDetail.invoice?.tax || 0,
+            notes: caseDetail.invoice?.notes || ''
+          }}
+        />
+      )}
     </div>
   );
 };
