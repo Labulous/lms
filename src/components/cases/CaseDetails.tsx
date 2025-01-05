@@ -19,7 +19,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLocation } from "react-router-dom";
-
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import {
   Table,
   TableBody,
@@ -52,6 +53,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import cn from "classnames";
+import InvoiceActions from "@/components/cases/InvoiceActions";
 
 interface CaseFile {
   id: string;
@@ -196,6 +198,7 @@ const CaseDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -852,9 +855,54 @@ const CaseDetails: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <FileText className="mr-2" size={20} /> Invoice
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-xl">
+                    <FileText className="mr-2" size={20} /> Invoice
+                  </CardTitle>
+                  <InvoiceActions 
+                    caseStatus={caseDetail.status as CaseStatus}
+                    invoiceStatus={caseDetail.invoice?.status || null}
+                    onEditInvoice={() => {
+                      // Navigate to invoice edit page
+                      navigate(`/invoices/${caseDetail.invoice?.id}/edit`);
+                    }}
+                    onApproveInvoice={async () => {
+                      try {
+                        // Validate case is completed
+                        if (caseDetail.status !== 'completed') {
+                          throw new Error('Case must be completed before approving invoice');
+                        }
+
+                        // Validate invoice is in draft
+                        if (!caseDetail.invoice || caseDetail.invoice.status !== 'draft') {
+                          throw new Error('Only draft invoices can be approved');
+                        }
+
+                        // Update invoice status to unpaid
+                        const { error } = await supabase
+                          .from('invoices')
+                          .update({ status: 'unpaid' })
+                          .eq('id', caseDetail.invoice.id);
+
+                        if (error) throw error;
+
+                        toast({
+                          title: "Success",
+                          description: "Invoice has been approved",
+                        });
+
+                        // Refresh the page to show updated status
+                        window.location.reload();
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: error.message,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  />
+                </div>
               </CardHeader>
               <CardContent className="py-2 px-3">
                 <div className="border rounded-lg bg-white">
