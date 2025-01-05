@@ -8,61 +8,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { BalanceTrackingItem } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-
-// Types
-interface Balance {
-  id: string;
-  client: string;
-  outstandingBalance: number;
-  creditBalance: number;
-  thisMonth: number;
-  lastMonth: number;
-  days30Plus: number;
-  days60Plus: number;
-  days90Plus: number;
-}
-
-// Mock data
-const mockBalances: Balance[] = [
-  {
-    id: "1",
-    client: "Maine Street",
-    outstandingBalance: 7059.0,
-    creditBalance: 0.0,
-    thisMonth: 6094.0,
-    lastMonth: 495.0,
-    days30Plus: 0.0,
-    days60Plus: 0.0,
-    days90Plus: 470.0,
-  },
-  {
-    id: "2",
-    client: "Test Client",
-    outstandingBalance: 4411.6,
-    creditBalance: 200.0,
-    thisMonth: 2365.6,
-    lastMonth: 1470.0,
-    days30Plus: 0.0,
-    days60Plus: 0.0,
-    days90Plus: 776.0,
-  },
-  {
-    id: "3",
-    client: "Doctor, Test",
-    outstandingBalance: 1600.0,
-    creditBalance: 0.0,
-    thisMonth: 1600.0,
-    lastMonth: 0.0,
-    days30Plus: 0.0,
-    days60Plus: 0.0,
-    days90Plus: 0.0,
-  },
-];
 
 const BalanceList = () => {
   // State
@@ -72,7 +21,6 @@ const BalanceList = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const { user } = useAuth();
-  // Filter balances based on search query and balance type
   const filteredBalances: BalanceTrackingItem[] = balaceList.filter(
     (balance) => {
       const matchesSearch = balance.client_name
@@ -174,7 +122,6 @@ const BalanceList = () => {
 
     getPaymentList();
   }, []);
-  console.log(balaceList, "list balance");
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
