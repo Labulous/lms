@@ -515,7 +515,7 @@ const InvoiceList: React.FC = () => {
                 .insert({
                   case_id: updatedInvoice.id,
                   product_id,
-                  discount: updatedInvoice.items.filter(
+                  discount: updatedInvoice?.items.filter(
                     (item) => item.id === product_id
                   )[0].discount, // New discount value
                   quantity: updatedInvoice.items.filter(

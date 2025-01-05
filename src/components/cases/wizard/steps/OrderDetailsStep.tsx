@@ -1,8 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import {
-  CASE_STATUSES,
-  DELIVERY_METHODS,
-} from "../../../../data/mockCasesData";
+import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
 import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
 import { Input } from "@/components/ui/input";
@@ -16,8 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
-import { DateTimePicker } from "@/components/ui/date-time-picker"; 
-import { Separator } from "@/components/ui/separator"; 
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
 import { FormData } from "@/types/supabase";
@@ -58,9 +54,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         errors: Object.keys(errors || {}),
       });
     }
-  }, []); // Only run on mount
+  }, []);
 
-  // Find the selected client
   const selectedClient = useMemo(
     () => (clients || []).find((client) => client.id === formData.clientId),
     [clients, formData.clientId]
@@ -244,7 +239,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 Order Date *
               </Label>
               <DatePicker
-                date={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                date={
+                  formData.orderDate ? new Date(formData.orderDate) : undefined
+                }
                 onSelect={(date) => onChange("orderDate", date?.toISOString())}
                 className={cn(errors.orderDate ? "border-red-500" : "")}
                 minDate={new Date(2020, 0, 1)}
@@ -281,10 +278,16 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               </div>
               {!formData.isDueDateTBD && (
                 <DatePicker
-                  date={formData.dueDate ? new Date(formData.dueDate) : undefined}
+                  date={
+                    formData.dueDate ? new Date(formData.dueDate) : undefined
+                  }
                   onSelect={(date) => onChange("dueDate", date?.toISOString())}
                   className={cn(errors.dueDate ? "border-red-500" : "")}
-                  minDate={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                  minDate={
+                    formData.orderDate
+                      ? new Date(formData.orderDate)
+                      : undefined
+                  }
                   dateFormat="MM/dd/yyyy"
                   placeholder="Select due date"
                 />
@@ -305,9 +308,15 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       ? new Date(formData.appointmentDate)
                       : undefined
                   }
-                  onSelect={(date) => onChange("appointmentDate", date?.toISOString())}
+                  onSelect={(date) =>
+                    onChange("appointmentDate", date?.toISOString())
+                  }
                   className={cn(errors.appointmentDate ? "border-red-500" : "")}
-                  minDate={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                  minDate={
+                    formData.orderDate
+                      ? new Date(formData.orderDate)
+                      : undefined
+                  }
                   dateFormat="MM/dd/yyyy h:mm aa"
                   placeholder="Select appointment date & time"
                 />

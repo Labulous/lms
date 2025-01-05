@@ -41,7 +41,6 @@ import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
 import cn from "classnames";
 
-// Mock data types
 interface Payment {
   id: string;
   date: string;
@@ -75,7 +74,6 @@ const mockPayments: Payment[] = [
     applied: 1800.0,
     unapplied: 200.0,
   },
-  // Add more mock data as needed
 ];
 
 const PaymentList = () => {
@@ -91,14 +89,11 @@ const PaymentList = () => {
   const [dateRange, setDateRange] = useState<DateRange>();
   const [paymentMethod, setPaymentMethod] = useState<string>("all");
   const [paymentStatus, setPaymentStatus] = useState<string>("all");
-  // Custom styles for active select
   const activeSelectStyles = "bg-blue-50 border-blue-600 hover:bg-blue-100";
 
-  // Filtering
   const getFilteredPayments = () => {
     let filtered = [...mockPayments];
 
-    // Date range filter
     if (dateRange && dateRange.from !== undefined) {
       filtered = filtered.filter((payment) => {
         const paymentDate = new Date(payment.date);

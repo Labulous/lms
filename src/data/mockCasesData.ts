@@ -37,7 +37,7 @@ export interface CaseStage {
 export type CaseStatus =
   | "In Queue"
   | "in_progress"
-  | "On Hold"
+  | "on_hold"
   | "completed"
   | "cancelled"
   | "in_queue";
@@ -46,7 +46,7 @@ export type DeliveryMethod = "Pickup" | "Local Delivery" | "Shipping";
 export const CASE_STATUSES: CaseStatus[] = [
   "In Queue",
   "in_progress",
-  "On Hold",
+  "on_hold",
   "completed",
   "cancelled",
   "in_queue",

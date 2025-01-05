@@ -3,11 +3,13 @@ import { Printer, ChevronDown } from "lucide-react";
 
 interface PrintButtonWithDropdownProps {
   caseId: string;
+  selectedRows?: any;
   onPrintOptionSelect: (option: string) => void;
   disabled?: boolean;
 }
 
 const PrintButtonWithDropdown: React.FC<PrintButtonWithDropdownProps> = ({
+  selectedRows,
   onPrintOptionSelect,
   disabled = false,
 }) => {

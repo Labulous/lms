@@ -31,13 +31,13 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { createLogger } from "@/utils/logger";
-import { 
-  Plus, 
-  ChevronsUpDown, 
-  MoreHorizontal, 
-  Eye, 
-  Pencil, 
-  PrinterIcon 
+import {
+  Plus,
+  ChevronsUpDown,
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  PrinterIcon,
 } from "lucide-react";
 import { getLabIdByUserId } from "@/services/authService";
 import { Badge } from "@/components/ui/badge";
@@ -56,7 +56,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -108,10 +112,12 @@ type Case = {
     consultRequested: boolean;
     user_id: string;
   } | null;
-  product_ids: {
-    products_id: string[];
-    id: string;
-  }[] | null;
+  product_ids:
+    | {
+        products_id: string[];
+        id: string;
+      }[]
+    | null;
 };
 
 const CaseList: React.FC = () => {
@@ -140,7 +146,9 @@ const CaseList: React.FC = () => {
     }),
     [pageIndex, pageSize]
   );
-
+  const handlePrint = (row: any) => {
+    console.log(row);
+  };
   const columns: ColumnDef<Case>[] = [
     {
       id: "select",
@@ -196,19 +204,14 @@ const CaseList: React.FC = () => {
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div>{row.getValue("patient_name")}</div>
-      ),
+      cell: ({ row }) => <div>{row.getValue("patient_name")}</div>,
     },
     {
       accessorKey: "status",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
-            <Button
-              variant="ghost"
-              className="p-0 hover:bg-transparent"
-            >
+            <Button variant="ghost" className="p-0 hover:bg-transparent">
               <div className="flex items-center">
                 Status
                 <ChevronsUpDown className="ml-2 h-4 w-4" />
@@ -235,44 +238,56 @@ const CaseList: React.FC = () => {
                   </Button>
                 )}
               </div>
-              {["in_queue", "in_progress", "on_hold", "completed", "cancelled"].map(
-                (status) => (
-                  <div key={status} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`status-${status}`}
-                      checked={statusFilter.includes(status as CaseStatus)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setStatusFilter((prev) => [...prev, status as CaseStatus]);
-                        } else {
-                          setStatusFilter((prev) =>
-                            prev.filter((s) => s !== status)
-                          );
+              {[
+                "in_queue",
+                "in_progress",
+                "on_hold",
+                "completed",
+                "cancelled",
+              ].map((status) => (
+                <div key={status} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`status-${status}`}
+                    checked={statusFilter.includes(status as CaseStatus)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setStatusFilter((prev) => [
+                          ...prev,
+                          status as CaseStatus,
+                        ]);
+                      } else {
+                        setStatusFilter((prev) =>
+                          prev.filter((s) => s !== status)
+                        );
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`status-${status}`}
+                    className="flex items-center text-sm font-medium capitalize cursor-pointer"
+                  >
+                    <Badge
+                      className={cn(
+                        "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                        {
+                          "bg-neutral-500 text-neutral-500 hover:bg-neutral-500":
+                            status === "in_queue",
+                          "bg-blue-500 text-blue-500 hover:bg-blue-500":
+                            status === "in_progress",
+                          "bg-yellow-500 text-yellow-500 hover:bg-yellow-500":
+                            status === "on_hold",
+                          "bg-green-500 text-green-500 hover:bg-green-500":
+                            status === "completed",
+                          "bg-red-500 text-red-500 hover:bg-red-500":
+                            status === "cancelled",
                         }
-                      }}
-                    />
-                    <label
-                      htmlFor={`status-${status}`}
-                      className="flex items-center text-sm font-medium capitalize cursor-pointer"
+                      )}
                     >
-                      <Badge
-                        className={cn(
-                          "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
-                          {
-                            "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": status === "in_queue",
-                            "bg-blue-500 text-blue-500 hover:bg-blue-500": status === "in_progress",
-                            "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": status === "on_hold",
-                            "bg-green-500 text-green-500 hover:bg-green-500": status === "completed",
-                            "bg-red-500 text-red-500 hover:bg-red-500": status === "cancelled"
-                          }
-                        )}
-                      >
-                        {status.replace("_", " ")}
-                      </Badge>
-                    </label>
-                  </div>
-                )
-              )}
+                      {status.replace("_", " ")}
+                    </Badge>
+                  </label>
+                </div>
+              ))}
             </div>
           </PopoverContent>
         </Popover>
@@ -288,11 +303,16 @@ const CaseList: React.FC = () => {
                   className={cn(
                     "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
                     {
-                      "bg-neutral-500 text-neutral-500 hover:bg-neutral-500": statusLower === "in_queue",
-                      "bg-blue-500 text-blue-500 hover:bg-blue-500": statusLower === "in_progress",
-                      "bg-yellow-500 text-yellow-500 hover:bg-yellow-500": statusLower === "on_hold",
-                      "bg-green-500 text-green-500 hover:bg-green-500": statusLower === "completed",
-                      "bg-red-500 text-red-500 hover:bg-red-500": statusLower === "cancelled"
+                      "bg-neutral-500 text-neutral-500 hover:bg-neutral-500":
+                        statusLower === "in_queue",
+                      "bg-blue-500 text-blue-500 hover:bg-blue-500":
+                        statusLower === "in_progress",
+                      "bg-yellow-500 text-yellow-500 hover:bg-yellow-500":
+                        statusLower === "on_hold",
+                      "bg-green-500 text-green-500 hover:bg-green-500":
+                        statusLower === "completed",
+                      "bg-red-500 text-red-500 hover:bg-red-500":
+                        statusLower === "cancelled",
                     }
                   )}
                 >
@@ -608,7 +628,9 @@ const CaseList: React.FC = () => {
         <div className="flex flex-1 items-center space-x-2">
           <Input
             placeholder="Filter cases..."
-            value={(table.getColumn("case_number")?.getFilterValue() as string) ?? ""}
+            value={
+              (table.getColumn("case_number")?.getFilterValue() as string) ?? ""
+            }
             onChange={(event) =>
               table.getColumn("case_number")?.setFilterValue(event.target.value)
             }
@@ -622,7 +644,13 @@ const CaseList: React.FC = () => {
               New Case
             </Button>
           </Link>
-          <PrintButtonWithDropdown selectedRows={table.getSelectedRowModel().rows} />
+          <PrintButtonWithDropdown
+            selectedRows={table.getSelectedRowModel().rows}
+            caseId={""}
+            onPrintOptionSelect={function (option: string): void {
+              throw new Error("Function not implemented.");
+            }}
+          />
         </div>
       </div>
       <div className="rounded-md border">

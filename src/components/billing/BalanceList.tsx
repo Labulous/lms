@@ -13,6 +13,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
+
 const BalanceList = () => {
   // State
   const [balanceType, setBalanceType] = useState<string>("all");
@@ -66,7 +67,6 @@ const BalanceList = () => {
       minimumFractionDigits: 2,
     }).format(amount);
   };
-
   useEffect(() => {
     const getPaymentList = async () => {
       setLoading(true);

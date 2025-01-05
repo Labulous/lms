@@ -65,7 +65,8 @@ export interface Invoice {
   patient?: string;
   lab_notes?: string;
   client?: {
-    client_name: string;
+    client_name?: string;
+    id?: string;
   };
   clientAddress?: {
     street: string;
@@ -120,6 +121,7 @@ export interface Invoice {
     lab_id: string;
     case_id: string;
     client_id: string;
+    due_amount?: number;
   }[];
 }
 

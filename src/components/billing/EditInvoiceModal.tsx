@@ -54,7 +54,6 @@ export function EditInvoiceModal({
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<any>();
   useEffect(() => {
     if (invoice) {
       const transformedItems = (invoice?.products ?? []).map((item) => ({
@@ -166,11 +165,9 @@ export function EditInvoiceModal({
 
       if (error) {
         console.error("Error fetching discounted price:", error.message);
-        setSelectedProduct(product);
         return;
       }
       if (data.length > 0) {
-        setSelectedProduct({ ...product, data });
         setItems((items) =>
           items.map((item) =>
             item.id === ""
@@ -187,7 +184,6 @@ export function EditInvoiceModal({
         );
       } else {
         console.warn("No discounted price found for this product.");
-        setSelectedProduct(product);
         setItems((items) =>
           items.map((item) =>
             item.id === ""
@@ -205,7 +201,6 @@ export function EditInvoiceModal({
       }
     } catch (err) {
       console.error("An unexpected error occurred:", err);
-      setSelectedProduct(product);
     }
   };
   return (

@@ -7,7 +7,7 @@ import ProductConfiguration from "../../components/cases/wizard/ProductConfigura
 import FilesStep from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData } from "@/types/supabase";
-import { DeliveryMethod } from "../../data/mockCasesData";
+import { addCase, DeliveryMethod } from "../../data/mockCasesData";
 import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
