@@ -13,7 +13,6 @@ import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
-
 const BalanceList = () => {
   // State
   const [balanceType, setBalanceType] = useState<string>("all");
@@ -86,7 +85,7 @@ const BalanceList = () => {
                created_at,
               client_id,
               outstanding_balance,
-              credit_balance,
+              credit,
               this_month,
               last_month,
               days_30_plus,
@@ -142,38 +141,46 @@ const BalanceList = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Client</TableHead>
-              <TableHead className="text-right">Outstanding Balance</TableHead>
-              <TableHead className="text-right">Credit Balance</TableHead>
-              <TableHead className="text-right">This Month</TableHead>
-              <TableHead className="text-right">Last Month</TableHead>
-              <TableHead className="text-right">30+ Days</TableHead>
-              <TableHead className="text-right">60+ Days</TableHead>
-              <TableHead className="text-right">90+ Days</TableHead>
+              <TableHead className="text-center">Outstanding Balance</TableHead>
+              <TableHead className="text-center">Credit Balance</TableHead>
+              <TableHead className="text-center">This Month</TableHead>
+              <TableHead className="text-center">Last Month</TableHead>
+              <TableHead className="text-center">30+ Days</TableHead>
+              <TableHead className="text-center">60+ Days</TableHead>
+              <TableHead className="text-center">90+ Days</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredBalances.map((balance) => (
               <TableRow key={balance.id}>
                 <TableCell>{balance.client_name}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.outstanding_balance)}
                 </TableCell>
-                <TableCell className="text-right">
-                  {balance.credit ? formatCurrency(balance.credit) : 0}
+                <TableCell
+                  className={`text-center`}
+                >
+                  <div
+                    className={`${
+                      balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
+                    } text-center`}
+                  >
+                    {balance.credit ? formatCurrency(balance.credit) : 0}
+                  </div>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.this_month)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.last_month)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.days_30_plus)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.days_60_plus)}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-center">
                   {formatCurrency(balance.days_90_plus)}
                 </TableCell>
               </TableRow>
@@ -181,25 +188,25 @@ const BalanceList = () => {
             {/* Totals Row */}
             <TableRow className="bg-muted/50">
               <TableCell colSpan={1}>Totals</TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.outstandingBalance)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.creditBalance)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.thisMonth)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.lastMonth)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.days30Plus)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.days60Plus)}
               </TableCell>
-              <TableCell className="text-right">
+              <TableCell className="text-center">
                 {formatCurrency(totals.days90Plus)}
               </TableCell>
               <TableCell colSpan={1}></TableCell>

@@ -35,6 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { BalanceTrackingItem } from "@/types/supabase";
+import { isValid, parseISO, format } from "date-fns";
 interface NewPaymentModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
@@ -176,67 +177,118 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     }
   };
 
-  console.log(updatedInvoices, "updated");
-  const handleInvoiceSelect = (invoiceId: string, checked: boolean) => {
+  const handleInvoiceSelect = (
+    invoiceId: string,
+    checked: boolean,
+    reducePayment?: number | null
+  ) => {
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {
       const due_amount = invoice?.invoicesData?.[0]?.due_amount ?? 0;
 
       if (checked) {
-        setPaymentAmount((prevAmount) => prevAmount + due_amount);
+        let remainingAmount;
+        setPaymentAllocation((prevAllocation) => {
+          const totalAllocated = Object.values(prevAllocation).reduce(
+            (sum, value) => sum + value,
+            0
+          );
+          let remainingPayment = paymentAmount - totalAllocated;
+          remainingAmount = remainingPayment;
+          if (remainingPayment > 0) {
+            const allocatedAmount = Math.min(due_amount, remainingPayment);
 
-        setPaymentAllocation((prevAllocation) => ({
-          ...prevAllocation,
-          [invoiceId]: due_amount,
-        }));
+            const updatedAllocation = {
+              ...prevAllocation,
+              [invoiceId]: (prevAllocation[invoiceId] || 0) + allocatedAmount,
+            };
+
+            return updatedAllocation;
+          }
+
+          return prevAllocation;
+        });
 
         setUpdatedInvoices((prevInvoices) => {
-          const existingInvoiceIndex = prevInvoices.findIndex(
+          const totalAllocated = Object.values(paymentAllocation).reduce(
+            (sum, value) => sum + value,
+            0
+          );
+          const remainingPayment = paymentAmount - totalAllocated;
+          const updatedInvoices = [...prevInvoices];
+          const existingInvoiceIndex = updatedInvoices.findIndex(
             (inv) => inv.id === invoiceId
           );
 
-          if (existingInvoiceIndex !== -1) {
-            const updatedInvoices = [...prevInvoices];
+          if (remainingPayment > 0) {
+            const allocatedAmount = Math.min(due_amount, remainingPayment);
 
-            updatedInvoices[existingInvoiceIndex] = {
-              ...updatedInvoices[existingInvoiceIndex],
-              invoicesData: updatedInvoices[existingInvoiceIndex]
-                ?.invoicesData?.[0]
-                ? [
-                    {
-                      ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
-                      due_amount: 0,
-                    },
-                  ]
-                : [],
-            };
-
-            return updatedInvoices;
-          } else {
-            return [
-              ...prevInvoices,
-              {
+            if (existingInvoiceIndex !== -1) {
+              updatedInvoices[existingInvoiceIndex] = {
+                ...updatedInvoices[existingInvoiceIndex],
+                invoicesData: updatedInvoices[existingInvoiceIndex]
+                  ?.invoicesData?.[0]
+                  ? [
+                      {
+                        ...updatedInvoices[existingInvoiceIndex]
+                          .invoicesData[0],
+                        due_amount:
+                          updatedInvoices[existingInvoiceIndex].invoicesData[0]
+                            .due_amount - allocatedAmount,
+                      },
+                    ]
+                  : [],
+              };
+            } else {
+              updatedInvoices.push({
                 ...invoice,
                 invoicesData: invoice?.invoicesData
                   ? [
                       {
                         ...invoice.invoicesData[0],
-                        due_amount: due_amount ?? 0,
+                        due_amount:
+                          invoice.invoicesData[0].due_amount - allocatedAmount,
                       },
                     ]
                   : [],
-              },
-            ];
+              });
+            }
           }
-        });
-      } else {
-        setPaymentAmount((prevAmount) => prevAmount - due_amount);
 
+          return updatedInvoices;
+        });
+
+        // Now that allocation and invoices are updated, we can calculate the remaining balance
+        // Calculate the total allocated amount after updates
+        const totalAllocated = Object.values(paymentAllocation).reduce(
+          (sum, value) => sum + value,
+          0
+        );
+        const remainingPayment = paymentAmount - totalAllocated;
+
+        // Update the remaining balance with the updated allocation
+        const newRemainingBalance =
+          (balanceSummary?.outstanding_balance || 0) - (remainingAmount ?? 0);
+
+        setRemainingBalance(newRemainingBalance);
+
+        // Handle overpayment if the paymentAmount is fully allocated
+        if (remainingPayment < 0) {
+          setOverpaymentAmount(-remainingPayment); // Record overpayment
+        }
+      } else {
+        reducePayment && setRemainingBalance((item) => item + reducePayment);
+        const totalAllocated = Object.values(paymentAllocation).reduce(
+          (sum, value) => sum + value,
+          0
+        );
+        setRemainingBalance(
+          balanceSummary?.outstanding_balance ?? 0 - totalAllocated
+        );
         setPaymentAllocation((prevAllocation) => {
           const { [invoiceId]: _, ...rest } = prevAllocation;
           return rest;
         });
-
         setUpdatedInvoices((prevInvoices) =>
           prevInvoices.filter((inv) => inv.id !== invoiceId)
         );
@@ -338,13 +390,12 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
         const filteredCases: any = casesData?.filter((caseItem) =>
           caseItem.invoicesData.some(
             (invoice) =>
-              invoice.status !== "draft" &&
-              invoice.status !== "paid" &&
-              invoice.status !== "cancelled"
+              invoice.status !== "Draft" &&
+              invoice.status !== "Paid" &&
+              invoice.status !== "Cancelled"
           )
         );
 
-        console.log("Filtered Cases:", filteredCases);
         setInvoices(filteredCases);
 
         // Fetch balance_tracking data for the selected client
@@ -359,9 +410,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           return;
         }
 
-        console.log("Balance Data:", balanceData);
         setBalanceSummary(balanceData);
-        console.log(balanceData, "balanceData");
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
       } finally {
@@ -372,10 +421,19 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     if (selectedClient) {
       getCompletedInvoices();
     }
-    console.log(selectedClient, "selected");
   }, [selectedClient]);
-  console.log(invoices, "invoices");
-  console.log(paymentAllocation, "paymentAllocation");
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return "Invalid Date";
+      }
+      return format(date, "MMM d, yyyy");
+    } catch (err) {
+      return "Invalid Date";
+    }
+  };
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">
@@ -483,7 +541,9 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
               </div>
               <div className="flex justify-between font-medium pt-2 border-t">
                 <span>Current Balance</span>
-                <span>${(balanceSummary?.total ?? 0).toFixed(2)}</span>
+                <span>
+                  ${(balanceSummary?.outstanding_balance ?? 0).toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -556,7 +616,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                     invoices?.map((invoice) => (
                       <TableRow key={invoice.id}>
                         <TableCell>
-                          {invoice.invoicesData[0]?.created_at}
+                          {formatDate(invoice.invoicesData[0]?.created_at)}
                         </TableCell>
                         <TableCell>
                           {(() => {
@@ -579,10 +639,19 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                         <TableCell>
                           <Checkbox
                             checked={paymentAllocation[invoice.id] > 0}
+                            disabled={
+                              (paymentAmount === 0 ||
+                                Object.values(paymentAllocation).reduce(
+                                  (sum, value) => sum + value,
+                                  0
+                                ) >= paymentAmount) &&
+                              !(paymentAllocation[invoice.id] > 0)
+                            }
                             onCheckedChange={(checked) =>
                               handleInvoiceSelect(
                                 invoice.id,
-                                checked as boolean
+                                checked as boolean,
+                                paymentAllocation[invoice.id]
                               )
                             }
                           />

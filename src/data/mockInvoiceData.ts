@@ -22,7 +22,7 @@ export interface Invoice {
   discountType: "percentage" | "fixed";
   tax: { type: "percentage" | "fixed"; value: number; amount: number };
   totalAmount: number;
-  status: "pending" | "paid" | "overdue";
+  status: "Pending" | "Paid" | "Overdue";
   notes?: string;
   client?: Client;
   paymentTerms: string;
@@ -67,7 +67,7 @@ export const mockInvoices: Invoice[] = [
       amount: 10,
     },
     totalAmount: 1275.75,
-    status: "pending",
+    status: "Pending",
     paymentTerms: "",
   },
 ];
