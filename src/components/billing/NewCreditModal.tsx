@@ -47,6 +47,20 @@ interface Invoice {
   amount_due: number;
 }
 
+interface DatePickerProps {
+  date: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+  error?: string;
+}
+
+interface FormInputProps extends InputProps {
+  error?: string;
+}
+
+interface FormSelectProps extends SelectProps {
+  error?: string;
+}
+
 export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   const { user } = useAuth();
   const [date, setDate] = useState<Date>();
@@ -178,7 +192,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                 <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
                 <DatePicker
                   date={date}
-                  onDateChange={setDate}
+                  onChange={setDate}
                   error={errors.date}
                 />
               </div>
@@ -212,7 +226,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                     ) : clients.length > 0 ? (
                       clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.client_name}
+                          {client.clientName}
                         </SelectItem>
                       ))
                     ) : (

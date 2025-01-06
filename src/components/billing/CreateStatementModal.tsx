@@ -26,6 +26,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 interface CreateStatementModalProps {
   onClose: () => void;
@@ -41,6 +42,17 @@ interface MonthlyBalance {
   days90: number;
   credit: number;
   outstandingBalance: number;
+}
+
+interface GenericStringError {
+  [key: string]: string;
+}
+
+interface StatementError extends GenericStringError {
+  created_at?: string;
+  due_amount?: string;
+  status?: string;
+  amount?: string;
 }
 
 export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModalProps) {
@@ -120,17 +132,16 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
       // Fetch all relevant data for the selected month
       const { data: invoices, error } = await supabase
         .from("invoices")
-        .select({
-          amount: true,
-          due_amount: true,
-          status: true,
-          created_at: true,
-          client: {
-            id: true
-          }
-        })
-        .gte("created_at", lastMonthStart.toISOString())
-        .lt("created_at", endDate.toISOString());
+        .select(`
+          amount,
+          due_amount,
+          status,
+          created_at,
+          client (
+            id
+          )
+        `)
+        .eq("client_id", user.id);
 
       if (error) throw error;
 

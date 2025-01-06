@@ -595,6 +595,10 @@ const CaseList: React.FC = () => {
     }
   }, [cases, searchParams]);
 
+  const handlePrint = (selectedRows: Row<Case>[]) => {
+    console.log("Printing selected rows:", selectedRows);
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }

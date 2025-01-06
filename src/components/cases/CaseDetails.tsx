@@ -113,6 +113,19 @@ interface DiscountedPrice {
   price: number;
 }
 
+interface Invoice {
+  id: string;
+  case_id: string;
+  amount: number;
+  status: string;
+  due_date: string;
+  items?: any[];
+  discount?: number;
+  discount_type?: string;
+  tax?: number;
+  notes?: string;
+}
+
 interface ExtendedCase extends Case {
   client: {
     id: string;
@@ -157,13 +170,7 @@ interface ExtendedCase extends Case {
     returnArticulator: number;
   };
   products: any[];
-  invoice: {
-    id: string;
-    case_id: string;
-    amount: number;
-    status: string;
-    due_date: string;
-  };
+  invoice: Invoice;
 }
 
 const TYPE_COLORS = {
@@ -234,7 +241,12 @@ const CaseDetails: React.FC = () => {
                 case_id,
                 amount,
                 status,
-                due_date
+                due_date,
+                items,
+                discount,
+                discount_type,
+                tax,
+                notes
               ),
               client:clients!client_id (
                 id,
@@ -943,19 +955,12 @@ const CaseDetails: React.FC = () => {
 
                         if (error) throw error;
 
-                        toast({
-                          title: "Success",
-                          description: "Invoice has been approved",
-                        });
+                        toast.success("Invoice has been approved");
 
                         // Refresh the page to show updated status
                         window.location.reload();
                       } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: error.message,
-                          variant: "destructive",
-                        });
+                        toast.error("Failed to update case: " + (error as Error).message);
                       }
                     }}
                   />
