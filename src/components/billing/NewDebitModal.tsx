@@ -40,8 +40,9 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        setIsClientLoading(true);
+        setLoading(true);
         const data = await clientsService.getClients();
+
         if (Array.isArray(data)) {
           setClients(data);
         }
@@ -49,7 +50,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
       } finally {
-        setIsClientLoading(false);
+        setLoading(false);
       }
     };
 
@@ -69,17 +70,17 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
   };
 
   const handleSubmit = async () => {
-    if (!validateForm()) return;
+    // if (!validateForm()) return;
 
     try {
       setLoading(true);
-      
+
       const debitData = {
         date,
         client_id: selectedClient,
         description,
         amount,
-        type: "debit"
+        type: "debit",
       };
 
       await onSubmit(debitData);
@@ -103,19 +104,23 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
         <div className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Debit Details</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date <span className="text-red-500">*</span></Label>
+                <Label htmlFor="date">
+                  Date <span className="text-red-500">*</span>
+                </Label>
                 <DatePicker
                   date={date}
-                  onDateChange={setDate}
+                  onSelect={setDate}
                   error={errors.date}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
+                <Label htmlFor="description">
+                  Description <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="description"
                   value={description}
@@ -125,7 +130,9 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="client">Client <span className="text-red-500">*</span></Label>
+                <Label htmlFor="client">
+                  Client <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={selectedClient}
                   onValueChange={setSelectedClient}
@@ -133,7 +140,11 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                   disabled={isClientLoading}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={isClientLoading ? "Loading clients..." : "Select client"} />
+                    <SelectValue
+                      placeholder={
+                        isClientLoading ? "Loading clients..." : "Select client"
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {isClientLoading ? (
@@ -143,7 +154,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                     ) : clients.length > 0 ? (
                       clients.map((client) => (
                         <SelectItem key={client.id} value={client.id}>
-                          {client.client_name}
+                          {client.clientName}
                         </SelectItem>
                       ))
                     ) : (
@@ -156,7 +167,9 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Amount <span className="text-red-500">*</span></Label>
+                <Label htmlFor="amount">
+                  Amount <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="amount"
                   type="number"
@@ -175,10 +188,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={loading}
-          >
+          <Button onClick={handleSubmit} disabled={loading}>
             {loading && (
               <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             )}
