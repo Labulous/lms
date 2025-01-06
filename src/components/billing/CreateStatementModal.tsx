@@ -26,6 +26,10 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
+import { BalanceSummary } from "@/pages/billing/Statements";
+import { Loader2 } from "lucide-react";
+import { getLabIdByUserId } from "@/services/authService";
+import { BalanceTrackingItem } from "@/types/supabase";
 
 interface CreateStatementModalProps {
   onClose: () => void;
@@ -43,11 +47,15 @@ interface MonthlyBalance {
   outstandingBalance: number;
 }
 
-export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModalProps) {
-  const { user } = useAuth();
-  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+export function CreateStatementModal({
+  onClose,
+  onSubmit,
+}: CreateStatementModalProps) {
+  const [availableMonths, setAvailableMonths] = useState<
+    { name: string; month: number; year: number }[]
+  >([]);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [balanceSummary, setBalanceSummary] = useState<MonthlyBalance>({
+  const [balanceSummaryRemoved, setBalanceSummary] = useState<MonthlyBalance>({
     month: "",
     thisMonth: 0,
     lastMonth: 0,
@@ -55,33 +63,49 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
     days60: 0,
     days90: 0,
     credit: 0,
-    outstandingBalance: 0
+    outstandingBalance: 0,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasChanged, setHasChanged] = useState(false);
+  const [balanceList, setBalanceList] = useState<BalanceTrackingItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const { user } = useAuth();
   // Helper function to animate value changes
-  const AnimatedValue = ({ value, prefix = "$" }: { value: number; prefix?: string }) => {
+  const AnimatedValue = ({
+    value,
+    prefix = "$",
+  }: {
+    value: number;
+    prefix?: string;
+  }) => {
     const [displayValue, setDisplayValue] = useState(value);
-    
+
     useEffect(() => {
       setHasChanged(true);
       const timeout = setTimeout(() => setHasChanged(false), 300);
-      
+
       // Animate to new value
       setDisplayValue(value);
-      
+
       return () => clearTimeout(timeout);
     }, [value]);
 
     return (
-      <span className={`transition-all duration-300 ${hasChanged ? 'text-primary scale-110' : ''}`}>
-        {prefix}{displayValue.toFixed(2)}
+      <span
+        className={`transition-all duration-300 ${
+          hasChanged ? "text-primary scale-110" : ""
+        }`}
+      >
+        {prefix}
+        {displayValue.toFixed(2)}
       </span>
     );
   };
 
   // Fetch months with payment activity
+
   useEffect(() => {
     const fetchAvailableMonths = async () => {
       try {
@@ -92,10 +116,19 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
 
         if (error) throw error;
 
-        // Extract unique months from payment dates
-        const months = [...new Set(payments?.map(payment => 
-          format(new Date(payment.created_at), "MMMM yyyy")
-        ))];
+        // Extract unique months and map to the desired format
+        const months = [
+          ...new Map(
+            payments?.map((payment) => {
+              const date = new Date(payment.created_at);
+              const month = date.getMonth() + 1; // JS months are 0-indexed
+              const year = date.getFullYear();
+              const name = format(date, "MMMM yyyy");
+
+              return [`${month}-${year}`, { name, month, year }];
+            })
+          ).values(),
+        ];
 
         setAvailableMonths(months);
       } catch (error) {
@@ -108,80 +141,13 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
   }, []);
 
   // Fetch balance summary for selected month
-  const fetchBalanceSummary = async (month: string) => {
-    setIsLoading(true);
-    try {
-      const [monthName, year] = month.split(" ");
-      const startDate = new Date(parseInt(year), new Date(monthName + " 1, 2000").getMonth(), 1);
-      const endDate = new Date(parseInt(year), startDate.getMonth() + 1, 0);
-      const lastMonthStart = new Date(startDate);
-      lastMonthStart.setMonth(lastMonthStart.getMonth() - 1);
-
-      // Fetch all relevant data for the selected month
-      const { data: invoices, error } = await supabase
-        .from("invoices")
-        .select({
-          amount: true,
-          due_amount: true,
-          status: true,
-          created_at: true,
-          client: {
-            id: true
-          }
-        })
-        .gte("created_at", lastMonthStart.toISOString())
-        .lt("created_at", endDate.toISOString());
-
-      if (error) throw error;
-
-      const summary: MonthlyBalance = {
-        month,
-        thisMonth: 0,
-        lastMonth: 0,
-        days30: 0,
-        days60: 0,
-        days90: 0,
-        credit: 0,
-        outstandingBalance: 0
-      };
-
-      invoices?.forEach(invoice => {
-        const createdDate = new Date(invoice.created_at);
-        const daysDiff = Math.floor((endDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (createdDate >= startDate && createdDate < endDate) {
-          summary.thisMonth += invoice.due_amount;
-        } else if (createdDate >= lastMonthStart && createdDate < startDate) {
-          summary.lastMonth += invoice.due_amount;
-        }
-
-        if (daysDiff <= 30) {
-          summary.days30 += invoice.due_amount;
-        } else if (daysDiff <= 60) {
-          summary.days60 += invoice.due_amount;
-        } else {
-          summary.days90 += invoice.due_amount;
-        }
-
-        if (invoice.status === "credit") {
-          summary.credit += invoice.amount;
-        }
-      });
-
-      summary.outstandingBalance = summary.thisMonth + summary.lastMonth + summary.days30 + summary.days60 + summary.days90 - summary.credit;
-      setBalanceSummary(summary);
-    } catch (error) {
-      console.error("Error fetching balance summary:", error);
-      toast.error("Failed to load balance summary");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Handle month selection
-  const handleMonthSelect = (month: string) => {
-    setSelectedMonth(month);
-    fetchBalanceSummary(month);
+  const handleMonthSelect = (monthYear: string) => {
+    const month = monthYear.split(",")[0];
+    const year = monthYear.split(",")[1];
+    setSelectedMonth(monthYear);
+    getBalanceSummary(Number(month), Number(year));
   };
 
   // Handle statement generation
@@ -195,15 +161,116 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
       // TODO: Implement statement generation logic
       onSubmit({
         month: selectedMonth,
-        summary: balanceSummary
+        summary: balanceSummary,
       });
       toast.success("Statement generated successfully");
-      onClose();
+      // onClose();
     } catch (error) {
       console.error("Error generating statement:", error);
       toast.error("Failed to generate statement");
     }
   };
+
+  const getBalanceSummary = async (month: number, year: number) => {
+    setLoading(true);
+
+    const formattedYear = year < 100 ? 2000 + year : year;
+
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? formattedYear + 1 : formattedYear;
+
+    try {
+      const lab = await getLabIdByUserId(user?.id as string);
+
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
+      const { data: balanceList, error: balanceListError } = await supabase
+        .from("balance_tracking")
+        .select(
+          `
+            created_at,
+            client_id,
+            outstanding_balance,
+            credit,
+            this_month,
+            last_month,
+            days_30_plus,
+            days_60_plus,
+            days_90_plus,
+            total,
+            lab_id,
+            clients!client_id ( client_name )
+            `
+        )
+        .eq("lab_id", lab.labId)
+        .gte(
+          "updated_at",
+          `${formattedYear}-${String(month).padStart(2, "0")}-01`
+        )
+        .lt(
+          "updated_at",
+          `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+        );
+
+      if (balanceListError) {
+        console.error("Error fetching products for case:", balanceListError);
+        return;
+      }
+
+      console.log("balanceList (raw data)", balanceList);
+
+      const transformedBalanceList = balanceList?.map((balance: any) => ({
+        ...balance,
+        client_name: balance.clients?.client_name,
+      }));
+
+      setBalanceList(transformedBalanceList as BalanceTrackingItem[]);
+    } catch (err) {
+      console.error("Error fetching payment list:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use a valid year (e.g., 2024) instead of 24
+
+  const filteredBalances: BalanceTrackingItem[] = balanceList.filter(
+    (balance) => {
+      const matchesSearch = balance.client_name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      return matchesSearch;
+    }
+  );
+
+  // Calculate totals
+  const balanceSummary = filteredBalances.reduce(
+    (acc, balance) => ({
+      totalItems: acc.totalItems + 1, // Count the total number of items
+      outstandingBalance: acc.outstandingBalance + balance.outstanding_balance,
+      creditBalance:
+        acc.creditBalance +
+        (typeof balance?.credit === "number" ? balance.credit : 0),
+      thisMonth: acc.thisMonth + balance.this_month,
+      lastMonth: acc.lastMonth + balance.last_month,
+      days30Plus: acc.days30Plus + balance.days_30_plus,
+      days60Plus: acc.days60Plus + balance.days_60_plus,
+      days90Plus: acc.days90Plus + balance.days_90_plus,
+    }),
+    {
+      totalItems: 0,
+      outstandingBalance: 0,
+      creditBalance: 0,
+      thisMonth: 0,
+      lastMonth: 0,
+      days30Plus: 0,
+      days60Plus: 0,
+      days90Plus: 0,
+    }
+  );
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -216,17 +283,14 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
           {/* Left Column - Month Selection */}
           <div className="space-y-4">
             <div className="text-sm font-medium">Select Month</div>
-            <Select
-              value={selectedMonth}
-              onValueChange={handleMonthSelect}
-            >
+            <Select value={selectedMonth} onValueChange={handleMonthSelect}>
               <SelectTrigger>
                 <SelectValue placeholder="Choose a month" />
               </SelectTrigger>
               <SelectContent>
-                {availableMonths.map((month) => (
-                  <SelectItem key={month} value={month}>
-                    {month}
+                {availableMonths.map((month, key) => (
+                  <SelectItem key={key} value={`${month.month},${month.year}`}>
+                    {month.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -247,41 +311,45 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
             ) : (
               <div className="space-y-3 bg-muted p-4 rounded-lg transition-all duration-200 hover:bg-muted/80">
                 <div className="grid grid-cols-2 gap-y-2">
-                  <div className="text-sm text-muted-foreground">This Month:</div>
+                  <div className="text-sm text-muted-foreground">
+                    This Month:
+                  </div>
                   <div className="text-sm font-medium text-right">
                     <AnimatedValue value={balanceSummary.thisMonth} />
                   </div>
-                  
-                  <div className="text-sm text-muted-foreground">Last Month:</div>
+
+                  <div className="text-sm text-muted-foreground">
+                    Last Month:
+                  </div>
                   <div className="text-sm font-medium text-right">
                     <AnimatedValue value={balanceSummary.lastMonth} />
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">30+ Days:</div>
                   <div className="text-sm font-medium text-right">
-                    <AnimatedValue value={balanceSummary.days30} />
+                    <AnimatedValue value={balanceSummary.days30Plus} />
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">60+ Days:</div>
                   <div className="text-sm font-medium text-right">
-                    <AnimatedValue value={balanceSummary.days60} />
+                    <AnimatedValue value={balanceSummary.days60Plus} />
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">90+ Days:</div>
                   <div className="text-sm font-medium text-right">
-                    <AnimatedValue value={balanceSummary.days90} />
+                    <AnimatedValue value={balanceSummary.days90Plus} />
                   </div>
-                  
+
                   <div className="text-sm text-muted-foreground">Credit:</div>
                   <div className="text-sm font-medium text-right text-green-600">
-                    <AnimatedValue value={balanceSummary.credit} />
+                    <AnimatedValue value={balanceSummary.creditBalance} />
                   </div>
-                  
-                  <div className="text-base font-medium pt-2 border-t">Outstanding Balance:</div>
+
+                  <div className="text-base font-medium pt-2 border-t">
+                    Outstanding Balance:
+                  </div>
                   <div className="text-base font-medium text-right pt-2 border-t">
-                    <AnimatedValue 
-                      value={balanceSummary.outstandingBalance}
-                    />
+                    <AnimatedValue value={balanceSummary.outstandingBalance} />
                   </div>
                 </div>
               </div>
@@ -300,9 +368,7 @@ export function CreateStatementModal({ onClose, onSubmit }: CreateStatementModal
             disabled={!selectedMonth || isLoading}
             className="relative"
           >
-            {isLoading && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Generate Statement
             {hasChanged && (
               <span className="absolute -top-1 -right-1 flex h-3 w-3">

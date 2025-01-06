@@ -17,7 +17,7 @@ const Adjustments = () => {
       setIsCreditLoading(true);
       // TODO: Implement credit creation logic
       console.log("Creating credit:", data);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success("Credit created successfully");
       setIsNewCreditModalOpen(false);
     } catch (error) {
@@ -33,7 +33,7 @@ const Adjustments = () => {
       setIsDebitLoading(true);
       // TODO: Implement debit creation logic
       console.log("Creating debit:", data);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success("Debit created successfully");
       setIsNewDebitModalOpen(false);
     } catch (error) {
@@ -54,18 +54,22 @@ const Adjustments = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
+          <Button
             onClick={() => setIsNewCreditModalOpen(true)}
             disabled={isCreditLoading}
           >
-            {isCreditLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isCreditLoading && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             New Credit
           </Button>
-          <Button 
+          <Button
             onClick={() => setIsNewDebitModalOpen(true)}
             disabled={isDebitLoading}
           >
-            {isDebitLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isDebitLoading && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
             New Debit
           </Button>
         </div>

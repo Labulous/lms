@@ -18,11 +18,12 @@ import {
 } from "@/components/ui/select";
 import { Settings2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
 import { getLabIdByUserId } from "@/services/authService";
 import { BalanceTrackingItem } from "@/types/supabase";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import BalanceList from "./BalanceList";
+import { isValid, parseISO, format } from "date-fns";
 
 // Mock data for development
 const mockStatements = [
@@ -46,12 +47,24 @@ const mockStatements = [
   },
 ];
 
-const StatementList = () => {
+interface StatementList {
+  statement: {
+    id: string;
+    created_at: string; // ISO timestamp
+    updated_at: string; // ISO timestamp
+    client: { client_name: string };
+    statement_number: number; // Typically formatted as YYYYMMDD
+    amount: number;
+    outstanding: number;
+    last_sent: string; // ISO timestamp
+  }[];
+}
+
+const StatementList = ({ statement }: StatementList) => {
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("");
   const [clientStatus, setClientStatus] = useState("active");
-  const [balaceList, setBalanceList] = useState<BalanceTrackingItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const { user } = useAuth();
@@ -74,100 +87,17 @@ const StatementList = () => {
   const clearClientFilter = () => {
     setClientFilter("");
   };
-
-  useEffect(() => {
-    const getPaymentList = async () => {
-      setLoading(true);
-
-      try {
-        const lab = await getLabIdByUserId(user?.id as string);
-
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-
-        const { data: balanceList, error: balanceListError } = await supabase
-          .from("balance_tracking")
-          .select(
-            `
-                 created_at,
-                client_id,
-                outstanding_balance,
-                credit,
-                this_month,
-                last_month,
-                days_30_plus,
-                days_60_plus,
-                days_90_plus,
-                total,
-                lab_id,
-                clients!client_id ( client_name )
-                `
-          )
-          .eq("lab_id", lab.labId);
-
-        if (balanceListError) {
-          console.error("Error fetching products for case:", balanceListError);
-          return;
-        }
-
-        console.log("balanceList (raw data)", balanceList);
-
-        // Transform the data to align with the expected type
-        const transformedBalanceList = balanceList?.map((balance: any) => ({
-          ...balance,
-          client_name: balance.clients?.client_name, // Directly access client_name
-        }));
-
-        setBalanceList(transformedBalanceList as BalanceTrackingItem[]);
-      } catch (err) {
-        console.error("Error fetching payment list:", err);
-      } finally {
-        setLoading(false);
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return "Invalid Date";
       }
-    };
-
-    getPaymentList();
-  }, []);
-
-  const filteredBalances: BalanceTrackingItem[] = balaceList.filter(
-    (balance) => {
-      const matchesSearch = balance.client_name
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      // const matchesType =
-      //   balanceType === "all" ||
-      //   (balanceType === "outstanding" && balance.outstanding_balance > 0) ||
-      //   (balanceType === "credit" && balance.credit > 0);
-      return matchesSearch;
+      return format(date, "MMM d, yyyy");
+    } catch (err) {
+      return "Invalid Date";
     }
-  );
-
-  // Calculate totals
-  const totals = filteredBalances.reduce(
-    (acc, balance) => ({
-      outstandingBalance: acc.outstandingBalance + balance.outstanding_balance,
-      creditBalance:
-        acc.creditBalance +
-        (typeof balance?.credit === "number" ? balance.credit : 0),
-      thisMonth: acc.thisMonth + balance.this_month,
-      lastMonth: acc.lastMonth + balance.last_month,
-      days30Plus: acc.days30Plus + balance.days_30_plus,
-      days60Plus: acc.days60Plus + balance.days_60_plus,
-      days90Plus: acc.days90Plus + balance.days_90_plus,
-    }),
-    {
-      outstandingBalance: 0,
-      creditBalance: 0,
-      thisMonth: 200,
-      lastMonth: 0,
-      days30Plus: 0,
-      days60Plus: 0,
-      days90Plus: 0,
-    }
-  );
-  console.log(totals, "totals");
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
@@ -223,7 +153,7 @@ const StatementList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockStatements.map((statement) => (
+            {statement.map((statement) => (
               <TableRow key={statement.id}>
                 <TableCell>
                   <Checkbox
@@ -231,20 +161,20 @@ const StatementList = () => {
                     onCheckedChange={() => handleSelectStatement(statement.id)}
                   />
                 </TableCell>
-                <TableCell>{format(statement.date, "dd/MM/yy")}</TableCell>
+                <TableCell>{formatDate(statement.created_at)}</TableCell>
                 <TableCell>
                   <Button variant="link" className="p-0">
-                    {statement.statementNumber}
+                    {statement.statement_number}
                   </Button>
                 </TableCell>
-                <TableCell>{statement.client}</TableCell>
+                <TableCell>{statement.client.client_name}</TableCell>
                 <TableCell className="text-right">
                   ${statement.amount.toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
-                  ${statement.outstandingAmount.toFixed(2)}
+                  ${statement.outstanding.toFixed(2)}
                 </TableCell>
-                <TableCell>{format(statement.lastSent, "dd/MM/yy")}</TableCell>
+                <TableCell>{formatDate(statement.last_sent)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon">
                     <Settings2 className="h-4 w-4" />
