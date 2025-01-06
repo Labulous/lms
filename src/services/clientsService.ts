@@ -27,6 +27,7 @@ export interface Client {
   phone: string;
   email: string;
   address: Address;
+  status?: string | undefined | any;
   clinicRegistrationNumber: string;
   notes: string;
   doctors: Doctor[];

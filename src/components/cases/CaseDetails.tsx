@@ -252,12 +252,8 @@ const CaseDetails: React.FC = () => {
                 case_id,
                 amount,
                 status,
-                due_date,
-                items,
-                discount,
-                discount_type,
-                tax,
-                notes
+                due_date
+              
               ),
               client:clients!client_id (
                 id,
