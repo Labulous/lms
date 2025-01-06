@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,16 +24,16 @@ import {
 } from "@tanstack/react-table";
 import { useAuth } from "@/contexts/AuthContext";
 import { createLogger } from "@/utils/logger";
-import { 
-  Plus, 
-  ChevronsUpDown, 
-  MoreHorizontal, 
-  Eye, 
+import {
+  Plus,
+  ChevronsUpDown,
+  MoreHorizontal,
+  Eye,
   Pencil,
   MapPin,
   Phone,
   Mail,
-  Building
+  Building,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -52,6 +52,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { AnyMxRecord } from "dns";
 
 const logger = createLogger({ module: "ClientList" });
 
@@ -62,22 +63,26 @@ type Client = {
   email: string;
   phone: string;
   accountNumber: string;
+  status?: string | undefined | any;
   address: {
     street: string;
     city: string;
     state: string;
     zipCode: string;
   };
-  status: "active" | "inactive";
 };
 
 interface ClientListProps {
-  clients: Client[];
+  clients: any[];
   loading: boolean;
   onDeleteClient: (clientId: string) => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients: initialClients, loading, onDeleteClient }) => {
+const ClientList: React.FC<ClientListProps> = ({
+  clients: initialClients,
+  loading,
+  onDeleteClient,
+}) => {
   const navigate = useNavigate();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -208,11 +213,15 @@ const ClientList: React.FC<ClientListProps> = ({ clients: initialClients, loadin
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}`)}>
+              <DropdownMenuItem
+                onClick={() => navigate(`/clients/${client.id}`)}
+              >
                 <Eye className="mr-2 h-4 w-4" />
                 View details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}/edit`)}>
+              <DropdownMenuItem
+                onClick={() => navigate(`/clients/${client.id}/edit`)}
+              >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
@@ -272,7 +281,9 @@ const ClientList: React.FC<ClientListProps> = ({ clients: initialClients, loadin
         <div className="flex items-center gap-2">
           <Input
             placeholder="Filter clients..."
-            value={(table.getColumn("clientName")?.getFilterValue() as string) ?? ""}
+            value={
+              (table.getColumn("clientName")?.getFilterValue() as string) ?? ""
+            }
             onChange={(event) =>
               table.getColumn("clientName")?.setFilterValue(event.target.value)
             }
