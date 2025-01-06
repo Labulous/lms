@@ -47,7 +47,7 @@ interface Case {
 export interface Adjustment {
   id: number;
   created_at: string; // ISO date string
-  client: { cleint_name: string };
+  client: { client_name: string };
   lab_id: string;
   credit_amount: number | null; // Nullable in case it's not provided
   debit_amount: number | null; // Nullable in case it's not provided
@@ -376,10 +376,10 @@ const Adjustments = () => {
           console.error("Error fetching adjustments:", adjustmentsError);
           return;
         }
-
+        const data: any = adjustmentsData;
         console.log(adjustmentsData, "filteredAdjustments");
         // Update the state with the filtered adjustments
-        setAdjustments(adjustmentsData); // Assuming `setInvoices` is being reused for adjustments
+        setAdjustments(data); // Assuming `setInvoices` is being reused for adjustments
       } catch (error) {
         console.error("Error fetching adjustments:", error);
       } finally {

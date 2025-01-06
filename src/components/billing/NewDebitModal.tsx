@@ -113,7 +113,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                 <DatePicker
                   date={date}
                   onSelect={setDate}
-                  error={errors.date}
+                  // error={errors.date}
                 />
               </div>
 
@@ -125,7 +125,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  error={errors.description}
+                  // error={errors.description}
                 />
               </div>
 
@@ -136,7 +136,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                 <Select
                   value={selectedClient}
                   onValueChange={setSelectedClient}
-                  error={errors.client}
+                  // error={errors.client}
                   disabled={isClientLoading}
                 >
                   <SelectTrigger>
@@ -177,7 +177,7 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
                   step="0.01"
                   value={amount || ""}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  error={errors.amount}
+                  // error={errors.amount}
                 />
               </div>
             </div>

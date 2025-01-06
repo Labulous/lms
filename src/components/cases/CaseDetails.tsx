@@ -163,6 +163,11 @@ interface ExtendedCase extends Case {
     amount: number;
     status: string;
     due_date: string;
+    discount?: string;
+    tax?: string;
+    notes?: string;
+    items?: any;
+    discount_type?: string;
   };
 }
 
@@ -1480,9 +1485,9 @@ const CaseDetails: React.FC = () => {
             clientId: caseDetail.client?.id,
             items: caseDetail.invoice?.items || [],
             discount: caseDetail.invoice?.discount || 0,
-            discountType: caseDetail.invoice?.discount_type || 'percentage',
+            discountType: caseDetail.invoice?.discount_type || "percentage",
             tax: caseDetail.invoice?.tax || 0,
-            notes: caseDetail.invoice?.notes || ''
+            notes: caseDetail.invoice?.notes || "",
           }}
         />
       )}

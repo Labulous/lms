@@ -110,7 +110,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
             {adjustments.map((adjustment) => (
               <TableRow key={adjustment.id}>
                 <TableCell>{formatDate(adjustment.payment_date)}</TableCell>
-                <TableCell>{adjustment.client.cleint_name}</TableCell>
+                <TableCell>{adjustment.client.client_name}</TableCell>
                 <TableCell>{adjustment.description}</TableCell>
                 <TableCell className="text-right">
                   {adjustment?.credit_amount != null &&
