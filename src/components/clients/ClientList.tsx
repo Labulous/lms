@@ -1,10 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { MapPin } from 'lucide-react';
-import Tippy from '@tippyjs/react';
-import 'tippy.js/dist/tippy.css';
-import ClientFilters from './ClientFilters';
-import { Client } from '../../services/clientsService';
+import { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getSortedRowModel,
+  SortingState,
+  ColumnFiltersState,
+  getFilteredRowModel,
+  VisibilityState,
+  getPaginationRowModel,
+} from "@tanstack/react-table";
+import { useAuth } from "@/contexts/AuthContext";
+import { createLogger } from "@/utils/logger";
+import { 
+  Plus, 
+  ChevronsUpDown, 
+  MoreHorizontal, 
+  Eye, 
+  Pencil,
+  MapPin,
+  Phone,
+  Mail,
+  Building
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+
+const logger = createLogger({ module: "ClientList" });
+
+type Client = {
+  id: string;
+  created_at: string;
+  clientName: string;
+  email: string;
+  phone: string;
+  accountNumber: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  status: "active" | "inactive";
+};
 
 interface ClientListProps {
   clients: Client[];
@@ -12,113 +77,285 @@ interface ClientListProps {
   onDeleteClient: (clientId: string) => void;
 }
 
-const ClientList: React.FC<ClientListProps> = ({ clients, loading, onDeleteClient }) => {
-  const [filteredClients, setFilteredClients] = useState<Client[]>(clients);
+const ClientList: React.FC<ClientListProps> = ({ clients: initialClients, loading, onDeleteClient }) => {
+  const navigate = useNavigate();
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
+  const [clients, setClients] = useState<Client[]>(initialClients);
 
   useEffect(() => {
-    setFilteredClients(clients);
-  }, [clients]);
+    setClients(initialClients);
+  }, [initialClients]);
 
-  const handleFilterChange = (filters: { searchTerm: string }) => {
-    const filtered = clients.filter(client =>
-      client.clientName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.accountNumber.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-      client.address.city.toLowerCase().includes(filters.searchTerm.toLowerCase())
-    );
-    setFilteredClients(filtered);
-  };
+  const columns: ColumnDef<Client>[] = [
+    {
+      accessorKey: "accountNumber",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            Account #
+            <ChevronsUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("accountNumber")}</div>
+      ),
+    },
+    {
+      accessorKey: "clientName",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            Client Name
+            <ChevronsUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center">
+            <Building className="mr-2 h-4 w-4 text-muted-foreground" />
+            <Link
+              to={`/clients/${row.original.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {row.getValue("clientName")}
+            </Link>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "address",
+      header: "Location",
+      cell: ({ row }) => {
+        const address = row.original.address;
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <div className="flex items-center">
+                  <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                  {address.city}, {address.state}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{`${address.street}, ${address.city}, ${address.state} ${address.zipCode}`}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      },
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center">
+            <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
+            {row.getValue("email")}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center">
+            <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+            {row.getValue("phone")}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.getValue("status") as "active" | "inactive";
+        return (
+          <Badge variant={status === "active" ? "default" : "secondary"}>
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const client = row.original;
 
-  const getFullAddress = (client: Client) => {
-    return `${client.address.street}, ${client.address.city}, ${client.address.state} ${client.address.zipCode}`;
-  };
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}`)}>
+                <Eye className="mr-2 h-4 w-4" />
+                View details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/clients/${client.id}/edit`)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-red-600"
+                onClick={() => onDeleteClient(client.id)}
+              >
+                Delete client
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
+    },
+  ];
+
+  const table = useReactTable({
+    data: clients,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: {
+      sorting,
+      columnFilters,
+      columnVisibility,
+      rowSelection,
+    },
+  });
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Clients</h2>
-        <Link
-          to="/clients/new"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Add New Client
-        </Link>
-      </div>
-      <ClientFilters onFilterChange={handleFilterChange} />
-      {filteredClients.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">No clients found.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 text-left">Account #</th>
-                <th className="px-4 py-2 text-left">Client Name</th>
-                <th className="px-4 py-2 text-left">City</th>
-                <th className="px-4 py-2 text-left">Email</th>
-                <th className="px-4 py-2 text-left">Phone</th>
-                <th className="px-4 py-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredClients.map((client) => (
-                <tr key={client.id} className="border-t hover:bg-gray-50">
-                  <td className="px-4 py-2">{client.accountNumber}</td>
-                  <td className="px-4 py-2">{client.clientName}</td>
-                  <td className="px-4 py-2">
-                    <Tippy 
-                      content={getFullAddress(client)}
-                      placement="top"
-                      className="bg-gray-900 text-white px-3 py-2 rounded text-sm"
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer">
-                        <MapPin className="w-4 h-4 text-gray-500" />
-                        {client.address.city}
-                      </div>
-                    </Tippy>
-                  </td>
-                  <td className="px-4 py-2">{client.email}</td>
-                  <td className="px-4 py-2">{client.phone}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex justify-center space-x-2">
-                      <Link
-                        to={`/clients/${client.id}`}
-                        className="text-blue-500 hover:text-blue-700 font-medium"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        to={`/clients/${client.id}/edit`}
-                        className="text-green-500 hover:text-green-700 font-medium"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this client?')) {
-                            onDeleteClient(client.id);
-                          }
-                        }}
-                        className="text-red-500 hover:text-red-700 font-medium"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="space-y-6">
+      <PageHeader
+        heading="Clients"
+        description="Manage your client accounts and information."
+      >
+        <Button onClick={() => navigate("/clients/new")}>
+          <Plus className="mr-2 h-4 w-4" /> Add New Client
+        </Button>
+      </PageHeader>
+
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Filter clients..."
+            value={(table.getColumn("clientName")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("clientName")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
         </div>
-      )}
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center"
+                  >
+                    No clients found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <div className="flex-1 text-sm text-muted-foreground">
+            {table.getFilteredSelectedRowModel().rows.length} of{" "}
+            {table.getFilteredRowModel().rows.length} row(s) selected.
+          </div>
+          <div className="space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

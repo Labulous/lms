@@ -27,9 +27,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { BalanceSummary } from "@/pages/billing/Statements";
-import { Loader2 } from "lucide-react";
 import { getLabIdByUserId } from "@/services/authService";
 import { BalanceTrackingItem } from "@/types/supabase";
+import { Loader2 } from "lucide-react";
 
 interface CreateStatementModalProps {
   onClose: () => void;
@@ -139,8 +139,6 @@ export function CreateStatementModal({
 
     fetchAvailableMonths();
   }, []);
-
-  // Fetch balance summary for selected month
 
   // Handle month selection
   const handleMonthSelect = (monthYear: string) => {

@@ -75,6 +75,7 @@ interface Case {
   product_ids: ProductId[];
 }
 
+
 export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   const { user } = useAuth();
   const [date, setDate] = useState<Date>();
@@ -224,7 +225,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
         type: creditType,
         applied_invoices: creditType === "apply" ? selectedInvoices : [],
       };
-      console.log(creditData, "creditData");
       const paymentData = {
         client: selectedClient,
         date,
