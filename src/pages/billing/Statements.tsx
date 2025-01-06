@@ -1,8 +1,31 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import StatementList from "@/components/billing/StatementList";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CreateStatementModal } from "@/components/billing/CreateStatementModal";
+import toast from "react-hot-toast";
+import { Loader2 } from "lucide-react";
 
 const Statements = () => {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreateStatement = async (data: any) => {
+    try {
+      setIsLoading(true);
+      // TODO: Handle statement creation
+      console.log("Creating statement:", data);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      toast.success("Statement created successfully");
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      console.error("Error creating statement:", error);
+      toast.error("Failed to create statement");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <main className="flex flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
@@ -32,11 +55,24 @@ const Statements = () => {
             </SelectContent>
           </Select>
           <Button variant="outline">Rollback</Button>
-          <Button>New Statement</Button>
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)}
+            disabled={isLoading}
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            New Statement
+          </Button>
         </div>
       </div>
 
       <StatementList />
+
+      {isCreateModalOpen && (
+        <CreateStatementModal
+          onClose={() => setIsCreateModalOpen(false)}
+          onSubmit={handleCreateStatement}
+        />
+      )}
     </main>
   );
 };
