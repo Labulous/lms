@@ -15,7 +15,6 @@ import {
   Calendar as CalendarIcon,
   Trash,
   Loader2,
-  X,
   Pencil,
   MoreHorizontal,
   Check,
@@ -148,7 +147,7 @@ const InvoiceList: React.FC = () => {
   // Initialize invoices
   useEffect(() => {
     const getCompletedInvoices = async () => {
-      setLoading(true); // Set loading state to true when fetching data
+      setLoading(true);
 
       try {
         const lab = await getLabIdByUserId(user?.id as string);
@@ -516,7 +515,7 @@ const InvoiceList: React.FC = () => {
                 .insert({
                   case_id: updatedInvoice.id,
                   product_id,
-                  discount: updatedInvoice.items.filter(
+                  discount: updatedInvoice?.items.filter(
                     (item) => item.id === product_id
                   )[0].discount, // New discount value
                   quantity: updatedInvoice.items.filter(

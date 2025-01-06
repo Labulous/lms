@@ -170,7 +170,18 @@ interface ExtendedCase extends Case {
     returnArticulator: number;
   };
   products: any[];
-  invoice: Invoice;
+  invoice: {
+    id: string;
+    case_id: string;
+    amount: number;
+    status: string;
+    due_date: string;
+    discount?: string;
+    tax?: string;
+    notes?: string;
+    items?: any;
+    discount_type?: string;
+  };
 }
 
 const TYPE_COLORS = {
@@ -956,11 +967,13 @@ const CaseDetails: React.FC = () => {
                         if (error) throw error;
 
                         toast.success("Invoice has been approved");
+                        // Refresh the page to show updated status
+                        window.location.reload();
+                      } catch (error: any) {
+                        toast.error(error.message);
 
                         // Refresh the page to show updated status
                         window.location.reload();
-                      } catch (error) {
-                        toast.error("Failed to update case: " + (error as Error).message);
                       }
                     }}
                   />
@@ -1493,9 +1506,9 @@ const CaseDetails: React.FC = () => {
             clientId: caseDetail.client?.id,
             items: caseDetail.invoice?.items || [],
             discount: caseDetail.invoice?.discount || 0,
-            discountType: caseDetail.invoice?.discount_type || 'percentage',
+            discountType: caseDetail.invoice?.discount_type || "percentage",
             tax: caseDetail.invoice?.tax || 0,
-            notes: caseDetail.invoice?.notes || ''
+            notes: caseDetail.invoice?.notes || "",
           }}
         />
       )}

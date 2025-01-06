@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -18,7 +18,12 @@ import {
 } from "@/components/ui/select";
 import { Settings2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
+import { getLabIdByUserId } from "@/services/authService";
+import { BalanceTrackingItem } from "@/types/supabase";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import BalanceList from "./BalanceList";
+import { isValid, parseISO, format } from "date-fns";
 
 // Mock data for development
 const mockStatements = [
@@ -27,8 +32,8 @@ const mockStatements = [
     date: new Date("2024-01-15"),
     statementNumber: "00032105",
     client: "Maine Street",
-    amount: 470.00,
-    outstandingAmount: 470.00,
+    amount: 470.0,
+    outstandingAmount: 470.0,
     lastSent: new Date("2024-01-15"),
   },
   {
@@ -36,17 +41,33 @@ const mockStatements = [
     date: new Date("2024-01-10"),
     statementNumber: "00012105",
     client: "Test Client",
-    amount: 1091.00,
-    outstandingAmount: 676.00,
+    amount: 1091.0,
+    outstandingAmount: 676.0,
     lastSent: new Date("2024-01-12"),
   },
 ];
 
-const StatementList = () => {
+interface StatementList {
+  statement: {
+    id: string;
+    created_at: string; // ISO timestamp
+    updated_at: string; // ISO timestamp
+    client: { client_name: string };
+    statement_number: number; // Typically formatted as YYYYMMDD
+    amount: number;
+    outstanding: number;
+    last_sent: string; // ISO timestamp
+  }[];
+}
+
+const StatementList = ({ statement }: StatementList) => {
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("");
   const [clientStatus, setClientStatus] = useState("active");
 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { user } = useAuth();
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       setSelectedStatements(mockStatements.map((statement) => statement.id));
@@ -66,15 +87,25 @@ const StatementList = () => {
   const clearClientFilter = () => {
     setClientFilter("");
   };
-
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return "Invalid Date";
+      }
+      return format(date, "MMM d, yyyy");
+    } catch (err) {
+      return "Invalid Date";
+    }
+  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
         <div className="relative flex-1">
           <Input
             placeholder="Search statements..."
-            value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-sm"
           />
           {clientFilter && (
@@ -122,7 +153,7 @@ const StatementList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockStatements.map((statement) => (
+            {statement.map((statement) => (
               <TableRow key={statement.id}>
                 <TableCell>
                   <Checkbox
@@ -130,20 +161,20 @@ const StatementList = () => {
                     onCheckedChange={() => handleSelectStatement(statement.id)}
                   />
                 </TableCell>
-                <TableCell>{format(statement.date, "dd/MM/yy")}</TableCell>
+                <TableCell>{formatDate(statement.created_at)}</TableCell>
                 <TableCell>
                   <Button variant="link" className="p-0">
-                    {statement.statementNumber}
+                    {statement.statement_number}
                   </Button>
                 </TableCell>
-                <TableCell>{statement.client}</TableCell>
+                <TableCell>{statement.client.client_name}</TableCell>
                 <TableCell className="text-right">
                   ${statement.amount.toFixed(2)}
                 </TableCell>
                 <TableCell className="text-right">
-                  ${statement.outstandingAmount.toFixed(2)}
+                  ${statement.outstanding.toFixed(2)}
                 </TableCell>
-                <TableCell>{format(statement.lastSent, "dd/MM/yy")}</TableCell>
+                <TableCell>{formatDate(statement.last_sent)}</TableCell>
                 <TableCell>
                   <Button variant="ghost" size="icon">
                     <Settings2 className="h-4 w-4" />
@@ -166,9 +197,7 @@ const StatementList = () => {
             <SelectItem value="50">50</SelectItem>
           </SelectContent>
         </Select>
-        <div className="text-sm text-muted-foreground">
-          1-2 of 2
-        </div>
+        <div className="text-sm text-muted-foreground">1-2 of 2</div>
       </div>
     </div>
   );

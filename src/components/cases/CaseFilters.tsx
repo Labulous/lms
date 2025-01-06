@@ -46,7 +46,7 @@ const CaseFilters: React.FC<CaseFiltersProps> = ({ onFilterChange, onSearch }) =
           <option value="">All Statuses</option>
           <option value="In Progress">In Progress</option>
           <option value="Completed">Completed</option>
-          <option value="On Hold">On Hold</option>
+          <option value="on_hold">On Hold</option>
         </select>
       </div>
       <div className="relative">

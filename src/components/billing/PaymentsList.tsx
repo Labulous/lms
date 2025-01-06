@@ -40,28 +40,22 @@ export function PaymentsList() {
     console.log("New payment data:", paymentData);
 
     try {
-      // Extract updated invoices and client ID from payment data
       const {
         updatedInvoices,
         client,
         date,
         paymentMethod,
-        memo,
         paymentAmount,
-        selectedInvoices,
-        paymentAllocation,
         overpaymentAmount,
         remainingBalance,
       } = paymentData;
 
       if (!updatedInvoices || !client) {
-        console.error(
-          "Missing updatedInvoices, client, or paymentDetails information."
-        );
+        console.error("Missing updatedInvoices or client information.");
         return;
       }
 
-      // Loop over each invoice and update it based on its ID
+      // Step 1: Update invoices
       for (const invoice of updatedInvoices) {
         const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
         const { id } = invoice.invoicesData[0];
@@ -73,8 +67,7 @@ export function PaymentsList() {
           updated_at: new Date().toISOString(),
         };
 
-        // Update each invoice individually
-        const { data: updatedInvoice, error: updateError } = await supabase
+        const { error: updateError } = await supabase
           .from("invoices")
           .update(invoiceUpdate)
           .eq("id", id);
@@ -84,27 +77,22 @@ export function PaymentsList() {
             `Failed to update invoice with ID ${id}: ${updateError.message}`
           );
         }
-
-        console.log(
-          `Invoice with ID ${id} updated successfully:`,
-          updatedInvoice
-        );
       }
 
       console.log("All invoices updated successfully.");
 
-      // Insert payment data into the payments table
-      const paymentDataToInsert: any = {
+      // Step 2: Insert payment data
+      const paymentDataToInsert = {
         client_id: client,
-        payment_date: date, // Current timestamp
-        amount: paymentAmount, // Total amount paid
-        payment_method: paymentMethod, // Payment method (e.g., "Credit Card", "Bank Transfer")
-        status: "Completed", // Assuming the payment is completed
-        over_payment: overpaymentAmount || 0, // Amount overpaid
-        remaining_payment: remainingBalance || 0, // Remaining payment amount
+        payment_date: date,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        status: "Completed",
+        over_payment: overpaymentAmount || 0,
+        remaining_payment: remainingBalance || 0,
       };
 
-      const { data: paymentApiData, error: paymentError } = await supabase
+      const { error: paymentError } = await supabase
         .from("payments")
         .insert(paymentDataToInsert);
 
@@ -112,29 +100,110 @@ export function PaymentsList() {
         throw new Error(`Failed to insert payment: ${paymentError.message}`);
       }
 
-      console.log("Payment inserted successfully:", paymentApiData);
+      console.log("Payment inserted successfully.");
 
-      // Update the balance_tracking table
-      const balanceTrackingUpdate = {
-        client_id: client,
-        credit: overpaymentAmount || 0, // Insert overpayment amount as credit
-        updated_at: new Date().toISOString(), // Track the timestamp
+      // Step 3: Fetch and categorize invoices for balance tracking
+      const { data: categorizedInvoices, error: fetchError } = await supabase
+        .from("invoices")
+        .select("due_amount, due_date")
+        .eq("client_id", client)
+        .in("status", ["Unpaid", "Partial_Paid"])
+        .gt("due_amount", 0);
+
+      if (fetchError) {
+        throw new Error(
+          `Failed to fetch categorized invoices: ${fetchError.message}`
+        );
+      }
+
+      const balances = {
+        this_month: 0,
+        last_month: 0,
+        days_30_plus: 0,
+        days_60_plus: 0,
+        days_90_plus: 0,
       };
 
-      // Uncomment to use the balance_tracking update logic
-      // const { data: balanceTrackingData, error: balanceTrackingError } =
-      //   await supabase.from("balance_tracking").insert(balanceTrackingUpdate);
+      const currentDate = new Date();
 
-      // if (balanceTrackingError) {
-      //   throw new Error(
-      //     `Failed to update balance_tracking: ${balanceTrackingError.message}`
-      //   );
-      // }
+      categorizedInvoices.forEach((invoice) => {
+        const dueDate = new Date(invoice.due_date);
+        const differenceInDays = Math.floor(
+          (currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
 
-      // console.log(
-      //   "Balance tracking updated successfully:",
-      //   balanceTrackingData
-      // );
+        if (differenceInDays <= 30) {
+          balances.this_month += invoice.due_amount;
+        } else if (differenceInDays <= 60) {
+          balances.last_month += invoice.due_amount;
+        } else if (differenceInDays <= 90) {
+          balances.days_30_plus += invoice.due_amount;
+        } else if (differenceInDays <= 120) {
+          balances.days_60_plus += invoice.due_amount;
+        } else {
+          balances.days_90_plus += invoice.due_amount;
+        }
+      });
+
+      // Calculate outstanding_balance as the sum of all balance fields
+      const outstandingBalance =
+        balances.this_month +
+        balances.last_month +
+        balances.days_30_plus +
+        balances.days_60_plus +
+        balances.days_90_plus;
+
+      // Step 4: Check if balance_tracking row exists and update or create it
+      const { data: existingBalanceTracking, error: checkError } =
+        await supabase
+          .from("balance_tracking")
+          .select("id")
+          .eq("client_id", client)
+          .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 indicates no rows found
+        throw new Error(
+          `Failed to check balance_tracking: ${checkError.message}`
+        );
+      }
+
+      const balanceUpdate = {
+        ...balances,
+        outstanding_balance: outstandingBalance,
+        credit: overpaymentAmount || 0, // Update credit field
+        updated_at: new Date().toISOString(),
+        client_id: client,
+      };
+
+      if (existingBalanceTracking) {
+        // Update existing row
+        const { error: updateBalanceError } = await supabase
+          .from("balance_tracking")
+          .update(balanceUpdate)
+          .eq("id", existingBalanceTracking.id);
+
+        if (updateBalanceError) {
+          throw new Error(
+            `Failed to update balance_tracking: ${updateBalanceError.message}`
+          );
+        }
+
+        console.log("Balance tracking updated successfully.");
+      } else {
+        // Insert new row
+        const { error: insertBalanceError } = await supabase
+          .from("balance_tracking")
+          .insert(balanceUpdate);
+
+        if (insertBalanceError) {
+          throw new Error(
+            `Failed to insert balance_tracking: ${insertBalanceError.message}`
+          );
+        }
+
+        console.log("Balance tracking created successfully.");
+      }
     } catch (err) {
       console.error("Error handling new payment:", err);
       toast.error("Failed to add payment or update balance tracking.");
@@ -143,6 +212,7 @@ export function PaymentsList() {
       setShowNewPaymentModal(false);
     }
   };
+
   useEffect(() => {
     const getPaymentList = async () => {
       setLoading(true);
@@ -195,17 +265,17 @@ export function PaymentsList() {
     getPaymentList();
   }, []);
 
-    const formatDate = (dateString: string) => {
-      try {
-        const date = parseISO(dateString);
-        if (!isValid(date)) {
-          return "Invalid Date";
-        }
-        return format(date, "MMM d, yyyy");
-      } catch (err) {
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
         return "Invalid Date";
       }
-    };
+      return format(date, "MMM d, yyyy");
+    } catch (err) {
+      return "Invalid Date";
+    }
+  };
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -239,9 +309,7 @@ export function PaymentsList() {
             console.log(payment, "payment");
             return (
               <TableRow key={payment.id}>
-                <TableCell>
-                 {formatDate(payment.payment_date)}
-                </TableCell>
+                <TableCell>{formatDate(payment.payment_date)}</TableCell>
                 <TableCell>
                   {payment?.clients?.client_name ?? "hello"}
                 </TableCell>
