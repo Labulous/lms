@@ -1,3 +1,38 @@
+# Case Management Module Product Requirement Document (PRD)
+
+## 1. Overview
+
+## 2. Objectives
+
+## 3. Features and Functionality
+- **Status:**
+  - In Queue: “Case has been received and is waiting to be assigned”
+  - In Progress: “Case is currently being worked on by technicians”
+  - On Hold: “Case work has been temporarily paused”
+  - Completed: “Case has been finished and is ready for delivery”
+  - Cancelled: “Case has been cancelled and will not be processed”
+
+### 3.1 Case Management
+- **Creation:**
+  - Generate dynamic cases based on patient data.
+  - Customizable fields: technician hours, materials, service charges.
+  - Automatic calculation of taxes and discounts if the items included in the invoice is set to be taxable. 
+  - Printable Cases in PDF format or html format has to comply with the following dimensions:
+  -- Letter: 8.5 x 11 inches
+  -- Legal: 8.5 x 14 inches
+  -- Half size: 5.5 x 8.5 inches
+
+- **Management:**
+  - Filter cases by status: In Progress, Completed, Overdue, Partially Completed.
+  - Edit, resend, or delete cases.
+- **Client Interaction:**
+  - Include secure payment links for Stripe integration.
+
+## 4. User Stories
+
+## 5. Technical Requirements
+
+
 # Billing Module Product Requirement Document (PRD)
 
 ## 1. Overview

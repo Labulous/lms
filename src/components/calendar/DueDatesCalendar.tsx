@@ -159,7 +159,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const handleEventClick = (event: any) => {
     // Extract the start date of the event
-    alert("clicked");
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
     navigate(`/cases?dueDate=${date}`);
   };
@@ -176,7 +175,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           events={events}
           startAccessor="start"
           endAccessor="end"
-          // components={components}
+          components={components}
           views={["month"] as View[]}
           defaultView="month"
           date={currentDate}

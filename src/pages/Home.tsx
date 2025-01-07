@@ -13,16 +13,20 @@ import { getCases, Case } from "../data/mockCasesData";
 import { Button } from "../components/ui/button";
 import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SalesDashboard from "@/components/dashboard/SalesDashboard";
 
 interface CasesDues {
   due_date: string;
   status: string;
 }
+
 export interface CalendarEvents {
   title: string;
   start: Date;
   end: Date;
 }
+
 const initialKeyMetrics = [
   {
     icon: AlertTriangle,
@@ -44,6 +48,7 @@ const initialKeyMetrics = [
     color: "bg-yellow-500",
   },
 ];
+
 const Home: React.FC = () => {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
@@ -52,8 +57,10 @@ const Home: React.FC = () => {
   const [greeting, setGreeting] = useState("");
   const [keyMetrics, setKeyMetrics] = useState(initialKeyMetrics);
   const [casesEvents, setCasesEvents] = useState<CalendarEvents[]>([]);
+  const [activeTab, setActiveTab] = useState("operations");
   const { user } = useAuth();
   const userName = user ? user.name : "User";
+
   useEffect(() => {
     setCases(getCases());
 
@@ -235,109 +242,86 @@ const Home: React.FC = () => {
   }, [casesList]);
 
   return (
-    <div className="container mx-auto px-5 py-4">
-      <h1 className="text-xl font-semibold text-gray-800 mb-1">{greeting}</h1>
-      <p className="text-sm text-gray-500 mb-6">{formatCurrentDate()}</p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {keyMetrics.map((metric, index) => (
-          <div
-            key={index}
-            className="bg-white border border-slate-200 rounded-lg shadow-sm p-6"
-          >
-            <div className="flex items-center space-x-4">
-              <div
-                className={`flex items-center justify-center p-3 ${metric.color} rounded-lg`}
-              >
-                <metric.icon className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">
-                  {metric.value}
-                </p>
-                <h3 className="text-sm font-medium text-gray-500 mt-0.5">
-                  {metric.label}
-                </h3>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="container mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">{greeting}</h1>
+          <p className="text-gray-500">
+            {new Date().toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="lg:w-3/5">
-          <div className="bg-white p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Due Dates Calendar here
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCalendarModalOpen(true)}
-                className="flex items-center gap-2"
+      <Tabs
+        defaultValue="operations"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList>
+          <TabsTrigger value="operations">Operations</TabsTrigger>
+          <TabsTrigger value="sales">Sales</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="operations">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {keyMetrics.map((metric, index) => (
+              <div
+                key={index}
+                className="bg-white p-4 rounded-lg shadow flex items-center space-x-4"
               >
-                <Maximize2 className="h-4 w-4" />
-                Expand
-              </Button>
-            </div>
-            <div className="h-[500px]">
+                <div
+                  className={`p-3 rounded-full ${metric.color} bg-opacity-10 flex items-center justify-center`}
+                >
+                  <metric.icon
+                    className={`w-6 h-6 ${metric.color.replace(
+                      "bg",
+                      "text"
+                    )} text-opacity-100`}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">{metric.label}</p>
+                  <p className="text-xl font-semibold">{metric.value}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold">Due Dates Calendar</h2>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsCalendarModalOpen(true)}
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
               <DueDatesCalendar events={casesEvents} />
             </div>
           </div>
-        </div>
 
-        <div className="lg:w-2/5">
-          <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Cases In Progress
-            </h2>
-            <div className="space-y-4">
-              {casesInProgress.map((caseItem, index) => (
-                <div
-                  key={index}
-                  className="border-b last:border-b-0 pb-4 last:pb-0"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {caseItem.client}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {caseItem.patient}
-                      </p>
-                    </div>
-                    <span className="text-sm font-medium text-gray-600">
-                      {caseItem.dueDate}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">
-                      {caseItem.stage}
-                    </span>
-                    <div className="w-1/2">
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div
-                          className="bg-blue-700 h-2.5 rounded-full"
-                          style={{ width: `${caseItem.progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+          {isCalendarModalOpen && (
+            <CalendarModal
+              isOpen={isCalendarModalOpen}
+              onClose={() => setIsCalendarModalOpen(false)}
+              events={casesEvents}
+            />
+          )}
+        </TabsContent>
 
-      {isCalendarModalOpen && (
-        <CalendarModal
-          isOpen={isCalendarModalOpen}
-          onClose={() => setIsCalendarModalOpen(false)}
-          events={casesEvents}
-        />
-      )}
+        <TabsContent value="sales">
+          <SalesDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

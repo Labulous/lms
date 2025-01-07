@@ -88,7 +88,12 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
             setShowTooltip(false);
             setSelectedEventIndex(-1);
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const formattedDate = format(value, "yyyy-MM-dd");
+            navigate(`/cases?dueDate=${formattedDate}`);
+          }}
         >
           <div
             className="count-badge"

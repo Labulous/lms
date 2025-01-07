@@ -713,7 +713,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               </div>
 
               {/* Display Abutment teeth */}
-              {(() => {
+              {/* {(() => {
                 const isBridge = selectedProduct?.type?.some(
                   (t) => t.toLowerCase() === "bridge"
                 );
@@ -732,10 +732,10 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                     </div>
                   )
                 );
-              })()}
+              })()} */}
 
               {/* Display Pontic teeth */}
-              {selectedProduct?.type?.some(
+              {/* {selectedProduct?.type?.some(
                 (t) => t.toLowerCase() === "bridge"
               ) &&
                 ponticTeeth.size > 0 && (
@@ -747,10 +747,10 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                         .join(", ")}
                     </span>
                   </div>
-                )}
+                )} */}
 
               {/* Pontic Button */}
-              {(() => {
+              {/* {(() => {
                 const isBridge = selectedProduct?.type?.some(
                   (t) => t.toLowerCase() === "bridge"
                 );
@@ -773,7 +773,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                     </Button>
                   )
                 );
-              })()}
+              })()} */}
             </div>
           </foreignObject>
 
