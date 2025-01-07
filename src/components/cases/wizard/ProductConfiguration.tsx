@@ -124,6 +124,7 @@ interface ToothItem {
   isRange: boolean;
   type: string;
   productName: string;
+  name?: string;
   highlightColor?: string;
   shades?: ShadeData;
 }
@@ -369,6 +370,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             ? {
                 ...prevItem,
                 price: product?.price,
+                name: product?.name,
                 productName: product?.name || prevItem.productName,
               }
             : prevItem
@@ -548,7 +550,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         gingival: shadeData.gingival || "",
         stump: shadeData.stump || "",
       },
-      name: "",
+      name: selectedProduct?.name ?? "hi",
       price: 0,
       discount: 0,
     };
@@ -556,7 +558,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Create new product for the selected products list
     const newProduct: SavedProduct = {
       id: selectedProduct?.id ?? "",
-      name: selectedType,
+      name: selectedProduct?.name ?? "",
       type: selectedType,
       teeth: sortedTeeth,
       price: selectedProduct?.price as number,
@@ -619,7 +621,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Update tooth items and selected products
     setToothItems((prev) => prev.filter((item) => item.id !== itemId));
-    onProductsChange(selectedProducts.filter((product) => product.id !== itemId));
+    onProductsChange(
+      selectedProducts.filter((product) => product.id !== itemId)
+    );
 
     // Clear any notes for this item
     if (productNotes[itemId]) {
@@ -711,7 +715,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Update tooth items and selected products
     setToothItems((prev) => prev.filter((item) => item.id !== itemId));
-    onProductsChange(selectedProducts.filter((product) => product.id !== itemId));
+    onProductsChange(
+      selectedProducts.filter((product) => product.id !== itemId)
+    );
 
     // Clear any notes for this item
     if (productNotes[itemId]) {
@@ -812,7 +818,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Close the shade popover
     setShadePopoverOpen(false);
   };
-
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1398,9 +1403,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               />
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                              <span className="text-xs">
-                                {item.productName}
-                              </span>
+                              <span className="text-xs">{item.name}</span>
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
                               <Separator
