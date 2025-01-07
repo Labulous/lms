@@ -810,11 +810,11 @@ const CaseDetails: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.teethProduct.tooth_number.length > 1
+                            {product?.teethProduct?.tooth_number.length > 1
                               ? formatTeethRange(
                                   product.teethProduct.tooth_number
                                 )
-                              : product.teethProduct.tooth_number[0]}
+                              : null}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
                             <Separator
@@ -833,42 +833,48 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              {product.teethProduct.body_shade?.name && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Body:</span>
-                                  <span>
-                                    {product.teethProduct.body_shade.name}
-                                  </span>
-                                </div>
-                              )}
-                              {product.teethProduct.gingival_shade?.name && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">
-                                    Gingival:
-                                  </span>
-                                  <span>
-                                    {product.teethProduct.gingival_shade.name}
-                                  </span>
-                                </div>
-                              )}
-                              {product.teethProduct.occlusal_shade?.name && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">
-                                    Occlusal:
-                                  </span>
-                                  <span>
-                                    {product.teethProduct.occlusal_shade.name}{" "}
-                                  </span>
-                                </div>
-                              )}
-                              {product.teethProduct.stump_shade_id?.name && (
-                                <div className="flex justify-between">
-                                  <span className="text-gray-500">Stump:</span>
-                                  <span>
-                                    {product.teethProduct.stump_shade_id.name}
-                                  </span>
-                                </div>
-                              )}
+                              {product.teeth_product &&
+                                product.teethProduct?.body_shade?.name && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">Body:</span>
+                                    <span>
+                                      {product.teethProduct.body_shade.name}
+                                    </span>
+                                  </div>
+                                )}
+                              {product.teeth_product &&
+                                product.teethProduct?.gingival_shade?.name && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">
+                                      Gingival:
+                                    </span>
+                                    <span>
+                                      {product.teethProduct.gingival_shade.name}
+                                    </span>
+                                  </div>
+                                )}
+                              {product.teeth_product &&
+                                product.teethProduct?.occlusal_shade?.name && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <span>
+                                      {product.teethProduct.occlusal_shade.name}
+                                    </span>
+                                  </div>
+                                )}
+                              {product.teeth_product &&
+                                product.teethProduct?.stump_shade_id?.name && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500">
+                                      Stump:
+                                    </span>
+                                    <span>
+                                      {product.teethProduct.stump_shade_id.name}
+                                    </span>
+                                  </div>
+                                )}
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">

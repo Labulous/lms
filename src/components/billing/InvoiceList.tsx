@@ -74,6 +74,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
 import { DiscountedPrice } from "@/types/supabase";
+import jsPDF from "jspdf";
+import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -1012,6 +1014,40 @@ const InvoiceList: React.FC = () => {
       return ["draft", "overdue"].includes(invoice?.status || "");
     });
   console.log(invoicesData, "invoicesData");
+
+  const invoiceData = {
+    invoiceNumber: "4507",
+    id: "INC-2024-00-00",
+    date: "1/7/2025",
+    shipTo: {
+      name: "Brookmere Dental Group",
+      address: [
+        "Kourosh Milani",
+        "North Road Coquitlam 101-531",
+        "Coquitlam, BC V3J 1N7",
+      ],
+      phone: "604 492 3388",
+    },
+    patient: "WILLIAM WALLACE",
+    items: [
+      {
+        description: "Digital Model - Quadrant (DISCOUNTED)",
+        details: "(2 x $0.00)",
+        amount: 0.0,
+      },
+      {
+        description: "Full Cast Posterior Crown (Alloy Extra)",
+        details: "Teeth: #46",
+        amount: 140.0,
+      },
+    ],
+    reference: "J4",
+  };
+
+  const handlePrintInvoice = () => {
+    generatePDF("elementId", "MyDocument.pdf");
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -1387,9 +1423,9 @@ const InvoiceList: React.FC = () => {
                         : "No Date"}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      <Link
-                        to={`/billing/${invoice.id as string}`}
+                      <button
                         className="text-primary hover:underline"
+                        onClick={() => handlePrintInvoice()}
                       >
                         {(() => {
                           const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
@@ -1397,7 +1433,7 @@ const InvoiceList: React.FC = () => {
                           parts[0] = "INV"; // Replace the first part
                           return parts.join("-");
                         })()}
-                      </Link>
+                      </button>
                     </TableCell>
                     <TableCell>
                       <Badge
