@@ -605,125 +605,30 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setToothSelectorKey((prev) => prev + 1);
   };
 
-  const formatTeethRange = (teeth: number[]): string => {
-    if (!teeth.length) return "";
-
-    // Check if it's an arch selection
-    const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
-    const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-    const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
-
-    if (isFullArch) {
-      if (hasUpper && hasLower) return "All";
-      if (hasUpper) return "Upper";
-      if (hasLower) return "Lower";
-    }
-
-    // For non-arch selections, use the original range formatting
-    if (teeth.length === 1) return teeth[0].toString();
-
-    // Sort teeth numbers
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
-
-    // Find continuous ranges
-    let ranges: string[] = [];
-    let rangeStart = sortedTeeth[0];
-    let prev = sortedTeeth[0];
-
-    for (let i = 1; i <= sortedTeeth.length; i++) {
-      const current = sortedTeeth[i];
-      if (current !== prev + 1) {
-        // End of a range
-        if (rangeStart === prev) {
-          ranges.push(rangeStart.toString());
-        } else {
-          ranges.push(`${rangeStart}-${prev}`);
-        }
-        rangeStart = current;
-      }
-      prev = current;
-    }
-
-    return ranges.join(", ");
-  };
-
-  const steps = ["TYPE", "PRODUCT/SERVICE", "TEETH"];
-
-  const stepColSpans = [1, 4, 7];
-
-  const getCurrentStep = () => {
-    if (!selectedProduct) return 0;
-    if (!selectedTeeth.length) return 2;
-    return 3;
-  };
-
-  const checkIfReadyToAdd = () => {
-    const hasTeeth = selectedTeeth.length > 0;
-    const hasProduct = selectedProduct !== null;
-    const hasShades = selectedProduct?.requires_shade
-      ? Object.values(shadeData).some((shade) => shade !== "")
-      : true;
-
-    setIsReadyToAdd(hasTeeth && hasProduct && hasShades);
-  };
-
-  const handleSaveShades = () => {
-    console.log("Saving shades:", {
-      currentShades: shadeData,
-      previewProduct,
-      selectedTeeth,
-      selectedType,
-      selectedProduct,
-    });
-
-    if (!previewProduct) {
-      console.error("No preview product available");
-      return;
-    }
-
-    if (!selectedTeeth.length) {
-      console.error("No teeth selected");
-      return;
-    }
-
-    // Create a new preview product with updated shades
-    const updatedPreviewProduct = {
-      ...previewProduct,
-      shades: {
-        occlusal: shadeData.occlusal || "",
-        body: shadeData.body || "",
-        gingival: shadeData.gingival || "",
-        stump: shadeData.stump || "",
-      },
-    };
-
-    console.log("Updated preview product:", updatedPreviewProduct);
-
-    // Update the preview product state
-    setPreviewProduct(updatedPreviewProduct);
-
-    // Close the shade popover
-    setShadePopoverOpen(false);
-
-    // Add the product to the table with shades
-  };
-
   const handleRemoveToothItem = (itemId: string) => {
-    // Remove the item from toothItems
-    setToothItems((prev) => prev.filter((item) => item.id !== itemId));
-
-    // Remove the teeth from addedTeethMap only if it was a bridge
+    // Find the item to be removed
     const itemToRemove = toothItems.find((item) => item.id === itemId);
-    if (itemToRemove && itemToRemove.type === "Bridge") {
-      const newMap = new Map(addedTeethMap);
-      itemToRemove.teeth.forEach((tooth) => {
-        newMap.delete(tooth);
-      });
-      setAddedTeethMap(newMap);
+    if (!itemToRemove) return;
+
+    // Remove teeth from addedTeethMap
+    const newMap = new Map(addedTeethMap);
+    itemToRemove.teeth.forEach((tooth) => {
+      newMap.delete(tooth);
+    });
+    setAddedTeethMap(newMap);
+
+    // Update tooth items and selected products
+    setToothItems((prev) => prev.filter((item) => item.id !== itemId));
+    onProductsChange(selectedProducts.filter((product) => product.id !== itemId));
+
+    // Clear any notes for this item
+    if (productNotes[itemId]) {
+      const { [itemId]: _, ...remainingNotes } = productNotes;
+      setProductNotes(remainingNotes);
     }
 
-    // Remove from selected products
-    onProductsChange(selectedProducts.filter((p) => p.id !== itemId));
+    // Force ToothSelector remount to clear selections
+    setToothSelectorKey((prev) => prev + 1);
   };
 
   const handleCancelShades = () => {
@@ -791,6 +696,123 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setShadePopoverOpen(false);
     }
   };
+
+  const handleRemoveItem = (itemId: string) => {
+    // Find the item to be removed
+    const itemToRemove = toothItems.find((item) => item.id === itemId);
+    if (!itemToRemove) return;
+
+    // Remove teeth from addedTeethMap
+    const newMap = new Map(addedTeethMap);
+    itemToRemove.teeth.forEach((tooth) => {
+      newMap.delete(tooth);
+    });
+    setAddedTeethMap(newMap);
+
+    // Update tooth items and selected products
+    setToothItems((prev) => prev.filter((item) => item.id !== itemId));
+    onProductsChange(selectedProducts.filter((product) => product.id !== itemId));
+
+    // Clear any notes for this item
+    if (productNotes[itemId]) {
+      const { [itemId]: _, ...remainingNotes } = productNotes;
+      setProductNotes(remainingNotes);
+    }
+
+    // Force ToothSelector remount to clear selections
+    setToothSelectorKey((prev) => prev + 1);
+  };
+
+  const formatTeethRange = (teeth: number[]): string => {
+    if (!teeth.length) return "";
+
+    // Check if it's an arch selection
+    const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
+    const hasLower = teeth.some((t) => t >= 31 && t <= 48);
+    const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+
+    if (isFullArch) {
+      if (hasUpper && hasLower) return "All";
+      if (hasUpper) return "Upper";
+      if (hasLower) return "Lower";
+    }
+
+    // For non-arch selections, use the original range formatting
+    if (teeth.length === 1) return teeth[0].toString();
+
+    // Sort teeth numbers
+    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+
+    // Find continuous ranges
+    let ranges: string[] = [];
+    let rangeStart = sortedTeeth[0];
+    let prev = sortedTeeth[0];
+
+    for (let i = 1; i <= sortedTeeth.length; i++) {
+      const current = sortedTeeth[i];
+      if (current !== prev + 1) {
+        // End of a range
+        if (rangeStart === prev) {
+          ranges.push(rangeStart.toString());
+        } else {
+          ranges.push(`${rangeStart}-${prev}`);
+        }
+        rangeStart = current;
+      }
+      prev = current;
+    }
+
+    return ranges.join(", ");
+  };
+
+  const steps = ["TYPE", "PRODUCT/SERVICE", "TEETH"];
+  const stepColSpans = [1, 4, 7];
+
+  const getCurrentStep = () => {
+    if (!selectedProduct) return 0;
+    if (!selectedTeeth.length) return 2;
+    return 3;
+  };
+
+  const checkIfReadyToAdd = () => {
+    const hasTeeth = selectedTeeth.length > 0;
+    const hasProduct = selectedProduct !== null;
+    const hasShades = selectedProduct?.requires_shade
+      ? Object.values(shadeData).some((shade) => shade !== "")
+      : true;
+
+    setIsReadyToAdd(hasTeeth && hasProduct && hasShades);
+  };
+
+  const handleSaveShades = () => {
+    if (!previewProduct) {
+      console.error("No preview product available");
+      return;
+    }
+
+    if (!selectedTeeth.length) {
+      console.error("No teeth selected");
+      return;
+    }
+
+    // Create a new preview product with updated shades
+    const updatedPreviewProduct = {
+      ...previewProduct,
+      shades: {
+        occlusal: shadeData.occlusal || "",
+        body: shadeData.body || "",
+        gingival: shadeData.gingival || "",
+        stump: shadeData.stump || "",
+      },
+    };
+
+    // Update the preview product state
+    setPreviewProduct(updatedPreviewProduct);
+
+    // Close the shade popover
+    setShadePopoverOpen(false);
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}

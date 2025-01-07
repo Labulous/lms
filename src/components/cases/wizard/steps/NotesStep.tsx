@@ -38,17 +38,17 @@ const NotesStep: React.FC<NotesStepProps> = ({
   return (
     <div className="bg-slate-50 h-full flex flex-col">
       <div className="flex-1 space-y-2">
-        <Label htmlFor="labNotes">Invoice Notes</Label>
+        <Label htmlFor="labNotes">Instruction Notes</Label>
         <Textarea
           id="labNotes"
           name="labNotes"
           value={formData.notes?.labNotes || ""}
           onChange={handleInputChange}
-          placeholder="Enter any invoice-specific notes here..."
+          placeholder="Enter any instruction notes here..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any invoice notes about the case that are relevant for admin staff
+          Add any instruction notes about the case that are relevant for admin staff
           or clients.
         </p>
       </div>

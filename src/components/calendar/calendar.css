@@ -69,7 +69,7 @@
   display: flex;
   flex: 1 1 0%;
   min-height: 100px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
 }
 
 .rbc-month-row:last-child {
@@ -97,6 +97,8 @@
 .rbc-row-content .rbc-row {
   display: flex;
   flex: 1 1 0%;
+  border: none !important;
+  min-height: unset;
 }
 
 /* Date Cells */
@@ -106,7 +108,7 @@
   min-width: 0;
   position: relative;
   border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
   pointer-events: auto;
 }
 
@@ -144,34 +146,73 @@
 
 /* Badge Container */
 .badge-container {
-  @apply absolute bottom-2 left-2;
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px;
+  width: 100%;
 }
 
 .count-badge {
-  @apply inline-flex items-center justify-center w-6 h-6 text-xs font-medium rounded-full bg-primary text-white shadow-sm transition-transform hover:scale-110;
-  min-width: 1.5rem;
-  height: 1.5rem;
-  padding: 0 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: white;
-  background-color: #3b82f6;
-  border-radius: 9999px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 150ms;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  padding: 2px 10px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: white;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
 }
 
 .count-badge:hover {
   background-color: #2563eb;
   transform: scale(1.05);
+}
+
+.rbc-row-content .rbc-row:nth-child(2) > div > div {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 2px 0;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 24px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.rbc-row-content .rbc-row:nth-child(2) > div {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 2px 10px;
+  min-height: 28px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.rbc-row-content .rbc-row:nth-child(2) > div:last-child {
+  border-right: none;
 }
 
 /* Off-range dates */
@@ -195,11 +236,16 @@
 .rbc-row-content {
   margin: 0;
   padding: 0;
+  border: none;
 }
 
-/* Fix alignment */
-.rbc-month-header + .rbc-month-row {
-  margin-top: -1px;
+.rbc-row {
+  border: none !important;
+}
+
+.rbc-row-content .rbc-row {
+  border: none !important;
+  min-height: unset;
 }
 
 /* Calendar Container */
@@ -222,15 +268,12 @@
   position: relative;
 }
 
-.calendar-container .rbc-month-header {
-  flex: 0 0 auto;
-}
-
 .calendar-container .rbc-month-row {
   flex: 1 1 0%;
   min-height: 0;
   display: flex;
   flex-direction: row;
+  border: none;
 }
 
 .calendar-container .rbc-row-content {
@@ -238,11 +281,14 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .calendar-container .rbc-row-content .rbc-row {
   flex: 1;
   display: flex;
+  border: none;
+  min-height: unset;
 }
 
 .calendar-container .rbc-date-cell {
@@ -250,16 +296,14 @@
   min-width: 0;
   position: relative;
   border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
 }
 
 .calendar-container .rbc-date-cell:last-child {
   border-right: none;
 }
-/* .calendar-container .rbc-event-content{
-} */
 
-.calendar-container .rbc-month-row:last-child .rbc-date-cell {
+.calendar-container .rbc-month-row:last-child .rbc-row-content {
   border-bottom: none;
 }
 
@@ -502,4 +546,3 @@
 .count-badge:focus-visible {
   @apply outline-none ring-2 ring-ring ring-offset-2;
 }
-
