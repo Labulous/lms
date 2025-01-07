@@ -85,15 +85,22 @@ const Home: React.FC = () => {
               `
           )
           .eq("lab_id", lab.labId)
-          .eq("status", "in_queue")
           .order("created_at", { ascending: true });
-
+        const data = casesData
+          ? casesData
+              .filter(
+                (caseItem) =>
+                  caseItem.status !== "completed" &&
+                  caseItem.status !== "cancelled"
+              )
+              .map((caseItem) => caseItem)
+          : [];
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
         }
 
-        setCasesList(casesData);
+        setCasesList(data);
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
       } finally {
@@ -159,17 +166,22 @@ const Home: React.FC = () => {
     ).length;
 
     // Calculate "Cases On Hold" as the remaining cases
-    const onHold = casesList.length - (pastDue + dueToday + dueTomorrow);
+    const onHold = casesList.filter(
+      (caseItem) => caseItem.status === "on_hold"
+    ).length;
 
     const groupedCases: Record<string, number> = casesList.reduce(
       (acc, caseItem) => {
-        const dueDate = new Date(caseItem.due_date).toISOString().split("T")[0];
-        acc[dueDate] = (acc[dueDate] || 0) + 1;
+        if (["in_queue", "in_progress"].includes(caseItem.status)) {
+          const dueDate = new Date(caseItem.due_date)
+            .toISOString()
+            .split("T")[0];
+          acc[dueDate] = (acc[dueDate] || 0) + 1;
+        }
         return acc;
       },
       {} as Record<string, number>
     );
-
     const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
       const eventDate = new Date(date); // Convert the date string to a Date object
       return {
