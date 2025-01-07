@@ -9,7 +9,7 @@ create table if not exists public.cases (
     doctor_id uuid references public.doctors(id),
     patient_name text,
     patient_birth_date date,
-    pan_number text,
+    pan_tag text,
     rx_number text,
     qr_code text unique not null,
     due_date timestamp with time zone,

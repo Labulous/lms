@@ -453,6 +453,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onChange("workingPanColor" as keyof CaseFormData, color);
                   }}
                   className="flex-shrink-0"
+                  selectedColor={formData.workingPanColor?? "red"}
                 />
               </div>
               {errors.workingPanName && (

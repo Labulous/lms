@@ -269,7 +269,7 @@ const CaseDetails: React.FC = () => {
                   phone
                 )
               ),
-              pan_number,
+              pan_tag,
               rx_number,
               received_date,
               isDueDateTBD,

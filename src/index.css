@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -136,11 +136,12 @@
   body * {
     visibility: hidden;
   }
-  
-  .print-content, .print-content * {
+
+  .print-content,
+  .print-content * {
     visibility: visible !important;
   }
-  
+
   .print-content {
     position: absolute;
     left: 0;
@@ -170,7 +171,9 @@
   }
 
   /* Ensure borders are visible */
-  table, th, td {
+  table,
+  th,
+  td {
     border-color: #000 !important;
   }
 }
@@ -183,4 +186,33 @@
   .print-only {
     display: block;
   }
+}
+
+.react-colorful {
+  width: 100% !important;
+}
+
+[data-title]:hover:after {
+  opacity: 1;
+  transition: all 0.1s ease 0.5s;
+  visibility: visible;
+}
+[data-title]:after {
+  content: attr(data-title);
+  background-color: #00ff00;
+  color: #111;
+  font-size: 150%;
+  position: absolute;
+  padding: 1px 5px 2px 5px;
+  bottom: -1.6em;
+  left: 100%;
+  white-space: nowrap;
+  box-shadow: 1px 1px 3px #222222;
+  opacity: 0;
+  border: 1px solid #111111;
+  z-index: 99999;
+  visibility: hidden;
+}
+[data-title] {
+  position: relative;
 }

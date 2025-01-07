@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 
 interface CustomDateCellProps {
   value: Date;
-  events: Case[];
+  events: any[];
 }
 
 const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {

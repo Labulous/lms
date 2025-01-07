@@ -90,7 +90,8 @@ type Case = {
       phone: string | null;
     } | null;
   } | null;
-  pan_number: string | null;
+  pan_tag: string | null;
+  pan_color: string | null;
   rx_number: string | null;
   isDueDateTBD: boolean;
   appointment_date: string | null;
@@ -191,6 +192,30 @@ const CaseList: React.FC = () => {
         >
           {row.getValue("case_number")}
         </Link>
+      ),
+    },
+    {
+      accessorKey: "pan_color",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Pan Tag
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <div className="font-medium text-primary hover:underline">
+          <div
+            className="w-10 h-8 rounded-md cursor-pointer"
+            style={{
+              backgroundColor: row.getValue("pan_color") ?? "#00000",
+            }}
+            title={row.original.pan_tag ?? "pan tag"}
+          ></div>
+        </div>
       ),
     },
     {
@@ -439,7 +464,7 @@ const CaseList: React.FC = () => {
   ];
 
   const table = useReactTable({
-    data: cases,
+    data: filteredCases,
     columns,
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
@@ -540,7 +565,8 @@ const CaseList: React.FC = () => {
                 phone
               )
             ),
-            pan_number,
+            pan_tag,
+            pan_color,
             rx_number,
             isDueDateTBD,
             appointment_date,
@@ -610,7 +636,7 @@ const CaseList: React.FC = () => {
           return caseDate === dueDateParam;
         });
       }
-
+      console.log(filtered, "filtered");
       setFilteredCases(filtered);
     }
   }, [cases, searchParams]);
@@ -657,9 +683,12 @@ const CaseList: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2">
             <PrintButtonWithDropdown
-              selectedRows={table.getSelectedRowModel().rows} caseId={""} onPrintOptionSelect={function (option: string): void {
+              selectedRows={table.getSelectedRowModel().rows}
+              caseId={""}
+              onPrintOptionSelect={function (option: string): void {
                 throw new Error("Function not implemented.");
-              } }            />
+              }}
+            />
           </div>
         </div>
         <div className="rounded-md border">

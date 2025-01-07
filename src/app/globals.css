@@ -31,10 +31,15 @@ body {
 }
 
 @keyframes highlight-fade {
-  0%, 30% {
+  0%,
+  30% {
     background-color: rgba(255, 223, 0, 0.2);
   }
   100% {
     background-color: transparent;
   }
+}
+
+.react-colorful {
+  width: 300px !important;
 }

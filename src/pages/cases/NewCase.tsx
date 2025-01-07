@@ -208,12 +208,15 @@ const NewCase: React.FC = () => {
             doctor_id: transformedData.doctorId || "",
             created_by: user?.id || "",
             patient_name:
-              transformedData.patientFirstName + " " + transformedData.patientLastName,
-            pan_number: "",
+              transformedData.patientFirstName +
+              " " +
+              transformedData.patientLastName,
             rx_number: "",
             received_date: transformedData.orderDate,
             status: transformedData.status,
-            due_date: transformedData.isDueDateTBD ? null : transformedData.dueDate,
+            due_date: transformedData.isDueDateTBD
+              ? null
+              : transformedData.dueDate,
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
@@ -223,9 +226,12 @@ const NewCase: React.FC = () => {
             contact_type: transformedData.caseDetails?.contactType,
             pontic_type: transformedData.caseDetails?.ponticType,
             custom_contact_details: transformedData.caseDetails?.customContact,
-            custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+            custom_occulusal_details:
+              transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
+            pan_tag: formData.workingPanName,
+            pan_color: formData.workingPanColor,
             case_number: caseNumber,
           },
           products: selectedProducts,
@@ -243,7 +249,7 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-
+  // console.log(formData,"formdata")
   return (
     <div className="p-6">
       <div className="space-y-4">

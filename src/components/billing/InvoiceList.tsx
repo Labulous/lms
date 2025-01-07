@@ -182,7 +182,7 @@ const InvoiceList: React.FC = () => {
                 phone
               )
             ),
-            pan_number,
+            pan_tag,
             rx_number,
             isDueDateTBD,
             appointment_date,
