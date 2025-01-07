@@ -1049,7 +1049,7 @@ const InvoiceList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id="elementId">
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
           {selectedInvoices.length > 0 ? (

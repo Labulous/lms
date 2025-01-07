@@ -810,7 +810,7 @@ const CaseDetails: React.FC = () => {
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product?.teethProduct?.tooth_number.length > 1
+                            {product?.teethProduct?.tooth_number.length >= 1
                               ? formatTeethRange(
                                   product.teethProduct.tooth_number
                                 )
@@ -833,7 +833,7 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              {product.teeth_product &&
+                              {product.teethProduct &&
                                 product.teethProduct?.body_shade?.name && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">Body:</span>
@@ -842,7 +842,7 @@ const CaseDetails: React.FC = () => {
                                     </span>
                                   </div>
                                 )}
-                              {product.teeth_product &&
+                              {product.teethProduct &&
                                 product.teethProduct?.gingival_shade?.name && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">
@@ -853,7 +853,7 @@ const CaseDetails: React.FC = () => {
                                     </span>
                                   </div>
                                 )}
-                              {product.teeth_product &&
+                              {product.teethProduct &&
                                 product.teethProduct?.occlusal_shade?.name && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">
@@ -864,7 +864,7 @@ const CaseDetails: React.FC = () => {
                                     </span>
                                   </div>
                                 )}
-                              {product.teeth_product &&
+                              {product.teethProduct &&
                                 product.teethProduct?.stump_shade_id?.name && (
                                   <div className="flex justify-between">
                                     <span className="text-gray-500">
