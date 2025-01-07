@@ -2,11 +2,12 @@ import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import DueDatesCalendar from './DueDatesCalendar';
 import { Case } from '../../data/mockCasesData';
+import { CalendarEvents } from '@/pages/Home';
 
 interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  events: Case[];
+  events: CalendarEvents[];
 }
 
 const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, events }) => {

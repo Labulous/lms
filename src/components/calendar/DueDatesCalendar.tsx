@@ -13,6 +13,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import CustomDateCell from "./CustomDateCell";
 import { Case, getCases } from "../../data/mockCasesData";
 import "./calendar.css";
+import { position } from "html2canvas/dist/types/css/property-descriptors/position";
+import { useNavigate } from "react-router-dom";
+import { CalendarEvents } from "@/pages/Home";
 
 const locales = {
   "en-US": enUS,
@@ -27,7 +30,7 @@ const localizer = dateFnsLocalizer({
 });
 
 interface DueDatesCalendarProps {
-  events?: Case[];
+  events?: CalendarEvents[];
   height?: number;
 }
 
@@ -76,14 +79,14 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
 };
 
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
-  events = getCases(),
+  events = [],
   height = 500,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [animationDirection, setAnimationDirection] = useState<
     "left" | "right" | null
   >(null);
-
+  const navigate = useNavigate();
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
       let newDate;
@@ -119,7 +122,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       const { date } = props;
       const dateStr = format(date, "yyyy-MM-dd");
       const dateEvents = events.filter(
-        (event) => format(new Date(event.dueDate), "yyyy-MM-dd") === dateStr
+        (event) => format(new Date(event.start), "yyyy-MM-dd") === dateStr
       );
 
       return <CustomDateCell value={date} events={dateEvents} />;
@@ -133,11 +136,33 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     ),
   };
 
-  const eventStyleGetter = () => ({
-    style: {
-      display: "none",
-    },
-  });
+  const eventStyleGetter = (
+    event: any,
+    start: Date,
+    end: Date,
+    isSelected: boolean
+  ) => {
+    return {
+      style: {
+        backgroundColor: isSelected ? "#3174ad" : "#3B82F6", // Highlight selected events
+        borderRadius: "5px",
+        color: "white",
+        border: "0px",
+        padding: "2px", // Ensure padding fits within the box
+        whiteSpace: "nowrap", // Prevent text overflow
+        overflow: "hidden", // Hide overflow content
+        textOverflow: "ellipsis", // Add ellipsis for long text
+        display: "block", //
+      },
+    };
+  };
+
+  const handleEventClick = (event: any) => {
+    // Extract the start date of the event
+    alert("clicked");
+    const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+    navigate(`/cases?dueDate=${date}`);
+  };
 
   return (
     <div className="calendar-wrapper" style={{ height }}>
@@ -148,15 +173,16 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       >
         <Calendar
           localizer={localizer}
-          events={[]}
+          events={events}
           startAccessor="start"
           endAccessor="end"
-          components={components}
+          // components={components}
           views={["month"] as View[]}
           defaultView="month"
           date={currentDate}
           onNavigate={handleNavigate as any}
           eventPropGetter={eventStyleGetter}
+          onSelectEvent={handleEventClick} // Add the event click handler
           className="calendar-container"
         />
       </div>
