@@ -154,12 +154,11 @@ const Home: React.FC = () => {
   };
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0]; // Current date in YYYY-MM-DD format
+    const today = new Date().toISOString().split("T")[0];
     const tomorrow = new Date(new Date().setDate(new Date().getDate() + 1))
       .toISOString()
       .split("T")[0];
 
-    // Calculate the cases based on their due dates
     const pastDue = casesList.filter(
       (caseItem) => new Date(caseItem.due_date) < new Date(today)
     ).length;
@@ -172,7 +171,6 @@ const Home: React.FC = () => {
       (caseItem) => caseItem.due_date.split("T")[0] === tomorrow
     ).length;
 
-    // Calculate "Cases On Hold" as the remaining cases
     const onHold = casesList.filter(
       (caseItem) => caseItem.status === "on_hold"
     ).length;
@@ -190,26 +188,25 @@ const Home: React.FC = () => {
       {} as Record<string, number>
     );
     const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
-      const eventDate = new Date(date); // Convert the date string to a Date object
+      const eventDate = new Date(date);
       return {
-        title: count.toString(), // Use the count of due cases as the title
+        title: count.toString(),
         start: new Date(
           eventDate.getFullYear(),
           eventDate.getMonth(),
           eventDate.getDate(),
           9,
           0
-        ), // Start time: 9:00 AM
+        ),
         end: new Date(
           eventDate.getFullYear(),
           eventDate.getMonth(),
           eventDate.getDate(),
           17,
           0
-        ), // End time: 5:00 PM
+        ),
       };
     });
-    // Update the key metrics
     setKeyMetrics([
       {
         icon: AlertTriangle,

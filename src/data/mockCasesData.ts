@@ -139,6 +139,7 @@ const saveCaseProduct = async (
     const caseProductId = caseProductData[0].id; // Assuming `id` is the `case_product_id`
 
     // Step 3: Map cases.products and create rows for case_product_teeth
+    console.log(caseProductId,"caseProductId")
     const caseProductTeethRows = cases.products.map((product: any) => ({
       case_product_id: caseProductId,
       is_range: cases.products.length > 0,

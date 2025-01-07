@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Invoice</title>
+    <style>
+      /* Add your CSS styles here */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #fff;
+        border: 1px solid #ddd;
+      }
+      .header,
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+      .header img {
+        width: 80px;
+        height: auto;
+      }
+      .line {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 10px;
+      }
+      .text-sm {
+        font-size: 0.875rem;
+      }
+      .font-bold {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header Section -->
+      <div class="header">
+        <div>
+          <img src="/placeholder.svg" alt="Solaris Dental Design Logo" />
+          <div class="text-sm">
+            <p class="font-bold">Solaris Dental Design</p>
+            <p>101-17 Fawcett Road</p>
+            <p>Coquitlam, BC V3K 6V2</p>
+            <p>(604) 777-0665</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <h1 class="text-2xl font-bold">INVOICE</h1>
+          <p class="text-sm">No. <%= invoiceNumber %></p>
+          <p class="text-sm"><%= date %></p>
+        </div>
+      </div>
+
+      <!-- Ship To Section -->
+      <div>
+        <p class="font-bold">Ship To:</p>
+        <p><%= shipTo.name %></p>
+        <% shipTo.address.forEach(function(line) { %>
+        <p><%= line %></p>
+        <% }) %>
+        <p><%= shipTo.phone %></p>
+      </div>
+
+      <!-- Patient Section -->
+      <div class="line">
+        <p class="font-bold">Patient: <%= patient %></p>
+      </div>
+
+      <!-- Items Section -->
+      <div>
+        <div class="line">
+          <p class="font-bold">Description</p>
+          <p class="font-bold">Amount</p>
+        </div>
+        <% items.forEach(function(item) { %>
+        <div>
+          <div>
+            <p><%= item.description %></p>
+            <% if (item.details) { %>
+            <p class="text-sm"><%= item.details %></p>
+            <% } %>
+          </div>
+          <p>$<%= item.amount.toFixed(2) %></p>
+        </div>
+        <% }) %>
+      </div>
+
+      <!-- Footer Section -->
+      <div class="footer">
+        <p class="text-sm"><%= reference %></p>
+        <div class="text-right">
+          <p class="font-bold">
+            Total: $ <%= items.reduce(function(sum, item) { return sum +
+            item.amount; }, 0).toFixed(2) %>
+          </p>
+          <p class="text-sm">Thank you for your business!</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
