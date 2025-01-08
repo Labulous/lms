@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   User,
   FileText,
@@ -70,7 +70,7 @@ interface CaseFile {
   uploaded_at: string;
 }
 
-interface Product {
+export interface Product {
   id: string;
   name: string;
   price: number;
@@ -106,7 +106,7 @@ interface BillingType {
   description: string;
 }
 
-interface DiscountedPrice {
+export interface DiscountedPrice {
   product_id: string;
   discount: number;
   final_price: number;
@@ -126,7 +126,7 @@ interface Invoice {
   notes?: string;
 }
 
-interface ExtendedCase extends Case {
+export interface ExtendedCase extends Case {
   client: {
     id: string;
     client_name: string;
@@ -430,7 +430,8 @@ const CaseDetails: React.FC = () => {
                 ),
                 tooth_number,
                 notes,
-                product_id
+                product_id,
+                type
               `
               )
               .eq("case_product_id", caseProductId);
@@ -650,7 +651,11 @@ const CaseDetails: React.FC = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>Edit Case</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => navigate(`/cases/update?caseId=${caseDetail.id}`)}
+                    >
+                      Edit Case
+                    </DropdownMenuItem>
                     <DropdownMenuItem>Delete Case</DropdownMenuItem>
                     <DropdownMenuItem>Archive Case</DropdownMenuItem>
                   </DropdownMenuContent>

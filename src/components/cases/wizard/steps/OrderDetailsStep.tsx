@@ -248,6 +248,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 maxDate={new Date()}
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
+                updatedDate={
+                  formData.dueDate ? new Date(formData.orderDate) : undefined
+                }
               />
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
@@ -290,6 +293,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   }
                   dateFormat="MM/dd/yyyy"
                   placeholder="Select due date"
+                  updatedDate={
+                    formData.dueDate ? new Date(formData.dueDate) : undefined
+                  }
                 />
               )}
               {errors.dueDate && (
@@ -319,6 +325,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   }
                   dateFormat="MM/dd/yyyy h:mm aa"
                   placeholder="Select appointment date & time"
+                  updatedDate={
+                    formData.appointmentDate ? new Date(formData.appointmentDate) : undefined
+                  }
                 />
               </div>
             </div>
@@ -453,7 +462,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onChange("workingPanColor" as keyof CaseFormData, color);
                   }}
                   className="flex-shrink-0"
-                  selectedColor={formData.workingPanColor?? "red"}
+                  selectedColor={formData.workingPanColor ?? "red"}
                 />
               </div>
               {errors.workingPanName && (

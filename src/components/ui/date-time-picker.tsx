@@ -1,7 +1,21 @@
 import React, { useState, useRef, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
-import { format, parse, isValid, addDays, subDays, startOfWeek, setHours, setMinutes } from "date-fns";
-import { Calendar as CalendarIcon, Clock as ClockIcon, X, ChevronDown } from "lucide-react";
+import {
+  format,
+  parse,
+  isValid,
+  addDays,
+  subDays,
+  startOfWeek,
+  setHours,
+  setMinutes,
+} from "date-fns";
+import {
+  Calendar as CalendarIcon,
+  Clock as ClockIcon,
+  X,
+  ChevronDown,
+} from "lucide-react";
 import "react-day-picker/dist/style.css";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +27,7 @@ interface DateTimePickerProps {
   maxDate?: Date;
   dateFormat?: string;
   placeholder?: string;
+  updatedDate?: Date | undefined;
 }
 
 const css = `
@@ -158,28 +173,31 @@ const css = `
 }
 `;
 
-export function DateTimePicker({ 
+export function DateTimePicker({
   date,
   onSelect,
   className,
   minDate,
   maxDate,
   dateFormat = "MM/dd/yyyy h:mm aa",
-  placeholder = "Pick date and time"
+  placeholder = "Pick date and time",
+  updatedDate,
 }: DateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
   const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(() => {
     if (!selectedDate) return -1;
     const currentTime = format(selectedDate, "HH:mm");
-    return times.findIndex(time => time === currentTime);
+    return times.findIndex((time) => time === currentTime);
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const times = React.useMemo(() => {
     const times = [];
-    for (let i = 8; i <= 17; i++) { // 8 AM to 5 PM
-      for (let j = 0; j < 60; j += 15) { // Every 15 minutes
+    for (let i = 8; i <= 17; i++) {
+      // 8 AM to 5 PM
+      for (let j = 0; j < 60; j += 15) {
+        // Every 15 minutes
         const hour = i.toString().padStart(2, "0");
         const minute = j.toString().padStart(2, "0");
         times.push(`${hour}:${minute}`);
@@ -191,7 +209,10 @@ export function DateTimePicker({
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -259,17 +280,23 @@ export function DateTimePicker({
           event.preventDefault();
           if (event.shiftKey) {
             // Shift+Tab: Move focus backward
-            setSelectedTimeIndex(prev => (prev <= 0 ? times.length - 1 : prev - 1));
+            setSelectedTimeIndex((prev) =>
+              prev <= 0 ? times.length - 1 : prev - 1
+            );
           } else {
             // Tab: Move focus forward
-            setSelectedTimeIndex(prev => (prev >= times.length - 1 ? 0 : prev + 1));
+            setSelectedTimeIndex((prev) =>
+              prev >= times.length - 1 ? 0 : prev + 1
+            );
           }
           break;
         case "ArrowDown":
           event.preventDefault();
           if (event.altKey) {
             // Alt+ArrowDown: Time selection
-            setSelectedTimeIndex(prev => (prev >= times.length - 1 ? 0 : prev + 1));
+            setSelectedTimeIndex((prev) =>
+              prev >= times.length - 1 ? 0 : prev + 1
+            );
             if (selectedTimeIndex >= 0 && selectedDate) {
               const time = times[selectedTimeIndex];
               handleTimeSelect(time);
@@ -287,7 +314,9 @@ export function DateTimePicker({
           event.preventDefault();
           if (event.altKey) {
             // Alt+ArrowUp: Time selection
-            setSelectedTimeIndex(prev => (prev <= 0 ? times.length - 1 : prev - 1));
+            setSelectedTimeIndex((prev) =>
+              prev <= 0 ? times.length - 1 : prev - 1
+            );
             if (selectedTimeIndex >= 0 && selectedDate) {
               const time = times[selectedTimeIndex];
               handleTimeSelect(time);
@@ -337,6 +366,9 @@ export function DateTimePicker({
     }
   }, [isOpen, selectedTimeIndex]);
 
+  useEffect(() => {
+    setSelectedDate(updatedDate);
+  }, [updatedDate]);
   return (
     <>
       <style>{css}</style>
@@ -369,18 +401,23 @@ export function DateTimePicker({
                 onSelect={handleSelect}
                 defaultMonth={selectedDate}
                 disabled={[
-                  (date) => (minDate ? date < minDate : false) || 
-                           (maxDate ? date > maxDate : false)
+                  (date) =>
+                    (minDate ? date < minDate : false) ||
+                    (maxDate ? date > maxDate : false),
                 ]}
               />
               <div className="quick-select">
                 <button onClick={() => handleQuickSelect(new Date())}>
                   Today
                 </button>
-                <button onClick={() => handleQuickSelect(subDays(new Date(), 1))}>
+                <button
+                  onClick={() => handleQuickSelect(subDays(new Date(), 1))}
+                >
                   Yesterday
                 </button>
-                <button onClick={() => handleQuickSelect(startOfWeek(new Date()))}>
+                <button
+                  onClick={() => handleQuickSelect(startOfWeek(new Date()))}
+                >
                   Start of Week
                 </button>
               </div>
