@@ -16,7 +16,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
 
 export interface LoadingState {
-  action: "save" | null;
+  action: "save" | "update" | null;
   isLoading: boolean;
   progress?: number;
 }
@@ -249,7 +249,7 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-  // console.log(formData,"formdata")
+  console.log(selectedProducts,"formdata")
   return (
     <div className="p-6">
       <div className="space-y-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +59,7 @@ import MultiColumnProductSelector from "./modals/MultiColumnProductSelector";
 import { fetchShadeOptions } from "@/data/mockCasesData";
 import { Item } from "@radix-ui/react-dropdown-menu";
 import { createClient } from "@supabase/supabase-js";
+import { CaseStatus, FormData, ToothInfo } from "@/types/supabase";
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
@@ -116,6 +117,7 @@ interface ProductConfigurationProps {
     customPontic?: string;
   };
   setselectedProducts: any;
+  formData?: FormData;
 }
 
 interface ToothItem {
@@ -139,6 +141,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   onCaseDetailsChange,
   initialCaseDetails,
   setselectedProducts,
+  formData,
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
     null
@@ -464,26 +467,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     checkIfReadyToAdd();
   };
 
-  const handleShadeChange = (key: keyof ShadeData, value: string) => {
-    setShadeData((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  // const handleShadeChange = (key: keyof ShadeData, value: string) => {
+  //   setShadeData((prev) => ({
+  //     ...prev,
+  //     [key]: value,
+  //   }));
 
-    if (previewProduct) {
-      const updatedShades = {
-        occlusal: key === "occlusal" ? value : shadeData.occlusal,
-        body: key === "body" ? value : shadeData.body,
-        gingival: key === "gingival" ? value : shadeData.gingival,
-        stump: key === "stump" ? value : shadeData.stump,
-      };
+  //   if (previewProduct) {
+  //     const updatedShades = {
+  //       occlusal: key === "occlusal" ? value : shadeData.occlusal,
+  //       body: key === "body" ? value : shadeData.body,
+  //       gingival: key === "gingival" ? value : shadeData.gingival,
+  //       stump: key === "stump" ? value : shadeData.stump,
+  //     };
 
-      setPreviewProduct((prev: any) => ({
-        ...prev!,
-        shades: updatedShades,
-      }));
-    }
-  };
+  //     setPreviewProduct((prev: any) => ({
+  //       ...prev!,
+  //       shades: updatedShades,
+  //     }));
+  //   }
+  // };
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -587,6 +590,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     setAddedTeethMap(newMap);
     setToothItems((prev: any) => [...prev, newItem]);
+    setselectedProducts((prev: any) => [...prev, newItem]);
     onProductsChange([...selectedProducts, newProduct]);
 
     // Add highlight effect
@@ -608,8 +612,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleRemoveToothItem = (itemId: string) => {
+    alert(itemId);
     // Find the item to be removed
     const itemToRemove = toothItems.find((item) => item.id === itemId);
+    setselectedProducts((prev: any[]) =>
+      prev.filter((item) => item.id !== itemId)
+    );
     if (!itemToRemove) return;
 
     // Remove teeth from addedTeethMap
@@ -621,6 +629,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     // Update tooth items and selected products
     setToothItems((prev) => prev.filter((item) => item.id !== itemId));
+
     onProductsChange(
       selectedProducts.filter((product) => product.id !== itemId)
     );
@@ -659,7 +668,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     setCaseDetails((prev) => {
       const updated = { ...prev, [field]: value };
-      console.log(field, value, "fleid");
       // Clear custom fields when non-custom option is selected
       if (field === "occlusalType" && value !== "Custom") {
         delete updated.customOcclusal;
@@ -818,6 +826,42 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Close the shade popover
     setShadePopoverOpen(false);
   };
+
+  const hasExecuted = useRef(false);
+  useEffect(() => {
+    if (formData?.clientId && !hasExecuted.current) {
+      // Update case details
+      handleCaseDetailChange(
+        "contactType",
+        formData.caseDetails?.contactType || ""
+      );
+      handleCaseDetailChange(
+        "customContact",
+        formData.caseDetails?.customContact || ""
+      );
+      handleCaseDetailChange(
+        "customOcclusal",
+        formData.caseDetails?.customOcclusal || ""
+      );
+      handleCaseDetailChange(
+        "customPontic",
+        formData.caseDetails?.customPontic || ""
+      );
+      handleCaseDetailChange(
+        "occlusalType",
+        formData.caseDetails?.occlusalType || ""
+      );
+      handleCaseDetailChange(
+        "ponticType",
+        formData.caseDetails?.ponticType || ""
+      );
+
+      // Mark as executed
+      hasExecuted.current = true;
+    }
+  }, [formData, handleCaseDetailChange]);
+
+  // console.log(f,"selected produts")
   return (
     <div className="bg-white shadow overflow-hidden">
       {/* Gradient Header */}
@@ -1374,7 +1418,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </TableRow>
 
                         {/* Existing Items */}
-                        {toothItems.map((item) => (
+                        {selectedProducts.map((item) => (
                           <TableRow
                             key={item.id}
                             className={cn(
@@ -1505,22 +1549,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     </div>
                                     <Textarea
                                       placeholder="Enter note for this product..."
-                                      value={productNotes[item.id] || ""}
+                                      value={
+                                        selectedProducts.find(
+                                          (pro) => pro.id === item.id
+                                        )?.notes || ""
+                                      }
                                       onChange={(e) => {
                                         const newNote = e.target.value;
-                                        setPreviewNote(e.target.value);
+                                        setPreviewNote(newNote);
                                         setProductNotes((prev) => ({
                                           ...prev,
                                           [item.id]: newNote,
                                         }));
+
                                         // Update the product's notes in the selectedProducts array
-                                        const updatedProducts = toothItems.map(
-                                          (p) =>
+                                        const updatedSelectedProducts =
+                                          selectedProducts.map((p) =>
                                             p.id === item.id
                                               ? { ...p, notes: newNote }
                                               : p
+                                          );
+                                        setselectedProducts(
+                                          updatedSelectedProducts
                                         );
-                                        setToothItems(updatedProducts);
                                       }}
                                       className="h-24 text-sm"
                                     />

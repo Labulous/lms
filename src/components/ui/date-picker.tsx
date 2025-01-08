@@ -1,6 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
 import { DayPicker } from "react-day-picker";
-import { format, parse, isValid, addDays, subDays, startOfWeek } from "date-fns";
+import {
+  format,
+  parse,
+  isValid,
+  addDays,
+  subDays,
+  startOfWeek,
+} from "date-fns";
 import { Calendar as CalendarIcon, X, ChevronDown } from "lucide-react";
 import "react-day-picker/dist/style.css";
 import { cn } from "@/lib/utils";
@@ -13,6 +20,7 @@ interface DatePickerProps {
   maxDate?: Date;
   dateFormat?: string;
   placeholder?: string;
+  updatedDate?: Date | undefined;
 }
 
 const css = `
@@ -120,14 +128,15 @@ const css = `
 }
 `;
 
-export function DatePicker({ 
+export function DatePicker({
   date,
   onSelect,
   className,
   minDate,
   maxDate,
   dateFormat = "PPP",
-  placeholder = "Pick a date"
+  placeholder = "Pick a date",
+  updatedDate,
 }: DatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
@@ -136,7 +145,10 @@ export function DatePicker({
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -204,6 +216,9 @@ export function DatePicker({
     handleSelect(date);
   };
 
+  useEffect(() => {
+    setSelectedDate(updatedDate);
+  }, [updatedDate]);
   return (
     <>
       <style>{css}</style>
@@ -235,8 +250,9 @@ export function DatePicker({
               onSelect={handleSelect}
               defaultMonth={selectedDate}
               disabled={[
-                (date) => (minDate ? date < minDate : false) || 
-                         (maxDate ? date > maxDate : false)
+                (date) =>
+                  (minDate ? date < minDate : false) ||
+                  (maxDate ? date > maxDate : false),
               ]}
             />
             <div className="quick-select">
@@ -246,7 +262,9 @@ export function DatePicker({
               <button onClick={() => handleQuickSelect(subDays(new Date(), 1))}>
                 Yesterday
               </button>
-              <button onClick={() => handleQuickSelect(startOfWeek(new Date()))}>
+              <button
+                onClick={() => handleQuickSelect(startOfWeek(new Date()))}
+              >
                 Start of Week
               </button>
             </div>

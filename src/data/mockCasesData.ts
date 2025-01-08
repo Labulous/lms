@@ -139,7 +139,7 @@ const saveCaseProduct = async (
     const caseProductId = caseProductData[0].id; // Assuming `id` is the `case_product_id`
 
     // Step 3: Map cases.products and create rows for case_product_teeth
-    console.log(caseProductId,"caseProductId")
+    console.log(caseProductId, "caseProductId");
     const caseProductTeethRows = cases.products.map((product: any) => ({
       case_product_id: caseProductId,
       is_range: cases.products.length > 0,
@@ -150,6 +150,7 @@ const saveCaseProduct = async (
       notes: product.notes || "",
       tooth_number: product.teeth || "",
       product_id: product.id,
+      type: product.type || "",
     }));
 
     // Calculate discounted prices for products
@@ -311,6 +312,277 @@ const saveCases = async (
     console.error("Error in saveCases function:", error);
   }
 };
+const updateCases = async (
+  cases: any,
+  navigate?: any,
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  caseId?: string
+) => {
+  try {
+    setLoadingState && setLoadingState({ isLoading: true, action: "update" });
+    console.log(
+      cases.overview.enclosed_case_id,
+      "cases.overview.enclosed_case_id"
+    );
+    // Step 1: Update enclosed case details
+    const enclosedCaseRow = {
+      impression: cases.enclosedItems?.impression || 0,
+      biteRegistration: cases.enclosedItems?.biteRegistration || 0,
+      photos: cases.enclosedItems?.photos || 0,
+      jig: cases.enclosedItems?.jig || 0,
+      opposingModel: cases.enclosedItems?.opposingModel || 0,
+      articulator: cases.enclosedItems?.articulator || 0,
+      returnArticulator: cases.enclosedItems?.returnArticulator || 0,
+      cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
+      consultRequested: cases.enclosedItems?.consultRequested || 0,
+      user_id: cases.overview.created_by,
+    };
+
+    const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
+      .from("enclosed_case")
+      .update(enclosedCaseRow)
+      .eq("id", cases.overview.enclosed_case_id)
+      .select("*");
+
+    if (enclosedCaseError) {
+      throw new Error(
+        `Error updating enclosed case: ${enclosedCaseError.message}`
+      );
+    }
+
+    console.log("Enclosed case updated successfully:", enclosedCaseData);
+
+    // Step 2: Update cases overview
+    const overviewWithEnclosedCaseId = {
+      ...cases.overview,
+      enclosed_case_id: cases.overview.enclosed_case_id,
+    };
+
+    const { data: caseOverviewData, error: caseOverviewError } = await supabase
+      .from("cases")
+      .update(overviewWithEnclosedCaseId)
+      .eq("id", caseId)
+      .select("*");
+
+    if (caseOverviewError) {
+      localStorage.setItem("cases", JSON.stringify(cases));
+      throw new Error(`Error updating cases: ${caseOverviewError.message}`);
+    }
+
+    console.log("Cases updated successfully:", caseOverviewData);
+
+    // Step 3: Update case products (instead of saving, we'll update)
+    const productIds = cases.products.map((item: any) => item.id);
+    const caseProduct = {
+      user_id: cases.overview.created_by,
+      case_id: caseId,
+      products_id: productIds,
+    };
+
+    console.log("runing discounted");
+    // Calculate discounted prices for products
+    for (const product of cases.products) {
+      // Prepare the data row
+      const discountedPriceRow = {
+        product_id: product.id,
+        price: product.price || 0,
+        discount: product.discount || 0,
+        final_price:
+          product.price - (product.price * product.discount) / 100 || 0,
+        case_id: caseId,
+        user_id: cases.overview.created_by || "",
+      };
+
+      console.log("Processing product:", product.id);
+
+      // Fetch existing row by case_id and product_id
+      const { data: existingRow, error: fetchError } = await supabase
+        .from("discounted_price")
+        .select("id") // Only fetch the ID for updates
+        .eq("case_id", caseId)
+        .eq("product_id", product.id)
+        .single();
+
+      if (fetchError && fetchError.code !== "PGRST116") {
+        // Log error if it's not "No rows found" (PGRST116 means no match)
+        console.error(
+          `Error fetching row for product_id: ${product.id}`,
+          fetchError
+        );
+        continue; // Skip this product and move on to the next
+      }
+
+      if (existingRow) {
+        // Update the existing row
+        const { error: updateError } = await supabase
+          .from("discounted_price")
+          .update(discountedPriceRow)
+          .eq("id", existingRow.id);
+
+        if (updateError) {
+          console.error(
+            `Error updating row for product_id: ${product.id}`,
+            updateError
+          );
+        } else {
+          console.log(
+            `Discounted price updated successfully for product_id: ${product.id}`
+          );
+        }
+      } else {
+        // Insert a new row
+        const { error: insertError } = await supabase
+          .from("discounted_price")
+          .insert(discountedPriceRow);
+
+        if (insertError) {
+          console.error(
+            `Error inserting row for product_id: ${product.id}`,
+            insertError
+          );
+        } else {
+          console.log(
+            `Discounted price inserted successfully for product_id: ${product.id}`
+          );
+        }
+      }
+    }
+
+    // Upsert case products
+    const { data: caseProductData, error: caseProductError } = await supabase
+      .from("case_products")
+      .update(caseProduct)
+      .eq("case_id", caseId)
+      .select("*");
+
+    if (caseProductError) {
+      console.error("Error updating case products:", caseProductError);
+    } else {
+      console.log("Case products updated successfully:", caseProductData);
+    }
+    // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
+    // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
+    const caseProductTeethRows = cases.products.map((product: any) => ({
+      case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
+      is_range: cases.products.length > 0,
+      occlusal_shade_id: product.shades.occlusal || "",
+      body_shade_id: product.shades.body || "",
+      gingival_shade_id: product.shades.gingival || "",
+      stump_shade_id: product.shades.stump || "",
+      notes: product.notes || "",
+      tooth_number: product.teeth || "",
+      product_id: product.id,
+      type: product.type || "",
+    }));
+
+    // Step to check if rows exist for product_id before inserting
+    for (const row of caseProductTeethRows) {
+      const { data: existingTeethRows, error: fetchError } = await supabase
+        .from("case_product_teeth")
+        .select("*")
+        .eq("product_id", row.product_id)
+        .eq("case_product_id", row.case_product_id); // Check for the combination of case_product_id and product_id
+
+      if (fetchError) {
+        console.error("Error fetching case_product_teeth rows:", fetchError);
+        return; // Exit if there is an error
+      }
+
+      if (existingTeethRows.length === 0) {
+        // No existing row found for this product_id, so insert a new row
+        const { error: insertError } = await supabase
+          .from("case_product_teeth")
+          .insert([row]);
+
+        if (insertError) {
+          console.error(
+            "Error inserting new case_product_teeth row:",
+            insertError
+          );
+          return; // Exit if there is an error
+        } else {
+          console.log(
+            `New case_product_teeth row created for product_id: ${row.product_id}`
+          );
+        }
+      } else {
+        // Existing row found, update the row if needed
+        const { error: updateError } = await supabase
+          .from("case_product_teeth")
+          .update(row)
+          .eq("product_id", row.product_id)
+          .eq("case_product_id", row.case_product_id); // Update for the combination of case_product_id and product_id
+
+        if (updateError) {
+          console.error(
+            "Error updating existing case_product_teeth row:",
+            updateError
+          );
+          return; // Exit if there is an error
+        } else {
+          console.log(
+            `Existing case_product_teeth row updated for product_id: ${row.product_id}`
+          );
+        }
+      }
+    }
+    // Upsert case_product_teeth rows
+    const { error: caseProductTeethError } = await supabase
+      .from("case_product_teeth")
+      .upsert(caseProductTeethRows)
+      .select("");
+
+    if (caseProductTeethError) {
+      console.error(
+        "Error updating case_product_teeth rows:",
+        caseProductTeethError
+      );
+      return; // Exit if there is an error
+    } else {
+      console.log("Case product teeth rows updated successfully!");
+    }
+
+    // Step 5: Update invoice for the case
+    // const updateDueDate = () => {
+    //   const currentDate = new Date();
+    //   const dueDate = new Date(
+    //     currentDate.getFullYear(),
+    //     currentDate.getMonth(),
+    //     28
+    //   );
+    //   return dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
+    // };
+
+    // const updatedInvoice = {
+    //   client_id: cases.overview.client_id,
+    //   lab_id: cases.overview.lab_id,
+    //   status: cases.overview.status,
+    //   due_date: updateDueDate(),
+    // };
+
+    // const { data: invoiceData, error: invoiceError } = await supabase
+    //   .from("invoices")
+    //   .upsert(updatedInvoice)
+    //   .eq("case_id", caseId)
+    //   .select("*");
+
+    // if (invoiceError) {
+    //   console.error("Error updating invoice:", invoiceError);
+    // } else {
+    //   console.log("Invoice updated successfully:", invoiceData);
+    // }
+
+    // Step 6: Save the updated overview to localStorage and navigate
+    localStorage.setItem("cases", JSON.stringify(cases));
+    toast.success("Case updated successfully");
+    navigate && navigate("/cases");
+  } catch (error) {
+    console.error("Error in updateCases function:", error);
+    toast.error("Failed to update case");
+  } finally {
+    setLoadingState && setLoadingState({ isLoading: false, action: "update" });
+  }
+};
 
 // In-memory store initialized from localStorage
 let cases: Case[] = loadCases();
@@ -336,13 +608,15 @@ export const addCase = (
 };
 
 // Function to update a case
-export const updateCase = (updatedCase: Case): void => {
-  cases = cases.map((caseItem) =>
-    caseItem.id === updatedCase.id ? updatedCase : caseItem
-  );
-  saveCases(cases);
+export const updateCase = (
+  newCase: Case,
+  navigate?: any,
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  caseId?: string
+): void => {
+  cases = [newCase];
+  updateCases(newCase, navigate, setLoadingState, caseId);
 };
-
 // Function to delete a case
 export const deleteCase = (id: string): void => {
   cases = cases.filter((caseItem) => caseItem.id !== id);
