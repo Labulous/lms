@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import OrderDetailsStep from "../../components/cases/wizard/steps/OrderDetailsStep";
@@ -7,7 +7,7 @@ import ProductConfiguration from "../../components/cases/wizard/ProductConfigura
 import FilesStep from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData, ToothInfo } from "@/types/supabase";
-import { addCase, DeliveryMethod, updateCase } from "../../data/mockCasesData";
+import { DeliveryMethod, updateCase } from "../../data/mockCasesData";
 import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
@@ -201,11 +201,55 @@ const UpdateCase: React.FC = () => {
       validationErrors.patientFirstName = "Patient first name is required";
     if (!formData.patientLastName)
       validationErrors.patientLastName = "Patient last name is required";
+    if (!formData.doctorId) validationErrors.doctorId = "doctor is required";
     if (!formData.deliveryMethod)
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
+    if (!formData.orderDate)
+      validationErrors.orderDate = "Order date is required";
+    if (!formData.status) validationErrors.statusError = "Status is Required";
+    if (!formData.otherItems)
+      validationErrors.otherItems = "Other Item Note is Required";
+    if (!formData.workingPanName)
+      validationErrors.workingPanName = "Working tag is Required";
+    if (!formData.appointmentDate)
+      validationErrors.appointmentDate = "Appointment date is Required";
+    if (formData.notes.labNotes === "") {
+      if (!validationErrors.notes) {
+        validationErrors.notes = {};
+      }
 
+      validationErrors.notes.labNotes = "Instruction note is required";
+    }
+    if (formData.notes.technicianNotes === "") {
+      if (!validationErrors.notes) {
+        validationErrors.notes = {};
+      }
+
+      validationErrors.notes.technicianNotes = "Technician note is required";
+    }
+    if (
+      !formData.caseDetails?.contactType ||
+      !formData.caseDetails?.occlusalType ||
+      !formData.caseDetails?.ponticType
+    ) {
+      if (!validationErrors.caseDetails) {
+        validationErrors.caseDetails = {};
+      }
+
+      if (!formData.caseDetails?.contactType) {
+        validationErrors.caseDetails.contactType = "Contact Type is required";
+      }
+
+      if (!formData.caseDetails?.occlusalType) {
+        validationErrors.caseDetails.occlusalType = "Occlusal Type is required";
+      }
+
+      if (!formData.caseDetails?.ponticType) {
+        validationErrors.caseDetails.ponticType = "Pontic Type is required";
+      }
+    }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -521,7 +565,7 @@ const UpdateCase: React.FC = () => {
           otherItems: caseDataApi.otherItems || "",
           isDueDateTBD: prevData.isDueDateTBD || false,
           notes: {
-            ...prevData.notes, // Preserve existing notes and override
+            ...prevData.notes,
             labNotes: caseDataApi.invoice_notes || "",
             technicianNotes: caseDataApi.technician_notes || "",
           },
@@ -574,11 +618,13 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId]);
+  console.log(errors, "errors");
+  // console.log(formData, "From data");
   return (
     <div className="p-6">
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
-          Upadate a Case{" "}
+          Update a Case{" "}
           <span
             className="text-blue-500 underline cursor-pointer"
             onClick={() => {
@@ -618,6 +664,7 @@ const UpdateCase: React.FC = () => {
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
             formData={formData}
+            formErrors={errors}
           />
         </div>
 

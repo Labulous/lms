@@ -685,6 +685,7 @@ export interface FormData {
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
+  statusError?:string,
   deliveryMethod: DeliveryMethod;
   deliveryMethodError?: string;
   dueDate?: string;
@@ -708,12 +709,12 @@ export interface FormData {
   otherItems?: string;
   clientName?: string;
   caseDetails?: {
-    occlusalType: string;
+    occlusalType?: string;
     customOcclusal?: string;
-    contactType: string;
-    ponticType: string;
+    contactType?: string;
+    ponticType?: string;
     customPontic?: string;
-    customContact: string;
+    customContact?: string;
   };
   notes: {
     labNotes?: string;

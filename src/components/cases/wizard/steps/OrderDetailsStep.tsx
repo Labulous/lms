@@ -83,7 +83,6 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         date ? date.toISOString().split("T")[0] : ""
       );
     };
-
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -326,9 +325,16 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   dateFormat="MM/dd/yyyy h:mm aa"
                   placeholder="Select appointment date & time"
                   updatedDate={
-                    formData.appointmentDate ? new Date(formData.appointmentDate) : undefined
+                    formData.appointmentDate
+                      ? new Date(formData.appointmentDate)
+                      : undefined
                   }
                 />
+                {errors.appointmentDate && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.appointmentDate}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -349,10 +355,15 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 <SelectTrigger
                   className={cn(
                     "bg-white [&>button]:bg-white",
-                    errors.status ? "border-red-500" : ""
+                    errors.statusError ? "border-red-500" : ""
                   )}
                 >
                   <SelectValue placeholder="Select status" />
+                  {errors.statusError && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.statusError}
+                    </p>
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   <TooltipProvider>

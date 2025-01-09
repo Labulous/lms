@@ -14,6 +14,7 @@ import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import CaseDetails from "@/components/cases/CaseDetails";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -186,21 +187,76 @@ const NewCase: React.FC = () => {
       validationErrors.patientFirstName = "Patient first name is required";
     if (!formData.patientLastName)
       validationErrors.patientLastName = "Patient last name is required";
+    if (!formData.doctorId) validationErrors.doctorId = "doctor is required";
     if (!formData.deliveryMethod)
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
+    if (!formData.orderDate)
+      validationErrors.orderDate = "Order date is required";
+    if (!formData.status) validationErrors.statusError = "Status is Required";
+    if (!formData.otherItems)
+      validationErrors.otherItems = "Other Item Note is Required";
+    if (!formData.workingPanName)
+      validationErrors.workingPanName = "Working tag is Required";
+    if (!formData.appointmentDate)
+      validationErrors.appointmentDate = "Appointment date is Required";
+    if (formData.notes.labNotes === "") {
+      if (!validationErrors.notes) {
+        validationErrors.notes = {};
+      }
+
+      validationErrors.notes.labNotes = "Instruction note is required";
+    }
+    if (formData.notes.technicianNotes === "") {
+      if (!validationErrors.notes) {
+        validationErrors.notes = {};
+      }
+
+      validationErrors.notes.technicianNotes = "Technician note is required";
+    }
+    if (
+      !validationErrors.caseDetails ||
+      validationErrors.caseDetails.contactType === null ||
+      validationErrors.caseDetails.contactType === ""
+    )
+      if (
+        !formData.caseDetails?.contactType ||
+        !formData.caseDetails?.occlusalType ||
+        !formData.caseDetails?.ponticType
+      ) {
+        // Check and add validation errors if necessary
+        // Ensure caseDetails is initialized if not already
+        if (!validationErrors.caseDetails) {
+          validationErrors.caseDetails = {};
+        }
+
+        // Only add errors for fields that are empty or missing
+        if (!formData.caseDetails?.contactType) {
+          validationErrors.caseDetails.contactType = "Contact Type is required";
+        }
+
+        if (!formData.caseDetails?.occlusalType) {
+          validationErrors.caseDetails.occlusalType =
+            "Occlusal Type is required";
+        }
+
+        if (!formData.caseDetails?.ponticType) {
+          validationErrors.caseDetails.ponticType = "Pontic Type is required";
+        }
+      }
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
+
     if (caseNumber) {
       try {
         setLoadingState({ isLoading: true, action: "save" });
         const transformedData = {
           ...formData,
-          status: formData.status.toLowerCase() as CaseStatus,
+          status: formData.status.toLowerCase() as CaseStatus | string,
         };
         const newCase: any = {
           overview: {
@@ -213,7 +269,7 @@ const NewCase: React.FC = () => {
               transformedData.patientLastName,
             rx_number: "",
             received_date: transformedData.orderDate,
-            status: transformedData.status,
+            status: transformedData.status || "in_queue",
             due_date: transformedData.isDueDateTBD
               ? null
               : transformedData.dueDate,
@@ -238,7 +294,6 @@ const NewCase: React.FC = () => {
           enclosedItems: transformedData.enclosedItems,
           files: selectedFiles,
         };
-
         // Add case to database
         await addCase(newCase, navigate, setLoadingState);
       } catch (error) {
@@ -249,7 +304,10 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-  console.log(selectedProducts,"formdata")
+
+  // console.log(formData,"Form data")
+  //   console.log(formData)
+  // console.log(errors,"Error")
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -283,6 +341,7 @@ const NewCase: React.FC = () => {
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
+            formErrors={errors}
           />
         </div>
 

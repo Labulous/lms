@@ -19,6 +19,7 @@ interface NotesStepProps {
 const NotesStep: React.FC<NotesStepProps> = ({
   formData,
   onChange,
+  errors,
 }) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -48,9 +49,15 @@ const NotesStep: React.FC<NotesStepProps> = ({
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any instruction notes about the case that are relevant for admin staff
-          or clients.
+          Add any instruction notes about the case that are relevant for admin
+          staff or clients.
         </p>
+
+        {errors?.notes?.labNotes && (
+          <p className="mt-2 text-sm text-red-500">
+            {errors?.notes?.labNotes}
+          </p>
+        )}
       </div>
 
       <Separator className="my-6" />
@@ -68,6 +75,12 @@ const NotesStep: React.FC<NotesStepProps> = ({
         <p className="text-xs text-gray-500">
           Add any specific instructions or notes for the technician.
         </p>
+
+        {errors?.notes?.technicianNotes && (
+          <p className="mt-2 text-sm text-red-500">
+            {errors?.notes?.technicianNotes}
+          </p>
+        )}
       </div>
     </div>
   );

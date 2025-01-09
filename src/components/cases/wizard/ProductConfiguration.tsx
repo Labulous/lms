@@ -101,23 +101,24 @@ interface ProductConfigurationProps {
   onProductsChange: (products: SavedProduct[]) => void;
   onMaterialChange: (material: SavedProduct | null) => void;
   onCaseDetailsChange: (details: {
-    occlusalType: string;
+    occlusalType?: string;
     customOcclusal?: string;
-    contactType: string;
+    contactType?: string;
     customContact?: string;
-    ponticType: string;
+    ponticType?: string;
     customPontic?: string;
   }) => void;
   initialCaseDetails?: {
-    occlusalType: string;
+    occlusalType?: string;
     customOcclusal?: string;
-    contactType: string;
+    contactType?: string;
     customContact?: string;
-    ponticType: string;
+    ponticType?: string;
     customPontic?: string;
   };
   setselectedProducts: any;
   formData?: FormData;
+  formErrors: Partial<FormData>;
 }
 
 interface ToothItem {
@@ -142,6 +143,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   initialCaseDetails,
   setselectedProducts,
   formData,
+  formErrors,
 }) => {
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
     null
@@ -192,17 +194,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   // Case-level details state
   const [caseDetails, setCaseDetails] = useState<{
-    occlusalType: string;
+    occlusalType?: string;
     customOcclusal?: string;
-    contactType: string;
+    contactType?: string;
     customContact?: string;
-    ponticType: string;
+    ponticType?: string;
     customPontic?: string;
   }>(
     initialCaseDetails || {
-      occlusalType: "",
-      contactType: "",
-      ponticType: "",
+      occlusalType: "" as string,
+      contactType: "" as string,
+      ponticType: "" as string,
     }
   );
 
@@ -1634,6 +1636,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </Label>
                           </div>
                         ))}
+
+                        {formErrors?.caseDetails?.occlusalType && (
+                          <p className="mt-2 text-sm text-red-500">
+                            {formErrors?.caseDetails?.occlusalType}
+                          </p>
+                        )}
                       </RadioGroup>
                       {caseDetails.occlusalType === OcclusalType.Custom && (
                         <Textarea
@@ -1682,6 +1690,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </Label>
                           </div>
                         ))}
+                        {formErrors?.caseDetails?.contactType && (
+                          <p className="mt-2 text-sm text-red-500">
+                            {formErrors?.caseDetails?.contactType}
+                          </p>
+                        )}
                       </RadioGroup>
                       {caseDetails.contactType === ContactType.Custom && (
                         <Textarea
@@ -1748,6 +1761,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             )}
                           </div>
                         ))}
+
+                        {formErrors?.caseDetails?.ponticType && (
+                          <p className="mt-2 text-sm text-red-500">
+                            {formErrors?.caseDetails?.ponticType}
+                          </p>
+                        )}
                       </RadioGroup>
                       {caseDetails.ponticType === PonticType.Custom && (
                         <Textarea
