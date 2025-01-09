@@ -138,7 +138,7 @@ class ClientsService {
     };
   }
 
-  async getClients(): Promise<Client[]> {
+  async getClients(labId: string): Promise<Client[]> {
     try {
       logger.debug("Starting getClients request");
 
@@ -192,6 +192,7 @@ class ClientsService {
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select("*")
+        .eq("lab_id", labId)
         .order("client_name", { ascending: true });
 
       if (clientsError) {

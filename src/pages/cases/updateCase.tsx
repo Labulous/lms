@@ -138,29 +138,23 @@ const UpdateCase: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        setLoading(true);
-        const data = await clientsService.getClients();
-
-        if (Array.isArray(data)) {
-          setClients(data);
-        }
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        toast.error("Failed to load clients");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const getCasesLength = async () => {
       try {
         setLoading(true);
 
         const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
         setLab(labData);
-        const number = await fetchCaseCount(); // Fetch current case count
+
+        const clients = await clientsService.getClients(labData.labId);
+
+        if (Array.isArray(clients)) {
+          setClients(clients);
+        }
+        const number = await fetchCaseCount(labData.labId); // Fetch current case count
 
         if (typeof number === "number") {
           // Generate case number
@@ -188,7 +182,6 @@ const UpdateCase: React.FC = () => {
     };
 
     getCasesLength();
-    fetchClients();
   }, [user?.id]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -501,7 +494,8 @@ const UpdateCase: React.FC = () => {
                 product_id
               `
               )
-              .eq("case_product_id", caseProductId);
+              .eq("case_product_id", caseProductId)
+              .eq("lab_id", lab?.labId);
 
           if (teethProductsError) {
             setError(teethProductsError.message);
@@ -615,7 +609,7 @@ const UpdateCase: React.FC = () => {
     return () => {
       null;
     };
-  }, [caseId]);
+  }, [caseId, lab]);
   return (
     <div className="p-6">
       <div className="space-y-4">

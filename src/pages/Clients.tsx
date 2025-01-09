@@ -12,6 +12,8 @@ import {
 import { createLogger } from "../utils/logger";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { toast } from "react-hot-toast";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 const logger = createLogger({ module: "ClientsPage" });
 
@@ -19,14 +21,22 @@ const Clients: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+
   const [, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-
+  const { user } = useAuth();
   const fetchClients = async () => {
     try {
       logger.debug("Fetching clients");
       setLoading(true);
-      const data = await clientsService.getClients();
+      const labData = await getLabIdByUserId(user?.id as string);
+      if (!labData) {
+        toast.error("Unable to get Lab Id");
+        return null;
+      }
+      setLab(labData);
+      const data = await clientsService.getClients(labData.labId);
       setClients(data);
       setError(null);
     } catch (err: any) {

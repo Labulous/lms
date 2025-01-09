@@ -30,7 +30,7 @@ const NewCase: React.FC = () => {
     patientFirstName: "",
     patientLastName: "",
     orderDate: format(new Date(), "yyyy-MM-dd"),
-    status: "In Queue" as CaseStatus,
+    status: "in_queue" as CaseStatus,
     deliveryMethod: "Pickup" as DeliveryMethod,
     deliveryMethodError: "",
     enclosedItems: {
@@ -123,29 +123,22 @@ const NewCase: React.FC = () => {
   };
 
   useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        setLoading(true);
-        const data = await clientsService.getClients();
-
-        if (Array.isArray(data)) {
-          setClients(data);
-        }
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        toast.error("Failed to load clients");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const getCasesLength = async () => {
       try {
         setLoading(true);
 
         const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        const clients = await clientsService.getClients(labData?.labId ?? "");
+        if (Array.isArray(clients)) {
+          setClients(clients);
+        }
+
         setLab(labData);
-        const number = await fetchCaseCount(); // Fetch current case count
+        const number = await fetchCaseCount(labData.labId); // Fetch current case count
 
         if (typeof number === "number") {
           // Generate case number
@@ -173,7 +166,6 @@ const NewCase: React.FC = () => {
     };
 
     getCasesLength();
-    fetchClients();
   }, [user?.id]);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

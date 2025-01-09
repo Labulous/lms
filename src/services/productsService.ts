@@ -20,7 +20,11 @@ export interface ProductInput {
   billing_type_id: string;
   requires_shade?: boolean;
 }
-
+export interface ProductTypes {
+  id: string;
+  description: string;
+  name: string;
+}
 export type Product = ProductRow;
 
 class ProductsService {
@@ -46,6 +50,32 @@ class ProductsService {
 
       logger.debug("Raw products from Supabase:", { products });
       return products || [];
+    } catch (error) {
+      logger.error("Error in getProducts", { error });
+      throw error;
+    }
+  }
+  async getProductTypes(labId: string): Promise<ProductTypes[]> {
+    try {
+      logger.debug("Starting to fetch products from Supabase");
+      const { data: productTypes, error } = await supabase
+        .from("product_types")
+        .select(
+          `
+          id,
+          description,
+          name
+        `
+        )
+        .eq("lab_id", labId);
+
+      if (error) {
+        logger.error("Error fetching products from Supabase", { error });
+        throw error;
+      }
+
+      logger.debug("Raw productTypes from Supabase:", { productTypes });
+      return productTypes || [];
     } catch (error) {
       logger.error("Error in getProducts", { error });
       throw error;

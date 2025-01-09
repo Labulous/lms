@@ -22,7 +22,7 @@ import {
   ProductWithShade,
   Database,
 } from "@/types/supabase";
-import { productsService } from "@/services/productsService";
+import { productsService, ProductTypes } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
 import { Input } from "@/components/ui/input";
 import {
@@ -60,6 +60,9 @@ import { fetchShadeOptions } from "@/data/mockCasesData";
 import { Item } from "@radix-ui/react-dropdown-menu";
 import { createClient } from "@supabase/supabase-js";
 import { CaseStatus, FormData, ToothInfo } from "@/types/supabase";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
@@ -178,6 +181,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     useState<SavedProduct | null>(selectedMaterial);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [toothSelectorKey, setToothSelectorKey] = useState(0);
+  const [productTypes, setProductTypes] = useState<ProductTypes[]>([]);
 
   // Preview state for the Add Shade table
   const [previewItem, setPreviewItem] = useState<ToothItem | null>(null);
@@ -185,6 +189,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     null
   );
   const [isReadyToAdd, setIsReadyToAdd] = useState(false);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
   const [shadePopoverOpen, setShadePopoverOpen] = useState(false);
 
@@ -215,16 +220,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     null
   );
   const [shadesItems, setShadesItems] = useState<any[]>([]);
-
-  const [shadeOptions, setShadeOptions] = useState<ShadeOption[]>([]);
+  const { user } = useAuth();
+  // const [shadeOptions, setShadeOptions] = useState<ShadeOption[]>([]);
 
   useEffect(() => {
     if (selectedMaterial !== selectedMaterialState) {
       setSelectedMaterialState(selectedMaterial);
     }
   }, [selectedMaterial]);
-  const getShadeOptions = async () => {
-    const shadeOptions = await fetchShadeOptions();
+  const getShadeOptions = async (labId: string) => {
+    const shadeOptions = await fetchShadeOptions(labId);
     if (shadeOptions) {
       console.log("Shade Options:", shadeOptions);
       setShadesItems(shadeOptions);
@@ -234,11 +239,57 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
   // Fetch products when component mounts or when material changes
   useEffect(() => {
-    const fetchProducts = async () => {
-      getShadeOptions();
+    const fetchProductTypes = async () => {
+      const labData = await getLabIdByUserId(user?.id as string);
+      if (!labData) {
+        toast.error("Unable to get Lab Id");
+        return null;
+      }
+      setLab(labData);
+      getShadeOptions(labData.labId);
       try {
         setLoading(true);
-        const fetchedProducts = await productsService.getProducts();
+
+        const fetchedProductTypes = await productsService.getProductTypes(
+          labData.labId
+        );
+        console.log("Fetched product types:", fetchedProductTypes);
+        setProductTypes(fetchedProductTypes);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        toast.error("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductTypes();
+  }, []); // Only fetch on mount, we'll filter in useMemo
+  useEffect(() => {
+    const fetchProductTypes = async () => {
+      const selectedId = productTypes.find(
+        (item) => item.name === selectedType
+      );
+      console.log(selectedId?.id, "selectedId");
+      try {
+        setLoading(true);
+        const { data: fetchedProducts, error } = await supabase
+          .from("products")
+          .select(
+            `
+                  *,
+                  material:materials(name),
+                  product_type:product_types(name),
+                  billing_type:billing_types(name, label)
+                `
+          )
+          .order("name")
+          .eq("product_type_id", selectedId?.id).select("*");
+
+        if (error) {
+          toast.error("Error fetching products from Supabase");
+          throw error;
+        }
         console.log(
           "Fetched products:",
           fetchedProducts.map((p) => ({
@@ -257,8 +308,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     };
 
-    fetchProducts();
-  }, []); // Only fetch on mount, we'll filter in useMemo
+    if (selectedType) {
+      fetchProductTypes();
+    }
+  }, [selectedType]); // Only fetch on mount, we'll filter in useMemo
 
   const filteredProducts = useMemo(() => {
     if (!products || !Array.isArray(products)) return []; // Ensure products is valid
@@ -312,7 +365,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setErrors({});
     if (selectedMaterial) {
       // Set initial type based on material
-      setSelectedType(PRODUCT_TYPES[0]);
+      // setSelectedType(PRODUCT_TYPES[0]);
     } else {
       setSelectedType(null);
     }
@@ -366,7 +419,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return;
     }
     console.log(product, "product selected");
-    setSelectedProduct(product);
+
+    const productExists = selectedProducts.some(
+      (item) => item.name === product?.name
+    );
+
+    if (productExists) {
+      toast.error(`Product with name "${product?.name}" is already selected.`);
+    } else {
+      setSelectedProduct(product);
+    }
 
     if (itemId) {
       setToothItems((prev) =>
@@ -506,8 +568,42 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleAddToothItems = (teeth: number[]) => {
-    if (!selectedType || selectedTeeth.length === 0) {
-      toast.error("Please select teeth before adding");
+    if (!selectedType) {
+      toast.error("Please select the product type");
+      return;
+    }
+
+    if (!teeth || teeth.length === 0) {
+      toast.error("Please select the teeth");
+      return;
+    }
+
+    if (!shadeData.occlusal) {
+      toast.error("Please provide the occlusal shade");
+      return;
+    }
+
+    if (!shadeData.body) {
+      toast.error("Please provide the body shade");
+      return;
+    }
+
+    if (!shadeData.gingival) {
+      toast.error("Please provide the gingival shade");
+      return;
+    }
+
+    if (!shadeData.stump) {
+      toast.error("Please provide the stump shade");
+      return;
+    }
+
+    if (!selectedProduct?.name) {
+      toast.error("Please select a valid product");
+      return;
+    }
+    if (!previewNote) {
+      toast.error("Please enter product notes");
       return;
     }
 
@@ -594,7 +690,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setToothItems((prev: any) => [...prev, newItem]);
     setselectedProducts((prev: any) => [...prev, newItem]);
     onProductsChange([...selectedProducts, newProduct]);
-
+    setPreviewNote("");
     // Add highlight effect
     setHighlightedItems((prev) => new Set([...prev, newItem.id]));
     setTimeout(() => {
@@ -614,7 +710,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleRemoveToothItem = (itemId: string) => {
-    alert(itemId);
     // Find the item to be removed
     const itemToRemove = toothItems.find((item) => item.id === itemId);
     setselectedProducts((prev: any[]) =>
@@ -889,14 +984,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             <div className="col-span-1 pr-4">
               <Label className="text-xs">Select Type:</Label>
               <div className="flex flex-col space-y-1 mt-2.5">
-                {PRODUCT_TYPES.map((type) => (
+                {productTypes.map((type) => (
                   <Button
-                    key={type}
+                    key={type.id}
                     variant="default"
                     style={
-                      selectedType === type
+                      selectedType === type.name
                         ? {
-                            backgroundColor: TYPE_COLORS[type],
+                            backgroundColor: TYPE_COLORS[type.name],
                             color: "white",
                           }
                         : {
@@ -906,13 +1001,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     }
                     className={cn(
                       "justify-start text-left h-auto py-2 px-3 w-full text-xs",
-                      selectedType === type
+                      selectedType === type.name
                         ? "hover:opacity-90"
                         : "hover:bg-gray-50"
                     )}
-                    onClick={() => setSelectedType(type)}
+                    onClick={() => {
+                      setSelectedType(type.name);
+                    }}
                   >
-                    {type}
+                    {type.name}
                   </Button>
                 ))}
               </div>

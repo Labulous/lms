@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Client, clientsService } from "@/services/clientsService";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { getLabIdByUserId } from "@/services/authService";
 
 interface NewDebitModalProps {
   onClose: () => void;
@@ -35,13 +36,21 @@ export function NewDebitModal({ onClose, onSubmit }: NewDebitModalProps) {
   const [loading, setLoading] = useState(false);
   const [isClientLoading, setIsClientLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
   // Fetch clients on mount
   useEffect(() => {
     const fetchClients = async () => {
       try {
         setLoading(true);
-        const data = await clientsService.getClients();
+
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        setLab(labData);
+        const data = await clientsService.getClients(labData.labId);
 
         if (Array.isArray(data)) {
           setClients(data);
