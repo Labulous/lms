@@ -14,7 +14,6 @@ import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
-import CaseDetails from "@/components/cases/CaseDetails";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -225,13 +224,10 @@ const NewCase: React.FC = () => {
         !formData.caseDetails?.occlusalType ||
         !formData.caseDetails?.ponticType
       ) {
-        // Check and add validation errors if necessary
-        // Ensure caseDetails is initialized if not already
         if (!validationErrors.caseDetails) {
           validationErrors.caseDetails = {};
         }
 
-        // Only add errors for fields that are empty or missing
         if (!formData.caseDetails?.contactType) {
           validationErrors.caseDetails.contactType = "Contact Type is required";
         }
@@ -305,9 +301,6 @@ const NewCase: React.FC = () => {
     }
   };
 
-  // console.log(formData,"Form data")
-  //   console.log(formData)
-  // console.log(errors,"Error")
   return (
     <div className="p-6">
       <div className="space-y-4">

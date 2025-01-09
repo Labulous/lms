@@ -526,8 +526,6 @@ const UpdateCase: React.FC = () => {
             teethProduct: productTeeth,
           };
         });
-        console.log(caseData, "caseData");
-        console.log(productsWithDiscounts, "products");
 
         const caseDataApi: any = caseData;
         setFormData((prevData) => ({
@@ -618,8 +616,6 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId]);
-  console.log(errors, "errors");
-  // console.log(formData, "From data");
   return (
     <div className="p-6">
       <div className="space-y-4">
