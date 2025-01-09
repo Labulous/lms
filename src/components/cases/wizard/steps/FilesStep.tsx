@@ -24,9 +24,9 @@ interface FormData {
 interface FilesStepProps {
   formData: FormData;
   onChange: (data: FormData) => void;
-  errors?: any;
   selectedFiles?: File[];
   setSelectedFiles?: Dispatch<SetStateAction<File[]>>;
+  errors?: Partial<FormData>;
 }
 
 const FilesStep: React.FC<FilesStepProps> = ({
@@ -34,6 +34,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
   onChange,
   selectedFiles,
   setSelectedFiles,
+  errors,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -233,6 +234,10 @@ const FilesStep: React.FC<FilesStepProps> = ({
               className="mt-1 bg-white"
               placeholder="Enter any additional items..."
             />
+
+            {errors?.otherItems && (
+              <p className="mt-2 text-sm text-red-500">{errors?.otherItems}</p>
+            )}
           </div>
         </div>
       </div>

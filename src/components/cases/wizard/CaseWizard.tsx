@@ -35,6 +35,7 @@ export interface FormData {
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
+  statusError?: string;
   deliveryMethod: "Pickup" | "Local Delivery" | "Shipping";
   dueDate?: string;
   isDueDateTBD?: boolean;
