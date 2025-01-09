@@ -11,7 +11,6 @@ import {
 import { MaterialType } from "../../../../data/mockProductData";
 import { Product } from "../../../../services/productsService";
 import { cn } from "@/lib/utils";
-import { fetchShadeOptions } from "@/data/mockCasesData";
 
 interface MultiColumnProductSelectorProps {
   materials: MaterialType[];

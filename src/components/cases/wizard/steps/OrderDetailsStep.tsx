@@ -4,6 +4,7 @@ import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -248,7 +249,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
                 updatedDate={
-                  formData.dueDate ? new Date(formData.orderDate) : undefined
+                  formData.dueDate ? new Date(formData.orderDate) :  new Date()
                 }
               />
               {errors.orderDate && (

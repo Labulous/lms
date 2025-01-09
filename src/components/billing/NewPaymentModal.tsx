@@ -96,6 +96,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [invoices, setInvoices] = useState<Case[]>([]);
   const [updatedInvoices, setUpdatedInvoices] = useState<Case[]>([]);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [balanceSummary, setBalanceSummary] =
     useState<BalanceTrackingItem | null>(null);
   const [loading, setLoading] = useState(false);
@@ -318,7 +319,14 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     const fetchClients = async () => {
       try {
         setLoading(true);
-        const data = await clientsService.getClients();
+
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        setLab(labData);
+        const data = await clientsService.getClients(labData.labId);
 
         if (Array.isArray(data)) {
           setPaymentAmount(0);
@@ -340,13 +348,6 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
       setLoading(true);
 
       try {
-        const lab = await getLabIdByUserId(user?.id as string);
-
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
@@ -376,7 +377,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
               )
             `
           )
-          .eq("lab_id", lab.labId)
+          .eq("lab_id", lab?.labId)
           .eq("status", "completed")
           .eq("client_id", selectedClient)
           .order("created_at", { ascending: true });

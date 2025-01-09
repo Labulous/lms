@@ -20,7 +20,7 @@ interface DatePickerProps {
   maxDate?: Date;
   dateFormat?: string;
   placeholder?: string;
-  updatedDate?: Date | undefined;
+  updatedDate?: Date | string | undefined;
 }
 
 const css = `
@@ -217,7 +217,7 @@ export function DatePicker({
   };
 
   useEffect(() => {
-    setSelectedDate(updatedDate);
+    setSelectedDate(updatedDate as Date);
   }, [updatedDate]);
   return (
     <>

@@ -1,11 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Client, ClientInput, clientsService } from '../../services/clientsService';
-import { toast } from 'react-hot-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Client,
+  ClientInput,
+  clientsService,
+} from "../../services/clientsService";
+import { toast } from "react-hot-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-import ClientAccountInfo from './ClientAccountInfo';
+import ClientAccountInfo from "./ClientAccountInfo";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ClientDetailsProps {
   client: Client | null;
@@ -15,22 +26,36 @@ interface ClientDetailsProps {
   error: string | null;
 }
 
-const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete, loading, error }) => {
+const ClientDetails: React.FC<ClientDetailsProps> = ({
+  client,
+  onEdit,
+  onDelete,
+  loading,
+  error,
+}) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<ClientInput | null>(null);
   const [activeTab, setActiveTab] = useState("client-information");
   const [clients, setClients] = useState<Client[]>([]);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
+  const { user } = useAuth();
   useEffect(() => {
     const loadClients = async () => {
       try {
-        const allClients = await clientsService.getClients();
-        console.log('Loaded clients:', allClients);
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        setLab(labData);
+        const allClients = await clientsService.getClients(labData.labId);
+        console.log("Loaded clients:", allClients);
         setClients(allClients);
       } catch (error) {
-        console.error('Error loading clients:', error);
-        toast.error('Failed to load clients list');
+        console.error("Error loading clients:", error);
+        toast.error("Failed to load clients list");
       }
     };
     loadClients();
@@ -49,7 +74,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
       <div className="text-center py-4">
         <div className="text-red-500">{error}</div>
         <button
-          onClick={() => navigate('/clients')}
+          onClick={() => navigate("/clients")}
           className="mt-4 text-blue-500 hover:text-blue-700"
         >
           Return to Clients List
@@ -61,9 +86,11 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
   if (!client) {
     return (
       <div className="text-center py-4">
-        <div className="text-gray-500">No client data available. Please try again.</div>
+        <div className="text-gray-500">
+          No client data available. Please try again.
+        </div>
         <button
-          onClick={() => navigate('/clients')}
+          onClick={() => navigate("/clients")}
           className="mt-4 text-blue-500 hover:text-blue-700"
         >
           Return to Clients List
@@ -78,7 +105,9 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
       <div className="mb-6 space-y-2">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-2 hover:text-gray-600 focus:outline-none">
-            <h2 className="text-2xl font-bold text-gray-900">{client.clientName}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {client.clientName}
+            </h2>
             <ChevronDown className="h-5 w-5 text-gray-500" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-[300px]">
@@ -98,14 +127,23 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
           </DropdownMenuContent>
         </DropdownMenu>
         <div className="flex items-baseline gap-4">
-          <span className="text-sm text-gray-500">Account #{client.accountNumber}</span>
+          <span className="text-sm text-gray-500">
+            Account #{client.accountNumber}
+          </span>
         </div>
       </div>
 
       {/* Tabs Section */}
-      <Tabs defaultValue="client-information" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs
+        defaultValue="client-information"
+        className="w-full"
+        value={activeTab}
+        onValueChange={setActiveTab}
+      >
         <TabsList className="w-full">
-          <TabsTrigger value="client-information">Client Information</TabsTrigger>
+          <TabsTrigger value="client-information">
+            Client Information
+          </TabsTrigger>
           <TabsTrigger value="case-information">Case Activity</TabsTrigger>
           <TabsTrigger value="invoice">Billing</TabsTrigger>
           <TabsTrigger value="sales-activity">Sales Activity</TabsTrigger>
@@ -126,7 +164,9 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
         <TabsContent value="case-information">
           <div className="p-4">
             <h2 className="text-lg font-semibold">Case Information</h2>
-            <p className="text-gray-500">Case information content coming soon...</p>
+            <p className="text-gray-500">
+              Case information content coming soon...
+            </p>
           </div>
         </TabsContent>
 
@@ -140,7 +180,9 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({ client, onEdit, onDelete,
         <TabsContent value="sales-activity">
           <div className="p-4">
             <h2 className="text-lg font-semibold">Sales Activity</h2>
-            <p className="text-gray-500">Sales activity content coming soon...</p>
+            <p className="text-gray-500">
+              Sales activity content coming soon...
+            </p>
           </div>
         </TabsContent>
       </Tabs>

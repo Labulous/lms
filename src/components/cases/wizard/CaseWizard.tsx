@@ -18,6 +18,7 @@ import { toast } from "react-hot-toast";
 import { useAuth } from "../../../contexts/AuthContext";
 import { createLogger } from "../../../utils/logger";
 import { SavedProduct } from "./modals/AddProductModal";
+import { getLabIdByUserId } from "@/services/authService";
 
 const logger = createLogger({ module: "CaseWizard" });
 
@@ -83,6 +84,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [formData, setFormData] = useState<FormData>({
     clientId: "",
     patientFirstName: "",
@@ -111,7 +113,13 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       try {
         console.log("Starting client fetch...");
         setLoading(true);
-        const data = await clientsService.getClients();
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        setLab(labData);
+        const data = await clientsService.getClients(labData.labId);
         console.log("Client fetch response:", data);
         if (Array.isArray(data)) {
           setClients(data);

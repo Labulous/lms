@@ -75,7 +75,6 @@ interface Case {
   product_ids: ProductId[];
 }
 
-
 export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   const { user } = useAuth();
   const [date, setDate] = useState<Date>();
@@ -92,6 +91,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   const [updatedInvoices, setUpdatedInvoices] = useState<Case[]>([]);
   const [overpaymentAmount, setOverpaymentAmount] = useState(0);
   const [remainingBalance, setRemainingBalance] = useState(0);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [balanceSummary, setBalanceSummary] =
     useState<BalanceTrackingItem | null>(null);
   const [paymentAllocation, setPaymentAllocation] = useState<
@@ -102,7 +102,13 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     const fetchClients = async () => {
       try {
         setLoading(true);
-        const data = await clientsService.getClients();
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return null;
+        }
+        setLab(labData);
+        const data = await clientsService.getClients(labData?.labId);
 
         if (Array.isArray(data)) {
           setClients(data);
@@ -129,12 +135,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
       try {
         setLoading(true);
 
-        const lab = await getLabIdByUserId(user?.id as string);
-
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
@@ -164,7 +164,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
             )
           `
           )
-          .eq("lab_id", lab.labId)
+          .eq("lab_id", lab?.labId)
           .eq("status", "completed")
           .eq("client_id", selectedClient)
           .order("created_at", { ascending: true });
@@ -174,7 +174,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
           return;
         }
 
-        // Filter cases where invoicesData contains statuses not "draft", "paid", or "cancelled"
         const filteredCases: any = casesData?.filter((caseItem) =>
           caseItem.invoicesData.some(
             (invoice) =>
@@ -213,7 +212,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
   console.log(selectedClient, "selectedClient");
   const handleSubmit = async () => {
-    // if (!validateForm()) return;
     try {
       setLoading(true);
 

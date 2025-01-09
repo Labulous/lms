@@ -151,6 +151,7 @@ const saveCaseProduct = async (
       tooth_number: product.teeth || "",
       product_id: product.id,
       type: product.type || "",
+      lab_id: cases.overview.lab_id || "",
     }));
 
     // Calculate discounted prices for products
@@ -473,6 +474,7 @@ const updateCases = async (
       tooth_number: product.teeth || "",
       product_id: product.id,
       type: product.type || "",
+      lab_id: cases.overview.lab_id || "",
     }));
 
     // Step to check if rows exist for product_id before inserting
@@ -497,7 +499,8 @@ const updateCases = async (
         if (insertError) {
           console.error(
             "Error inserting new case_product_teeth row:",
-            insertError
+            insertError,
+            console.log(row, "row")
           );
           return; // Exit if there is an error
         } else {
@@ -635,11 +638,12 @@ export const getCasesByTechnician = (technicianId: string): Case[] => {
   );
 };
 
-export const fetchShadeOptions = async () => {
+export const fetchShadeOptions = async (labId: string) => {
   try {
     const { data, error } = await supabase
       .from("shade_options") // Table name
-      .select("*"); // Select all columns. Adjust if needed.
+      .select("*")
+      .eq("lab_id", labId);
 
     if (error) {
       console.error("Error fetching shade options:", error.message);

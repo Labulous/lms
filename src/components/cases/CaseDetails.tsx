@@ -652,7 +652,9 @@ const CaseDetails: React.FC = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() => navigate(`/cases/update?caseId=${caseDetail.id}`)}
+                      onClick={() =>
+                        navigate(`/cases/update?caseId=${caseDetail.id}`)
+                      }
                     >
                       Edit Case
                     </DropdownMenuItem>
@@ -1192,24 +1194,23 @@ const CaseDetails: React.FC = () => {
               </CardHeader>
               <CardContent className="py-2 px-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-gray-600">Occlusal Details</p>
-                    <p className="font-medium">
-                      {caseDetail?.case_products?.length > 0
-                        ? caseDetail.custom_occlusal_details
-                        : caseDetail.case_products?.[0]?.occlusal_type}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-600">Contact Type</p>
-                    <p className="font-medium">
-                      {caseDetail.custom_contact_details
-                        ? caseDetail.custom_contact_details
-                        : caseDetail.contact_type}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {caseDetail?.custom_occlusal_details ? (
+                    <div>
+                      <p className="text-gray-600">Occlusal Details</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_occlusal_details}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {caseDetail.custom_contact_details ? (
+                    <div>
+                      <p className="text-gray-600">Contact Type</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_contact_details}
+                      </p>
+                    </div>
+                  ) : null}
                   <div className="mb-4">
                     <p className="text-gray-600">Lab Notes</p>
                     <p className="font-medium">
@@ -1222,13 +1223,22 @@ const CaseDetails: React.FC = () => {
                       {caseDetail?.technician_notes || "No technician notes"}
                     </p>
                   </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Other Items</p>
+                    <p className="font-medium">
+                      {caseDetail?.otherItems || "No notes"}
+                    </p>
+                  </div>
+                  {caseDetail.custom_pontic_details ? (
+                    <div>
+                      <p className="text-gray-600">Contact Type</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_pontic_details}
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="mb-4">
-                  <p className="text-gray-600">Other Items</p>
-                  <p className="font-medium">
-                    {caseDetail?.otherItems || "No notes"}
-                  </p>
-                </div>
+
                 {caseDetail.teethProducts?.map((product, index) => (
                   <div
                     key={index}
@@ -1349,25 +1359,19 @@ const CaseDetails: React.FC = () => {
                         <div>
                           <p className="text-sm text-gray-500">Occlusal Type</p>
                           <p className="font-medium">
-                            {caseDetail.custom_occulusal_details ||
-                              caseDetail.occlusal_type ||
-                              "Not specified"}
+                            {caseDetail.occlusal_type || "Not specified"}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Contact Type</p>
                           <p className="font-medium">
-                            {caseDetail.custom_contact_details ||
-                              caseDetail.contact_type ||
-                              "Not specified"}
+                            {caseDetail.contact_type || "Not specified"}
                           </p>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">Pontic Type</p>
                           <p className="font-medium">
-                            {caseDetail.custom_pontic_details ||
-                              caseDetail.pontic_type ||
-                              "Not specified"}
+                            {caseDetail.pontic_type || "Not specified"}
                           </p>
                         </div>
                       </div>
