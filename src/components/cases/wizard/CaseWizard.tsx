@@ -26,7 +26,7 @@ type WizardStep = "order" | "products" | "files" | "notes";
 
 export interface FormData {
   notes:
-    | { labNotes?: string | undefined; technicianNotes?: string | undefined }
+    | { instructionNotes?: string | undefined; invoiceNotes?: string | undefined }
     | undefined;
   clientId: string;
   patientFirstName: string;
@@ -97,8 +97,8 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     otherItems: "",
     isDueDateTBD: false,
     notes: {
-      labNotes: "",
-      technicianNotes: "",
+      instructionNotes: "",
+      invoiceNotes: "",
     },
   });
 
@@ -306,8 +306,8 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
           <NotesStep
             formData={{
               notes: {
-                labNotes: formData.notes?.labNotes,
-                technicianNotes: formData.notes?.technicianNotes,
+                instructionNotes: formData.notes?.instructionNotes,
+                invoiceNotes: formData.notes?.invoiceNotes,
               },
             }}
             onChange={(notes) => setFormData({ ...formData })}

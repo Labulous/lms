@@ -15,10 +15,11 @@ import { cn } from "@/lib/utils";
 interface MultiColumnProductSelectorProps {
   materials: MaterialType[];
   products: Product[];
-  selectedProduct: Product | null;
+  selectedProduct: { id: string; name: string } | null;
   onProductSelect: (product: Product | any) => void;
   disabled?: boolean;
   size?: "default" | "xs";
+  onClick: () => void;
 }
 
 const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
@@ -28,6 +29,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   onProductSelect,
   disabled = false,
   size = "default",
+  onClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -73,6 +75,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
             disabled ? "opacity-50 cursor-not-allowed" : ""
           )}
           disabled={disabled}
+          onClick={() => onClick()}
         >
           {selectedProduct ? selectedProduct.name : "Select product..."}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

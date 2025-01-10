@@ -155,15 +155,10 @@ interface ProductRow {
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
-  selectedMaterial,
-  onAddToCase,
   selectedProducts,
-  onProductsChange,
-  onMaterialChange,
   onCaseDetailsChange,
   initialCaseDetails,
   setselectedProducts,
-  formData,
   formErrors,
 }) => {
   const emptyRow: ProductRow = {
@@ -174,39 +169,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     isComplete: false,
   };
 
-  const [productRows, setProductRows] = useState<ProductRow[]>([emptyRow]);
-
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
+    null
+  );
   const [products, setProducts] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shadeType, setShadeType] = useState<"1" | "2" | "3">("1");
-  const [shadeData, setShadeData] = useState<ShadeData>({
-    occlusal: "",
-    body: "",
-    gingival: "",
-    stump: "",
-  });
-  const [toothItems, setToothItems] = useState<ToothItem[]>([]);
+  const [shadeData, setShadeData] = useState<ShadeData[]>([]);
   const [discount, setDiscount] = useState<number>(0);
-  const [errors, setErrors] = useState<{
-    product?: string;
-    teeth?: string;
-    shade?: string;
-    type?: string;
-  }>({});
-  const [highlightedItems, setHighlightedItems] = useState<Set<string>>(
-    new Set()
-  );
-  const [openPopoverIds, setOpenPopoverIds] = useState<Set<string>>(new Set());
-  const [arch, setArch] = useState<string>("");
-  const [selectedMaterialState, setSelectedMaterialState] =
-    useState<SavedProduct | null>(selectedMaterial);
+
   const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [toothSelectorKey, setToothSelectorKey] = useState(0);
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
-  const { user } = useAuth();
 
+  const [notePopoverOpen, setNotePopoverOpen] = useState<Map<number, boolean>>(
+    new Map()
+  );
+  const [shadePopoverOpen, setShadePopoverOpen] = useState<
+    Map<number, boolean>
+  >(new Map());
+  const [percentPopoverOpen, setPercentPopoverOpen] = useState<
+    Map<number, boolean>
+  >(new Map());
+  const { user } = useAuth();
   useEffect(() => {
     const fetchProductTypes = async () => {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -232,55 +217,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     };
 
     fetchProductTypes();
-  }, []); // Only fetch on mount, we'll filter in useMemo
+  }, []);
 
-  useEffect(() => {
-    const fetchProductTypes = async () => {
-      const selectedId = productTypes.find(
-        (item) => item.name === selectedType
-      );
-      console.log(selectedId?.id, "selectedId");
-      try {
-        setLoading(true);
-        const { data: fetchedProducts, error } = await supabase
-          .from("products")
-          .select(
-            `
-                  *,
-                  material:materials(name),
-                  product_type:product_types(name),
-                  billing_type:billing_types(name, label)
-                `
-          )
-          .order("name")
-          .eq("product_type_id", selectedId?.id).select("*");
+  const fetchedProducts = async (selectedType: string) => {
+    const selectedId = productTypes.find((item) => item.name === selectedType);
+    console.log(selectedId?.id, "selectedId");
+    try {
+      setLoading(true);
+      const { data: fetchedProducts, error } = await supabase
+        .from("products")
+        .select(
+          `
+                *,
+                material:materials(name),
+                product_type:product_types(name),
+                billing_type:billing_types(name, label)
+              `
+        )
+        .order("name")
+        .eq("product_type_id", selectedId?.id)
+        .select("*");
 
-        if (error) {
-          toast.error("Error fetching products from Supabase");
-          throw error;
-        }
-        console.log(
-          "Fetched products:",
-          fetchedProducts.map((p) => ({
-            id: p.id,
-            name: p.name,
-            material: p.material,
-            type: p.product_type,
-          }))
-        );
-        setProducts(fetchedProducts);
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        toast.error("Failed to load products");
-      } finally {
-        setLoading(false);
+      if (error) {
+        toast.error("Error fetching products from Supabase");
+        throw error;
       }
-    };
-
-    if (selectedType) {
-      fetchProductTypes();
+      console.log(
+        "Fetched products:",
+        fetchedProducts.map((p) => ({
+          id: p.id,
+          name: p.name,
+          material: p.material,
+          type: p.product_type,
+        }))
+      );
+      setProducts(fetchedProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
     }
-  }, [selectedType]); // Only fetch on mount, we'll filter in useMemo
+  };
+  useEffect(() => {
+    if (selectedType) {
+      fetchedProducts(selectedType);
+    }
+  }, [selectedType]);
 
   useEffect(() => {
     const getShadeOptions = async (labId: string) => {
@@ -297,88 +280,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   }, [lab]);
 
-  useEffect(() => {
-    const completeRows = productRows.filter((row) =>
-      row.type && row.teeth.length > 0 && row.product
-    );
-
-    // Convert rows to saved products format with required fields
-    const newProducts = completeRows.map((row) => ({
-      id: row.product!.id,
-      name: row.product!.name || "",
-      type: row.type!,
-      teeth: row.teeth,
-      shades: {
-        occlusal: row.shadeData?.occlusal || "",
-        body: row.shadeData?.body || "",
-        gingival: row.shadeData?.gingival || "",
-        stump: row.shadeData?.stump || ""
-      },
-      price: row.product!.price || 0,
-      discount: 0,
-      notes: ""
-    }));
-
-    // Update parent form state
-    onProductsChange(newProducts);
-  }, [productRows, onProductsChange]);
-
-  const updateRow = useCallback((id: string, updates: Partial<ProductRow>) => {
-    setProductRows((prev) => {
-      const newRows = prev.map((row) =>
-        row.id === id ? { ...row, ...updates } : row
-      );
-
-      // Check if the last row is being edited
-      const lastRow = newRows[newRows.length - 1];
-      if (
-        lastRow.id === id &&
-        (updates.type || (updates.teeth && updates.teeth.length > 0) || updates.product)
-      ) {
-        // Add a new empty row
-        return [...newRows, { ...emptyRow, id: uuidv4() }];
-      }
-
-      return newRows;
-    });
-  }, []);
-
-  // Remove a row by id
-  const removeRow = useCallback((id: string) => {
-    setProductRows((prev) => {
-      const filtered = prev.filter((row) => row.id !== id);
-      return filtered.length === 0
-        ? [{ ...emptyRow, id: uuidv4() }]
-        : filtered;
-    });
-  }, []);
-
-  // Load initial products when editing existing case
-  useEffect(() => {
-    if (selectedProducts?.length > 0) {
-      const initialRows = selectedProducts.map((product) => ({
-        id: uuidv4(),
-        type: product.type || "",
-        teeth: product.teeth,
-        product: products.find(p => p.id === product.id) || null,
-        shadeData: product.shades,
-        isComplete: true,
-      }));
-
-      // Add an empty row at the end
-      initialRows.push({ ...emptyRow, id: uuidv4() });
-
-      setProductRows(initialRows);
-    }
-  }, [selectedProducts, products]);
-
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
     // Check if it's an arch selection
     const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
     const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-    const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+    const isFullArch = teeth.length >= 16;
 
     if (isFullArch) {
       if (hasUpper && hasLower) return "All";
@@ -386,13 +294,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (hasLower) return "Lower";
     }
 
-    // For non-arch selections, use the original range formatting
     if (teeth.length === 1) return teeth[0].toString();
 
-    // Sort teeth numbers
     const sortedTeeth = [...teeth].sort((a, b) => a - b);
 
-    // Find continuous ranges
     let ranges: string[] = [];
     let rangeStart = sortedTeeth[0];
     let prev = sortedTeeth[0];
@@ -414,16 +319,223 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return ranges.join(", ");
   };
 
+  const handleProductSelect = (
+    value: any,
+    keepTeeth = false,
+    index?: number
+  ) => {
+    const product = products.find((p) => p.id === value.id) || null;
+    console.log(product, "product");
+
+    if (!product) return;
+    setSelectedProduct(product);
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index !== undefined) {
+        return prevSelectedProducts.map(
+          (selectedProduct: SavedProduct, i: number) => {
+            if (i === index) {
+              return {
+                ...selectedProduct,
+                id: product.id,
+                name: product.name,
+                price: product.price,
+              };
+            }
+            return selectedProduct;
+          }
+        );
+      } else {
+        return [
+          ...prevSelectedProducts,
+          {
+            id: product.id,
+            name: product.name,
+          },
+        ];
+      }
+    });
+  };
+
+  const handleCancelShades = (index: number) => {
+    setShadePopoverOpen((prev) => {
+      const updated = new Map(prev);
+      updated.set(index, false);
+      return updated;
+    });
+  };
+
+  const handleProductTypeChange = (
+    type: { name: string; id: string },
+    index: number
+  ) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        const updatedProducts = [...prevSelectedProducts];
+
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          type: type.name,
+          id: "",
+          name: "",
+        };
+
+        return updatedProducts;
+      } else {
+        return prevSelectedProducts;
+      }
+    });
+
+    setSelectedType(type.name);
+  };
+
+  console.log(selectedProducts, "selectedProducts");
+
+  const handleTeethSelectionChange = (teeth: any[], index: number) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        const updatedProducts = [...prevSelectedProducts];
+
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          teeth,
+        };
+
+        return updatedProducts;
+      } else {
+        return prevSelectedProducts;
+      }
+    });
+  };
+  const handleSaveShades = (index: number) => {
+    const updatedShades = {
+      occlusal: shadeData[index]?.occlusal || "",
+      body: shadeData[index]?.body || "",
+      gingival: shadeData[index]?.gingival || "",
+      stump: shadeData[index]?.stump || "",
+    };
+
+    console.log(updatedShades, "updatedShades");
+
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        const updatedProducts = [...prevSelectedProducts];
+
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          shades: updatedShades,
+        };
+
+        return updatedProducts;
+      } else {
+        console.error("Invalid index provided");
+        return prevSelectedProducts;
+      }
+    });
+
+    setShadePopoverOpen((prev) => {
+      const updated = new Map(prev);
+      updated.set(index, false);
+      return updated;
+    });
+  };
+
+  const handleDiscountChange = (index: number) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      const updatedProducts = [...prevSelectedProducts];
+
+      if (index >= 0 && index < updatedProducts.length) {
+        const selectedProduct = updatedProducts[index];
+
+        updatedProducts[index] = {
+          ...selectedProduct,
+          discount: discount,
+        };
+      }
+
+      return updatedProducts;
+    });
+    setDiscount(0);
+    setPercentPopoverOpen((prev) => {
+      const updated = new Map(prev);
+      updated.set(index, false);
+      return updated;
+    });
+  };
+
+  const addNewProduct = () => {
+    const hasInvalidProduct = selectedProducts.some(
+      (product) => !product.id || !product.type
+    );
+
+    if (hasInvalidProduct) {
+      toast.error("Please add the teeth and product.");
+    } else {
+      const newProduct: SavedProduct = {
+        id: "",
+        name: "",
+        type: "",
+        teeth: [],
+        price: 0,
+        shades: {
+          body: "",
+          gingival: "",
+          stump: "",
+          occlusal: "",
+        },
+        discount: 0,
+        notes: "",
+        quantity: 1,
+      };
+
+      setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
+        ...prevSelectedProducts,
+        newProduct,
+      ]);
+    }
+  };
+  const toggleNotePopover = (index: number) => {
+    setNotePopoverOpen((prev) =>
+      new Map(prev).set(index, !(prev.get(index) || false))
+    );
+  };
+
+  const toggleShadePopover = (index: number) => {
+    setShadePopoverOpen((prev) =>
+      new Map(prev).set(index, !(prev.get(index) || false))
+    );
+  };
+  const togglePercentPopover = (index: number) => {
+    setPercentPopoverOpen((prev) =>
+      new Map(prev).set(index, !(prev.get(index) || false))
+    );
+  };
+
+  useEffect(() => {
+    if (selectedProducts.length > 0) {
+      const shades = selectedProducts.map((item) => {
+        const obj = {
+          body: item.shades.body,
+          gingival: item.shades.gingival,
+          occlusal: item.shades.occlusal,
+          stump: item.shades.stump,
+          id: item.id,
+        };
+
+        return obj;
+      });
+
+      setShadeData(shades);
+    }
+  }, selectedProducts);
   return (
     <div className="w-full">
-      {/* Header */}
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-        <h3 className="text-sm font-medium text-white">Product Configuration</h3>
+        <h3 className="text-sm font-medium text-white">
+          Product Configuration
+        </h3>
       </div>
 
-      {/* Content Wrapper */}
       <div className="p-6 bg-slate-50">
-        {/* Product Table */}
         <div className="border rounded-lg bg-white mb-6">
           <Table>
             <TableHeader className="bg-slate-100 border-b border-slate-200">
@@ -431,13 +543,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="w-[200px]">Type</TableHead>
                 <TableHead className="w-[200px]">Teeth</TableHead>
                 <TableHead>Material/Item</TableHead>
+                <TableHead>Shades</TableHead>
+                <TableHead>Note</TableHead>
+                <TableHead>Percent</TableHead>
+                <TableHead>Quanitity</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {productRows.map((row, index) => (
-                <TableRow key={row.id}>
-                  <TableCell>
+              {selectedProducts.map((row, index) => (
+                <TableRow key={row.id} className="border">
+                  <TableCell className="border-b">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -456,16 +572,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           {productTypes.map((type) => (
                             <Button
                               key={type.id}
-                              variant={row.type === type.name ? "secondary" : "ghost"}
+                              variant={
+                                row.type === type.name ? "secondary" : "ghost"
+                              }
                               className={cn(
                                 "justify-start text-left h-auto py-2 px-3 w-full text-xs",
                                 row.type === type.name
                                   ? "hover:opacity-90"
                                   : "hover:bg-gray-50"
                               )}
-                              onClick={() => {
-                                updateRow(row.id, { type: type.name });
-                              }}
+                              onClick={() =>
+                                handleProductTypeChange(type, index)
+                              }
                             >
                               {type.name}
                             </Button>
@@ -474,7 +592,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </PopoverContent>
                     </Popover>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="border-b">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -493,10 +611,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </PopoverTrigger>
                       <PopoverContent className="w-[400px] p-2">
                         <ToothSelector
-                          billingType={row.product?.billing_type?.name || "perTooth"}
+                          billingType={
+                            selectedProduct?.billing_type?.name || "perTooth"
+                          }
                           selectedTeeth={row.teeth}
                           onSelectionChange={(teeth) =>
-                            updateRow(row.id, { teeth })
+                            handleTeethSelectionChange(teeth, index)
                           }
                           disabled={!row.type}
                           selectedProduct={{
@@ -508,41 +628,476 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </PopoverContent>
                     </Popover>
                   </TableCell>
-                  <TableCell>
-                    <Select
-                      disabled={!row.type || row.teeth.length === 0}
-                      value={row.product?.id}
-                      onValueChange={(value) => {
-                        const product = products.find((p) => p.id === value);
-                        updateRow(row.id, { product });
+                  <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                    <MultiColumnProductSelector
+                      materials={MATERIALS}
+                      products={products}
+                      selectedProduct={{
+                        id: selectedProducts[index].id ?? "",
+                        name:
+                          selectedProducts[index].name ?? "Select a Product",
+                      }}
+                      onProductSelect={(product) => {
+                        handleProductSelect(product, true, index);
+                      }}
+                      disabled={loading || row.teeth.length === 0}
+                      size="xs"
+                      onClick={() => fetchedProducts(row.type)}
+                    />
+                  </TableCell>
+
+                  <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                    <div className="flex flex-col space-y-0.5">
+                      <Popover open={shadePopoverOpen.get(index) || false}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs"
+                            disabled={row.teeth.length === 0}
+                            onClick={() => toggleShadePopover(index)}
+                          >
+                            Add Shade
+                          </Button>
+                        </PopoverTrigger>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          {shadeData
+                            .filter((item) => item.id === row.id)
+                            .slice(0, 4)
+                            .map((shade, index) => {
+                              const occlusalName = shadesItems.find(
+                                (option) => option.id === shade.occlusal
+                              )?.name;
+                              const bodyName = shadesItems.find(
+                                (option) => option.id === shade.body
+                              )?.name;
+                              const gingivalName = shadesItems.find(
+                                (option) => option.id === shade.gingival
+                              )?.name;
+                              const stumpName = shadesItems.find(
+                                (option) => option.id === shade.stump
+                              )?.name;
+
+                              if (
+                                !shade.occlusal &&
+                                !shade.body &&
+                                !shade.gingival &&
+                                !shade.stump
+                              ) {
+                                return null;
+                              }
+
+                              return (
+                                <div key={index} className="p-4 rounded-md">
+                                  {shade.occlusal && (
+                                    <p className="grid grid-cols-2 gap-4">
+                                      <strong>O:</strong>{" "}
+                                      {occlusalName || "No name available"}
+                                    </p>
+                                  )}
+                                  {shade.body && (
+                                    <p className="grid grid-cols-2 gap-4">
+                                      <strong>B:</strong>{" "}
+                                      {bodyName || "No name available"}
+                                    </p>
+                                  )}
+                                  {shade.gingival && (
+                                    <p className="grid grid-cols-2 gap-4">
+                                      <strong>G:</strong>{" "}
+                                      {gingivalName || "No name available"}
+                                    </p>
+                                  )}
+                                  {shade.stump && (
+                                    <p className="grid grid-cols-2 gap-4">
+                                      <strong>S:</strong>{" "}
+                                      {stumpName || "No name available"}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                        </div>
+
+                        <PopoverContent className="w-80">
+                          <div className="grid gap-4">
+                            <div className="space-y-2">
+                              <h4 className="font-medium leading-none">
+                                Shades
+                              </h4>
+                              <p className="text-sm text-muted-foreground">
+                                Set the shades for different areas
+                              </p>
+                            </div>
+
+                            <div className="grid gap-2">
+                              {/* Occlusal Shade */}
+                              <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="occlusal">Occlusal</Label>
+                                <Select
+                                  value={shadeData[index]?.occlusal || ""}
+                                  onValueChange={(value) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      updatedShadeData[index] = {
+                                        ...updatedShadeData[index],
+                                        occlusal: value,
+                                        id: row.id,
+                                      };
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select shade" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {shadesItems.map((shade) => (
+                                      <SelectItem
+                                        key={shade.id}
+                                        value={shade.id}
+                                      >
+                                        {shade.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Body Shade */}
+                              <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="body">Body</Label>
+                                <Select
+                                  value={shadeData[index]?.body || ""}
+                                  onValueChange={(value) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      updatedShadeData[index] = {
+                                        ...updatedShadeData[index],
+                                        body: value,
+                                        id: row.id,
+                                      };
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select shade" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {shadesItems.map((shade) => (
+                                      <SelectItem
+                                        key={shade.id}
+                                        value={shade.id}
+                                      >
+                                        {shade.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Gingival Shade */}
+                              <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="gingival">Gingival</Label>
+                                <Select
+                                  value={shadeData[index]?.gingival || ""}
+                                  onValueChange={(value) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      updatedShadeData[index] = {
+                                        ...updatedShadeData[index],
+                                        gingival: value,
+                                        id: row.id,
+                                      };
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select shade" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {shadesItems.map((shade) => (
+                                      <SelectItem
+                                        key={shade.id}
+                                        value={shade.id}
+                                      >
+                                        {shade.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Stump Shade */}
+                              <div className="grid grid-cols-3 items-center gap-4">
+                                <Label htmlFor="stump">Stump</Label>
+                                <Select
+                                  value={shadeData[index]?.stump || ""}
+                                  onValueChange={(value) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      updatedShadeData[index] = {
+                                        ...updatedShadeData[index],
+                                        stump: value,
+                                        id: row.id,
+                                      };
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Select shade" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {shadesItems.map((shade) => (
+                                      <SelectItem
+                                        key={shade.id}
+                                        value={shade.id}
+                                      >
+                                        {shade.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancelShades(index)}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleSaveShades(index)}
+                              >
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </TableCell>
+                  <TableCell className=" border-b">
+                    <Popover open={notePopoverOpen.get(index) || false}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-6 w-6",
+                            selectedProducts?.[index]?.notes?.length
+                              ? "text-blue-600"
+                              : "",
+                            "hover:text-blue-600"
+                          )}
+                          disabled={!row.id}
+                          onClick={() => toggleNotePopover(index)}
+                        >
+                          <StickyNote className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-3" align="end">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <Label className="text-xs">Add Note</Label>
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                setNotePopoverOpen((prev) => {
+                                  const updated = new Map(prev);
+                                  updated.set(index, false);
+                                  return updated;
+                                })
+                              }
+                            >
+                              Save
+                            </Button>
+                          </div>
+                          <Textarea
+                            placeholder="Enter note for this product..."
+                            value={selectedProducts[index].notes ?? ""}
+                            onChange={(e) => {
+                              const newNote = e.target.value;
+
+                              setselectedProducts(
+                                (prevSelectedProducts: SavedProduct[]) => {
+                                  const updatedProducts = [
+                                    ...prevSelectedProducts,
+                                  ];
+
+                                  if (
+                                    index >= 0 &&
+                                    index < updatedProducts.length
+                                  ) {
+                                    updatedProducts[index] = {
+                                      ...updatedProducts[index],
+                                      notes: newNote,
+                                    };
+                                  }
+
+                                  return updatedProducts;
+                                }
+                              );
+                            }}
+                            className="h-24 text-sm"
+                          />
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
+                  <TableCell className="border-b">
+                    <Popover open={percentPopoverOpen.get(index) || false}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={cn(
+                            "h-6 w-6",
+                            selectedProducts?.[index]?.discount !== 0
+                              ? "text-blue-600"
+                              : "",
+                            "hover:text-blue-600"
+                          )}
+                          disabled={!row.id}
+                          onClick={() => togglePercentPopover(index)}
+                        >
+                          <Percent className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 p-3" align="end">
+                        <div className="flex flex-col justify-between">
+                          <div className="flex justify-between">
+                            <Label className="text-xs">Add Discount</Label>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                handleDiscountChange(index);
+                              }}
+                            >
+                              Save
+                            </Button>
+                          </div>
+
+                          {row.price && (
+                            <>
+                              <Separator className="mt-2" />
+                              <div className="mt-4 flex justify-between space-x-4">
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Price
+                                  </Label>
+                                  <p className="text-sm font-medium">
+                                    ${row.price.toFixed(2)}
+                                  </p>
+                                </div>
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Discount (%)
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={row.discount}
+                                    onChange={(e) => {
+                                      const updatedDiscount = Number(
+                                        e.target.value
+                                      );
+
+                                      setDiscount(updatedDiscount);
+
+                                      setselectedProducts(
+                                        (
+                                          prevSelectedProducts: SavedProduct[]
+                                        ) => {
+                                          const updatedProducts = [
+                                            ...prevSelectedProducts,
+                                          ];
+
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            discount: updatedDiscount,
+                                          };
+
+                                          return updatedProducts;
+                                        }
+                                      );
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Total
+                                  </Label>
+                                  <p className="text-sm font-extrabold text-blue-500">
+                                    $
+                                    {(row.price * (1 - discount / 100)).toFixed(
+                                      2
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
+                  <TableCell className="border-b">
+                    <Input
+                      type="number"
+                      value={selectedProducts[index].quantity || 1} // Use correct property "quantity" (fixed typo from "quanitity")
+                      onChange={(e) => {
+                        const updatedProducts = [...selectedProducts]; // Make a copy of the current array
+                        updatedProducts[index].quantity = Number(
+                          e.target.value
+                        ); // Update the quantity for the specific index
+                        setselectedProducts(updatedProducts); // Update the state with the modified array
+                      }}
+                      placeholder="Quantity" // Placeholder updated to reflect quantity
+                      className="w-20"
+                    />
+                  </TableCell>
+                  <TableCell className="border-b">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const updatedProducts = selectedProducts.filter(
+                          (_, i) => i !== index
+                        ); // Filter out the product at the specified index
+                        setselectedProducts(updatedProducts); // Update the state with the new array
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Material/Item" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    {index !== productRows.length - 1 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeRow(row.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
+                      <X className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
+            <div className="px-5 my-2">
+              <button
+                onClick={() => addNewProduct()}
+                className="w-32 max-w-full border p-2 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700 text-white rounded-md"
+              >
+                Add Product
+              </button>
+            </div>
           </Table>
         </div>
 
@@ -558,23 +1113,44 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <Label className="text-xs">Occlusal Type:</Label>
                 <RadioGroup
                   value={initialCaseDetails?.occlusalType || ""}
-                  onValueChange={(value) => onCaseDetailsChange({ ...initialCaseDetails, occlusalType: value })}
+                  onValueChange={(value) =>
+                    onCaseDetailsChange({
+                      ...initialCaseDetails,
+                      occlusalType: value,
+                    })
+                  }
                   className="mt-2 space-y-1"
                 >
                   {OCCLUSAL_OPTIONS.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`occlusal-${option.value}`} />
-                      <Label htmlFor={`occlusal-${option.value}`}>{option.label}</Label>
+                    <div
+                      key={option.value}
+                      className="flex items-center space-x-2"
+                    >
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`occlusal-${option.value}`}
+                      />
+                      <Label htmlFor={`occlusal-${option.value}`}>
+                        {option.label}
+                      </Label>
                     </div>
                   ))}
+
+                  {formErrors?.caseDetails?.occlusalType && (
+                    <p className="mt-2 text-sm text-red-500">
+                      {formErrors?.caseDetails?.occlusalType}
+                    </p>
+                  )}
                 </RadioGroup>
                 {initialCaseDetails?.occlusalType === OcclusalType.Custom && (
                   <Input
                     value={initialCaseDetails?.customOcclusal || ""}
-                    onChange={(e) => onCaseDetailsChange({ 
-                      ...initialCaseDetails, 
-                      customOcclusal: e.target.value 
-                    })}
+                    onChange={(e) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        customOcclusal: e.target.value,
+                      })
+                    }
                     placeholder="Enter custom occlusal type"
                     className="mt-2"
                   />
@@ -586,23 +1162,43 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <Label className="text-xs">Contact Type:</Label>
                 <RadioGroup
                   value={initialCaseDetails?.contactType || ""}
-                  onValueChange={(value) => onCaseDetailsChange({ ...initialCaseDetails, contactType: value })}
+                  onValueChange={(value) =>
+                    onCaseDetailsChange({
+                      ...initialCaseDetails,
+                      contactType: value,
+                    })
+                  }
                   className="mt-2 space-y-1"
                 >
                   {CONTACT_OPTIONS.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`contact-${option.value}`} />
-                      <Label htmlFor={`contact-${option.value}`}>{option.label}</Label>
+                    <div
+                      key={option.value}
+                      className="flex items-center space-x-2"
+                    >
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`contact-${option.value}`}
+                      />
+                      <Label htmlFor={`contact-${option.value}`}>
+                        {option.label}
+                      </Label>
                     </div>
                   ))}
+                  {formErrors?.caseDetails?.contactType && (
+                    <p className="mt-2 text-sm text-red-500">
+                      {formErrors?.caseDetails?.contactType}
+                    </p>
+                  )}
                 </RadioGroup>
                 {initialCaseDetails?.contactType === ContactType.Custom && (
                   <Input
                     value={initialCaseDetails?.customContact || ""}
-                    onChange={(e) => onCaseDetailsChange({ 
-                      ...initialCaseDetails, 
-                      customContact: e.target.value 
-                    })}
+                    onChange={(e) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        customContact: e.target.value,
+                      })
+                    }
                     placeholder="Enter custom contact type"
                     className="mt-2"
                   />
@@ -614,23 +1210,43 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <Label className="text-xs">Pontic Type:</Label>
                 <RadioGroup
                   value={initialCaseDetails?.ponticType || ""}
-                  onValueChange={(value) => onCaseDetailsChange({ ...initialCaseDetails, ponticType: value })}
+                  onValueChange={(value) =>
+                    onCaseDetailsChange({
+                      ...initialCaseDetails,
+                      ponticType: value,
+                    })
+                  }
                   className="mt-2 space-y-1"
                 >
                   {PONTIC_OPTIONS.map((option) => (
-                    <div key={option.value} className="flex items-center space-x-2">
-                      <RadioGroupItem value={option.value} id={`pontic-${option.value}`} />
-                      <Label htmlFor={`pontic-${option.value}`}>{option.label}</Label>
+                    <div
+                      key={option.value}
+                      className="flex items-center space-x-2"
+                    >
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`pontic-${option.value}`}
+                      />
+                      <Label htmlFor={`pontic-${option.value}`}>
+                        {option.label}
+                      </Label>
                     </div>
                   ))}
+                  {formErrors?.caseDetails?.ponticType && (
+                    <p className="mt-2 text-sm text-red-500">
+                      {formErrors?.caseDetails?.ponticType}
+                    </p>
+                  )}
                 </RadioGroup>
                 {initialCaseDetails?.ponticType === PonticType.Custom && (
                   <Input
                     value={initialCaseDetails?.customPontic || ""}
-                    onChange={(e) => onCaseDetailsChange({ 
-                      ...initialCaseDetails, 
-                      customPontic: e.target.value 
-                    })}
+                    onChange={(e) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        customPontic: e.target.value,
+                      })
+                    }
                     placeholder="Enter custom pontic type"
                     className="mt-2"
                   />

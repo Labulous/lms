@@ -5,8 +5,8 @@ import { Separator } from "@/components/ui/separator";
 
 interface FormData {
   notes?: {
-    labNotes?: string;
-    technicianNotes?: string;
+    instructionNotes?: string;
+    invoiceNotes?: string;
   };
 }
 
@@ -39,11 +39,11 @@ const NotesStep: React.FC<NotesStepProps> = ({
   return (
     <div className="bg-slate-50 h-full flex flex-col">
       <div className="flex-1 space-y-2">
-        <Label htmlFor="labNotes">Instruction Notes</Label>
+        <Label htmlFor="instructionNotes">Instruction Notes</Label>
         <Textarea
-          id="labNotes"
-          name="labNotes"
-          value={formData.notes?.labNotes || ""}
+          id="instructionNotes"
+          name="instructionNotes"
+          value={formData.notes?.instructionNotes || ""}
           onChange={handleInputChange}
           placeholder="Enter any instruction notes here..."
           className="bg-white h-[200px] resize-none"
@@ -53,9 +53,9 @@ const NotesStep: React.FC<NotesStepProps> = ({
           staff or clients.
         </p>
 
-        {errors?.notes?.labNotes && (
+        {errors?.notes?.instructionNotes && (
           <p className="mt-2 text-sm text-red-500">
-            {errors?.notes?.labNotes}
+            {errors?.notes?.instructionNotes}
           </p>
         )}
       </div>
@@ -63,22 +63,22 @@ const NotesStep: React.FC<NotesStepProps> = ({
       <Separator className="my-6" />
 
       <div className="flex-1 space-y-2">
-        <Label htmlFor="technicianNotes">Technician Notes</Label>
+        <Label htmlFor="invoiceNotes">Invoices Notes</Label>
         <Textarea
-          id="technicianNotes"
-          name="technicianNotes"
-          value={formData.notes?.technicianNotes || ""}
+          id="invoiceNotes"
+          name="invoiceNotes"
+          value={formData.notes?.invoiceNotes || ""}
           onChange={handleInputChange}
           placeholder="Enter any specific instructions or notes for the technician..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any specific instructions or notes for the technician.
+          Add any specific instructions or notes for the Invoice.
         </p>
 
-        {errors?.notes?.technicianNotes && (
+        {errors?.notes?.invoiceNotes && (
           <p className="mt-2 text-sm text-red-500">
-            {errors?.notes?.technicianNotes}
+            {errors?.notes?.invoiceNotes}
           </p>
         )}
       </div>

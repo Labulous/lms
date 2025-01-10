@@ -61,6 +61,7 @@ import {
 import cn from "classnames";
 import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
+import { isValid, parseISO, format } from "date-fns";
 
 interface CaseFile {
   id: string;
@@ -148,7 +149,6 @@ export interface ExtendedCase extends Case {
     products_id: string[];
   }[];
   lab_notes: string;
-  technician_notes: string;
   otherItems: string;
   custom_contact_details: string;
   custom_occulusal_details: string;
@@ -157,6 +157,9 @@ export interface ExtendedCase extends Case {
   occlusal_type: string;
   pontic_type: string;
   contact_type: string;
+  appointment_date: string;
+  instruction_notes: string | null;
+  invoice_notes: string;
   enclosed_items: {
     jig: number;
     photos: number;
@@ -253,7 +256,6 @@ const CaseDetails: React.FC = () => {
                 amount,
                 status,
                 due_date
-              
               ),
               client:clients!client_id (
                 id,
@@ -272,11 +274,12 @@ const CaseDetails: React.FC = () => {
               pan_tag,
               rx_number,
               received_date,
+              invoice_notes,
               isDueDateTBD,
               appointment_date,
+              instruction_notes,
               otherItems,
               lab_notes,
-              technician_notes,
               occlusal_type,
               contact_type,
               pontic_type,
@@ -523,6 +526,29 @@ const CaseDetails: React.FC = () => {
     );
   }
   console.log(caseDetail, "caseDetail");
+  const formatDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return "Invalid Date";
+      }
+      return format(date, "MMM d, yyyy");
+    } catch (err) {
+      return "Invalid Date";
+    }
+  };
+  const formatDateWithTime = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      if (!isValid(date)) {
+        return "Invalid Date";
+      }
+      // Format date with time, hours, minutes, and AM/PM
+      return format(date, "MMM d, yyyy hh:mm a");
+    } catch (err) {
+      return "Invalid Date";
+    }
+  };
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -670,20 +696,22 @@ const CaseDetails: React.FC = () => {
                 <div className="flex flex-col items-center">
                   <span className="text-sm text-gray-500">Received Date</span>
                   <span className="font-medium">
-                    {new Date(caseDetail.updated_at).toLocaleDateString()}
+                    {formatDate(caseDetail.created_at)}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-8" />
                 <div className="flex flex-col items-center">
                   <span className="text-sm text-gray-500">Due Date</span>
                   <span className="font-medium">
-                    {new Date(caseDetail.due_date).toLocaleDateString()}
+                    {formatDate(caseDetail.due_date)}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-8" />
                 <div className="flex flex-col items-center">
                   <span className="text-sm text-gray-500">Appointment</span>
-                  <span className="font-medium">Not Set</span>
+                  <span className="font-medium">
+                    {formatDateWithTime(caseDetail.appointment_date)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1218,9 +1246,15 @@ const CaseDetails: React.FC = () => {
                     </p>
                   </div>
                   <div className="mb-4">
-                    <p className="text-gray-600">Technician Notes</p>
+                    <p className="text-gray-600">Invoice Notes</p>
                     <p className="font-medium">
-                      {caseDetail?.technician_notes || "No technician notes"}
+                      {caseDetail?.invoice_notes || "No Invoice notes"}
+                    </p>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Instruction Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.instruction_notes || "No Instruction notes"}
                     </p>
                   </div>
                   <div className="mb-4">
@@ -1401,11 +1435,10 @@ const CaseDetails: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">
-                            Technician Notes
+                            Invoices Notes
                           </p>
                           <p className="font-medium">
-                            {caseDetail?.technician_notes ||
-                              "No technician notes"}
+                            {caseDetail?.invoice_notes || "No Invoices notes"}
                           </p>
                         </div>
                       </div>
@@ -1467,7 +1500,12 @@ const CaseDetails: React.FC = () => {
                             ) : (
                               <X className="h-4 w-4 text-red-500" />
                             )}
-                            <span className="text-sm">{item.label}</span>
+                            <span className="text-sm">
+                              {item.label}:{" "}
+                              {caseDetail?.enclosed_items?.[
+                                item.key as keyof typeof caseDetail.enclosed_items
+                              ] || "Not Provided"}
+                            </span>
                           </div>
                         ))}
                       </div>

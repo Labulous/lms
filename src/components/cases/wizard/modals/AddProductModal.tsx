@@ -18,7 +18,7 @@ export interface SavedProduct {
   billingType: string;
   notes?: string;
   selectedTeeth: number[];
-  quantity: number;
+  quantity?: number;
 }
 
 interface AddProductModalProps {

@@ -13,7 +13,8 @@ export interface SavedProduct {
   price: number;
   shades: ProductShades;
   discount: number;
-  notes?: string;
+  notes: string;
+  quantity?: number;
 }
 
 export interface Product {
