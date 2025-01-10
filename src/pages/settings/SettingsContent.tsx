@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { signUp } from "@/services/authService";
+import WorkingTagsSettings from "./working-tags";
 
 interface SettingsRow {
   label: string;
@@ -78,6 +79,14 @@ export const CaseWorkflowSettingsContent: React.FC<
       {CaseWorkflowRows.map((row, index) => (
         <SettingsRow key={index} {...row} />
       ))}
+    </div>
+  );
+};
+
+export const WorkingTagsSettingsContent: React.FC = () => {
+  return (
+    <div className="p-6">
+      <WorkingTagsSettings />
     </div>
   );
 };
