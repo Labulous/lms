@@ -292,7 +292,7 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-
+  // console.log(selectedProducts, "selected");
   return (
     <div className="p-6">
       <div className="space-y-4">

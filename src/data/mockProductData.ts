@@ -14,6 +14,8 @@ export interface SavedProduct {
   shades: ProductShades;
   discount: number;
   notes?: string;
+  isComplete: boolean;
+  quantity: number;
 }
 
 export interface Product {

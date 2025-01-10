@@ -149,11 +149,11 @@ export type CaseStatus =
   | "cancelled";
 
 export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
-  "in_queue": "Case has been received and is waiting to be assigned",
-  "in_progress": "Case is currently being worked on by technicians",
-  "on_hold": "Case work has been temporarily paused",
-  "completed": "Case has been finished and is ready for delivery",
-  "cancelled": "Case has been cancelled and will not be processed"
+  in_queue: "Case has been received and is waiting to be assigned",
+  in_progress: "Case is currently being worked on by technicians",
+  on_hold: "Case work has been temporarily paused",
+  completed: "Case has been finished and is ready for delivery",
+  cancelled: "Case has been cancelled and will not be processed",
 };
 
 /**
@@ -164,6 +164,7 @@ export interface ShadeData {
   body?: string; // UUID reference to shade_options
   gingival?: string; // UUID reference to shade_options
   stump?: string; // UUID reference to shade_options
+  id?: string;
 }
 
 /**
@@ -685,7 +686,7 @@ export interface FormData {
   patientLastName: string;
   orderDate: string;
   status: CaseStatus;
-  statusError?:string,
+  statusError?: string;
   deliveryMethod: DeliveryMethod;
   deliveryMethodError?: string;
   dueDate?: string;

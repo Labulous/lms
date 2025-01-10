@@ -152,6 +152,7 @@ const saveCaseProduct = async (
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
+      quantity: product.quantity || 1,
     }));
 
     // Calculate discounted prices for products
@@ -475,6 +476,7 @@ const updateCases = async (
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
+      quantity: product.quantity || 1,
     }));
 
     // Step to check if rows exist for product_id before inserting
