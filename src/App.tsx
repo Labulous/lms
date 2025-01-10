@@ -23,6 +23,7 @@ import Adjustments from "./pages/billing/Adjustments";
 import SystemSettings from "./pages/settings/system";
 import ProductCatalogSettings from "./pages/settings/product-catalog";
 import CaseWorkflowSettings from "./pages/settings/case-workflow";
+import WorkingTagsSettings from "./pages/settings/working-tags-page";
 
 const App: React.FC = () => {
   return (
@@ -108,6 +109,10 @@ const App: React.FC = () => {
                   <Route
                     path="case-workflow"
                     element={<CaseWorkflowSettings />}
+                  />
+                  <Route
+                    path="working-tags"
+                    element={<WorkingTagsSettings />}
                   />
                   <Route
                     path="products-services"
