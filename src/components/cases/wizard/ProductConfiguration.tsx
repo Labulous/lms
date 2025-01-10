@@ -155,15 +155,10 @@ interface ProductRow {
 }
 
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
-  selectedMaterial,
-  onAddToCase,
   selectedProducts,
-  onProductsChange,
-  onMaterialChange,
   onCaseDetailsChange,
   initialCaseDetails,
   setselectedProducts,
-  formData,
   formErrors,
 }) => {
   const emptyRow: ProductRow = {
