@@ -23,8 +23,8 @@ export interface Case {
   assignedTechnicians?: string[];
   deliveryMethod: DeliveryMethod;
   notes?: {
-    labNotes?: string;
-    technicianNotes?: string;
+    instructionNotes?: string;
+    invoiceNotes?: string;
   };
   stages: CaseStage[];
 }

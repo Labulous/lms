@@ -56,8 +56,8 @@ const UpdateCase: React.FC = () => {
     otherItems: "",
     isDueDateTBD: false,
     notes: {
-      labNotes: "",
-      technicianNotes: "",
+      instructionNotes: "",
+      invoiceNotes: "",
     },
   });
   const [clients, setClients] = useState<Client[]>([]);
@@ -208,19 +208,19 @@ const UpdateCase: React.FC = () => {
       validationErrors.workingPanName = "Working tag is Required";
     if (!formData.appointmentDate)
       validationErrors.appointmentDate = "Appointment date is Required";
-    if (formData.notes.labNotes === "") {
+    if (formData.notes.instructionNotes === "") {
       if (!validationErrors.notes) {
         validationErrors.notes = {};
       }
 
-      validationErrors.notes.labNotes = "Instruction note is required";
+      validationErrors.notes.instructionNotes = "Instruction note is required";
     }
-    if (formData.notes.technicianNotes === "") {
+    if (formData.notes.invoiceNotes === "") {
       if (!validationErrors.notes) {
         validationErrors.notes = {};
       }
 
-      validationErrors.notes.technicianNotes = "Technician note is required";
+      validationErrors.notes.invoiceNotes = "Technician note is required";
     }
     if (
       !formData.caseDetails?.contactType ||
@@ -272,8 +272,8 @@ const UpdateCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            invoice_notes: transformedData.notes?.labNotes,
-            technician_notes: transformedData.notes?.technicianNotes,
+            invoice_notes: transformedData.notes?.invoiceNotes,
+            instruction_notes: transformedData.notes?.instructionNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
             pontic_type: transformedData.caseDetails?.ponticType,
@@ -351,7 +351,7 @@ const UpdateCase: React.FC = () => {
               otherItems,
               lab_notes,
               invoice_notes,
-              technician_notes,
+              instruction_notes,
               occlusal_type,
               contact_type,
               pontic_type,
@@ -558,8 +558,8 @@ const UpdateCase: React.FC = () => {
           isDueDateTBD: prevData.isDueDateTBD || false,
           notes: {
             ...prevData.notes,
-            labNotes: caseDataApi.invoice_notes || "",
-            technicianNotes: caseDataApi.technician_notes || "",
+            instructionNotes: caseDataApi.instruction_notes || "",
+            invoiceNotes: caseDataApi.invoice_notes || "",
           },
           caseDetails: {
             occlusalType: caseData.occlusal_type || "",

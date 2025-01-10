@@ -13,9 +13,8 @@ export interface SavedProduct {
   price: number;
   shades: ProductShades;
   discount: number;
-  notes?: string;
-  isComplete: boolean;
-  quantity: number;
+  notes: string;
+  quantity?: number;
 }
 
 export interface Product {

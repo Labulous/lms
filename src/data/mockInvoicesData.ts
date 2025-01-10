@@ -12,7 +12,7 @@ export interface InvoiceItem {
   toothNumber: string;
   discount: number;
   notes?: {
-    labNotes: string;
+    instructionNotes: string;
     invoiceNotes: string;
   };
 }
@@ -103,7 +103,7 @@ export interface Invoice {
     | "cancelled";
   paymentTerms?: string;
   notes?: {
-    labNotes: string;
+    instructionNotes: string;
     invoiceNotes: string;
   };
   createdAt?: string;

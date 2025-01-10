@@ -511,7 +511,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         },
         discount: 0,
         notes: "",
-        isComplete: false,
         quantity: 1,
       };
 
@@ -1022,7 +1021,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </Button>
                           </div>
 
-                          {selectedProduct && (
+                          {row.price && (
                             <>
                               <Separator className="mt-2" />
                               <div className="mt-4 flex justify-between space-x-4">
@@ -1031,7 +1030,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     Price
                                   </Label>
                                   <p className="text-sm font-medium">
-                                    ${selectedProduct.price.toFixed(2)}
+                                    ${row.price.toFixed(2)}
                                   </p>
                                 </div>
                                 <Separator
@@ -1046,13 +1045,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     type="number"
                                     min="0"
                                     max="100"
-                                    value={discount}
+                                    value={row.discount}
                                     onChange={(e) => {
-                                      setDiscount(Number(e.target.value));
-                                      setSelectedProduct((item: any) => ({
-                                        ...item,
-                                        discount: Number(e.target.value), // Use `value` directly instead of `previewNote`
-                                      }));
+                                      const updatedDiscount = Number(
+                                        e.target.value
+                                      ); // Get the updated discount value
+
+                                      setDiscount(updatedDiscount); // Update the discount value locally
+
+                                      // Update the discount value in the selectedProducts array based on the index
+                                      setselectedProducts(
+                                        (prevSelectedProducts:SavedProduct[]) => {
+                                          const updatedProducts = [
+                                            ...prevSelectedProducts,
+                                          ]; 
+
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index], // Keep other properties of the product intact
+                                            discount: updatedDiscount, // Set the new discount value
+                                          };
+
+                                          return updatedProducts; // Return the updated array
+                                        }
+                                      );
                                     }}
                                     className="w-20 h-7 text-sm bg-white"
                                   />
@@ -1067,10 +1082,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </Label>
                                   <p className="text-sm font-extrabold text-blue-500">
                                     $
-                                    {(
-                                      selectedProduct.price *
-                                      (1 - discount / 100)
-                                    ).toFixed(2)}
+                                    {(row.price * (1 - discount / 100)).toFixed(
+                                      2
+                                    )}
                                   </p>
                                 </div>
                               </div>

@@ -689,6 +689,7 @@ export interface FormData {
   statusError?: string;
   deliveryMethod: DeliveryMethod;
   deliveryMethodError?: string;
+  instructionNotes?: string;
   dueDate?: string;
   isDueDateTBD?: boolean;
   appointmentDate?: string;
@@ -718,7 +719,7 @@ export interface FormData {
     customContact?: string;
   };
   notes: {
-    labNotes?: string;
-    technicianNotes?: string;
+    instructionNotes?: string;
+    invoiceNotes?: string;
   };
 }

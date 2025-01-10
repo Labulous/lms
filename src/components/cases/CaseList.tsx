@@ -97,7 +97,6 @@ type Case = {
   appointment_date: string | null;
   otherItems: string | null;
   lab_notes: string | null;
-  technician_notes: string | null;
   occlusal_type: string | null;
   contact_type: string | null;
   pontic_type: string | null;
@@ -572,7 +571,6 @@ const CaseList: React.FC = () => {
             appointment_date,
             otherItems,
             lab_notes,
-            technician_notes,
             occlusal_type,
             contact_type,
             pontic_type,

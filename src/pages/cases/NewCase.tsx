@@ -47,8 +47,8 @@ const NewCase: React.FC = () => {
     otherItems: "",
     isDueDateTBD: false,
     notes: {
-      labNotes: "",
-      technicianNotes: "",
+      instructionNotes: "",
+      invoiceNotes: "",
     },
   });
   const [clients, setClients] = useState<Client[]>([]);
@@ -192,19 +192,19 @@ const NewCase: React.FC = () => {
       validationErrors.workingPanName = "Working tag is Required";
     if (!formData.appointmentDate)
       validationErrors.appointmentDate = "Appointment date is Required";
-    if (formData.notes.labNotes === "") {
+    if (formData.notes.instructionNotes === "") {
       if (!validationErrors.notes) {
         validationErrors.notes = {};
       }
 
-      validationErrors.notes.labNotes = "Instruction note is required";
+      validationErrors.notes.instructionNotes = "Instruction note is required";
     }
-    if (formData.notes.technicianNotes === "") {
+    if (formData.notes.invoiceNotes === "") {
       if (!validationErrors.notes) {
         validationErrors.notes = {};
       }
 
-      validationErrors.notes.technicianNotes = "Technician note is required";
+      validationErrors.notes.invoiceNotes = "Technician note is required";
     }
     if (
       !validationErrors.caseDetails ||
@@ -264,8 +264,8 @@ const NewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            invoice_notes: transformedData.notes?.labNotes,
-            technician_notes: transformedData.notes?.technicianNotes,
+            instruction_notes:transformedData.instructionNotes,
+            invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
             pontic_type: transformedData.caseDetails?.ponticType,
