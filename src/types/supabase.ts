@@ -22,7 +22,12 @@ export enum DefaultProductType {
   Coping = "Coping",
   Appliance = "Appliance",
 }
-
+export interface WorkingTag {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+}
 /**
  * Reference data interfaces
  */

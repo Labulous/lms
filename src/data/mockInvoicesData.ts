@@ -103,8 +103,9 @@ export interface Invoice {
     | "cancelled";
   paymentTerms?: string;
   notes?: {
-    instructionNotes: string;
+    instructionNotes?: string;
     invoiceNotes: string;
+    labNotes?: string;
   };
   createdAt?: string;
   updatedAt?: string;
