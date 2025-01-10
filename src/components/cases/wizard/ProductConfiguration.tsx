@@ -222,7 +222,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     };
 
     fetchProductTypes();
-  }, []); // Only fetch on mount, we'll filter in useMemo
+  }, []);
 
   const fetchedProducts = async (selectedType: string) => {
     const selectedId = productTypes.find((item) => item.name === selectedType);
@@ -268,7 +268,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (selectedType) {
       fetchedProducts(selectedType);
     }
-  }, [selectedType]); // Only fetch on mount, we'll filter in useMemo
+  }, [selectedType]);
 
   useEffect(() => {
     const getShadeOptions = async (labId: string) => {
@@ -291,7 +291,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     // Check if it's an arch selection
     const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
     const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-    const isFullArch = teeth.length >= 16; // Assuming a full arch has at least 16 teeth
+    const isFullArch = teeth.length >= 16;
 
     if (isFullArch) {
       if (hasUpper && hasLower) return "All";
@@ -299,13 +299,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (hasLower) return "Lower";
     }
 
-    // For non-arch selections, use the original range formatting
     if (teeth.length === 1) return teeth[0].toString();
 
-    // Sort teeth numbers
     const sortedTeeth = [...teeth].sort((a, b) => a - b);
 
-    // Find continuous ranges
     let ranges: string[] = [];
     let rangeStart = sortedTeeth[0];
     let prev = sortedTeeth[0];
@@ -330,25 +327,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const handleProductSelect = (
     value: any,
     keepTeeth = false,
-    index?: number // index should be a number to correctly identify the product's position
+    index?: number
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
     console.log(product, "product");
 
-    // Ensure the product exists before proceeding
     if (!product) return;
     setSelectedProduct(product);
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
-        // If index is provided, update the product at that index
         return prevSelectedProducts.map(
           (selectedProduct: SavedProduct, i: number) => {
             if (i === index) {
-              // Update the product at the specified index with the new selected product (only id and name)
               return {
                 ...selectedProduct,
-                id: product.id, // Update the ID to the product's actual ID
-                name: product.name, //
+                id: product.id,
+                name: product.name,
                 price: product.price,
               };
             }
@@ -356,12 +350,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           }
         );
       } else {
-        // If index is not provided, add the new product with only id and name
         return [
           ...prevSelectedProducts,
           {
-            id: product.id, // Use the product's actual id
-            name: product.name, // Use the product's name
+            id: product.id,
+            name: product.name,
           },
         ];
       }
@@ -371,7 +364,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const handleCancelShades = (index: number) => {
     setShadePopoverOpen((prev) => {
       const updated = new Map(prev);
-      updated.set(index, false); // Set the popover state to false for the specific index
+      updated.set(index, false);
       return updated;
     });
   };
@@ -381,71 +374,60 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index: number
   ) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      // Ensure the index is valid
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
-        // Update the product at the specified index with the new type, clear id and name
         updatedProducts[index] = {
           ...updatedProducts[index],
-          type: type.name, // Update the type
-          id: "", // Clear the id when type changes
-          name: "", // Clear the name when type changes
+          type: type.name,
+          id: "",
+          name: "",
         };
 
         return updatedProducts;
       } else {
-        // If the index is invalid (out of range), you may want to handle it differently.
-        // For now, just return the previous products.
         return prevSelectedProducts;
       }
     });
 
-    setSelectedType(type.name); // Set the selected type
+    setSelectedType(type.name);
   };
 
   console.log(selectedProducts, "selectedProducts");
 
   const handleTeethSelectionChange = (teeth: any[], index: number) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      // Ensure the index is valid
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
-        // Update the teeth value at the specified index
         updatedProducts[index] = {
           ...updatedProducts[index],
-          teeth, // Update the teeth value
+          teeth,
         };
 
         return updatedProducts;
       } else {
-        // If index is invalid (out of range), handle the case as needed.
-        // Here, we simply return the previous products as is.
         return prevSelectedProducts;
       }
     });
   };
   const handleSaveShades = (index: number) => {
-    // Ensure shadeData is updated with the correct shades for the current index
     const updatedShades = {
-      occlusal: shadeData[index]?.occlusal || "", // Access occlusal shade for the specific index
-      body: shadeData[index]?.body || "", // Access body shade for the specific index
-      gingival: shadeData[index]?.gingival || "", // Access gingival shade for the specific index
-      stump: shadeData[index]?.stump || "", // Access stump shade for the specific index
+      occlusal: shadeData[index]?.occlusal || "",
+      body: shadeData[index]?.body || "",
+      gingival: shadeData[index]?.gingival || "",
+      stump: shadeData[index]?.stump || "",
     };
 
     console.log(updatedShades, "updatedShades");
 
-    // Update the selectedProducts state with the new shades
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
-        // Update the product at the specified index with the new shades
         updatedProducts[index] = {
           ...updatedProducts[index],
-          shades: updatedShades, // Update the shades for the product
+          shades: updatedShades,
         };
 
         return updatedProducts;
@@ -455,10 +437,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
 
-    // Close the popover for the specific index
     setShadePopoverOpen((prev) => {
       const updated = new Map(prev);
-      updated.set(index, false); // Set the popover state to false for the specific index
+      updated.set(index, false);
       return updated;
     });
   };
@@ -481,22 +462,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setDiscount(0);
     setPercentPopoverOpen((prev) => {
       const updated = new Map(prev);
-      updated.set(index, false); // Set the popover state to false for the specific index
+      updated.set(index, false);
       return updated;
     });
   };
 
   const addNewProduct = () => {
-    // Check if any product has an empty id or empty type
     const hasInvalidProduct = selectedProducts.some(
       (product) => !product.id || !product.type
     );
 
     if (hasInvalidProduct) {
-      // Trigger toast error if any product has an empty id or type
       toast.error("Please add the teeth and product.");
     } else {
-      // Add an empty product to the list
       const newProduct: SavedProduct = {
         id: "",
         name: "",
@@ -516,7 +494,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
         ...prevSelectedProducts,
-        newProduct, // Push the empty product at the end of the list
+        newProduct,
       ]);
     }
   };
@@ -556,16 +534,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   }, selectedProducts);
   return (
     <div className="w-full">
-      {/* Header */}
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
         <h3 className="text-sm font-medium text-white">
           Product Configuration
         </h3>
       </div>
 
-      {/* Content Wrapper */}
       <div className="p-6 bg-slate-50">
-        {/* Product Table */}
         <div className="border rounded-lg bg-white mb-6">
           <Table>
             <TableHeader className="bg-slate-100 border-b border-slate-200">
@@ -647,7 +622,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           selectedTeeth={row.teeth}
                           onSelectionChange={(teeth) =>
                             handleTeethSelectionChange(teeth, index)
-                          } // Call the function with the index
+                          }
                           disabled={!row.type}
                           selectedProduct={{
                             type: row.type ? [row.type] : [],
@@ -667,9 +642,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         name:
                           selectedProducts[index].name ?? "Select a Product",
                       }}
-                      // setSelectedMaterialState={
-                      //   setSelectedMaterialState
-                      // }
                       onProductSelect={(product) => {
                         handleProductSelect(product, true, index);
                       }}
@@ -688,7 +660,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             size="sm"
                             className="h-7 text-xs"
                             disabled={row.teeth.length === 0}
-                            onClick={() => toggleShadePopover(index)} // Toggle note popover for the current row
+                            onClick={() => toggleShadePopover(index)}
                           >
                             Add Shade
                           </Button>
@@ -698,7 +670,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             .filter((item) => item.id === row.id)
                             .slice(0, 4)
                             .map((shade, index) => {
-                              // Find the names of the shades from shadesItems for the current index
                               const occlusalName = shadesItems.find(
                                 (option) => option.id === shade.occlusal
                               )?.name;
@@ -712,19 +683,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 (option) => option.id === shade.stump
                               )?.name;
 
-                              // Check if all values are null or empty for the current shade data
                               if (
                                 !shade.occlusal &&
                                 !shade.body &&
                                 !shade.gingival &&
                                 !shade.stump
                               ) {
-                                return null; // Don't render if all values are empty or null
+                                return null;
                               }
 
                               return (
                                 <div key={index} className="p-4 rounded-md">
-                                  {/* Conditionally display key-value pairs with the name */}
                                   {shade.occlusal && (
                                     <p className="grid grid-cols-2 gap-4">
                                       <strong>O:</strong>{" "}
@@ -775,8 +744,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
-                                        ...updatedShadeData[index], // Copy previous data for that index
-                                        occlusal: value, // Update only the occlusal value
+                                        ...updatedShadeData[index],
+                                        occlusal: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -808,8 +777,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
-                                        ...updatedShadeData[index], // Copy previous data for that index
-                                        body: value, // Update only the body value
+                                        ...updatedShadeData[index],
+                                        body: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -841,8 +810,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
-                                        ...updatedShadeData[index], // Copy previous data for that index
-                                        gingival: value, // Update only the gingival value
+                                        ...updatedShadeData[index],
+                                        gingival: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -874,8 +843,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
-                                        ...updatedShadeData[index], // Copy previous data for that index
-                                        stump: value, // Update only the stump value
+                                        ...updatedShadeData[index],
+                                        stump: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -929,11 +898,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             "h-6 w-6",
                             selectedProducts?.[index]?.notes?.length
                               ? "text-blue-600"
-                              : "", // Check if notes exists and has length
+                              : "",
                             "hover:text-blue-600"
                           )}
                           disabled={!row.id}
-                          onClick={() => toggleNotePopover(index)} // Toggle note popover for the current row
+                          onClick={() => toggleNotePopover(index)}
                         >
                           <StickyNote className="h-4 w-4" />
                         </Button>
@@ -947,7 +916,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               onClick={() =>
                                 setNotePopoverOpen((prev) => {
                                   const updated = new Map(prev);
-                                  updated.set(index, false); // Set the popover state to false for the specific index
+                                  updated.set(index, false);
                                   return updated;
                                 })
                               }
@@ -959,7 +928,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             placeholder="Enter note for this product..."
                             value={selectedProducts[index].notes ?? ""}
                             onChange={(e) => {
-                              const newNote = e.target.value; // Get the new note value
+                              const newNote = e.target.value;
 
                               setselectedProducts(
                                 (prevSelectedProducts: SavedProduct[]) => {
@@ -967,14 +936,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     ...prevSelectedProducts,
                                   ];
 
-                                  // Check if the index is valid
                                   if (
                                     index >= 0 &&
                                     index < updatedProducts.length
                                   ) {
                                     updatedProducts[index] = {
                                       ...updatedProducts[index],
-                                      notes: newNote, // Update the note for the product at the specified index
+                                      notes: newNote,
                                     };
                                   }
 
@@ -998,11 +966,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             "h-6 w-6",
                             selectedProducts?.[index]?.discount !== 0
                               ? "text-blue-600"
-                              : "", // Check if notes exists and has length
+                              : "",
                             "hover:text-blue-600"
                           )}
                           disabled={!row.id}
-                          onClick={() => togglePercentPopover(index)} // Toggle note popover for the current row
+                          onClick={() => togglePercentPopover(index)}
                         >
                           <Percent className="h-4 w-4" />
                         </Button>
@@ -1049,23 +1017,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     onChange={(e) => {
                                       const updatedDiscount = Number(
                                         e.target.value
-                                      ); // Get the updated discount value
+                                      );
 
-                                      setDiscount(updatedDiscount); // Update the discount value locally
+                                      setDiscount(updatedDiscount);
 
-                                      // Update the discount value in the selectedProducts array based on the index
                                       setselectedProducts(
-                                        (prevSelectedProducts:SavedProduct[]) => {
+                                        (
+                                          prevSelectedProducts: SavedProduct[]
+                                        ) => {
                                           const updatedProducts = [
                                             ...prevSelectedProducts,
-                                          ]; 
+                                          ];
 
                                           updatedProducts[index] = {
-                                            ...updatedProducts[index], // Keep other properties of the product intact
-                                            discount: updatedDiscount, // Set the new discount value
+                                            ...updatedProducts[index],
+                                            discount: updatedDiscount,
                                           };
 
-                                          return updatedProducts; // Return the updated array
+                                          return updatedProducts;
                                         }
                                       );
                                     }}
