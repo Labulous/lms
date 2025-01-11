@@ -18,6 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PaymentListItem } from "@/types/supabase";
 import { isValid, parseISO, format } from "date-fns";
 import { Logger } from "html2canvas/dist/types/core/logger";
+import { formatDate } from "@/lib/formatedDate";
 export function PaymentsList() {
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
   const [paymentsList, setPaymentList] = useState<PaymentListItem[]>([]);
@@ -265,17 +266,6 @@ export function PaymentsList() {
     getPaymentList();
   }, []);
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">

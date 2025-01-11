@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Settings2, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
-import { isValid, parseISO, format } from "date-fns";
+import { formatDate } from "@/lib/formatedDate";
 
 // Mock data for development
 const mockAdjustments = [
@@ -49,17 +49,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   };
   console.log(adjustments, "adjustmentsadjustments");
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">

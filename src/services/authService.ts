@@ -9,7 +9,7 @@ const AUTH_TOKEN_KEY = "auth_token";
 export interface CustomUser {
   id: string;
   email: string;
-  role: "admin" | "technician" | "client";
+  role: "admin" | "technician" | "client" | "super_admin";
   name: string;
 }
 type User = Database["public"]["Tables"]["users"]["Row"];

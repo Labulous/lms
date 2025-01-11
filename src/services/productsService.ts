@@ -28,7 +28,7 @@ export interface ProductTypes {
 export type Product = ProductRow;
 
 class ProductsService {
-  async getProducts(): Promise<Product[]> {
+  async getProducts(labId: string): Promise<Product[]> {
     try {
       logger.debug("Starting to fetch products from Supabase");
       const { data: products, error } = await supabase
@@ -41,7 +41,8 @@ class ProductsService {
           billing_type:billing_types(name, label)
         `
         )
-        .order("name");
+        .order("name")
+        .eq("lab_id", labId);
 
       if (error) {
         logger.error("Error fetching products from Supabase", { error });

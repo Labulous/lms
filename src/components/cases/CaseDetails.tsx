@@ -61,7 +61,9 @@ import {
 import cn from "classnames";
 import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
-import { isValid, parseISO, format } from "date-fns";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 
 interface CaseFile {
   id: string;
@@ -229,6 +231,8 @@ const CaseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
+  const { user } = useAuth();
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -238,6 +242,13 @@ const CaseDetails: React.FC = () => {
 
     const fetchCaseData = async () => {
       try {
+        const lab = await getLabIdByUserId(user?.id as string);
+
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -360,7 +371,8 @@ const CaseDetails: React.FC = () => {
                 )
               `
             )
-            .in("id", productsIdArray);
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.labId);
 
           if (productsError) {
             setError(productsError.message);
@@ -525,30 +537,7 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-  console.log(caseDetail, "caseDetail");
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
-  const formatDateWithTime = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      // Format date with time, hours, minutes, and AM/PM
-      return format(date, "MMM d, yyyy hh:mm a");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
+
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
