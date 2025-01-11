@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import BalanceList from "./BalanceList";
 import { isValid, parseISO, format } from "date-fns";
+import { formatDate } from "@/lib/formatedDate";
 
 // Mock data for development
 const mockStatements = [
@@ -86,17 +87,6 @@ const StatementList = ({ statement }: StatementList) => {
 
   const clearClientFilter = () => {
     setClientFilter("");
-  };
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
   };
   return (
     <div className="space-y-4">

@@ -1,6 +1,6 @@
-import React from 'react';
-import { CheckCircle2, Clock } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { CheckCircle2, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface CaseStep {
   date: string;
@@ -8,7 +8,7 @@ export interface CaseStep {
   treatment?: string;
   dentist?: string;
   technician?: string;
-  status: 'done' | 'pending' | 'in_progress';
+  status: "done" | "pending" | "in_progress";
   notes?: string;
 }
 
@@ -31,7 +31,9 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
         {steps.map((step, index) => {
           const isLast = index === steps.length - 1;
           const date = new Date(step.date);
-          const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
+          const month = date
+            .toLocaleString("default", { month: "short" })
+            .toUpperCase();
           const day = date.getDate();
 
           return (
@@ -41,7 +43,7 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                 <div
                   className={cn(
                     "absolute left-7 top-14 w-0.5 h-full -ml-px",
-                    step.status === 'done' ? "bg-green-200" : "bg-gray-200"
+                    step.status === "done" ? "bg-green-200" : "bg-gray-200"
                   )}
                 />
               )}
@@ -49,19 +51,21 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
               <div className="flex items-start space-x-4">
                 {/* Date column */}
                 <div className="min-w-[50px] text-center">
-                  <div className="text-sm font-medium text-gray-500">{month}</div>
+                  <div className="text-sm font-medium text-gray-500">
+                    {month}
+                  </div>
                   <div className="text-2xl font-semibold">{day}</div>
                 </div>
 
                 {/* Status icon */}
                 <div className="relative flex items-center justify-center">
-                  {step.status === 'done' && (
+                  {step.status === "done" && (
                     <CheckCircle2 className="w-6 h-6 text-green-500" />
                   )}
-                  {step.status === 'pending' && (
+                  {step.status === "pending" && (
                     <Clock className="w-6 h-6 text-orange-500" />
                   )}
-                  {step.status === 'in_progress' && (
+                  {step.status === "in_progress" && (
                     <div className="w-6 h-6 rounded-full border-2 border-blue-500 flex items-center justify-center">
                       <div className="w-2 h-2 bg-blue-500 rounded-full" />
                     </div>
@@ -88,7 +92,7 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                     {(step.dentist || step.technician) && (
                       <div className="mt-2">
                         <div className="text-sm text-gray-500">
-                          {step.dentist ? 'DENTIST' : 'TECHNICIAN'}
+                          {step.dentist ? "DENTIST" : "TECHNICIAN"}
                         </div>
                         <div className="font-medium">
                           {step.dentist || step.technician}
@@ -101,14 +105,20 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                       </div>
                     )}
                     <div className="mt-2 flex items-center">
-                      {step.status === 'done' && (
-                        <span className="text-sm font-medium text-green-500">Done</span>
+                      {step.status === "done" && (
+                        <span className="text-sm font-medium text-green-500">
+                          Done
+                        </span>
                       )}
-                      {step.status === 'pending' && (
-                        <span className="text-sm font-medium text-orange-500">Pending</span>
+                      {step.status === "pending" && (
+                        <span className="text-sm font-medium text-orange-500">
+                          Pending
+                        </span>
                       )}
-                      {step.status === 'in_progress' && (
-                        <span className="text-sm font-medium text-blue-500">In Progress</span>
+                      {step.status === "in_progress" && (
+                        <span className="text-sm font-medium text-blue-500">
+                          In Progress
+                        </span>
                       )}
                     </div>
                   </div>

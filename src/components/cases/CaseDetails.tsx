@@ -17,6 +17,8 @@ import {
   ToothInfo,
   CaseStatus,
   CASE_STATUS_DESCRIPTIONS,
+  WorkingStationLog,
+  WorkingStationTypes,
 } from "@/types/supabase";
 import CaseProgress from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
@@ -61,7 +63,9 @@ import {
 import cn from "classnames";
 import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
-import { isValid, parseISO, format } from "date-fns";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 
 interface CaseFile {
   id: string;
@@ -229,6 +233,13 @@ const CaseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [workStationLogs, setWorkStationLogs] = useState<
+    WorkingStationLog[] | []
+  >([]);
+  const [workStationTypes, setWorkStationTypes] = useState<
+    WorkingStationTypes[] | []
+  >([]);
+  const { user } = useAuth();
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -238,6 +249,12 @@ const CaseDetails: React.FC = () => {
 
     const fetchCaseData = async () => {
       try {
+        const lab = await getLabIdByUserId(user?.id as string);
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -360,7 +377,8 @@ const CaseDetails: React.FC = () => {
                 )
               `
             )
-            .in("id", productsIdArray);
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.labId);
 
           if (productsError) {
             setError(productsError.message);
@@ -478,7 +496,61 @@ const CaseDetails: React.FC = () => {
       }
     };
 
+    const getWorkStationDetails = async () => {
+      try {
+        const lab = await getLabIdByUserId(user?.id as string);
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
+        const { data: workStationData, error: workStationError } =
+          await supabase
+            .from("workstation_log")
+            .select(
+              `
+           technician_id,
+           workstation_type,
+           status,
+           notes,
+           started_at,
+           completed_at,
+           issue_reported_at
+          `
+            )
+            .eq("case_id", caseId);
+        const { data: worksationTypes, error: worksationTypesErrors } =
+          await supabase
+            .from("workstation_types")
+            .select(
+              `
+          id,
+          name,
+          is_default,
+          is_active,
+          created_at
+          `
+            )
+            .eq("lab_id", lab.labId);
+        if (workStationError) {
+          setError(workStationError?.message || "");
+        } else {
+          console.log(workStationData, "workStationData");
+          setWorkStationLogs(workStationLogs);
+        }
+        if (worksationTypesErrors) {
+          setError(worksationTypesErrors?.message || "");
+        } else {
+          console.log(workStationData, "workStationData");
+          setWorkStationTypes(worksationTypes);
+        }
+      } catch (err) {
+        console.log(err, "erro");
+      } finally {
+      }
+    };
     fetchCaseData();
+    getWorkStationDetails();
   }, [caseId]);
 
   const handleCompleteStage = async (stageName: string) => {
@@ -525,30 +597,8 @@ const CaseDetails: React.FC = () => {
       </div>
     );
   }
-  console.log(caseDetail, "caseDetail");
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
-  const formatDateWithTime = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      // Format date with time, hours, minutes, and AM/PM
-      return format(date, "MMM d, yyyy hh:mm a");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
+
+  console.log(workStationTypes, "workStationTypes");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">

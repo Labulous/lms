@@ -35,7 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { BalanceTrackingItem } from "@/types/supabase";
-import { isValid, parseISO, format } from "date-fns";
+import { formatDate } from "@/lib/formatedDate";
 interface NewPaymentModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
@@ -424,17 +424,6 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     }
   }, [selectedClient]);
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = parseISO(dateString);
-      if (!isValid(date)) {
-        return "Invalid Date";
-      }
-      return format(date, "MMM d, yyyy");
-    } catch (err) {
-      return "Invalid Date";
-    }
-  };
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">

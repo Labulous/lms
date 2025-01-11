@@ -27,6 +27,8 @@ import {
 import { productsService } from "@/services/productsService";
 import { supabase } from "@/lib/supabase";
 import { ProductType } from "@/types/supabase";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
@@ -54,6 +56,7 @@ export function EditInvoiceModal({
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
+  const { user } = useAuth();
   useEffect(() => {
     if (invoice) {
       const transformedItems = (invoice?.products ?? []).map((item) => ({
@@ -74,8 +77,15 @@ export function EditInvoiceModal({
   }, [invoice]);
   useEffect(() => {
     const fetchProducts = async () => {
+      const lab = await getLabIdByUserId(user?.id as string);
+
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
       try {
-        const fetchedProducts = await productsService.getProducts();
+        const fetchedProducts = await productsService.getProducts(lab.labId);
         setProducts(fetchedProducts);
       } catch (error) {
         console.error("Error fetching products:", error);

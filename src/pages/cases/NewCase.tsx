@@ -264,7 +264,7 @@ const NewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            instruction_notes:transformedData.instructionNotes,
+            instruction_notes: transformedData.instructionNotes,
             invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
@@ -278,7 +278,8 @@ const NewCase: React.FC = () => {
             pan_color: formData.workingPanColor,
             case_number: caseNumber,
           },
-          products: selectedProducts,
+          products: selectedProducts.filter((item) => item.id && item.type),
+
           enclosedItems: transformedData.enclosedItems,
           files: selectedFiles,
         };

@@ -27,6 +27,7 @@ export interface WorkingTag {
   name: string;
   color: string;
   created_at: string;
+  updated_at: string;
 }
 /**
  * Reference data interfaces
@@ -267,6 +268,22 @@ export interface ProductWithShade extends Product {
 /**
  * Main database type definitions
  */
+export interface WorkingStationLog {
+  technician_id: string;
+  workstation_type: string;
+  status: "in_queue | in_progress" | "completed" | "pending";
+  notes: string;
+  started_at: string;
+  completed_at: string | null;
+  issue_reported_at: string | null;
+}
+export interface WorkingStationTypes {
+  id: string;
+  name: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
 
 interface Shade {
   name: string;
@@ -665,6 +682,27 @@ export interface Database {
         over_payment?: number;
         remaining_payment?: number;
         clients?: { client_name?: string };
+      };
+    };
+    working_tags: {
+      row: WorkingTag[];
+      insert: {
+        name?: string;
+        color?: string;
+        created_at?: string;
+        updated_at?: string;
+      };
+    };
+    workstation_log: {
+      row: WorkingStationLog[];
+      insert: {
+        technician_id?: string;
+        workstation_type?: string;
+        status?: " in_queue | in_progress" | "completed" | "pending";
+        notes?: string;
+        started_at?: string;
+        completed_at?: string | null;
+        issue_reported_at?: string | null;
       };
     };
     headers: {

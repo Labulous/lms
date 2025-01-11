@@ -24,6 +24,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLabIdByUserId } from "@/services/authService";
 import { WorkingTag } from "@/types/supabase";
+import { formatDate } from "@/lib/formatedDate";
 
 interface TagFormData {
   name: string;
@@ -35,6 +36,7 @@ const WorkingTagsSettings = () => {
   const [tags, setTags] = useState<WorkingTag[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<TagFormData>({
     name: "",
     color: "#000000",
@@ -42,6 +44,7 @@ const WorkingTagsSettings = () => {
 
   const fetchTags = async () => {
     try {
+      setLoading(true);
       const labData = await getLabIdByUserId(user?.id as string);
       if (!labData?.labId) {
         toast.error("Lab not found");
@@ -56,17 +59,21 @@ const WorkingTagsSettings = () => {
 
       if (error) throw error;
       setTags(data || []);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching tags:", error);
       toast.error("Failed to load tags");
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchTags();
   }, [user?.id]);
-
+  console.log(user, "tags");
   const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true);
+
     e.preventDefault();
     try {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -87,6 +94,7 @@ const WorkingTagsSettings = () => {
 
         if (error) throw error;
         toast.success("Tag updated successfully");
+        setLoading(false);
       } else {
         const { error } = await supabase.from("working_tags").insert([
           {
@@ -105,9 +113,11 @@ const WorkingTagsSettings = () => {
       setEditingTag(null);
       setFormData({ name: "", color: "#000000" });
       fetchTags();
+      setLoading(false);
     } catch (error) {
       console.error("Error saving tag:", error);
       toast.error("Failed to save tag");
+      setLoading(false);
     }
   };
 
@@ -122,6 +132,7 @@ const WorkingTagsSettings = () => {
 
   const handleDelete = async (tag: WorkingTag) => {
     if (!confirm("Are you sure you want to delete this tag?")) return;
+    setLoading(true);
 
     try {
       const { error } = await supabase
@@ -132,12 +143,13 @@ const WorkingTagsSettings = () => {
       if (error) throw error;
       toast.success("Tag deleted successfully");
       fetchTags();
+      setLoading(false);
     } catch (error) {
       console.error("Error deleting tag:", error);
       toast.error("Failed to delete tag");
+      setLoading(false);
     }
   };
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -181,7 +193,10 @@ const WorkingTagsSettings = () => {
                     type="color"
                     value={formData.color}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, color: e.target.value }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
                     }
                     className="w-20"
                   />
@@ -189,7 +204,10 @@ const WorkingTagsSettings = () => {
                     type="text"
                     value={formData.color}
                     onChange={(e) =>
-                      setFormData((prev) => ({ ...prev, color: e.target.value }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        color: e.target.value,
+                      }))
                     }
                     placeholder="#000000"
                     pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$"
@@ -198,8 +216,8 @@ const WorkingTagsSettings = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">
-                  {editingTag ? "Update Tag" : "Create Tag"}
+                <Button type="submit" disabled={loading}>
+                  {editingTag ? loading ? "Updating Tag" :  "Update Tag" : loading ? "Creating tag" : "Create Tag"}
                 </Button>
               </DialogFooter>
             </form>
@@ -230,9 +248,7 @@ const WorkingTagsSettings = () => {
                     <span>{tag.color}</span>
                   </div>
                 </TableCell>
-                <TableCell>
-                  {new Date(tag.created_at).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{formatDate(tag.created_at)}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
                     <Button

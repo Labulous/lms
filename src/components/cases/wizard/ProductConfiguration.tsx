@@ -236,6 +236,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         )
         .order("name")
         .eq("product_type_id", selectedId?.id)
+        .eq("lab_id", lab?.labId)
         .select("*");
 
       if (error) {
@@ -525,6 +526,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       });
 
       setShadeData(shades);
+    } else {
+      const newProduct: SavedProduct = {
+        id: "",
+        name: "",
+        type: "",
+        teeth: [],
+        price: 0,
+        shades: {
+          body: "",
+          gingival: "",
+          stump: "",
+          occlusal: "",
+        },
+        discount: 0,
+        notes: "",
+        quantity: 1,
+      };
+      setselectedProducts([newProduct]);
     }
   }, selectedProducts);
   return (
@@ -635,7 +654,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       selectedProduct={{
                         id: selectedProducts[index].id ?? "",
                         name:
-                          selectedProducts[index].name ?? "Select a Product",
+                          selectedProducts[index].name.length > 0
+                            ? selectedProducts[index].name
+                            : "Select a Product",
                       }}
                       onProductSelect={(product) => {
                         handleProductSelect(product, true, index);
@@ -653,14 +674,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-xs"
+                            className={`h-7 text-xs ${
+                              row.shades.body ||
+                              row.shades.gingival ||
+                              row.shades.occlusal ||
+                              row.shades.stump
+                                ? "text-blue-600"
+                                : ""
+                            }`}
                             disabled={row.teeth.length === 0}
                             onClick={() => toggleShadePopover(index)}
                           >
-                            Add Shade
+                            {row.shades.body ||
+                            row.shades.gingival ||
+                            row.shades.occlusal ||
+                            row.shades.stump
+                              ? "Edit Shade"
+                              : " Add Shade"}
                           </Button>
                         </PopoverTrigger>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {/* <div className="grid grid-cols-2 gap-5">
                           {shadeData
                             .filter((item) => item.id === row.id)
                             .slice(0, 4)
@@ -688,35 +721,40 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               }
 
                               return (
-                                <div key={index} className="p-4 rounded-md">
-                                  {shade.occlusal && (
-                                    <p className="grid grid-cols-2 gap-4">
-                                      <strong>O:</strong>{" "}
-                                      {occlusalName || "No name available"}
-                                    </p>
-                                  )}
-                                  {shade.body && (
-                                    <p className="grid grid-cols-2 gap-4">
-                                      <strong>B:</strong>{" "}
-                                      {bodyName || "No name available"}
-                                    </p>
-                                  )}
-                                  {shade.gingival && (
-                                    <p className="grid grid-cols-2 gap-4">
-                                      <strong>G:</strong>{" "}
-                                      {gingivalName || "No name available"}
-                                    </p>
-                                  )}
-                                  {shade.stump && (
-                                    <p className="grid grid-cols-2 gap-4">
-                                      <strong>S:</strong>{" "}
-                                      {stumpName || "No name available"}
-                                    </p>
-                                  )}
+                                <div className="grid grid-cols-2">
+                                  <div className="">
+                                    {shade.occlusal && (
+                                      <p className="grid grid-cols-2 gap-4">
+                                        <strong>O:</strong>{" "}
+                                        {occlusalName || "No name available"}
+                                      </p>
+                                    )}
+                                    {shade.body && (
+                                      <p className="grid grid-cols-2 gap-4">
+                                        <strong>B:</strong>{" "}
+                                        {bodyName || "No name available"}
+                                      </p>
+                                    )}
+                                  </div>
+
+                                  <div className="flex">
+                                    {shade.gingival && (
+                                      <p className="grid grid-cols-2 gap-4">
+                                        <strong>G:</strong>{" "}
+                                        {gingivalName || "No name available"}
+                                      </p>
+                                    )}
+                                    {shade.stump && (
+                                      <p className="grid grid-cols-2 gap-4">
+                                        <strong>S:</strong>{" "}
+                                        {stumpName || "No name available"}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
-                        </div>
+                        </div> */}
 
                         <PopoverContent className="w-80">
                           <div className="grid gap-4">

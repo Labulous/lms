@@ -17,7 +17,6 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { cn } from "@/lib/utils";
-import { FormData } from "@/types/supabase";
 import { FormData as CaseFormData } from "../CaseWizard";
 import {
   Tooltip,
@@ -30,7 +29,7 @@ const logger = createLogger({ module: "OrderDetailsStep" });
 
 interface OrderDetailsStepProps {
   formData: CaseFormData;
-  onChange: (field: keyof CaseFormData, value: any) => void;
+  onChange: (field: keyof CaseFormData, value: string | boolean | number | undefined) => void;
   errors?: Partial<CaseFormData>;
   clients: Client[];
   loading?: boolean;
@@ -77,13 +76,6 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   };
 
-  const handleDateChange =
-    (field: keyof FormData) => (date: Date | undefined) => {
-      onChange(
-        field as keyof CaseFormData,
-        date ? date.toISOString().split("T")[0] : ""
-      );
-    };
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -462,6 +454,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   placeholder="Pan Name"
                   value={formData.workingPanName || ""}
                   onChange={handleInputChange}
+                  disabled
                   className={cn(
                     "bg-white flex-1",
                     errors.workingPanName ? "border-red-500" : ""
@@ -470,11 +463,12 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 <ColorPicker
                   id="workingPanColor"
                   value={formData.workingPanColor || "#FF0000"}
-                  onChange={(color) => {
+                  onColorChange={(color) => {
                     onChange("workingPanColor" as keyof CaseFormData, color);
                   }}
                   className="flex-shrink-0"
                   selectedColor={formData.workingPanColor ?? "red"}
+                  onFormChange={onChange}
                 />
               </div>
               {errors.workingPanName && (

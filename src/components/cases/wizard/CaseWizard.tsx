@@ -26,7 +26,10 @@ type WizardStep = "order" | "products" | "files" | "notes";
 
 export interface FormData {
   notes:
-    | { instructionNotes?: string | undefined; invoiceNotes?: string | undefined }
+    | {
+        instructionNotes?: string | undefined;
+        invoiceNotes?: string | undefined;
+      }
     | undefined;
   clientId: string;
   patientFirstName: string;
@@ -148,29 +151,21 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       userRole: user?.role,
     });
   }, [clients, loading, currentStep, user]);
-
-  // Log initial state
-  console.log("Initial Form Data:", formData);
-  console.log("Available Clients:", clients);
-
-  const handleFormChange = (key: string, value: string) => {
-    // Clone the newFormData so we don't mutate the state directly
+  const handleFormChange = (
+    key: string,
+    value: string | number | boolean | undefined
+  ) => {
     const updatedFormData = { ...formData, [key]: value };
 
-    // If the key is `clientId`, we need to update the `clientName` as well
     if (key === "clientId") {
       const client = clients.find((c) => c.id === value);
-      console.log("Found Client:", client);
       if (client) {
-        // If client found, update clientName
         updatedFormData.clientName = client.clientName;
       } else {
-        // If no client found, clear the clientName or leave it as-is
         updatedFormData.clientName = "";
       }
     }
 
-    // Now set the form data with the updated values
     setFormData(updatedFormData);
   };
 
@@ -223,14 +218,13 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       return;
     }
 
-    // Generate a new case object
     const newCase: Case = {
       id: Date.now().toString(),
       caseId: `CASE${Date.now().toString().slice(-6)}`,
       clientId: formData.clientId,
       clientName: client.clientName,
       patientName: `${formData.patientFirstName} ${formData.patientLastName}`,
-      caseType: "Standard", // Default type
+      caseType: "Standard",
       caseStatus: formData.status,
       startDate: formData.orderDate,
       dueDate: formData.isDueDateTBD

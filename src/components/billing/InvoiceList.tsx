@@ -275,6 +275,7 @@ const InvoiceList: React.FC = () => {
                 )
               `
               )
+              .eq("lab_id", lab.labId)
               .in("id", productsIdArray);
 
             if (productsError) {

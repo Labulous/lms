@@ -287,7 +287,7 @@ const UpdateCase: React.FC = () => {
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
           },
-          products: selectedProducts,
+          products: selectedProducts.filter((item) => item.id && item.type),
           enclosedItems: transformedData.enclosedItems,
           files: selectedFiles,
         };
@@ -308,6 +308,12 @@ const UpdateCase: React.FC = () => {
       return;
     }
     const fetchCaseData = async () => {
+      const lab = await getLabIdByUserId(user?.id as string);
+
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
       try {
         const { data: caseData, error } = await supabase
           .from("cases")
@@ -434,7 +440,8 @@ const UpdateCase: React.FC = () => {
                 )
               `
             )
-            .in("id", productsIdArray);
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.labId);
 
           if (productsError) {
             setError(productsError.message);
