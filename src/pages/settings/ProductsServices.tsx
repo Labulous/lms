@@ -34,7 +34,6 @@ const ProductsServices: React.FC = () => {
   useEffect(() => {
     loadProductsAndTypes();
   }, []);
-  console.log(productTypes, "productTypes");
   const { user } = useAuth();
   const loadProductsAndTypes = async () => {
     try {
@@ -48,7 +47,6 @@ const ProductsServices: React.FC = () => {
         productsService.getProducts(labData.labId),
         supabase.from("product_types").select("*").order("name"),
       ]);
-
       if (typesResult.error) throw typesResult.error;
 
       setProducts(productsResult);
