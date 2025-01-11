@@ -9,6 +9,8 @@ import { productsService } from "../../services/productsService";
 import { supabase } from "../../lib/supabase";
 import { Database } from "../../types/supabase";
 import { toast } from "react-hot-toast";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
@@ -33,11 +35,17 @@ const ProductsServices: React.FC = () => {
     loadProductsAndTypes();
   }, []);
   console.log(productTypes, "productTypes");
+  const { user } = useAuth();
   const loadProductsAndTypes = async () => {
     try {
       setLoading(true);
+      const labData = await getLabIdByUserId(user?.id as string);
+      if (!labData) {
+        toast.error("Unable to get Lab Id");
+        return null;
+      }
       const [productsResult, typesResult] = await Promise.all([
-        productsService.getProducts(),
+        productsService.getProducts(labData.labId),
         supabase.from("product_types").select("*").order("name"),
       ]);
 
