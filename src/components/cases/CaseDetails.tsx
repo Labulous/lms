@@ -509,8 +509,12 @@ const CaseDetails: React.FC = () => {
             .from("workstation_log")
             .select(
               `
-           technician_id,
-           workstation_type,
+              id,
+           technician:users!technician_id (id, name),
+           type:workstation_types!workstation_type_id (
+           id,
+           name
+           ),
            status,
            notes,
            started_at,
@@ -536,7 +540,8 @@ const CaseDetails: React.FC = () => {
           setError(workStationError?.message || "");
         } else {
           console.log(workStationData, "workStationData");
-          setWorkStationLogs(workStationLogs);
+          const apiData: any = workStationData;
+          setWorkStationLogs(apiData);
         }
         if (worksationTypesErrors) {
           setError(worksationTypesErrors?.message || "");
@@ -598,7 +603,39 @@ const CaseDetails: React.FC = () => {
     );
   }
 
-  console.log(workStationTypes, "workStationTypes");
+  const stepsData = [
+    {
+      date: caseDetail.created_at || new Date().toISOString(),
+      condition: "Case Created",
+      technician: {
+        name: "System",
+        id: "",
+      },
+      status: "completed" as
+        | "in_queue"
+        | "in_progress"
+        | "completed"
+        | "pending",
+      notes: "Case has been created and is ready for processing",
+    },
+    ...workStationLogs.map((item) => {
+      return {
+        date: item.started_at,
+        condition: "In progress",
+        treatment: item?.type?.name || "",
+        status: item.status as
+          | "in_queue"
+          | "in_progress"
+          | "completed"
+          | "pending",
+        notes: item.notes,
+        technician: {
+          name: item.technician.name,
+          id: item.technician.id,
+        },
+      };
+    }),
+  ];
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -738,7 +775,6 @@ const CaseDetails: React.FC = () => {
                     <DropdownMenuItem>Archive Case</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
                 <Button>Complete</Button>
               </div>
 
@@ -779,43 +815,7 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
-                <CaseProgress
-                  steps={[
-                    {
-                      date: caseDetail.created_at || new Date().toISOString(),
-                      condition: "Case Created",
-                      technician: "System",
-                      status: "done",
-                      notes:
-                        "Case has been created and is ready for processing",
-                    },
-                    {
-                      date: caseDetail.updated_at || new Date().toISOString(),
-                      condition: "In Queue",
-                      treatment: "Waiting for technician",
-                      status:
-                        caseDetail.status === "in_queue"
-                          ? "in_progress"
-                          : "done",
-                    },
-                    {
-                      date: new Date().toISOString(),
-                      condition: "Manufacturing",
-                      treatment: "Processing",
-                      status:
-                        caseDetail.status === "in_progress"
-                          ? "in_progress"
-                          : "pending",
-                    },
-                    {
-                      date: caseDetail.due_date || new Date().toISOString(),
-                      condition: "Quality Check",
-                      treatment: "Final Inspection",
-                      status:
-                        caseDetail.status === "completed" ? "done" : "pending",
-                    },
-                  ]}
-                />
+                <CaseProgress steps={stepsData} />
               </CardContent>
             </Card>
 

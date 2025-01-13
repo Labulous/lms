@@ -271,11 +271,13 @@ export interface ProductWithShade extends Product {
 export interface WorkingStationLog {
   technician_id: string;
   workstation_type: string;
-  status: "in_queue | in_progress" | "completed" | "pending";
+  status: "in_queue" | "in_progress" | "completed" | "pending";
   notes: string;
   started_at: string;
   completed_at: string | null;
   issue_reported_at: string | null;
+  type: { id: string; name: string };
+  technician: { name: string; id: string };
 }
 export interface WorkingStationTypes {
   id: string;
