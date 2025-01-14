@@ -293,6 +293,7 @@ const NewCase: React.FC = () => {
     }
   };
   // console.log(selectedProducts, "selected");
+  console.log(selectedProducts, "selected products");
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -326,6 +327,7 @@ const NewCase: React.FC = () => {
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
+            onFormChange={handleFormChange}
             formErrors={errors}
           />
         </div>

@@ -171,6 +171,10 @@ export interface ShadeData {
   gingival?: string; // UUID reference to shade_options
   stump?: string; // UUID reference to shade_options
   id?: string;
+  customOcclusal?: string;
+  customGingival?: string;
+  customStump?: string;
+  customBody?: string;
 }
 
 /**

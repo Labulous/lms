@@ -3,6 +3,10 @@ export interface ProductShades {
   body: string;
   gingival: string;
   stump: string;
+  customOcclusal?: string;
+  customBody?: string;
+  customStump?: string;
+  customGingical?: string;
 }
 
 export interface SavedProduct {

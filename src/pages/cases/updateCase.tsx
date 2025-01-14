@@ -348,6 +348,7 @@ const UpdateCase: React.FC = () => {
                 )
               ),
               tags:working_tags!pan_tag_id (
+              id,
               color,name),
               rx_number,
               received_date,
@@ -497,7 +498,11 @@ const UpdateCase: React.FC = () => {
                 stump_shade_id,
                 tooth_number,
                 notes,
-                product_id
+                product_id,
+                custom_occlusal_shade,
+                custom_body_shade,
+                custom_gingival_shade,
+                custom_stump_shade
               `
               )
               .eq("case_product_id", caseProductId)
@@ -545,7 +550,7 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.tags.name || "",
+          workingPanName: caseDataApi.tags.id || "",
           workingPanColor: caseDataApi.tags.color || "",
 
           enclosedItems: {
@@ -595,6 +600,10 @@ const UpdateCase: React.FC = () => {
               gingival: item?.teethProduct?.gingival_shade_id || "",
               occlusal: item?.teethProduct?.occlusal_shade_id || "",
               stump: item.teethProduct?.stump_shade_id || "",
+              customBody: item.teethProduct?.custom_body_shade || null,
+              customOcclusal: item.teethProduct?.custom_occlusal_shade || null,
+              customGingival: item.teethProduct?.custom_gingival_shade || null,
+              customStump: item.teethProduct?.custom_stump_shade || null,
             },
             discount: item?.discounted_price?.discount || 0,
             notes: item?.teethProduct?.notes || "",

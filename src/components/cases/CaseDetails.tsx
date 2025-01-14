@@ -290,6 +290,7 @@ const CaseDetails: React.FC = () => {
               ),
               tag:working_tags!pan_tag_id (
               name,
+              color
               
               ),
               rx_number,
