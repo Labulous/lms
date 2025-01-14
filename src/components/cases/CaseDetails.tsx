@@ -288,7 +288,10 @@ const CaseDetails: React.FC = () => {
                   phone
                 )
               ),
-              pan_tag,
+              tag:working_tags!pan_tag_id (
+              name,
+              
+              ),
               rx_number,
               received_date,
               invoice_notes,

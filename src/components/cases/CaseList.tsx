@@ -103,6 +103,7 @@ type Case = {
   custom_contact_details: string | null;
   custom_occulusal_details: string | null;
   custom_pontic_details: string | null;
+  tags: { name: string; color: string } | null;
   enclosed_items: {
     impression: boolean;
     biteRegistration: boolean;
@@ -194,7 +195,7 @@ const CaseList: React.FC = () => {
       ),
     },
     {
-      accessorKey: "pan_color",
+      accessorKey: "tags",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -205,17 +206,23 @@ const CaseList: React.FC = () => {
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => (
-        <div className="font-medium text-primary hover:underline">
-          <div
-            className="w-10 h-8 rounded-md cursor-pointer"
-            style={{
-              backgroundColor: row.getValue("pan_color") ?? "#00000",
-            }}
-            title={row.original.pan_tag ?? "pan tag"}
-          ></div>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const tag = row.getValue("tags") as { name: string; color: string };
+        const color = tag?.color || "transparent"; // Default color if not provided
+        const name = tag?.name || "pan tag not defined"; // Default name if not provided
+
+        return (
+          <div className="font-medium text-primary hover:underline">
+            <div
+              className="w-10 h-8 rounded-md cursor-pointer"
+              style={{
+                backgroundColor: color,
+              }}
+              title={name}
+            ></div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "patient_name",
@@ -564,8 +571,8 @@ const CaseList: React.FC = () => {
                 phone
               )
             ),
-            pan_tag,
-            pan_color,
+            tags:working_tags!pan_tag_id (
+            name,color),
             rx_number,
             isDueDateTBD,
             appointment_date,

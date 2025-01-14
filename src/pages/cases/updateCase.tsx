@@ -282,8 +282,7 @@ const UpdateCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
-            pan_tag: formData.workingPanName,
-            pan_color: formData.workingPanColor,
+            pan_tag_id: formData.workingPanName,
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
           },
@@ -348,8 +347,8 @@ const UpdateCase: React.FC = () => {
                   phone
                 )
               ),
-              pan_tag,
-              pan_color,
+              tags:working_tags!pan_tag_id (
+              color,name),
               rx_number,
               received_date,
               isDueDateTBD,
@@ -546,8 +545,9 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.pan_tag || "",
-          workingPanColor: caseDataApi.pan_color || "",
+          workingPanName: caseDataApi.tags.name || "",
+          workingPanColor: caseDataApi.tags.color || "",
+
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
             impression: caseDataApi.enclosed_items?.impression || 0,

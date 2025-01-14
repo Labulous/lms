@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { SetStateAction, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { HexColorPicker } from "react-colorful";
@@ -19,6 +19,8 @@ interface ColorPickerProps
   disabled?: boolean;
   selectedColor: string;
   onFormChange: (field: keyof CaseFormData, value: string) => void;
+  tags: WorkingTag[];
+  setTags: React.Dispatch<SetStateAction<WorkingTag[]>>;
 }
 
 const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
@@ -30,16 +32,18 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
       disabled,
       onColorChange,
       onFormChange,
+      tags,
+      setTags,
       ...props
     },
     ref
   ) => {
     const [customColor, setCustomColor] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [tags, setTags] = useState<WorkingTag[]>([]);
     const [color, setColor] = useState("#000000");
     const [open, setOpen] = useState(false);
     const [formData, setFormData] = useState({
+      id: "",
       name: "",
       color: "#000000",
     });
@@ -65,7 +69,7 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         setTags(data || []);
         setLoading(false);
         onColorChange?.(data[0]?.color);
-        onFormChange("workingPanName" as keyof CaseFormData, data[0]?.name);
+        onFormChange("workingPanName" as keyof CaseFormData, data[0]?.id);
       } catch (error) {
         console.error("Error fetching tags:", error);
         toast.error("Failed to load tags");
@@ -96,7 +100,7 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         const { error } = await supabase.from("working_tags").insert([
           {
             name: formData.name,
-            color: color,
+            color: formData.color,
             lab_id: labData.labId,
             created_by: user?.id,
           },
@@ -105,8 +109,8 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         if (error) throw error;
         toast.success("Tag created successfully");
         onColorChange?.(formData.color);
-        onFormChange("workingPanName" as keyof CaseFormData, formData.name);
-        setFormData({ name: "", color: "#000000" });
+        onFormChange("workingPanName" as keyof CaseFormData, formData.id);
+        setFormData({ name: "", color: "#000000", id: "" });
         fetchTags();
         setLoading(false);
         setOpen(false);
@@ -170,7 +174,9 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
                 />
                 <HexColorPicker
                   color={color}
-                  onChange={setColor}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, color: value }))
+                  }
                   className="w-64 max-w-full"
                   style={{ width: "100% !important" }}
                 />
@@ -200,7 +206,7 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
                     onClick={() => {
                       onFormChange(
                         "workingPanName" as keyof CaseFormData,
-                        color.name
+                        color.id
                       );
 
                       onColorChange?.(color.color);
