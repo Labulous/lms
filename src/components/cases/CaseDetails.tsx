@@ -456,6 +456,10 @@ const CaseDetails: React.FC = () => {
                 tooth_number,
                 notes,
                 product_id,
+                custom_body_shade,
+                custom_occlusal_shade,
+                custom_gingival_shade,
+                custom_stump_shade,
                 type
               `
               )
@@ -631,6 +635,8 @@ const CaseDetails: React.FC = () => {
       };
     }),
   ];
+
+  console.log(caseDetail, "case details");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -913,48 +919,84 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              {product.teethProduct &&
-                                product.teethProduct?.body_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">Body:</span>
-                                    <span>
-                                      {product.teethProduct.body_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.gingival_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Gingival:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.gingival_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.occlusal_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Occlusal:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.occlusal_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.stump_shade_id?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Stump:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.stump_shade_id.name}
-                                    </span>
-                                  </div>
-                                )}
+                              <p>
+                                {" "}
+                                {(product.teethProduct &&
+                                  product.teethProduct?.body_shade?.name) ||
+                                  (product.teethProduct.custom_body_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Body:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct.custom_body_shade
+                                          ? product.teethProduct
+                                              .custom_body_shade
+                                          : product.teethProduct.body_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {(product.teethProduct &&
+                                  product.teethProduct?.gingival_shade?.name) ||
+                                  (product.teethProduct
+                                    .custom_gingival_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Gingival:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct
+                                          .custom_gingival_shade
+                                          ? product.teethProduct
+                                              .custom_gingival_shade
+                                          : product.teethProduct.gingival_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {(product.teethProduct &&
+                                  product.teethProduct?.occlusal_shade?.name) ||
+                                  (product.teethProduct
+                                    .custom_occlusal_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Occlusal:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct
+                                          .custom_occlusal_shade
+                                          ? product.teethProduct
+                                              .custom_occlusal_shade
+                                          : product.teethProduct.occlusal_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {product.teethProduct &&
+                                  (product.teethProduct?.custom_stump_shade ||
+                                    (product.teethProduct.stump_shade_id && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-500">
+                                          Stump:
+                                        </span>
+                                        <span>
+                                          {product.teethProduct
+                                            .custom_stump_shade
+                                            ? product.teethProduct
+                                                .custom_stump_shade
+                                            : product.teethProduct
+                                                .stump_shade_id.name}
+                                        </span>
+                                      </div>
+                                    )))}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
