@@ -18,11 +18,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 export interface CaseStep {
   date: string;
-  condition?: string;
-  treatment?: string;
+  workstation_type?: string;
   dentist?: string;
   technician?: { name: string; id: string };
-  status: "in_queue" | "in_progress" | "completed" | "pending";
+  status: "in_progress" | "completed" | "issue_reported";
   notes?: string;
 }
 
@@ -76,7 +75,7 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                   {step.status === "completed" && (
                     <CheckCircle2 className="w-6 h-6 text-green-500" />
                   )}
-                  {step.status === "pending" && (
+                  {step.status === "issue_reported" && (
                     <Clock className="w-6 h-6 text-orange-500" />
                   )}
                   {step.status === "in_progress" && (
@@ -100,23 +99,13 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                             <div className="flex">
                               <div className="">
                                 <div className="grid grid-cols-2 gap-4">
-                                  {step.condition && (
-                                    <div className="flex flex-col">
-                                      <div className="text-sm text-gray-500 text-start">
-                                        CONDITION
-                                      </div>
-                                      <div className="font-medium text-start">
-                                        {step.condition}
-                                      </div>
-                                    </div>
-                                  )}
-                                  {step.treatment && (
+                                  {step.workstation_type && (
                                     <div>
                                       <div className="text-sm text-gray-500 text-start">
-                                        TREATMENT
+                                        Workstation Type
                                       </div>
                                       <div className="font-medium text-start">
-                                        {step.treatment}
+                                        {step.workstation_type}
                                       </div>
                                     </div>
                                   )}
@@ -129,12 +118,12 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                                 <div className="mt-2 flex items-center">
                                   {step.status === "completed" && (
                                     <span className="text-sm font-medium text-green-500">
-                                      Done
+                                      Completed
                                     </span>
                                   )}
-                                  {step.status === "pending" && (
+                                  {step.status === "issue_reported" && (
                                     <span className="text-sm font-medium text-orange-500">
-                                      Pending
+                                      Issue Reported
                                     </span>
                                   )}
                                   {step.status === "in_progress" && (
@@ -150,30 +139,10 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                           // If technician is not "System", render the Accordion with toggle functionality
                           <>
                             <AccordionTrigger className="hover:no-underline">
-                              <div className="w-full">
-                                <div className="flex">
+                                <div className="flex justify-between w-full">
                                   <div className="w-full">
-                                    <div className="grid grid-cols-2 gap-4">
-                                      {step.condition && (
-                                        <div className="flex flex-col">
-                                          <div className="text-sm text-gray-500 text-start">
-                                            CONDITION
-                                          </div>
-                                          <div className="font-medium text-start">
-                                            {step.condition}
-                                          </div>
-                                        </div>
-                                      )}
-                                      {step.treatment && (
-                                        <div>
-                                          <div className="text-sm text-gray-500 text-start">
-                                            TREATMENT
-                                          </div>
-                                          <div className="font-medium text-start">
-                                            {step.treatment}
-                                          </div>
-                                        </div>
-                                      )}
+                                    <div className="text-sm text-gray-500 text-start">
+                                      Status
                                     </div>
                                     <div className="mt-2 flex items-center">
                                       {step.status === "completed" && (
@@ -181,9 +150,9 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                                           Done
                                         </span>
                                       )}
-                                      {step.status === "pending" && (
+                                      {step.status === "issue_reported" && (
                                         <span className="text-sm font-medium text-orange-500">
-                                          Pending
+                                          Issue Reported
                                         </span>
                                       )}
                                       {step.status === "in_progress" && (
@@ -193,8 +162,19 @@ const CaseProgress: React.FC<CaseProgressProps> = ({ steps = [] }) => {
                                       )}
                                     </div>
                                   </div>
+                                  <div className="flex w-full">
+                                    {step.workstation_type && (
+                                      <div>
+                                        <div className="text-sm text-gray-500 text-start">
+                                          Workstation Type
+                                        </div>
+                                        <div className="font-medium text-start">
+                                          {step.workstation_type}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
                             </AccordionTrigger>
                             <AccordionContent className="pt-4 border-t">
                               <div className="space-y-4">

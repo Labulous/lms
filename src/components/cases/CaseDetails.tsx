@@ -606,28 +606,19 @@ const CaseDetails: React.FC = () => {
   const stepsData = [
     {
       date: caseDetail.created_at || new Date().toISOString(),
-      condition: "Case Created",
       technician: {
         name: "System",
         id: "",
       },
-      status: "completed" as
-        | "in_queue"
-        | "in_progress"
-        | "completed"
-        | "pending",
-      notes: "Case has been created and is ready for processing",
+      status: "completed" as "in_progress" | "completed" | "issue_reported",
+      notes: "Case has been created and is ready for Manufacturing.",
     },
     ...workStationLogs.map((item) => {
       return {
         date: item.started_at,
-        condition: "In progress",
-        treatment: item?.type?.name || "",
-        status: item.status as
-          | "in_queue"
-          | "in_progress"
-          | "completed"
-          | "pending",
+        workstation_type: item?.type?.name || "",
+        status: item.status as "in_progress" | "completed" | "issue_reported",
+
         notes: item.notes,
         technician: {
           name: item.technician.name,
@@ -1307,12 +1298,6 @@ const CaseDetails: React.FC = () => {
                       {caseDetail?.instruction_notes || "No Instruction notes"}
                     </p>
                   </div>
-                  <div className="mb-4">
-                    <p className="text-gray-600">Other Items</p>
-                    <p className="font-medium">
-                      {caseDetail?.otherItems || "No notes"}
-                    </p>
-                  </div>
                   {caseDetail.custom_pontic_details ? (
                     <div>
                       <p className="text-gray-600">Contact Type</p>
@@ -1508,11 +1493,13 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Enclosed Items</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {
-                              Object.values(
-                                caseDetail.enclosed_items || {}
-                              ).filter(Boolean).length
-                            }
+                            {Object.values(
+                              caseDetail.enclosed_items || {}
+                            ).reduce((sum, value) => {
+                              return typeof value === "number"
+                                ? Number(sum) + value
+                                : sum;
+                            }, 0)}
                           </span>
                         </div>
                       </div>
@@ -1558,6 +1545,13 @@ const CaseDetails: React.FC = () => {
                             </span>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="my-4">
+                        <p className="text-gray-600">Other Items Note</p>
+                        <p className="font-medium">
+                          {caseDetail?.otherItems || "No notes"}
+                        </p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
