@@ -274,8 +274,7 @@ const NewCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
-            pan_tag: formData.workingPanName,
-            pan_color: formData.workingPanColor,
+            pan_tag_id: formData.workingPanName,
             case_number: caseNumber,
           },
           products: selectedProducts.filter((item) => item.id && item.type),
@@ -294,6 +293,7 @@ const NewCase: React.FC = () => {
     }
   };
   // console.log(selectedProducts, "selected");
+  console.log(selectedProducts, "selected products");
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -327,6 +327,7 @@ const NewCase: React.FC = () => {
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
+            onFormChange={handleFormChange}
             formErrors={errors}
           />
         </div>

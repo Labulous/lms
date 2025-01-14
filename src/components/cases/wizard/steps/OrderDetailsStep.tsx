@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
 import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
@@ -24,12 +24,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
+import { CASE_STATUS_DESCRIPTIONS, WorkingTag } from "@/types/supabase";
+import { supabase } from "@/lib/supabase";
+import toast from "react-hot-toast";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 interface OrderDetailsStepProps {
   formData: CaseFormData;
-  onChange: (field: keyof CaseFormData, value: string | boolean | number | undefined) => void;
+  onChange: (
+    field: keyof CaseFormData,
+    value: string | boolean | number | undefined
+  ) => void;
   errors?: Partial<CaseFormData>;
   clients: Client[];
   loading?: boolean;
@@ -43,6 +50,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   loading = false,
 }) => {
   // Debug log for initial render and props
+  const [tags, setTags] = useState<WorkingTag[]>([]);
+  const [isLoading, setLoading] = useState<boolean>(false);
+  const { user } = useAuth();
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -76,6 +86,36 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   };
 
+  const fetchTags = async () => {
+    try {
+      setLoading(true);
+      const labData = await getLabIdByUserId(user?.id as string);
+      if (!labData?.labId) {
+        toast.error("Lab not found");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("working_tags")
+        .select("*")
+        .eq("lab_id", labData.labId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setTags(data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching tags:", error);
+      toast.error("Failed to load tags");
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTags();
+  }, [user?.id]);
+
+  console.log(formData, "formd ata");
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -241,7 +281,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
                 updatedDate={
-                  formData.dueDate ? new Date(formData.orderDate) :  new Date()
+                  formData.dueDate ? new Date(formData.orderDate) : new Date()
                 }
               />
               {errors.orderDate && (
@@ -447,19 +487,50 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 Working Pan
               </Label>
               <div className="flex items-center gap-2 mt-1.5">
-                <Input
-                  type="text"
-                  id="workingPanName"
+                <Select
                   name="workingPanName"
-                  placeholder="Pan Name"
-                  value={formData.workingPanName || ""}
-                  onChange={handleInputChange}
-                  disabled
-                  className={cn(
-                    "bg-white flex-1",
-                    errors.workingPanName ? "border-red-500" : ""
-                  )}
-                />
+                  value={formData.workingPanName}
+                  onValueChange={(value) => {
+                    const color =
+                      tags.find((item) => item.id === value)?.color || "";
+                    onChange(
+                      "workingPanColor",
+                      color // Default to empty string if no match is found
+                    );
+
+                    onChange("workingPanName" as keyof CaseFormData, value); // Reset doctor when client changes
+                  }}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      "bg-white",
+                      errors.clientId ? "border-red-500" : ""
+                    )}
+                  >
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tags && tags.length > 0 ? (
+                      tags.map((tag, index) => (
+                        <div className="flex">
+                          <SelectItem key={index} value={tag.id}>
+                            <div className="">
+                              <p> {tag.name || "Unnamed tag"}</p>
+                            </div>
+                          </SelectItem>
+                          <div
+                            className={`h-4 w-6 rounded-sm`}
+                            style={{ backgroundColor: tag.color }}
+                          ></div>
+                        </div>
+                      ))
+                    ) : (
+                      <SelectItem value="_no_clients" disabled>
+                        No clients available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
                 <ColorPicker
                   id="workingPanColor"
                   value={formData.workingPanColor || "#FF0000"}
@@ -469,6 +540,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   className="flex-shrink-0"
                   selectedColor={formData.workingPanColor ?? "red"}
                   onFormChange={onChange}
+                  tags={tags}
+                  setTags={setTags}
                 />
               </div>
               {errors.workingPanName && (

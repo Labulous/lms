@@ -19,8 +19,9 @@ import {
   CASE_STATUS_DESCRIPTIONS,
   WorkingStationLog,
   WorkingStationTypes,
+  WorkstationForm,
 } from "@/types/supabase";
-import CaseProgress from "./CaseProgress";
+import CaseProgress, { CaseStep } from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -236,17 +237,29 @@ const CaseDetails: React.FC = () => {
   const [workStationLogs, setWorkStationLogs] = useState<
     WorkingStationLog[] | []
   >([]);
+  const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
   const { user } = useAuth();
+  const [workstationForm, setWorkStationForm] = useState<WorkstationForm>({
+    created_by: user?.id as string,
+    technician_id: user?.role === "technician" ? user.id : "",
+    custom_workstation_type: "",
+    status: "in_progress",
+    notes: "",
+    started_at: "",
+    completed_at: "",
+    issue_reported_at: "",
+    workstation_type_id: "",
+  });
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
       setLoading(false);
       return;
     }
-
+    let caseDataApi: any = null;
     const fetchCaseData = async () => {
       try {
         const lab = await getLabIdByUserId(user?.id as string);
@@ -288,7 +301,11 @@ const CaseDetails: React.FC = () => {
                   phone
                 )
               ),
-              pan_tag,
+              tag:working_tags!pan_tag_id (
+              name,
+              color
+              
+              ),
               rx_number,
               received_date,
               invoice_notes,
@@ -316,6 +333,10 @@ const CaseDetails: React.FC = () => {
                 consultRequested,
                 user_id
               ),
+              created_by:users!created_by (
+              name,
+              id
+              ),
               product_ids:case_products!id (
                 products_id,
                 id
@@ -336,7 +357,7 @@ const CaseDetails: React.FC = () => {
           setError("Case not found");
           return;
         }
-
+        caseDataApi = caseDetail;
         const caseDetails: any = caseData;
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
@@ -452,6 +473,10 @@ const CaseDetails: React.FC = () => {
                 tooth_number,
                 notes,
                 product_id,
+                custom_body_shade,
+                custom_occlusal_shade,
+                custom_gingival_shade,
+                custom_stump_shade,
                 type
               `
               )
@@ -548,6 +573,38 @@ const CaseDetails: React.FC = () => {
         } else {
           console.log(workStationData, "workStationData");
           setWorkStationTypes(worksationTypes);
+          let workStationDataApi: any = workStationData;
+          const steps = [
+            {
+              date: caseDataApi?.created_at || new Date().toISOString(),
+              technician: {
+                name: "System",
+                id: "",
+              },
+              status: "completed" as
+                | "in_progress"
+                | "completed"
+                | "issue_reported",
+              notes: "Case has been created and is ready for Manufacturing.",
+            },
+            ...workStationDataApi.map((item: any) => {
+              return {
+                date: item.started_at,
+                workstation_type: item?.type?.name || "",
+                status: item.status as
+                  | "in_progress"
+                  | "completed"
+                  | "issue_reported",
+
+                notes: item.notes,
+                technician: {
+                  name: item.technician.name,
+                  id: item.technician.id,
+                },
+              };
+            }),
+          ];
+          setStepData(steps);
         }
       } catch (err) {
         console.log(err, "erro");
@@ -603,39 +660,25 @@ const CaseDetails: React.FC = () => {
     );
   }
 
-  const stepsData = [
-    {
-      date: caseDetail.created_at || new Date().toISOString(),
-      condition: "Case Created",
+  const handleCreateNewWorkStation = () => {
+    const newCreateStep = {
+      date:new Date().toISOString(),
       technician: {
-        name: "System",
+        name: user?.role === "technician" ? user.name : "",
         id: "",
       },
-      status: "completed" as
-        | "in_queue"
+      isNew: true,
+      status: workstationForm.status as
         | "in_progress"
         | "completed"
-        | "pending",
-      notes: "Case has been created and is ready for processing",
-    },
-    ...workStationLogs.map((item) => {
-      return {
-        date: item.started_at,
-        condition: "In progress",
-        treatment: item?.type?.name || "",
-        status: item.status as
-          | "in_queue"
-          | "in_progress"
-          | "completed"
-          | "pending",
-        notes: item.notes,
-        technician: {
-          name: item.technician.name,
-          id: item.technician.id,
-        },
-      };
-    }),
-  ];
+        | "issue_reported",
+      notes: workstationForm.notes,
+    };
+
+    setStepData((steps) => [...steps, newCreateStep]);
+  };
+
+  console.log(caseDetail, "case details");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -815,7 +858,13 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
-                <CaseProgress steps={stepsData} />
+                <CaseProgress
+                  steps={stepsData}
+                  caseDetail={caseDetail}
+                  handleNewWorkstation={handleCreateNewWorkStation}
+                  workstationForm={workstationForm}
+                  setWorkStationForm={setWorkStationForm}
+                />
               </CardContent>
             </Card>
 
@@ -918,48 +967,84 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              {product.teethProduct &&
-                                product.teethProduct?.body_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">Body:</span>
-                                    <span>
-                                      {product.teethProduct.body_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.gingival_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Gingival:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.gingival_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.occlusal_shade?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Occlusal:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.occlusal_shade.name}
-                                    </span>
-                                  </div>
-                                )}
-                              {product.teethProduct &&
-                                product.teethProduct?.stump_shade_id?.name && (
-                                  <div className="flex justify-between">
-                                    <span className="text-gray-500">
-                                      Stump:
-                                    </span>
-                                    <span>
-                                      {product.teethProduct.stump_shade_id.name}
-                                    </span>
-                                  </div>
-                                )}
+                              <p>
+                                {" "}
+                                {(product.teethProduct &&
+                                  product.teethProduct?.body_shade?.name) ||
+                                  (product.teethProduct.custom_body_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Body:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct.custom_body_shade
+                                          ? product.teethProduct
+                                              .custom_body_shade
+                                          : product.teethProduct.body_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {(product.teethProduct &&
+                                  product.teethProduct?.gingival_shade?.name) ||
+                                  (product.teethProduct
+                                    .custom_gingival_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Gingival:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct
+                                          .custom_gingival_shade
+                                          ? product.teethProduct
+                                              .custom_gingival_shade
+                                          : product.teethProduct.gingival_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {(product.teethProduct &&
+                                  product.teethProduct?.occlusal_shade?.name) ||
+                                  (product.teethProduct
+                                    .custom_occlusal_shade && (
+                                    <div className="flex justify-between">
+                                      <span className="text-gray-500">
+                                        Occlusal:
+                                      </span>
+                                      <span>
+                                        {product.teethProduct
+                                          .custom_occlusal_shade
+                                          ? product.teethProduct
+                                              .custom_occlusal_shade
+                                          : product.teethProduct.occlusal_shade
+                                              .name}
+                                      </span>
+                                    </div>
+                                  ))}
+                              </p>
+                              <p>
+                                {product.teethProduct &&
+                                  (product.teethProduct?.custom_stump_shade ||
+                                    (product.teethProduct.stump_shade_id && (
+                                      <div className="flex justify-between">
+                                        <span className="text-gray-500">
+                                          Stump:
+                                        </span>
+                                        <span>
+                                          {product.teethProduct
+                                            .custom_stump_shade
+                                            ? product.teethProduct
+                                                .custom_stump_shade
+                                            : product.teethProduct
+                                                .stump_shade_id.name}
+                                        </span>
+                                      </div>
+                                    )))}
+                              </p>
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -1307,12 +1392,6 @@ const CaseDetails: React.FC = () => {
                       {caseDetail?.instruction_notes || "No Instruction notes"}
                     </p>
                   </div>
-                  <div className="mb-4">
-                    <p className="text-gray-600">Other Items</p>
-                    <p className="font-medium">
-                      {caseDetail?.otherItems || "No notes"}
-                    </p>
-                  </div>
                   {caseDetail.custom_pontic_details ? (
                     <div>
                       <p className="text-gray-600">Contact Type</p>
@@ -1508,11 +1587,13 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Enclosed Items</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {
-                              Object.values(
-                                caseDetail.enclosed_items || {}
-                              ).filter(Boolean).length
-                            }
+                            {Object.values(
+                              caseDetail.enclosed_items || {}
+                            ).reduce((sum, value) => {
+                              return typeof value === "number"
+                                ? Number(sum) + value
+                                : sum;
+                            }, 0)}
                           </span>
                         </div>
                       </div>
@@ -1558,6 +1639,13 @@ const CaseDetails: React.FC = () => {
                             </span>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="my-4">
+                        <p className="text-gray-600">Other Items Note</p>
+                        <p className="font-medium">
+                          {caseDetail?.otherItems || "No notes"}
+                        </p>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
