@@ -22,6 +22,18 @@ export enum DefaultProductType {
   Coping = "Coping",
   Appliance = "Appliance",
 }
+
+export interface WorkstationForm {
+  created_by: string;
+  technician_id: string;
+  custom_workstation_type: string;
+  status: "in_progress" | "completed" | "issue_reported";
+  notes: string;
+  started_at: string;
+  completed_at: string;
+  issue_reported_at: string;
+  workstation_type_id: string;
+}
 export interface WorkingTag {
   id: string;
   name: string;

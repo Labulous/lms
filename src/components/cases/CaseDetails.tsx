@@ -19,8 +19,9 @@ import {
   CASE_STATUS_DESCRIPTIONS,
   WorkingStationLog,
   WorkingStationTypes,
+  WorkstationForm,
 } from "@/types/supabase";
-import CaseProgress from "./CaseProgress";
+import CaseProgress, { CaseStep } from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -236,17 +237,29 @@ const CaseDetails: React.FC = () => {
   const [workStationLogs, setWorkStationLogs] = useState<
     WorkingStationLog[] | []
   >([]);
+  const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
   const { user } = useAuth();
+  const [workstationForm, setWorkStationForm] = useState<WorkstationForm>({
+    created_by: user?.id as string,
+    technician_id: user?.role === "technician" ? user.id : "",
+    custom_workstation_type: "",
+    status: "in_progress",
+    notes: "",
+    started_at: "",
+    completed_at: "",
+    issue_reported_at: "",
+    workstation_type_id: "",
+  });
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
       setLoading(false);
       return;
     }
-
+    let caseDataApi: any = null;
     const fetchCaseData = async () => {
       try {
         const lab = await getLabIdByUserId(user?.id as string);
@@ -320,6 +333,10 @@ const CaseDetails: React.FC = () => {
                 consultRequested,
                 user_id
               ),
+              created_by:users!created_by (
+              name,
+              id
+              ),
               product_ids:case_products!id (
                 products_id,
                 id
@@ -340,7 +357,7 @@ const CaseDetails: React.FC = () => {
           setError("Case not found");
           return;
         }
-
+        caseDataApi = caseDetail;
         const caseDetails: any = caseData;
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
@@ -556,6 +573,38 @@ const CaseDetails: React.FC = () => {
         } else {
           console.log(workStationData, "workStationData");
           setWorkStationTypes(worksationTypes);
+          let workStationDataApi: any = workStationData;
+          const steps = [
+            {
+              date: caseDataApi?.created_at || new Date().toISOString(),
+              technician: {
+                name: "System",
+                id: "",
+              },
+              status: "completed" as
+                | "in_progress"
+                | "completed"
+                | "issue_reported",
+              notes: "Case has been created and is ready for Manufacturing.",
+            },
+            ...workStationDataApi.map((item: any) => {
+              return {
+                date: item.started_at,
+                workstation_type: item?.type?.name || "",
+                status: item.status as
+                  | "in_progress"
+                  | "completed"
+                  | "issue_reported",
+
+                notes: item.notes,
+                technician: {
+                  name: item.technician.name,
+                  id: item.technician.id,
+                },
+              };
+            }),
+          ];
+          setStepData(steps);
         }
       } catch (err) {
         console.log(err, "erro");
@@ -611,30 +660,23 @@ const CaseDetails: React.FC = () => {
     );
   }
 
-  const stepsData = [
-    {
-      date: caseDetail.created_at || new Date().toISOString(),
+  const handleCreateNewWorkStation = () => {
+    const newCreateStep = {
+      date:new Date().toISOString(),
       technician: {
-        name: "System",
+        name: user?.role === "technician" ? user.name : "",
         id: "",
       },
-      status: "completed" as "in_progress" | "completed" | "issue_reported",
-      notes: "Case has been created and is ready for Manufacturing.",
-    },
-    ...workStationLogs.map((item) => {
-      return {
-        date: item.started_at,
-        workstation_type: item?.type?.name || "",
-        status: item.status as "in_progress" | "completed" | "issue_reported",
+      isNew: true,
+      status: workstationForm.status as
+        | "in_progress"
+        | "completed"
+        | "issue_reported",
+      notes: workstationForm.notes,
+    };
 
-        notes: item.notes,
-        technician: {
-          name: item.technician.name,
-          id: item.technician.id,
-        },
-      };
-    }),
-  ];
+    setStepData((steps) => [...steps, newCreateStep]);
+  };
 
   console.log(caseDetail, "case details");
   return (
@@ -816,7 +858,13 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
-                <CaseProgress steps={stepsData} />
+                <CaseProgress
+                  steps={stepsData}
+                  caseDetail={caseDetail}
+                  handleNewWorkstation={handleCreateNewWorkStation}
+                  workstationForm={workstationForm}
+                  setWorkStationForm={setWorkStationForm}
+                />
               </CardContent>
             </Card>
 
