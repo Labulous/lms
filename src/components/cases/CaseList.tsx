@@ -7,6 +7,8 @@ import { Database } from "@/types/supabase";
 import { CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 import {
   Table,
   TableBody,
@@ -125,7 +127,7 @@ type Case = {
 };
 
 const CaseList: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [cases, setCases] = useState<Case[]>([]);
@@ -138,6 +140,10 @@ const CaseList: React.FC = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [labId, setLabId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>([]);
+  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>(() => {
+    const dueDateParam = searchParams.get('dueDate');
+    return dueDateParam ? new Date(dueDateParam) : undefined;
+  });
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -174,27 +180,6 @@ const CaseList: React.FC = () => {
       enableHiding: false,
     },
     {
-      accessorKey: "case_number",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="p-0 hover:bg-transparent"
-        >
-          Case #
-          <ChevronsUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }) => (
-        <Link
-          to={`/cases/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {row.getValue("case_number")}
-        </Link>
-      ),
-    },
-    {
       accessorKey: "tags",
       header: ({ column }) => (
         <Button
@@ -225,6 +210,27 @@ const CaseList: React.FC = () => {
       },
     },
     {
+      accessorKey: "case_number",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="p-0 hover:bg-transparent"
+        >
+          Case #
+          <ChevronsUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => (
+        <Link
+          to={`/cases/${row.original.id}`}
+          className="font-medium text-primary hover:underline"
+        >
+          {row.getValue("case_number")}
+        </Link>
+      ),
+    },
+    {
       accessorKey: "patient_name",
       header: ({ column }) => (
         <Button
@@ -248,7 +254,7 @@ const CaseList: React.FC = () => {
                 Status
                 <ChevronsUpDown className="ml-2 h-4 w-4" />
                 {statusFilter.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
+                  <Badge variant="outline" className="ml-2 bg-background">
                     {statusFilter.length}
                   </Badge>
                 )}
@@ -401,18 +407,72 @@ const CaseList: React.FC = () => {
     {
       accessorKey: "due_date",
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="p-0 hover:bg-transparent"
-        >
-          Due Date
-          <ChevronsUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" className="p-0 hover:bg-transparent">
+              <div className="flex items-center">
+                Due Date
+                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                {dueDateFilter && (
+                  <Badge variant="outline" className="ml-2 bg-background">
+                    {format(dueDateFilter, "MMM d")}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="p-2">
+              <div className="flex items-center justify-between pb-2">
+                {dueDateFilter && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDueDateFilter(undefined);
+                      column.setFilterValue(undefined);
+                      searchParams.delete('dueDate');
+                      setSearchParams(searchParams);
+                    }}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Clear Filter
+                  </Button>
+                )}
+              </div>
+              <DayPicker
+                mode="single"
+                selected={dueDateFilter}
+                onSelect={(date) => {
+                  setDueDateFilter(date || undefined);
+                  column.setFilterValue(date || undefined);
+                  if (date) {
+                    searchParams.set('dueDate', format(date, "yyyy-MM-dd"));
+                  } else {
+                    searchParams.delete('dueDate');
+                  }
+                  setSearchParams(searchParams);
+                }}
+                className="border-none"
+              />
+            </div>
+          </PopoverContent>
+        </Popover>
       ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
         return date ? format(new Date(date), "MMM d, yyyy") : "TBD";
+      },
+      filterFn: (row, id, value: Date) => {
+        if (!value) return true;
+        const dueDate = row.getValue(id) as string;
+        if (!dueDate) return false;
+        const rowDate = new Date(dueDate);
+        return (
+          rowDate.getFullYear() === value.getFullYear() &&
+          rowDate.getMonth() === value.getMonth() &&
+          rowDate.getDate() === value.getDate()
+        );
       },
     },
     {
@@ -497,6 +557,14 @@ const CaseList: React.FC = () => {
       table.getColumn("status")?.setFilterValue(undefined);
     }
   }, [statusFilter]);
+
+  useEffect(() => {
+    if (dueDateFilter) {
+      table.getColumn("due_date")?.setFilterValue(dueDateFilter);
+    } else {
+      table.getColumn("due_date")?.setFilterValue(undefined);
+    }
+  }, [dueDateFilter]);
 
   useEffect(() => {
     const getLabId = async () => {
