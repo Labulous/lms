@@ -1033,7 +1033,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </PopoverTrigger>
                       <PopoverContent className="w-80 p-3" align="end">
                         <div className="space-y-2">
-                          <div className="flex justify-between">
+                          <div className="flex justify-between w-full">
                             <Label className="text-xs">Add Note</Label>
                             <Button
                               size="sm"

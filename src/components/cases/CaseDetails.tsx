@@ -305,24 +305,7 @@ const CaseDetails: React.FC = () => {
         setError(workStationError?.message || "");
       } else {
         console.log(workStationData, "workStationData");
-      }
-      if (worksationTypesErrors) {
-        setError(worksationTypesErrors?.message || "");
-      } else {
-        console.log(workStationData, "workStationData");
-        const customWorkstationType: WorkingStationTypes = {
-          id: "custom-id", // You can generate a unique ID if needed
-          name: "custom",
-          is_default: false, // or true depending on your logic
-          is_active: true, // or false depending on your logic
-          created_at: new Date().toISOString(),
-        };
-        const updatedWorkstationTypes = [
-          ...worksationTypes,
-          customWorkstationType,
-        ];
 
-        setWorkStationTypes(updatedWorkstationTypes);
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -368,6 +351,24 @@ const CaseDetails: React.FC = () => {
           }),
         ];
         setStepData(steps);
+      }
+      if (worksationTypesErrors) {
+        setError(worksationTypesErrors?.message || "");
+      } else {
+        console.log(workStationData, "workStationData");
+        const customWorkstationType: WorkingStationTypes = {
+          id: "custom-id", // You can generate a unique ID if needed
+          name: "custom",
+          is_default: false, // or true depending on your logic
+          is_active: true, // or false depending on your logic
+          created_at: new Date().toISOString(),
+        };
+        const updatedWorkstationTypes = [
+          ...worksationTypes,
+          customWorkstationType,
+        ];
+
+        setWorkStationTypes(updatedWorkstationTypes);
       }
     } catch (err) {
       console.log(err, "erro");
@@ -478,11 +479,11 @@ const CaseDetails: React.FC = () => {
 
           return;
         }
+        getWorkStationDetails(caseData?.created_at);
         caseDataApi = caseDetail;
         const caseDetails: any = caseData;
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
-        getWorkStationDetails(caseData?.created_at);
         let products: Product[] = [];
         let teethProducts: ToothInfo[] = [];
         let discountedPrices: DiscountedPrice[];
@@ -753,6 +754,18 @@ const CaseDetails: React.FC = () => {
         setWorkstationLoading(false);
       } else {
         toast.success("Workstation inserted successfully!");
+
+        const { error: updateError } = await supabase
+          .from("cases")
+          .update({ status: "in_progress" })
+          .eq("id", caseId);
+
+        if (updateError) {
+          toast.error(
+            "Workstation has been created but failed to update the case"
+          );
+        }
+        toast.success("Updated case Successfully!");
         setWorkStationForm({
           created_by: user?.id as string,
           technician_id: user?.role === "technician" ? user.id : "",
@@ -775,7 +788,7 @@ const CaseDetails: React.FC = () => {
       setWorkstationLoading(false);
     }
   };
-
+  console.log(caseDetail, "caseDetail");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -955,21 +968,23 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
-                <CaseProgress
-                  steps={stepsData}
-                  caseDetail={caseDetail}
-                  handleNewWorkstation={handleCreateNewWorkStation}
-                  workstationForm={workstationForm}
-                  setWorkStationForm={setWorkStationForm}
-                  workStationTypes={workStationTypes}
-                  handleSubmitWorkstation={handleSubmitWorkstation}
-                  setSteps={setStepData}
-                  isLoading={workstationLoading}
-                  setLoading={setWorkstationLoading}
-                  getWorkStationDetails={getWorkStationDetails}
-                  caseId={caseId as string}
-                  caseCreatedAt={caseDetail.created_at}
-                />
+                {stepsData.length > 0 && (
+                  <CaseProgress
+                    steps={stepsData}
+                    caseDetail={caseDetail}
+                    handleNewWorkstation={handleCreateNewWorkStation}
+                    workstationForm={workstationForm}
+                    setWorkStationForm={setWorkStationForm}
+                    workStationTypes={workStationTypes}
+                    handleSubmitWorkstation={handleSubmitWorkstation}
+                    setSteps={setStepData}
+                    isLoading={workstationLoading}
+                    setLoading={setWorkstationLoading}
+                    getWorkStationDetails={getWorkStationDetails}
+                    caseId={caseId as string}
+                    caseCreatedAt={caseDetail.created_at}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -1034,12 +1049,12 @@ const CaseDetails: React.FC = () => {
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product.product_type
+                                    product?.product_type
                                       ?.name as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
-                              {product.product_type?.name ?? "Null"}
+                              {product?.product_type?.name ?? "Null"}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -1072,84 +1087,74 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              <p>
-                                {" "}
-                                {(product.teethProduct &&
-                                  product.teethProduct?.body_shade?.name) ||
-                                  (product.teethProduct.custom_body_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Body:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct.custom_body_shade
-                                          ? product.teethProduct
-                                              .custom_body_shade
-                                          : product.teethProduct.body_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {(product.teethProduct &&
-                                  product.teethProduct?.gingival_shade?.name) ||
-                                  (product.teethProduct
-                                    .custom_gingival_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Gingival:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct
-                                          .custom_gingival_shade
-                                          ? product.teethProduct
-                                              .custom_gingival_shade
-                                          : product.teethProduct.gingival_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {(product.teethProduct &&
-                                  product.teethProduct?.occlusal_shade?.name) ||
-                                  (product.teethProduct
-                                    .custom_occlusal_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Occlusal:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct
-                                          .custom_occlusal_shade
-                                          ? product.teethProduct
-                                              .custom_occlusal_shade
-                                          : product.teethProduct.occlusal_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {product.teethProduct &&
-                                  (product.teethProduct?.custom_stump_shade ||
-                                    (product.teethProduct.stump_shade_id && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-500">
-                                          Stump:
-                                        </span>
-                                        <span>
-                                          {product.teethProduct
-                                            .custom_stump_shade
-                                            ? product.teethProduct
-                                                .custom_stump_shade
-                                            : product.teethProduct
-                                                .stump_shade_id.name}
-                                        </span>
-                                      </div>
-                                    )))}
-                              </p>
+                              {/* Body shade */}
+                              {product?.teethProduct?.body_shade?.name ||
+                              product?.teethProduct?.custom_body_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">Body:</span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_body_shade ||
+                                        product?.teethProduct?.body_shade?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Gingival shade */}
+                              {product?.teethProduct?.gingival_shade?.name ||
+                              product?.teethProduct?.custom_gingival_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Gingival:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_gingival_shade ||
+                                        product?.teethProduct?.gingival_shade
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Occlusal shade */}
+                              {product?.teethProduct?.occlusal_shade?.name ||
+                              product?.teethProduct?.custom_occlusal_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_occlusal_shade ||
+                                        product?.teethProduct?.occlusal_shade
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Stump shade */}
+                              {product?.teethProduct?.custom_stump_shade ||
+                              product?.teethProduct?.stump_shade_id ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Stump:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_stump_shade ||
+                                        product?.teethProduct?.stump_shade_id
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
