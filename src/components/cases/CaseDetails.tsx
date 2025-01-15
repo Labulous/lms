@@ -572,7 +572,19 @@ const CaseDetails: React.FC = () => {
           setError(worksationTypesErrors?.message || "");
         } else {
           console.log(workStationData, "workStationData");
-          setWorkStationTypes(worksationTypes);
+          const customWorkstationType: WorkingStationTypes = {
+            id: "custom-id", // You can generate a unique ID if needed
+            name: "custom",
+            is_default: false, // or true depending on your logic
+            is_active: true, // or false depending on your logic
+            created_at: new Date().toISOString(),
+          };
+          const updatedWorkstationTypes = [
+            ...worksationTypes,
+            customWorkstationType,
+          ];
+
+          setWorkStationTypes(updatedWorkstationTypes);
           let workStationDataApi: any = workStationData;
           const steps = [
             {
@@ -662,7 +674,7 @@ const CaseDetails: React.FC = () => {
 
   const handleCreateNewWorkStation = () => {
     const newCreateStep = {
-      date:new Date().toISOString(),
+      date: new Date().toISOString(),
       technician: {
         name: user?.role === "technician" ? user.name : "",
         id: "",
@@ -679,6 +691,7 @@ const CaseDetails: React.FC = () => {
   };
 
   console.log(caseDetail, "case details");
+  console.log(workstationForm, "workstationForm");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -864,6 +877,7 @@ const CaseDetails: React.FC = () => {
                   handleNewWorkstation={handleCreateNewWorkStation}
                   workstationForm={workstationForm}
                   setWorkStationForm={setWorkStationForm}
+                  workStationTypes={workStationTypes}
                 />
               </CardContent>
             </Card>

@@ -1,4 +1,4 @@
-import React, { SetStateAction } from "react";
+import React, { SetStateAction, useEffect, useState } from "react";
 import { CheckCircle2, Clock, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/formatedDate";
-import { WorkstationForm } from "@/types/supabase";
+import { WorkingStationTypes, WorkstationForm } from "@/types/supabase";
 import {
   Select,
   SelectContent,
@@ -26,6 +26,10 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Input } from "../ui/input";
+import { supabase } from "@/lib/supabase";
+import { getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import toast from "react-hot-toast";
 export interface CaseStep {
   date: string;
   workstation_type?: string;
@@ -42,6 +46,7 @@ interface CaseProgressProps {
   handleNewWorkstation: () => void;
   workstationForm: WorkstationForm;
   setWorkStationForm: React.Dispatch<SetStateAction<WorkstationForm>>;
+  workStationTypes: WorkingStationTypes[];
 }
 
 const status = [
@@ -64,7 +69,11 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
   handleNewWorkstation,
   workstationForm,
   setWorkStationForm,
+  workStationTypes,
 }) => {
+  const [technicians, setTechnicians] = useState<
+    { name: string; id: string }[] | null
+  >([]);
   if (!steps || steps.length === 0) {
     return (
       <div className="flex items-center justify-center p-4 text-gray-500">
@@ -72,7 +81,40 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
       </div>
     );
   }
+  const { user } = useAuth();
+  useEffect(() => {
+    const getTechnicians = async () => {
+      try {
+        const lab = await getLabIdByUserId(user?.id as string);
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
 
+        const { data: technicians, error: techniciansError } = await supabase
+          .from("users")
+          .select(
+            `
+name,
+id
+          `
+          )
+          .eq("lab_id", lab.labId)
+          .eq("role", "technician");
+
+        if (techniciansError) {
+          toast.error("faild to fetch Technicians!!!");
+        }
+
+        setTechnicians(technicians);
+      } catch (err) {
+        console.log(err, "error");
+      } finally {
+        console.log("fetched technicians");
+      }
+    };
+    getTechnicians();
+  }, []);
   return (
     <div className="relative">
       <div className="space-y-8">
@@ -216,7 +258,7 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
                                           }}
                                         >
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Select client" />
+                                            <SelectValue placeholder="Select status" />
                                           </SelectTrigger>
                                           <SelectContent>
                                             {status.map((status) => (
@@ -237,11 +279,13 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
                                       </div>
                                       <div>
                                         <Select
-                                          value={workstationForm.status}
+                                          value={
+                                            workstationForm.workstation_type_id
+                                          }
                                           onValueChange={(value) => {
                                             setWorkStationForm((prevState) => ({
                                               ...prevState, // Spread the previous state
-                                              status: value as
+                                              workstation_type_id: value as
                                                 | "in_progress"
                                                 | "completed"
                                                 | "issue_reported",
@@ -249,15 +293,15 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
                                           }}
                                         >
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Select client" />
+                                            <SelectValue placeholder="Select Type" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {status.map((status) => (
+                                            {workStationTypes.map((type) => (
                                               <SelectItem
-                                                key={status.value}
-                                                value={status.value}
+                                                key={type.id}
+                                                value={type.id}
                                               >
-                                                {status.name}
+                                                {type.name}
                                               </SelectItem>
                                             ))}
                                           </SelectContent>
@@ -272,14 +316,11 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
                                       </div>
                                       <div>
                                         <Select
-                                          value={workstationForm.status}
+                                          value={workstationForm.technician_id}
                                           onValueChange={(value) => {
                                             setWorkStationForm((prevState) => ({
                                               ...prevState, // Spread the previous state
-                                              status: value as
-                                                | "in_progress"
-                                                | "completed"
-                                                | "issue_reported",
+                                              technician_id: value,
                                             }));
                                           }}
                                         >
@@ -287,41 +328,50 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
                                             <SelectValue placeholder="Select client" />
                                           </SelectTrigger>
                                           <SelectContent>
-                                            {status.map((status) => (
-                                              <SelectItem
-                                                key={status.value}
-                                                value={status.value}
-                                              >
-                                                {status.name}
-                                              </SelectItem>
-                                            ))}{" "}
+                                            {technicians &&
+                                              technicians.map((tech) => (
+                                                <SelectItem
+                                                  key={tech.id}
+                                                  value={tech.id}
+                                                >
+                                                  {tech.name}
+                                                </SelectItem>
+                                              ))}{" "}
                                           </SelectContent>
                                         </Select>
                                       </div>
                                     </div>
-                                    <div className="w-full space-y-2">
-                                      <div className="text-sm text-gray-500 text-start">
-                                        Custom Workstation Type
+                                    {workstationForm.workstation_type_id ===
+                                    "custom-id" ? (
+                                      <div className="w-full space-y-2">
+                                        <div className="text-sm text-gray-500 text-start">
+                                          Custom Workstation Type
+                                        </div>
+                                        <div>
+                                          <Input
+                                            type="text"
+                                            id="customWorkStationType"
+                                            name="customWorkStationType"
+                                            placeholder="Custom Work station Type"
+                                            value={
+                                              workstationForm.custom_workstation_type
+                                            }
+                                            onChange={(e: any) =>
+                                              setWorkStationForm(
+                                                (prevState) => ({
+                                                  ...prevState, // Spread the previous state
+                                                  custom_workstation_type:
+                                                    e.target.value,
+                                                })
+                                              )
+                                            }
+                                            className={cn("bg-white")}
+                                          />
+                                        </div>
                                       </div>
-                                      <div>
-                                        <Input
-                                          type="text"
-                                          id="customWorkStationType"
-                                          name="customWorkStationType"
-                                          placeholder="Custom Work station Type"
-                                          value={
-                                            workstationForm.custom_workstation_type
-                                          }
-                                          onChange={(e: any) =>
-                                            setWorkStationForm((prevState) => ({
-                                              ...prevState, // Spread the previous state
-                                              custom_workstation_type: e.target.value,
-                                            }))
-                                          }
-                                          className={cn("bg-white")}
-                                        />
-                                      </div>
-                                    </div>
+                                    ) : (
+                                      <div className="w-full"></div>
+                                    )}
                                   </div>
                                 </div>
 
