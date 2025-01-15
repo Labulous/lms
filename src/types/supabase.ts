@@ -34,7 +34,6 @@ export interface WorkstationForm {
   issue_reported_at: string;
   workstation_type_id: string;
   case_id: string;
-
 }
 export interface WorkingTag {
   id: string;

@@ -454,34 +454,41 @@ id
                                       Select Technician
                                     </div>
                                     <div>
-                                      <Select
-                                        value={workstationForm.technician_id}
-                                        onValueChange={(value) => {
-                                          setWorkStationForm((prevState) => ({
-                                            ...prevState, // Spread the previous state
-                                            technician_id: value,
-                                          }));
-                                        }}
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue placeholder="Select client" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          {technicians &&
-                                            technicians.map((tech) => (
-                                              <SelectItem
-                                                key={tech.id}
-                                                value={tech.id}
-                                              >
-                                                {tech.name}
-                                              </SelectItem>
-                                            ))}{" "}
-                                        </SelectContent>
-                                      </Select>
+                                      {workstationForm.created_by ===
+                                      workstationForm.technician_id ? (
+                                        <div className="font-medium text-start">
+                                          {step.technician?.name}
+                                        </div>
+                                      ) : (
+                                        <Select
+                                          value={workstationForm.technician_id}
+                                          onValueChange={(value) => {
+                                            setWorkStationForm((prevState) => ({
+                                              ...prevState, // Spread the previous state
+                                              technician_id: value,
+                                            }));
+                                          }}
+                                        >
+                                          <SelectTrigger>
+                                            <SelectValue placeholder="Select client" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {technicians &&
+                                              technicians.map((tech) => (
+                                                <SelectItem
+                                                  key={tech.id}
+                                                  value={tech.id}
+                                                >
+                                                  {tech.name}
+                                                </SelectItem>
+                                              ))}{" "}
+                                          </SelectContent>
+                                        </Select>
+                                      )}
                                     </div>
                                   </div>
                                   {workstationForm.workstation_type_id ===
-                                  "custom-id" ? (
+                                    "custom-id" && (
                                     <div className="w-full space-y-2">
                                       <div className="text-sm text-gray-500 text-start">
                                         Custom Workstation Type
@@ -506,8 +513,6 @@ id
                                         />
                                       </div>
                                     </div>
-                                  ) : (
-                                    <div className="w-full"></div>
                                   )}
                                 </div>
                               </div>
@@ -678,40 +683,49 @@ id
                                     Select Technician
                                   </div>
                                   <div>
-                                    <Select
-                                      value={
-                                        !step.isEditOn
-                                          ? step.technician?.id
-                                          : (editWorkstationForm?.technician
-                                              ?.id as string)
-                                      }
-                                      disabled={!step.isEditOn}
-                                      onValueChange={(value) => {
-                                        setEditWorkStationForm((prevState) => ({
-                                          ...prevState, // Spread the previous state
-                                          technician: {
-                                            id: value,
-                                            name: step.technician
-                                              ?.name as string,
-                                          },
-                                        }));
-                                      }}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select Technician" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {technicians &&
-                                          technicians.map((tech) => (
-                                            <SelectItem
-                                              key={tech.id}
-                                              value={tech.id}
-                                            >
-                                              {tech.name}
-                                            </SelectItem>
-                                          ))}{" "}
-                                      </SelectContent>
-                                    </Select>
+                                    {workstationForm.created_by ===
+                                    workstationForm.technician_id ? (
+                                      <div className="font-medium text-start">
+                                        {step.technician?.name}
+                                      </div>
+                                    ) : (
+                                      <Select
+                                        value={
+                                          !step.isEditOn
+                                            ? step.technician?.id
+                                            : (editWorkstationForm?.technician
+                                                ?.id as string)
+                                        }
+                                        disabled={!step.isEditOn}
+                                        onValueChange={(value) => {
+                                          setEditWorkStationForm(
+                                            (prevState) => ({
+                                              ...prevState, // Spread the previous state
+                                              technician: {
+                                                id: value,
+                                                name: step.technician
+                                                  ?.name as string,
+                                              },
+                                            })
+                                          );
+                                        }}
+                                      >
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select Technician" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {technicians &&
+                                            technicians.map((tech) => (
+                                              <SelectItem
+                                                key={tech.id}
+                                                value={tech.id}
+                                              >
+                                                {tech.name}
+                                              </SelectItem>
+                                            ))}{" "}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
                                   </div>
                                 </div>
 
