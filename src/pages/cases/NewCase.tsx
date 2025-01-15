@@ -327,7 +327,6 @@ const NewCase: React.FC = () => {
             onCaseDetailsChange={handleCaseDetailsChange}
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
-            onFormChange={handleFormChange}
             formErrors={errors}
           />
         </div>

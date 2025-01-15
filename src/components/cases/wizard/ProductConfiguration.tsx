@@ -143,10 +143,6 @@ interface ProductConfigurationProps {
   setselectedProducts: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
-  onFormChange: (
-    field: keyof CaseFormData,
-    value: string | boolean | number | undefined
-  ) => void;
 }
 
 interface ProductRow {
@@ -164,7 +160,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   initialCaseDetails,
   setselectedProducts,
   formErrors,
-  onFormChange,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
