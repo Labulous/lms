@@ -160,7 +160,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventClick = (event: any) => {
     // Extract the start date of the event
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-    navigate(`/cases?dueDate=${date}`);
+    navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
   return (

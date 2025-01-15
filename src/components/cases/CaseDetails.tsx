@@ -234,10 +234,10 @@ const CaseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [workStationLogs, setWorkStationLogs] = useState<
-    WorkingStationLog[] | []
-  >([]);
+
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
+  const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -247,12 +247,134 @@ const CaseDetails: React.FC = () => {
     technician_id: user?.role === "technician" ? user.id : "",
     custom_workstation_type: "",
     status: "in_progress",
-    notes: "",
-    started_at: "",
+    started_notes: "",
+    started_at: "jan 200 ",
     completed_at: "",
     issue_reported_at: "",
     workstation_type_id: "",
+    case_id: caseId as string,
   });
+  console.log(workstationLoading, "loading");
+  const getWorkStationDetails = async (case_ceated_at: string) => {
+    try {
+      const lab = await getLabIdByUserId(user?.id as string);
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
+      const { data: workStationData, error: workStationError } = await supabase
+        .from("workstation_log")
+        .select(
+          `
+            id,
+         technician:users!technician_id (id, name),
+         type:workstation_types!workstation_type_id (
+         id,
+         name
+         ),
+         status,
+         started_at,
+         completed_at,
+         issue_reported_at,
+         custom_workstation_type,
+         started_notes,
+         completed_notes,
+         issue_reported_notes,
+         created_by: users!created_by (
+         id,
+         name
+         )
+        `
+        )
+        .eq("case_id", caseId);
+      const { data: worksationTypes, error: worksationTypesErrors } =
+        await supabase
+          .from("workstation_types")
+          .select(
+            `
+        id,
+        name,
+        is_default,
+        is_active,
+        created_at
+        `
+          )
+          .eq("lab_id", lab.labId);
+      if (workStationError) {
+        setError(workStationError?.message || "");
+      } else {
+        console.log(workStationData, "workStationData");
+
+        let workStationDataApi: any = workStationData;
+        const steps = [
+          {
+            date: case_ceated_at || new Date().toISOString(),
+            technician: {
+              name: "System",
+              id: "",
+            },
+            status: "completed" as
+              | "in_progress"
+              | "completed"
+              | "issue_reported",
+            notes: "Case has been created and is ready for Manufacturing.",
+          },
+          ...workStationDataApi.map((item: any) => {
+            return {
+              date: item.started_at,
+              id: item.id,
+              workstation_type_id: item?.type?.id || "",
+              workstation_type_name: item?.type?.name || "",
+              status: item.status as
+                | "in_progress"
+                | "completed"
+                | "issue_reported",
+
+              notes: item.notes,
+              started_notes: item.started_notes,
+              completed_notes: item.completed_notes,
+              issue_reported_notes: item.issue_reported_notes,
+              custom_workstation_type: item.custom_workstation_type,
+              started_at: item.started_at,
+              completed_at: item.completed_at,
+              issue_reported_at: item.issue_reported_at,
+              technician: {
+                name: item.technician.name,
+                id: item.technician.id,
+              },
+              created_by: {
+                name: item.created_by.name,
+              },
+              isEditOn: false,
+            };
+          }),
+        ];
+        setStepData(steps);
+      }
+      if (worksationTypesErrors) {
+        setError(worksationTypesErrors?.message || "");
+      } else {
+        console.log(workStationData, "workStationData");
+        const customWorkstationType: WorkingStationTypes = {
+          id: "custom-id", // You can generate a unique ID if needed
+          name: "custom",
+          is_default: false, // or true depending on your logic
+          is_active: true, // or false depending on your logic
+          created_at: new Date().toISOString(),
+        };
+        const updatedWorkstationTypes = [
+          ...worksationTypes,
+          customWorkstationType,
+        ];
+
+        setWorkStationTypes(updatedWorkstationTypes);
+      }
+    } catch (err) {
+      console.log(err, "erro");
+    } finally {
+    }
+  };
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -267,7 +389,7 @@ const CaseDetails: React.FC = () => {
           console.error("Lab ID not found.");
           return;
         }
-
+        setLab(lab);
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -304,7 +426,6 @@ const CaseDetails: React.FC = () => {
               tag:working_tags!pan_tag_id (
               name,
               color
-              
               ),
               rx_number,
               received_date,
@@ -355,13 +476,14 @@ const CaseDetails: React.FC = () => {
         if (!caseData) {
           console.error("No case data found");
           setError("Case not found");
+
           return;
         }
+        getWorkStationDetails(caseData?.created_at);
         caseDataApi = caseDetail;
         const caseDetails: any = caseData;
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
-
         let products: Product[] = [];
         let teethProducts: ToothInfo[] = [];
         let discountedPrices: DiscountedPrice[];
@@ -521,98 +643,9 @@ const CaseDetails: React.FC = () => {
       }
     };
 
-    const getWorkStationDetails = async () => {
-      try {
-        const lab = await getLabIdByUserId(user?.id as string);
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-
-        const { data: workStationData, error: workStationError } =
-          await supabase
-            .from("workstation_log")
-            .select(
-              `
-              id,
-           technician:users!technician_id (id, name),
-           type:workstation_types!workstation_type_id (
-           id,
-           name
-           ),
-           status,
-           notes,
-           started_at,
-           completed_at,
-           issue_reported_at
-          `
-            )
-            .eq("case_id", caseId);
-        const { data: worksationTypes, error: worksationTypesErrors } =
-          await supabase
-            .from("workstation_types")
-            .select(
-              `
-          id,
-          name,
-          is_default,
-          is_active,
-          created_at
-          `
-            )
-            .eq("lab_id", lab.labId);
-        if (workStationError) {
-          setError(workStationError?.message || "");
-        } else {
-          console.log(workStationData, "workStationData");
-          const apiData: any = workStationData;
-          setWorkStationLogs(apiData);
-        }
-        if (worksationTypesErrors) {
-          setError(worksationTypesErrors?.message || "");
-        } else {
-          console.log(workStationData, "workStationData");
-          setWorkStationTypes(worksationTypes);
-          let workStationDataApi: any = workStationData;
-          const steps = [
-            {
-              date: caseDataApi?.created_at || new Date().toISOString(),
-              technician: {
-                name: "System",
-                id: "",
-              },
-              status: "completed" as
-                | "in_progress"
-                | "completed"
-                | "issue_reported",
-              notes: "Case has been created and is ready for Manufacturing.",
-            },
-            ...workStationDataApi.map((item: any) => {
-              return {
-                date: item.started_at,
-                workstation_type: item?.type?.name || "",
-                status: item.status as
-                  | "in_progress"
-                  | "completed"
-                  | "issue_reported",
-
-                notes: item.notes,
-                technician: {
-                  name: item.technician.name,
-                  id: item.technician.id,
-                },
-              };
-            }),
-          ];
-          setStepData(steps);
-        }
-      } catch (err) {
-        console.log(err, "erro");
-      } finally {
-      }
-    };
-    fetchCaseData();
-    getWorkStationDetails();
+    if (caseId) {
+      fetchCaseData();
+    }
   }, [caseId]);
 
   const handleCompleteStage = async (stageName: string) => {
@@ -662,7 +695,7 @@ const CaseDetails: React.FC = () => {
 
   const handleCreateNewWorkStation = () => {
     const newCreateStep = {
-      date:new Date().toISOString(),
+      date: new Date().toISOString(),
       technician: {
         name: user?.role === "technician" ? user.name : "",
         id: "",
@@ -672,13 +705,90 @@ const CaseDetails: React.FC = () => {
         | "in_progress"
         | "completed"
         | "issue_reported",
-      notes: workstationForm.notes,
+      notes: workstationForm.started_notes,
     };
 
     setStepData((steps) => [...steps, newCreateStep]);
   };
 
-  console.log(caseDetail, "case details");
+  const handleSubmitWorkstation = async () => {
+    // Validation for required fields
+    if (
+      !workstationForm.case_id ||
+      !workstationForm.status ||
+      !workstationForm.technician_id ||
+      !workstationForm.created_by ||
+      !workstationForm.workstation_type_id ||
+      !workstationForm.started_notes
+    ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    // Create the dataToFeed object
+    const dataToFeed = {
+      case_id: workstationForm.case_id,
+      lab_id: lab?.labId, // labId is optional but should be checked if necessary
+      status: workstationForm.status,
+      started_notes: workstationForm.started_notes, // notes can be empty
+      technician_id: workstationForm.technician_id,
+      created_by: workstationForm.created_by,
+      started_at: new Date().toISOString(), // Valid timestamp
+      workstation_type_id:
+        workstationForm.workstation_type_id === "custom-id"
+          ? null
+          : workstationForm.workstation_type_id,
+      custom_workstation_type: workstationForm.custom_workstation_type
+        ? workstationForm.custom_workstation_type
+        : null, // Optional field
+    };
+    setWorkstationLoading(true);
+    try {
+      const { data: insertWorkstation, error: insertError } = await supabase
+        .from("workstation_log")
+        .insert(dataToFeed)
+        .select("*");
+
+      if (insertError) {
+        toast.error("Failed to Insert New Workstation!");
+        setWorkstationLoading(false);
+      } else {
+        toast.success("Workstation inserted successfully!");
+
+        const { error: updateError } = await supabase
+          .from("cases")
+          .update({ status: "in_progress" })
+          .eq("id", caseId);
+
+        if (updateError) {
+          toast.error(
+            "Workstation has been created but failed to update the case"
+          );
+        }
+        toast.success("Updated case Successfully!");
+        setWorkStationForm({
+          created_by: user?.id as string,
+          technician_id: user?.role === "technician" ? user.id : "",
+          custom_workstation_type: "",
+          status: "in_progress",
+          started_notes: "",
+          started_at: "",
+          completed_at: "",
+          issue_reported_at: "",
+          workstation_type_id: "",
+          case_id: caseId as string,
+        });
+        setStepData((prev) => prev.filter((item) => !item.isNew));
+        getWorkStationDetails(caseDetail.created_at);
+
+        setWorkstationLoading(false);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+      setWorkstationLoading(false);
+    }
+  };
+  console.log(caseDetail, "caseDetail");
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -858,13 +968,23 @@ const CaseDetails: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
-                <CaseProgress
-                  steps={stepsData}
-                  caseDetail={caseDetail}
-                  handleNewWorkstation={handleCreateNewWorkStation}
-                  workstationForm={workstationForm}
-                  setWorkStationForm={setWorkStationForm}
-                />
+                {stepsData.length > 0 && (
+                  <CaseProgress
+                    steps={stepsData}
+                    caseDetail={caseDetail}
+                    handleNewWorkstation={handleCreateNewWorkStation}
+                    workstationForm={workstationForm}
+                    setWorkStationForm={setWorkStationForm}
+                    workStationTypes={workStationTypes}
+                    handleSubmitWorkstation={handleSubmitWorkstation}
+                    setSteps={setStepData}
+                    isLoading={workstationLoading}
+                    setLoading={setWorkstationLoading}
+                    getWorkStationDetails={getWorkStationDetails}
+                    caseId={caseId as string}
+                    caseCreatedAt={caseDetail.created_at}
+                  />
+                )}
               </CardContent>
             </Card>
 
@@ -929,12 +1049,12 @@ const CaseDetails: React.FC = () => {
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product.product_type
+                                    product?.product_type
                                       ?.name as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
-                              {product.product_type?.name ?? "Null"}
+                              {product?.product_type?.name ?? "Null"}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -967,84 +1087,74 @@ const CaseDetails: React.FC = () => {
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
-                              <p>
-                                {" "}
-                                {(product.teethProduct &&
-                                  product.teethProduct?.body_shade?.name) ||
-                                  (product.teethProduct.custom_body_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Body:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct.custom_body_shade
-                                          ? product.teethProduct
-                                              .custom_body_shade
-                                          : product.teethProduct.body_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {(product.teethProduct &&
-                                  product.teethProduct?.gingival_shade?.name) ||
-                                  (product.teethProduct
-                                    .custom_gingival_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Gingival:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct
-                                          .custom_gingival_shade
-                                          ? product.teethProduct
-                                              .custom_gingival_shade
-                                          : product.teethProduct.gingival_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {(product.teethProduct &&
-                                  product.teethProduct?.occlusal_shade?.name) ||
-                                  (product.teethProduct
-                                    .custom_occlusal_shade && (
-                                    <div className="flex justify-between">
-                                      <span className="text-gray-500">
-                                        Occlusal:
-                                      </span>
-                                      <span>
-                                        {product.teethProduct
-                                          .custom_occlusal_shade
-                                          ? product.teethProduct
-                                              .custom_occlusal_shade
-                                          : product.teethProduct.occlusal_shade
-                                              .name}
-                                      </span>
-                                    </div>
-                                  ))}
-                              </p>
-                              <p>
-                                {product.teethProduct &&
-                                  (product.teethProduct?.custom_stump_shade ||
-                                    (product.teethProduct.stump_shade_id && (
-                                      <div className="flex justify-between">
-                                        <span className="text-gray-500">
-                                          Stump:
-                                        </span>
-                                        <span>
-                                          {product.teethProduct
-                                            .custom_stump_shade
-                                            ? product.teethProduct
-                                                .custom_stump_shade
-                                            : product.teethProduct
-                                                .stump_shade_id.name}
-                                        </span>
-                                      </div>
-                                    )))}
-                              </p>
+                              {/* Body shade */}
+                              {product?.teethProduct?.body_shade?.name ||
+                              product?.teethProduct?.custom_body_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">Body:</span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_body_shade ||
+                                        product?.teethProduct?.body_shade?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Gingival shade */}
+                              {product?.teethProduct?.gingival_shade?.name ||
+                              product?.teethProduct?.custom_gingival_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Gingival:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_gingival_shade ||
+                                        product?.teethProduct?.gingival_shade
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Occlusal shade */}
+                              {product?.teethProduct?.occlusal_shade?.name ||
+                              product?.teethProduct?.custom_occlusal_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_occlusal_shade ||
+                                        product?.teethProduct?.occlusal_shade
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Stump shade */}
+                              {product?.teethProduct?.custom_stump_shade ||
+                              product?.teethProduct?.stump_shade_id ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Stump:
+                                    </span>
+                                    <span>
+                                      {product?.teethProduct
+                                        ?.custom_stump_shade ||
+                                        product?.teethProduct?.stump_shade_id
+                                          ?.name}
+                                    </span>
+                                  </div>
+                                </p>
+                              ) : null}
                             </div>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">

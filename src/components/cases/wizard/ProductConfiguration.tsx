@@ -143,10 +143,6 @@ interface ProductConfigurationProps {
   setselectedProducts: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
-  onFormChange: (
-    field: keyof CaseFormData,
-    value: string | boolean | number | undefined
-  ) => void;
 }
 
 interface ProductRow {
@@ -164,7 +160,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   initialCaseDetails,
   setselectedProducts,
   formErrors,
-  onFormChange,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
@@ -1033,7 +1028,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </PopoverTrigger>
                       <PopoverContent className="w-80 p-3" align="end">
                         <div className="space-y-2">
-                          <div className="flex justify-between">
+                          <div className="flex justify-between w-full">
                             <Label className="text-xs">Add Note</Label>
                             <Button
                               size="sm"

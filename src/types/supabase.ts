@@ -28,11 +28,12 @@ export interface WorkstationForm {
   technician_id: string;
   custom_workstation_type: string;
   status: "in_progress" | "completed" | "issue_reported";
-  notes: string;
+  started_notes: string;
   started_at: string;
   completed_at: string;
   issue_reported_at: string;
   workstation_type_id: string;
+  case_id: string;
 }
 export interface WorkingTag {
   id: string;
