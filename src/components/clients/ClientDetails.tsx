@@ -15,6 +15,7 @@ import {
 } from "../ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import ClientAccountInfo from "./ClientAccountInfo";
+import ClientSalesActivity from "./ClientSalesActivity";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -179,10 +180,8 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
 
         <TabsContent value="sales-activity">
           <div className="p-4">
-            <h2 className="text-lg font-semibold">Sales Activity</h2>
-            <p className="text-gray-500">
-              Sales activity content coming soon...
-            </p>
+            <h2 className="text-lg font-semibold mb-6">Sales Activity</h2>
+            <ClientSalesActivity client={client} />
           </div>
         </TabsContent>
       </Tabs>

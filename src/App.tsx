@@ -12,7 +12,6 @@ import Reports from "./pages/Reports";
 import Inventory from "./pages/Inventory";
 import Login from "./pages/Login";
 import Layout from "./components/layout/Layout";
-import ClientActivity from "./pages/ClientActivity";
 import ProductsServices from "./pages/settings/ProductsServices";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Invoices from "./pages/billing/Invoices";
@@ -72,16 +71,6 @@ const App: React.FC = () => {
               >
                 <Layout>
                   <Clients />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/client-activity"
-            element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
-                <Layout>
-                  <ClientActivity />
                 </Layout>
               </ProtectedRoute>
             }
