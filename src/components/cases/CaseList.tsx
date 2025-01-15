@@ -41,6 +41,8 @@ import {
   Eye,
   Pencil,
   PrinterIcon,
+  FileText,
+  Printer,
 } from "lucide-react";
 import { getLabIdByUserId } from "@/services/authService";
 import { Badge } from "@/components/ui/badge";
@@ -166,13 +168,15 @@ const CaseList: React.FC = () => {
 
   const columns: ColumnDef<Case>[] = [
     {
-      id: "select",
+      accessorKey: "select",
       header: ({ table }) => (
         <Checkbox
-          checked={table.getIsAllPageRowsSelected()}
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
           onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
           aria-label="Select all"
-          className="translate-y-[2px]"
         />
       ),
       cell: ({ row }) => (
@@ -180,7 +184,6 @@ const CaseList: React.FC = () => {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => row.toggleSelected(!!value)}
           aria-label="Select row"
-          className="translate-y-[2px]"
         />
       ),
       enableSorting: false,
@@ -648,6 +651,7 @@ const CaseList: React.FC = () => {
     onRowSelectionChange: setRowSelection,
     getPaginationRowModel: getPaginationRowModel(),
     onPaginationChange: setPagination,
+    enableRowSelection: true,
     state: {
       sorting,
       columnFilters,
@@ -825,6 +829,26 @@ const CaseList: React.FC = () => {
     console.log("Printing selected rows:", selectedRows);
   };
 
+  const handlePrintOptionSelect = (option: string) => {
+    const selectedCases = table.getSelectedRowModel().rows.map(row => row.original);
+    console.log(`Printing ${option} for cases:`, selectedCases);
+    
+    switch (option) {
+      case "workTicket":
+        // Handle work ticket printing for selected cases
+        break;
+      case "invoice":
+        // Handle invoice printing for selected cases
+        break;
+      case "qrCode":
+        // Handle QR code printing for selected cases
+        break;
+      case "shippingLabel":
+        // Handle shipping label printing for selected cases
+        break;
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -846,7 +870,43 @@ const CaseList: React.FC = () => {
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex flex-1 items-center space-x-2">
+          <div className="flex gap-2">
+            {table.getSelectedRowModel().rows.length > 0 ? (
+              <>
+                <span className="text-sm text-muted-foreground mr-2">
+                  {table.getSelectedRowModel().rows.length}{" "}
+                  {table.getSelectedRowModel().rows.length === 1 ? "case" : "cases"} selected
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <PrinterIcon className="h-4 w-4 mr-2" />
+                      Print Options
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("workTicket")}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print Work Tickets
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("invoice")}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print Invoices
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("qrCode")}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Print QR Codes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("shippingLabel")}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Print Shipping Labels
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : null}
+          </div>
+          <div className="flex items-center space-x-2">
             <Input
               placeholder="Filter cases..."
               value={
@@ -859,15 +919,6 @@ const CaseList: React.FC = () => {
                   ?.setFilterValue(event.target.value)
               }
               className="h-8 w-[150px] lg:w-[250px]"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <PrintButtonWithDropdown
-              selectedRows={table.getSelectedRowModel().rows}
-              caseId={""}
-              onPrintOptionSelect={function (option: string): void {
-                throw new Error("Function not implemented.");
-              }}
             />
           </div>
         </div>
