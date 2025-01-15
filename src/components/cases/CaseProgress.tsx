@@ -357,7 +357,7 @@ id
                               <div className=" flex justify-between items-center">
                                 <div className="">
                                   <p className="text-sm text-gray-500">
-                                    Created At:
+                                    Created By:
                                   </p>
                                   <p className="font-medium">
                                     {caseDetail.created_by.name}
@@ -365,7 +365,7 @@ id
                                 </div>
                                 <div>
                                   <p className="text-sm text-gray-500">
-                                    Created By:
+                                    Created At:
                                   </p>
                                   <p className="font-medium">
                                     {formatDate(caseDetail.created_at)}
