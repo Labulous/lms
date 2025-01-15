@@ -186,26 +186,11 @@ const NewCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.otherItems)
-      validationErrors.otherItems = "Other Item Note is Required";
     if (!formData.workingPanName)
       validationErrors.workingPanName = "Working tag is Required";
     if (!formData.appointmentDate)
       validationErrors.appointmentDate = "Appointment date is Required";
-    if (formData.notes.instructionNotes === "") {
-      if (!validationErrors.notes) {
-        validationErrors.notes = {};
-      }
 
-      validationErrors.notes.instructionNotes = "Instruction note is required";
-    }
-    if (formData.notes.invoiceNotes === "") {
-      if (!validationErrors.notes) {
-        validationErrors.notes = {};
-      }
-
-      validationErrors.notes.invoiceNotes = "Technician note is required";
-    }
     if (
       !validationErrors.caseDetails ||
       validationErrors.caseDetails.contactType === null ||

@@ -622,7 +622,7 @@ const CaseList: React.FC = () => {
                 View Details
               </DropdownMenuItem>
             </Link>
-            <Link to={`/cases/update?caseId=${row.original.id}/edit`}>
+            <Link to={`/cases/update?caseId=${row.original.id}`}>
               <DropdownMenuItem>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit

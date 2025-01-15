@@ -3,11 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import toast from "react-hot-toast";
 import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
+import { CaseStatus } from "@/types/supabase";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export interface Case {
   id: string;
   caseId: string;
@@ -15,7 +17,7 @@ export interface Case {
   clientName: string;
   patientName?: string;
   caseType: string;
-  caseStatus: CaseStatus;
+  status: CaseStatus;
   startDate: string;
   dueDate: string;
   appointmentDate?: string;
@@ -34,23 +36,23 @@ export interface CaseStage {
   status: "pending" | "in_progress" | "completed";
 }
 
-export type CaseStatus =
-  | "In Queue"
-  | "in_progress"
-  | "on_hold"
-  | "completed"
-  | "cancelled"
-  | "in_queue";
 export type DeliveryMethod = "Pickup" | "Local Delivery" | "Shipping";
 
 export const CASE_STATUSES: CaseStatus[] = [
-  "In Queue",
+  "in_queue",
   "in_progress",
   "on_hold",
   "completed",
   "cancelled",
-  "in_queue",
 ];
+
+export const CASE_STATUS_COLORS = {
+  in_queue: "bg-blue-100 text-blue-800",
+  in_progress: "bg-yellow-100 text-yellow-800",
+  on_hold: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800",
+  cancelled: "bg-gray-100 text-gray-800",
+};
 
 export const DELIVERY_METHODS: DeliveryMethod[] = [
   "Pickup",
@@ -69,40 +71,38 @@ export const mockTechnicians = [
 const defaultCases: Case[] = [
   {
     id: "1",
-    caseId: "CASE001",
+    caseId: "CASE-2023-001",
     clientId: "1",
     clientName: "Smile Dental Clinic",
     patientName: "Matthias Cook",
     caseType: "Crown",
-    caseStatus: "in_progress",
+    status: "in_progress",
     startDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(addDays(new Date(), 7), "yyyy-MM-dd"),
     assignedTechnicians: ["1", "2"],
-    deliveryMethod: "Local Delivery",
+    deliveryMethod: "Pickup",
     stages: [
-      { name: "Impression", status: "completed" },
-      { name: "Modeling", status: "completed" },
-      { name: "Custom Shading", status: "in_progress" },
-      { name: "Finishing", status: "pending" },
+      { name: "Preparation", status: "completed" },
+      { name: "Design", status: "in_progress" },
+      { name: "Production", status: "pending" },
     ],
   },
   {
     id: "2",
-    caseId: "CASE002",
+    caseId: "CASE-2023-002",
     clientId: "2",
     clientName: "Bright Smiles Orthodontics",
     patientName: "Emma Thompson",
     caseType: "Bridge",
-    caseStatus: "in_progress",
+    status: "in_progress",
     startDate: format(new Date(), "yyyy-MM-dd"),
     dueDate: format(addDays(new Date(), 10), "yyyy-MM-dd"),
     assignedTechnicians: ["3"],
     deliveryMethod: "Shipping",
     stages: [
-      { name: "Impression", status: "completed" },
-      { name: "Waxing", status: "in_progress" },
-      { name: "Casting", status: "pending" },
-      { name: "Finishing", status: "pending" },
+      { name: "Preparation", status: "completed" },
+      { name: "Design", status: "in_progress" },
+      { name: "Production", status: "pending" },
     ],
   },
 ];
@@ -570,6 +570,10 @@ const updateCases = async (
       return; // Exit if there is an error
     } else {
       console.log("Case product teeth rows updated successfully!");
+      toast.success("Case updated successfully");
+      if (navigate && caseId) {
+        navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+      }
     }
 
     // Step 5: Update invoice for the case
@@ -604,8 +608,8 @@ const updateCases = async (
 
     // Step 6: Save the updated overview to localStorage and navigate
     localStorage.setItem("cases", JSON.stringify(cases));
-    toast.success("Case updated successfully");
-    navigate && navigate("/cases");
+    // toast.success("Case updated successfully");
+    // navigate && navigate("/cases");
   } catch (error) {
     console.error("Error in updateCases function:", error);
     toast.error("Failed to update case");
@@ -655,7 +659,7 @@ export const deleteCase = (id: string): void => {
 
 // Function to get cases by status
 export const getCasesByStatus = (status: CaseStatus): Case[] => {
-  return cases.filter((caseItem) => caseItem.caseStatus === status);
+  return cases.filter((caseItem) => caseItem.status === status);
 };
 
 // Function to get cases by technician

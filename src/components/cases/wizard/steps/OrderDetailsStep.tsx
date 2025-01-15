@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
 import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
 import {
   Select,
   SelectContent,
@@ -29,6 +28,15 @@ import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 interface OrderDetailsStepProps {
@@ -52,6 +60,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   // Debug log for initial render and props
   const [tags, setTags] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const addTagTriggerRef = useRef<HTMLButtonElement>(null);
+  const [newTagData, setNewTagData] = useState({ name: "", color: "#000000" });
   const { user } = useAuth();
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
@@ -114,6 +125,36 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   useEffect(() => {
     fetchTags();
   }, [user?.id]);
+
+  const handleCreateTag = async () => {
+    try {
+      setLoading(true);
+      const labData = await getLabIdByUserId(user?.id as string);
+      if (!labData?.labId) {
+        toast.error("Lab not found");
+        return;
+      }
+
+      const { error } = await supabase.from("working_tags").insert([
+        {
+          name: newTagData.name,
+          color: newTagData.color,
+          lab_id: labData.labId,
+        },
+      ]);
+
+      if (error) throw error;
+      toast.success("Tag created successfully");
+      fetchTags(); // Refresh the tags list
+      setIsAddingTag(false);
+      setNewTagData({ name: "", color: "#000000" });
+    } catch (error) {
+      console.error("Error creating tag:", error);
+      toast.error("Failed to create tag");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   console.log(formData, "formd ata");
   return (
@@ -482,73 +523,59 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-0">
-              <Label htmlFor="workingPanName" className="text-xs">
-                Working Pan
-              </Label>
-              <div className="flex items-center gap-2 mt-1.5">
+            <div className="grid gap-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-xs">Working Pan</Label>
+                <ColorPicker
+                  mode="create"
+                  selectedColor="#000000"
+                  tags={[]}
+                  setTags={setTags}
+                  onClose={() => setIsAddingTag(false)}
+                  initiallyOpen={isAddingTag}
+                  trigger={
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingTag(true)}
+                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add New Tag
+                    </button>
+                  }
+                />
+              </div>
+              <div className="flex gap-2">
                 <Select
-                  name="workingPanName"
                   value={formData.workingPanName}
-                  onValueChange={(value) => {
-                    const color =
-                      tags.find((item) => item.id === value)?.color || "";
-                    onChange(
-                      "workingPanColor",
-                      color // Default to empty string if no match is found
-                    );
-
-                    onChange("workingPanName" as keyof CaseFormData, value); // Reset doctor when client changes
-                  }}
+                  onValueChange={(value) =>
+                    onChange("workingPanName", value)
+                  }
                 >
-                  <SelectTrigger
-                    className={cn(
-                      "bg-white",
-                      errors.clientId ? "border-red-500" : ""
-                    )}
-                  >
-                    <SelectValue placeholder="Select a client" />
+                  <SelectTrigger className="bg-white">
+                    <SelectValue placeholder="Select working pan" />
                   </SelectTrigger>
                   <SelectContent>
                     {tags && tags.length > 0 ? (
-                      tags.map((tag, index) => (
-                        <div className="flex">
-                          <SelectItem key={index} value={tag.id}>
-                            <div className="">
-                              <p> {tag.name || "Unnamed tag"}</p>
-                            </div>
-                          </SelectItem>
-                          <div
-                            className={`h-4 w-6 rounded-sm`}
-                            style={{ backgroundColor: tag.color }}
-                          ></div>
-                        </div>
+                      tags.map((tag) => (
+                        <SelectItem key={tag.id} value={tag.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: tag.color }}
+                            />
+                            {tag.name || "Unnamed tag"}
+                          </div>
+                        </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="_no_clients" disabled>
-                        No clients available
+                      <SelectItem value="_no_tags" disabled>
+                        No tags available
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-                <ColorPicker
-                  id="workingPanColor"
-                  value={formData.workingPanColor || "#FF0000"}
-                  onColorChange={(color) => {
-                    onChange("workingPanColor" as keyof CaseFormData, color);
-                  }}
-                  className="flex-shrink-0"
-                  selectedColor={formData.workingPanColor ?? "red"}
-                  onFormChange={onChange}
-                  tags={tags}
-                  setTags={setTags}
-                />
               </div>
-              {errors.workingPanName && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errors.workingPanName}
-                </p>
-              )}
             </div>
           </div>
         </div>

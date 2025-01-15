@@ -132,7 +132,15 @@ interface Invoice {
   notes?: string;
 }
 
-export interface ExtendedCase extends Case {
+export interface ExtendedCase {
+  id: string;
+  created_at: string;
+  received_date: string | null;
+  ship_date: string | null;
+  status: CaseStatus;
+  patient_name: string;
+  due_date: string;
+  case_number: string;
   client: {
     id: string;
     client_name: string;
@@ -147,7 +155,6 @@ export interface ExtendedCase extends Case {
       phone: string;
     };
   };
-  case_number: string;
   case_products: CaseProduct[];
   product_ids: {
     id: string;
@@ -190,6 +197,13 @@ export interface ExtendedCase extends Case {
     items?: any;
     discount_type?: string;
   };
+  teethProducts?: {
+    tooth_number: number[];
+    body_shade?: { name: string; };
+    gingival_shade?: { name: string; };
+    occlusal_shade?: { name: string; };
+    stump_shade_id?: { name: string; };
+  }[];
 }
 
 const TYPE_COLORS = {
@@ -400,7 +414,6 @@ const CaseDetails: React.FC = () => {
               ship_date,
               status,
               patient_name,
-              case_number,
               due_date,
               invoice:invoices!case_id (
                 id,
@@ -1512,7 +1525,13 @@ const CaseDetails: React.FC = () => {
                   ) : null}
                 </div>
 
-                {caseDetail.teethProducts?.map((product, index) => (
+                {caseDetail.teethProducts?.map((product: { 
+                  tooth_number: number[]; 
+                  body_shade?: { name: string; };
+                  gingival_shade?: { name: string; };
+                  occlusal_shade?: { name: string; };
+                  stump_shade_id?: { name: string; };
+                }, index: number) => (
                   <div
                     key={index}
                     className="border-b last:border-b-0 pb-4 mb-4"
