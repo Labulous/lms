@@ -32,10 +32,10 @@ ChartJS.register(
 );
 
 interface ClientSalesActivityProps {
-  client: Client;
+  clientId: string;
 }
 
-const ClientSalesActivity: React.FC<ClientSalesActivityProps> = ({ client }) => {
+const ClientSalesActivity: React.FC<ClientSalesActivityProps> = ({ clientId }) => {
   // Static mock data for now
   const monthlyData = [
     {

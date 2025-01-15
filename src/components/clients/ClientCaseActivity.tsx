@@ -23,7 +23,7 @@ import { Plus, FileText, Loader2 } from "lucide-react";
 import { format, isWithinInterval, startOfWeek, endOfWeek, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import CaseFilters from "../cases/CaseFilters";
-import { Case } from "@/types/supabase";
+import { Case, CaseFilters as ICaseFilters } from "@/types/supabase";
 
 const logger = createLogger({ module: "ClientCaseActivity" });
 
@@ -37,12 +37,6 @@ interface CaseStats {
   averageDuration: number;
 }
 
-interface CaseFilters {
-  dueDate: string;
-  status: string;
-  searchTerm: string;
-}
-
 export function ClientCaseActivity({ clientId }: ClientCaseActivityProps) {
   const navigate = useNavigate();
   const [cases, setCases] = useState<Case[]>([]);
@@ -52,7 +46,7 @@ export function ClientCaseActivity({ clientId }: ClientCaseActivityProps) {
     dueSoon: 0,
     averageDuration: 0,
   });
-  const [filters, setFilters] = useState<CaseFilters>({
+  const [filters, setFilters] = useState<ICaseFilters>({
     dueDate: "",
     status: "",
     searchTerm: "",
