@@ -34,14 +34,14 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
     e.preventDefault();
     e.stopPropagation();
     const formattedDate = format(value, "yyyy-MM-dd");
-    navigate(`/cases?dueDate=${formattedDate}`);
+    navigate(`/cases?dueDate=${formattedDate}&status=in_queue,in_progress,on_hold`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       const formattedDate = format(value, "yyyy-MM-dd");
-      navigate(`/cases?dueDate=${formattedDate}`);
+      navigate(`/cases?dueDate=${formattedDate}&status=in_queue,in_progress,on_hold`);
     } else if (e.key === "ArrowDown" && showTooltip) {
       e.preventDefault();
       setSelectedEventIndex((prev) =>
@@ -92,7 +92,7 @@ const CustomDateCell: React.FC<CustomDateCellProps> = ({ value, events }) => {
             e.preventDefault();
             e.stopPropagation();
             const formattedDate = format(value, "yyyy-MM-dd");
-            navigate(`/cases?dueDate=${formattedDate}`);
+            navigate(`/cases?dueDate=${formattedDate}&status=in_queue,in_progress,on_hold`);
           }}
         >
           <div
