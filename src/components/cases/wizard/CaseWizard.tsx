@@ -8,10 +8,10 @@ import FilesStep from "./steps/FilesStep";
 import NotesStep from "./steps/NotesStep";
 import {
   Case,
-  CaseStatus,
   DeliveryMethod,
   addCase,
 } from "../../../data/mockCasesData";
+import { CaseStatus } from "@/types/supabase";
 import { Client, clientsService } from "../../../services/clientsService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -219,26 +219,26 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     }
 
     const newCase: Case = {
-      id: Date.now().toString(),
-      caseId: `CASE${Date.now().toString().slice(-6)}`,
+      id: crypto.randomUUID(),
+      caseId: `CASE-${format(new Date(), "yyyyMMdd")}-${Math.floor(
+        Math.random() * 1000
+      )}`,
       clientId: formData.clientId,
-      clientName: client.clientName,
+      clientName: formData.clientName || "",
       patientName: `${formData.patientFirstName} ${formData.patientLastName}`,
-      caseType: "Standard",
-      caseStatus: formData.status,
+      caseType: "Crown",
+      status: formData.status,
       startDate: formData.orderDate,
-      dueDate: formData.isDueDateTBD
-        ? formData.orderDate
-        : formData.dueDate || formData.orderDate,
+      dueDate: formData.dueDate || "",
       appointmentDate: formData.appointmentDate,
       appointmentTime: formData.appointmentTime,
+      assignedTechnicians: formData.assignedTechnicians,
       deliveryMethod: formData.deliveryMethod,
       notes: formData.notes,
       stages: [
-        { name: "Initial Review", status: "pending" },
+        { name: "Preparation", status: "pending" },
+        { name: "Design", status: "pending" },
         { name: "Production", status: "pending" },
-        { name: "Quality Check", status: "pending" },
-        { name: "Completion", status: "pending" },
       ],
     };
 
