@@ -376,7 +376,7 @@ id
                           </div>
                         ) : step.isNew ? (
                           <>
-                            <CardContent className="p-0">
+                            <CardContent className="p-0 pt-5">
                               <div className="flex flex-col justify-between w-full">
                                 <div className="flex justify-between w-full gap-5">
                                   <div className="w-full space-y-2">
@@ -470,7 +470,7 @@ id
                                           }}
                                         >
                                           <SelectTrigger>
-                                            <SelectValue placeholder="Select client" />
+                                            <SelectValue placeholder="Select Technician" />
                                           </SelectTrigger>
                                           <SelectContent>
                                             {technicians &&
@@ -533,7 +533,7 @@ id
                                         }))
                                       }
                                       rows={3}
-                                      className="border p-1 w-full"
+                                      className="border p-1 w-full rounded-md mt-2"
                                     />
                                   </div>
                                 </div>
@@ -883,7 +883,7 @@ id
                                         }
                                         rows={3}
                                         disabled={true}
-                                        className="border p-1 w-full"
+                                        className="border p-1 w-full rounded-md mt-2"
                                       />
                                     </div>
                                   </div>
@@ -918,7 +918,7 @@ id
 
                                           return (
                                             <div key={statusType}>
-                                              <p className="text-sm text-gray-500">
+                                              <p className="text-sm text-gray-500 mt-2">
                                                 {statusType === "in_progress"
                                                   ? "Started Notes"
                                                   : statusType === "completed"
@@ -941,7 +941,7 @@ id
                                                   )
                                                 }
                                                 rows={3}
-                                                className="border p-1 w-full"
+                                                className="border p-1 w-full rounded-md mt-2"
                                               />
                                             </div>
                                           );
