@@ -810,20 +810,44 @@ const CaseList: React.FC = () => {
   }, [user, authLoading, labId]);
 
   useEffect(() => {
-    if (cases.length > 0) {
-      let filtered = [...cases];
-      const dueDateParam = searchParams.get("dueDate");
+    const filter = searchParams.get("filter");
 
-      if (dueDateParam) {
-        filtered = filtered.filter((caseItem) => {
-          const caseDate = format(new Date(caseItem.due_date), "yyyy-MM-dd");
-          return caseDate === dueDateParam;
-        });
+    if (filter) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      switch (filter) {
+        case "past_due":
+          setFilteredCases(cases.filter(caseItem => {
+            const dueDate = new Date(caseItem.due_date);
+            return dueDate < today && caseItem.status !== "completed";
+          }));
+          break;
+        case "due_today":
+          setFilteredCases(cases.filter(caseItem => {
+            const dueDate = new Date(caseItem.due_date);
+            return dueDate.toDateString() === today.toDateString() && caseItem.status !== "completed";
+          }));
+          break;
+        case "due_tomorrow":
+          setFilteredCases(cases.filter(caseItem => {
+            const dueDate = new Date(caseItem.due_date);
+            return dueDate.toDateString() === tomorrow.toDateString() && caseItem.status !== "completed";
+          }));
+          break;
+        case "on_hold":
+          setFilteredCases(cases.filter(caseItem => caseItem.status === "on_hold"));
+          break;
+        default:
+          setFilteredCases(cases);
       }
-      console.log(filtered, "filtered");
-      setFilteredCases(filtered);
+    } else {
+      setFilteredCases(cases);
     }
-  }, [cases, searchParams]);
+  }, [filter, cases]);
 
   const handlePrint = (selectedRows: Row<Case>[]) => {
     console.log("Printing selected rows:", selectedRows);
