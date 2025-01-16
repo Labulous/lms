@@ -169,6 +169,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     isComplete: false,
   };
 
+  // Initialize case details with N/A if not already set
+  useEffect(() => {
+    if (!initialCaseDetails?.occlusalType && !initialCaseDetails?.contactType && !initialCaseDetails?.ponticType) {
+      onCaseDetailsChange({
+        occlusalType: OcclusalType.NotApplicable,
+        contactType: ContactType.NotApplicable,
+        ponticType: PonticType.NotApplicable
+      });
+    }
+  }, [initialCaseDetails, onCaseDetailsChange]);
+
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
     null
   );
@@ -191,6 +202,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [percentPopoverOpen, setPercentPopoverOpen] = useState<
     Map<number, boolean>
   >(new Map());
+  const [openTypePopover, setOpenTypePopover] = useState<string | null>(null);
+  const [openTeethPopover, setOpenTeethPopover] = useState<string | null>(null);
   const { user } = useAuth();
   useEffect(() => {
     const fetchProductTypes = async () => {
@@ -416,9 +429,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       gingival: shadeData[index]?.gingival || "",
       stump: shadeData[index]?.stump || "",
       customBody: shadeData[index]?.customBody || "",
-      customGingival: shadeData[index]?.customGingival || "",
-      customStump: shadeData[index]?.customStump || "",
+      customGingical: shadeData[index]?.customGingical || "",
       customOcclusal: shadeData[index]?.customOcclusal || "",
+      customStump: shadeData[index]?.customStump || "",
     };
 
     console.log(updatedShades, "updatedShades");
@@ -584,13 +597,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               {selectedProducts.map((row, index) => (
                 <TableRow key={row.id} className="border">
                   <TableCell className="border-b">
-                    <Popover>
+                    <Popover 
+                      open={openTypePopover === row.id}
+                      onOpenChange={(open) => {
+                        setOpenTypePopover(open ? row.id : null);
+                      }}
+                    >
                       <PopoverTrigger asChild>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           className={cn(
-                            "h-7 text-xs w-full justify-start",
+                            "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
                             !row.type && "text-muted-foreground"
                           )}
                         >
@@ -606,14 +624,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 row.type === type.name ? "secondary" : "ghost"
                               }
                               className={cn(
-                                "justify-start text-left h-auto py-2 px-3 w-full text-xs",
+                                "justify-start text-left h-auto py-2 px-3 w-full text-sm",
                                 row.type === type.name
                                   ? "hover:opacity-90"
                                   : "hover:bg-gray-50"
                               )}
-                              onClick={() =>
-                                handleProductTypeChange(type, index)
-                              }
+                              onClick={() => {
+                                handleProductTypeChange(type, index);
+                                setOpenTypePopover(null);
+                              }}
                             >
                               {type.name}
                             </Button>
@@ -623,13 +642,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     </Popover>
                   </TableCell>
                   <TableCell className="border-b">
-                    <Popover>
+                    <Popover
+                      open={openTeethPopover === row.id}
+                      onOpenChange={(open) => {
+                        setOpenTeethPopover(open ? row.id : null);
+                      }}
+                    >
                       <PopoverTrigger asChild>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           className={cn(
-                            "h-7 text-xs w-full justify-start",
+                            "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
                             row.teeth.length === 0 && "text-muted-foreground"
                           )}
                           disabled={!row.type}
@@ -639,15 +663,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             : "Select Teeth"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-2">
+                      <PopoverContent 
+                        className="w-[320px] p-2"
+                        onEscapeKeyDown={(e) => {
+                          e.preventDefault();
+                          setOpenTeethPopover(null);
+                        }}
+                        onInteractOutside={(e) => {
+                          e.preventDefault();
+                          setOpenTeethPopover(null);
+                        }}
+                      >
                         <ToothSelector
                           billingType={
                             selectedProduct?.billing_type?.name || "perTooth"
                           }
                           selectedTeeth={row.teeth}
-                          onSelectionChange={(teeth) =>
-                            handleTeethSelectionChange(teeth, index)
-                          }
+                          onSelectionChange={(teeth) => {
+                            handleTeethSelectionChange(teeth, index);
+                          }}
                           disabled={!row.type}
                           selectedProduct={{
                             type: row.type ? [row.type] : [],
@@ -685,7 +719,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className={`h-7 text-xs ${
+                            className={`h-7 text-sm ${
                               row.shades.body ||
                               row.shades.gingival ||
                               row.shades.occlusal ||
@@ -704,70 +738,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               : " Add Shade"}
                           </Button>
                         </PopoverTrigger>
-                        {/* <div className="grid grid-cols-2 gap-5">
-                          {shadeData
-                            .filter((item) => item.id === row.id)
-                            .slice(0, 4)
-                            .map((shade, index) => {
-                              const occlusalName = shadesItems.find(
-                                (option) => option.id === shade.occlusal
-                              )?.name;
-                              const bodyName = shadesItems.find(
-                                (option) => option.id === shade.body
-                              )?.name;
-                              const gingivalName = shadesItems.find(
-                                (option) => option.id === shade.gingival
-                              )?.name;
-                              const stumpName = shadesItems.find(
-                                (option) => option.id === shade.stump
-                              )?.name;
-
-                              if (
-                                !shade.occlusal &&
-                                !shade.body &&
-                                !shade.gingival &&
-                                !shade.stump
-                              ) {
-                                return null;
-                              }
-
-                              return (
-                                <div className="grid grid-cols-2">
-                                  <div className="">
-                                    {shade.occlusal && (
-                                      <p className="grid grid-cols-2 gap-4">
-                                        <strong>O:</strong>{" "}
-                                        {occlusalName || "No name available"}
-                                      </p>
-                                    )}
-                                    {shade.body && (
-                                      <p className="grid grid-cols-2 gap-4">
-                                        <strong>B:</strong>{" "}
-                                        {bodyName || "No name available"}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  <div className="flex">
-                                    {shade.gingival && (
-                                      <p className="grid grid-cols-2 gap-4">
-                                        <strong>G:</strong>{" "}
-                                        {gingivalName || "No name available"}
-                                      </p>
-                                    )}
-                                    {shade.stump && (
-                                      <p className="grid grid-cols-2 gap-4">
-                                        <strong>S:</strong>{" "}
-                                        {stumpName || "No name available"}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div> */}
-
-                        <PopoverContent className="w-80">
+                        <PopoverContent 
+                          className="w-80"
+                          onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setShadePopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                          onInteractOutside={(e) => {
+                            e.preventDefault();
+                            setShadePopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                        >
                           <div className="grid gap-4">
                             <div className="space-y-2">
                               <h4 className="font-medium leading-none">
@@ -1015,9 +1004,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           size="icon"
                           className={cn(
                             "h-6 w-6",
-                            selectedProducts?.[index]?.notes?.length
-                              ? "text-blue-600"
-                              : "",
+                            row.notes ? "text-blue-600" : "",
                             "hover:text-blue-600"
                           )}
                           disabled={!row.id}
@@ -1026,7 +1013,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <StickyNote className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 p-3" align="end">
+                      <PopoverContent 
+                        className="w-80 p-3"
+                        onEscapeKeyDown={(e) => {
+                          e.preventDefault();
+                          setNotePopoverOpen((prev) => {
+                            const updated = new Map(prev);
+                            updated.set(index, false);
+                            return updated;
+                          });
+                        }}
+                        onInteractOutside={(e) => {
+                          e.preventDefault();
+                          setNotePopoverOpen((prev) => {
+                            const updated = new Map(prev);
+                            updated.set(index, false);
+                            return updated;
+                          });
+                        }}
+                        align="end"
+                      >
                         <div className="space-y-2">
                           <div className="flex justify-between w-full">
                             <Label className="text-xs">Add Note</Label>
@@ -1094,7 +1100,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <Percent className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 p-3" align="end">
+                      <PopoverContent 
+                        className="w-80 p-3"
+                        onEscapeKeyDown={(e) => {
+                          e.preventDefault();
+                          setPercentPopoverOpen((prev) => {
+                            const updated = new Map(prev);
+                            updated.set(index, false);
+                            return updated;
+                          });
+                        }}
+                        onInteractOutside={(e) => {
+                          e.preventDefault();
+                          setPercentPopoverOpen((prev) => {
+                            const updated = new Map(prev);
+                            updated.set(index, false);
+                            return updated;
+                          });
+                        }}
+                        align="end"
+                      >
                         <div className="flex flex-col justify-between">
                           <div className="flex justify-between">
                             <Label className="text-xs">Add Discount</Label>
@@ -1185,15 +1210,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   <TableCell className="border-b">
                     <Input
                       type="number"
-                      value={selectedProducts[index].quantity || 1} // Use correct property "quantity" (fixed typo from "quanitity")
+                      value={selectedProducts[index].quantity || 1}
                       onChange={(e) => {
-                        const updatedProducts = [...selectedProducts]; // Make a copy of the current array
+                        const updatedProducts = [...selectedProducts];
                         updatedProducts[index].quantity = Number(
                           e.target.value
-                        ); // Update the quantity for the specific index
-                        setselectedProducts(updatedProducts); // Update the state with the modified array
+                        );
+                        setselectedProducts(updatedProducts);
                       }}
-                      placeholder="Quantity" // Placeholder updated to reflect quantity
+                      placeholder="Quantity"
                       className="w-20"
                     />
                   </TableCell>
@@ -1204,8 +1229,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       onClick={() => {
                         const updatedProducts = selectedProducts.filter(
                           (_, i) => i !== index
-                        ); // Filter out the product at the specified index
-                        setselectedProducts(updatedProducts); // Update the state with the new array
+                        );
+                        setselectedProducts(updatedProducts);
                       }}
                     >
                       <X className="h-4 w-4" />
@@ -1214,13 +1239,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 </TableRow>
               ))}
             </TableBody>
-            <div className="px-5 my-2">
-              <button
-                onClick={() => addNewProduct()}
-                className="w-32 max-w-full border p-2 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700 text-white rounded-md"
+            <div className="flex justify-end py-4 px-4">
+              <Button
+                variant="outline"
+                onClick={addNewProduct}
+                className="text-blue-600 border-blue-600 hover:bg-blue-50"
               >
-                Add Product
-              </button>
+                + Add Product Row
+              </Button>
             </div>
           </Table>
         </div>
