@@ -193,6 +193,10 @@ export interface ExtendedCase {
     returnArticulator: number;
   };
   products: any[];
+  tag: {
+    name: string;
+    id: string;
+  };
   invoice: {
     id: string;
     case_id: string;
@@ -204,7 +208,7 @@ export interface ExtendedCase {
     notes?: string;
     items?: any;
     discount_type?: string;
-  };
+  }[];
   teethProducts?: {
     tooth_number: number[];
     body_shade?: { name: string };
@@ -508,8 +512,8 @@ const CaseDetails: React.FC = () => {
           setError("Case not found");
           return;
         }
-
-        setCaseDetail(caseData);
+        let caseDataApi: any = caseData;
+        setCaseDetail(caseDataApi);
         getWorkStationDetails(caseData?.created_at);
 
         if (caseData.product_ids?.[0]?.products_id) {
@@ -583,7 +587,7 @@ const CaseDetails: React.FC = () => {
             }
 
             // Fetch teeth products if case product ID exists
-            let teethProducts = [];
+            let teethProducts: any = [];
             if (caseProductId) {
               const { data: teethProductData, error: teethProductsError } =
                 await supabase
@@ -863,7 +867,9 @@ const CaseDetails: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
                     <span className="text-sm font-medium text-primary">
-                      {caseDetail?.invoice_number || "N/A"}
+                      {caseDetail?.invoice.length > 0
+                        ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                        : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -1836,11 +1842,11 @@ const CaseDetails: React.FC = () => {
           }}
           formData={{
             clientId: caseDetail.client?.id,
-            items: caseDetail.invoice?.items || [],
-            discount: caseDetail.invoice?.discount || 0,
-            discountType: caseDetail.invoice?.discount_type || "percentage",
-            tax: caseDetail.invoice?.tax || 0,
-            notes: caseDetail.invoice?.notes || "",
+            items: caseDetail.invoice?.[0].items || [],
+            discount: caseDetail.invoice?.[0].discount || 0,
+            discountType: caseDetail.invoice?.[0].discount_type || "percentage",
+            tax: caseDetail.invoice?.[0].tax || 0,
+            notes: caseDetail.invoice?.[0].notes || "",
           }}
         />
       )}
@@ -1857,7 +1863,7 @@ const CaseDetails: React.FC = () => {
             doctor: caseDetail.doctor,
             created_at: caseDetail.created_at,
             due_date: caseDetail.due_date,
-            tag: caseDetail.tag,
+            // tag: caseDetail.tag,
           }}
           onComplete={() => setActivePrintType(null)}
         />

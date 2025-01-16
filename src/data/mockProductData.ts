@@ -1,3 +1,5 @@
+import { ShadeData } from "@/types/supabase";
+
 export interface ProductShades {
   occlusal: string;
   body: string;
@@ -15,7 +17,7 @@ export interface SavedProduct {
   type: string;
   teeth: number[];
   price: number;
-  shades: ProductShades;
+  shades: ShadeData;
   discount: number;
   notes: string;
   quantity?: number;

@@ -591,14 +591,14 @@ const UpdateCase: React.FC = () => {
             teeth: item?.teethProduct?.tooth_number || [],
             price: item?.discounted_price?.price,
             shades: {
-              body: item.teethProduct?.body_shade_id || "",
-              gingival: item?.teethProduct?.gingival_shade_id || "",
-              occlusal: item?.teethProduct?.occlusal_shade_id || "",
-              stump: item.teethProduct?.stump_shade_id || "",
-              customBody: item.teethProduct?.custom_body_shade || null,
-              customOcclusal: item.teethProduct?.custom_occlusal_shade || null,
-              customGingival: item.teethProduct?.custom_gingival_shade || null,
-              customStump: item.teethProduct?.custom_stump_shade || null,
+              body_shade: item.teethProduct?.body_shade_id || "",
+              gingival_shade: item?.teethProduct?.gingival_shade_id || "",
+              occlusal_shade: item?.teethProduct?.occlusal_shade_id || "",
+              stump_shade: item.teethProduct?.stump_shade_id || "",
+              custom_body: item.teethProduct?.custom_body_shade || null,
+              custom_occlusal: item.teethProduct?.custom_occlusal_shade || null,
+              custom_gingival: item.teethProduct?.custom_gingival_shade || null,
+              custom_stump: item.teethProduct?.custom_stump_shade || null,
             },
             discount: item?.discounted_price?.discount || 0,
             notes: item?.teethProduct?.notes || "",
@@ -621,6 +621,9 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, lab]);
+
+  console.log(caseDetail, "Case details");
+  console.log(selectedProducts, "selected files");
   return (
     <div className="p-6">
       <div className="space-y-4">

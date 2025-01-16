@@ -171,11 +171,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   // Initialize case details with N/A if not already set
   useEffect(() => {
-    if (!initialCaseDetails?.occlusalType && !initialCaseDetails?.contactType && !initialCaseDetails?.ponticType) {
+    if (
+      !initialCaseDetails?.occlusalType &&
+      !initialCaseDetails?.contactType &&
+      !initialCaseDetails?.ponticType
+    ) {
       onCaseDetailsChange({
         occlusalType: OcclusalType.NotApplicable,
         contactType: ContactType.NotApplicable,
-        ponticType: PonticType.NotApplicable
+        ponticType: PonticType.NotApplicable,
       });
     }
   }, [initialCaseDetails, onCaseDetailsChange]);
@@ -422,16 +426,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
   };
+  console.log(shadeData, "shadeDate");
   const handleSaveShades = (index: number) => {
     const updatedShades = {
-      occlusal: shadeData[index]?.occlusal || "",
-      body: shadeData[index]?.body || "",
-      gingival: shadeData[index]?.gingival || "",
-      stump: shadeData[index]?.stump || "",
-      customBody: shadeData[index]?.customBody || "",
-      customGingical: shadeData[index]?.customGingical || "",
-      customOcclusal: shadeData[index]?.customOcclusal || "",
-      customStump: shadeData[index]?.customStump || "",
+      occlusal_shade: shadeData[index]?.occlusal_shade || "",
+      body_shade: shadeData[index]?.body_shade || "",
+      gingival_shade: shadeData[index]?.gingival_shade || "",
+      stump_shade: shadeData[index]?.stump_shade || "",
+      custom_body: shadeData[index]?.custom_body || "",
+      custom_gingival: shadeData[index]?.custom_gingival || "",
+      custom_occlusal: shadeData[index]?.custom_occlusal || "",
+      custom_stump: shadeData[index]?.custom_stump || "",
     };
 
     console.log(updatedShades, "updatedShades");
@@ -497,10 +502,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         teeth: [],
         price: 0,
         shades: {
-          body: "",
-          gingival: "",
-          stump: "",
-          occlusal: "",
+          body_shade: "",
+          gingival_shade: "",
+          stump_shade: "",
+          occlusal_shade: "",
         },
         discount: 0,
         notes: "",
@@ -534,15 +539,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (selectedProducts.length > 0) {
       const shades = selectedProducts.map((item) => {
         const obj = {
-          body: item.shades.body ? item.shades.body : "custom",
-          gingival: item.shades.gingival ? item.shades.gingival : "custom",
-          occlusal: item.shades.occlusal ? item.shades.occlusal : "custom",
-          stump: item.shades.stump ? item.shades.stump : "custom",
+          body_shade: item.shades.body_shade
+            ? item.shades.body_shade
+            : item.shades.custom_body
+            ? "custom"
+            : "",
+          gingival_shade: item.shades.gingival_shade
+            ? item.shades.gingival_shade
+            : item.shades.custom_gingival
+            ? "custom"
+            : "",
+          occlusal_shade: item.shades.occlusal_shade
+            ? item.shades.occlusal_shade
+            : item.shades.custom_occlusal
+            ? "custom"
+            : "",
+          stump_shade: item.shades.stump_shade
+            ? item.shades.stump_shade
+            : item.shades.custom_stump
+            ? "custom"
+            : "",
           id: item.id,
-          customBody: item.shades.customBody,
-          customGingical: item.shades.customGingical,
-          customOcclusal: item.shades.customOcclusal,
-          customStump: item.shades.customStump,
+          custom_body: item.shades.custom_body,
+          custom_gingival: item.shades.custom_gingival,
+          custom_occlusal: item.shades.custom_occlusal,
+          custom_stump: item.shades.custom_stump,
         };
 
         return obj;
@@ -557,10 +578,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         teeth: [],
         price: 0,
         shades: {
-          body: "",
-          gingival: "",
-          stump: "",
-          occlusal: "",
+          body_shade: "",
+          gingival_shade: "",
+          stump_shade: "",
+          occlusal_shade: "",
         },
         discount: 0,
         notes: "",
@@ -597,7 +618,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               {selectedProducts.map((row, index) => (
                 <TableRow key={row.id} className="border">
                   <TableCell className="border-b">
-                    <Popover 
+                    <Popover
                       open={openTypePopover === row.id}
                       onOpenChange={(open) => {
                         setOpenTypePopover(open ? row.id : null);
@@ -663,7 +684,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             : "Select Teeth"}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent 
+                      <PopoverContent
                         className="w-[320px] p-2"
                         onEscapeKeyDown={(e) => {
                           e.preventDefault();
@@ -720,25 +741,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             variant="outline"
                             size="sm"
                             className={`h-7 text-sm ${
-                              row.shades.body ||
-                              row.shades.gingival ||
-                              row.shades.occlusal ||
-                              row.shades.stump
+                              row.shades.body_shade ||
+                              row.shades.gingival_shade ||
+                              row.shades.occlusal_shade ||
+                              row.shades.stump_shade
                                 ? "text-blue-600"
                                 : ""
                             }`}
                             disabled={row.teeth.length === 0}
                             onClick={() => toggleShadePopover(index)}
                           >
-                            {row.shades.body ||
-                            row.shades.gingival ||
-                            row.shades.occlusal ||
-                            row.shades.stump
+                            {row.shades.body_shade ||
+                            row.shades.gingival_shade ||
+                            row.shades.occlusal_shade ||
+                            row.shades.stump_shade
                               ? "Edit Shade"
                               : " Add Shade"}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent 
+                        <PopoverContent
                           className="w-80"
                           onEscapeKeyDown={(e) => {
                             e.preventDefault();
@@ -772,13 +793,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="occlusal">Occlusal</Label>
                                 <Select
-                                  value={shadeData[index]?.occlusal || ""}
+                                  value={shadeData[index]?.occlusal_shade || ""}
                                   onValueChange={(value) => {
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        occlusal: value,
+                                        occlusal_shade: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -786,7 +807,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   }}
                                 >
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select shade" />
+                                    <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {shadesItems.map((shade) => (
@@ -799,16 +820,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                {shadeData[index]?.occlusal === "custom" && (
+                                {shadeData[index]?.occlusal_shade ===
+                                  "custom" && (
                                   <Input
                                     type="text"
-                                    value={shadeData[index]?.customOcclusal}
+                                    value={shadeData[index]?.custom_occlusal}
                                     onChange={(e) => {
                                       setShadeData((prev) => {
                                         const updatedShadeData = [...prev];
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
-                                          customOcclusal: e.target.value,
+                                          custom_occlusal: e.target.value,
                                           id: row.id,
                                         };
                                         return updatedShadeData;
@@ -823,13 +845,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="body">Body</Label>
                                 <Select
-                                  value={shadeData[index]?.body || ""}
+                                  value={shadeData[index]?.body_shade || ""}
                                   onValueChange={(value) => {
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        body: value,
+                                        body_shade: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -837,7 +859,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   }}
                                 >
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select shade" />
+                                    <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {shadesItems.map((shade) => (
@@ -851,16 +873,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.body === "custom" && (
+                                {shadeData[index]?.body_shade === "custom" && (
                                   <Input
                                     type="text"
-                                    value={shadeData[index]?.customBody}
+                                    value={shadeData[index]?.custom_body}
                                     onChange={(e) => {
                                       setShadeData((prev) => {
                                         const updatedShadeData = [...prev];
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
-                                          customBody: e.target.value,
+                                          custom_body: e.target.value,
                                           id: row.id,
                                         };
                                         return updatedShadeData;
@@ -875,13 +897,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="gingival">Gingival</Label>
                                 <Select
-                                  value={shadeData[index]?.gingival || ""}
+                                  value={shadeData[index]?.gingival_shade || ""}
                                   onValueChange={(value) => {
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        gingival: value,
+                                        gingival_shade: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -889,7 +911,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   }}
                                 >
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select shade" />
+                                    <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {shadesItems.map((shade) => (
@@ -903,16 +925,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.gingival === "custom" && (
+                                {shadeData[index]?.gingival_shade ===
+                                  "custom" && (
                                   <Input
                                     type="text"
-                                    value={shadeData[index]?.customGingival}
+                                    value={shadeData[index]?.custom_gingival}
                                     onChange={(e) => {
                                       setShadeData((prev) => {
                                         const updatedShadeData = [...prev];
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
-                                          customGingival: e.target.value,
+                                          custom_gingival: e.target.value,
                                           id: row.id,
                                         };
                                         return updatedShadeData;
@@ -927,13 +950,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="stump">Stump</Label>
                                 <Select
-                                  value={shadeData[index]?.stump || ""}
+                                  value={shadeData[index]?.stump_shade || ""}
                                   onValueChange={(value) => {
                                     setShadeData((prev) => {
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        stump: value,
+                                        stump_shade: value,
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -941,7 +964,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   }}
                                 >
                                   <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select shade" />
+                                    <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {shadesItems.map((shade) => (
@@ -955,16 +978,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.stump === "custom" && (
+                                {shadeData[index]?.stump_shade === "custom" && (
                                   <Input
                                     type="text"
-                                    value={shadeData[index]?.customStump}
+                                    value={shadeData[index]?.custom_stump}
                                     onChange={(e) => {
                                       setShadeData((prev) => {
                                         const updatedShadeData = [...prev];
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
-                                          customStump: e.target.value,
+                                          custom_stump: e.target.value,
                                           id: row.id,
                                         };
                                         return updatedShadeData;
@@ -1013,7 +1036,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <StickyNote className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent 
+                      <PopoverContent
                         className="w-80 p-3"
                         onEscapeKeyDown={(e) => {
                           e.preventDefault();
@@ -1100,7 +1123,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <Percent className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent 
+                      <PopoverContent
                         className="w-80 p-3"
                         onEscapeKeyDown={(e) => {
                           e.preventDefault();
