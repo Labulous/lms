@@ -75,7 +75,7 @@ import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
 import { DiscountedPrice } from "@/types/supabase";
 import jsPDF from "jspdf";
-import { generatePDF } from "@/lib/generatePdf";
+// import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -1046,7 +1046,7 @@ const InvoiceList: React.FC = () => {
   };
 
   const handlePrintInvoice = () => {
-    generatePDF("elementId", "MyDocument.pdf");
+    // generatePDF("elementId", "MyDocument.pdf");
   };
 
   return (
