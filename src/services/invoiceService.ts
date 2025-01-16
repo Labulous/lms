@@ -1,85 +1,79 @@
-import { supabase } from "../lib/supabase";
+import { Invoice, InvoiceItem } from "../data/mockInvoiceData";
+import { mockClients } from "../data/mockClientsData";
 
-export interface Invoice {
-  id: string;
-  created_at: string;
-  case_id: string;
-  client_id: string;
-  amount: number;
-  due_date: string;
-  status: string;
-  lab_id: string;
-  due_amount: number;
-  updated_at: string;
-}
+export const generateInvoiceId = (): string => {
+  const year = new Date().getFullYear();
+  const sequence = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  return `INV-${year}-${sequence}`;
+};
 
-class InvoiceService {
-  async getInvoices(labId: string): Promise<Invoice[]> {
-    try {
-      const { data: invoices, error } = await supabase
-        .from("invoices")
-        .select(`
-          *,
-          client:clients(id, client_name)
-        `)
-        .eq("lab_id", labId)
-        .order("created_at", { ascending: false });
+export const calculateInvoiceTotals = (
+  items: InvoiceItem[],
+  discount: number,
+  discountType: "percentage" | "fixed",
+  tax: number
+): { subTotal: number; totalAmount: number } => {
+  const subTotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
 
-      if (error) {
-        console.error("Error fetching invoices", { error });
-        throw error;
-      }
+  const discountAmount =
+    discountType === "percentage" ? (subTotal * discount) / 100 : discount;
 
-      return invoices;
-    } catch (error) {
-      console.error("Error in getInvoices", { error });
-      throw error;
-    }
+  const afterDiscount = subTotal - discountAmount;
+  const taxAmount = (afterDiscount * tax) / 100;
+  const totalAmount = afterDiscount + taxAmount;
+
+  return {
+    subTotal,
+    totalAmount,
+  };
+};
+
+export const generateInvoice = (
+  clientId: string,
+  items: InvoiceItem[] | [],
+  discount: number = 0,
+  discountType: "percentage" | "fixed" = "percentage",
+  tax: number = 0,
+  notes?: string
+): Invoice => {
+  const client = mockClients.find((c) => c.id === clientId);
+  if (!client) {
+    throw new Error("Client not found");
   }
 
-  async getInvoiceById(id: string): Promise<Invoice | null> {
-    try {
-      const { data: invoice, error } = await supabase
-        .from("invoices")
-        .select(`
-          *,
-          client:clients(id, client_name)
-        `)
-        .eq("id", id)
-        .single();
+  const { subTotal, totalAmount } = calculateInvoiceTotals(
+    items,
+    discount,
+    discountType,
+    tax
+  );
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 30); // 30 days from now
 
-      if (error) {
-        console.error("Error fetching invoice", { error });
-        throw error;
-      }
-
-      return invoice;
-    } catch (error) {
-      console.error("Error in getInvoiceById", { error });
-      throw error;
-    }
-  }
-
-  async updateInvoice(id: string, updates: Partial<Invoice>): Promise<Invoice> {
-    try {
-      const { data, error } = await supabase
-        .from("invoices")
-        .update(updates)
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error updating invoice", { error });
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error("Error in updateInvoice", { error });
-      throw error;
-    }
-  }
-}
-
-export const invoiceService = new InvoiceService();
+  return {
+    invoiceId: generateInvoiceId(),
+    clientId,
+    clientName: client.clientName,
+    date: new Date().toISOString().split("T")[0],
+    dueDate: dueDate.toISOString().split("T")[0],
+    items,
+    subTotal,
+    discount: {
+      type: "percentage",
+      value: 2,
+      amount: 2,
+    },
+    discountType,
+    tax: {
+      type: "percentage",
+      value: 1,
+      amount: 1,
+    },
+    totalAmount,
+    status: "Pending",
+    notes,
+    paymentTerms: "",
+  };
+};
