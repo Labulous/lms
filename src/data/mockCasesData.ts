@@ -153,13 +153,17 @@ const saveCaseProduct = async (
           ? null
           : product.shades.occlusal_shade || null,
       body_shade_id:
-        product.shades.body_shade === "custom" ? null : product.shades.body_shade || null,
+        product.shades.body_shade === "custom"
+          ? null
+          : product.shades.body_shade || null,
       gingival_shade_id:
         product.shades.gingival_shade === "custom"
           ? null
           : product.shades.gingival_shade || null,
       stump_shade_id:
-        product.shades.stump_shade === "custom" ? null : product.shades.stump_shade || null,
+        product.shades.stump_shade === "custom"
+          ? null
+          : product.shades.stump_shade || null,
       custom_body_shade: product?.shades.custom_body || null,
       custom_occlusal_shade: product?.shades.custom_occlusal || null,
       custom_gingival_shade: product?.shades.custon_gingival || null,
@@ -209,7 +213,7 @@ const saveCaseProduct = async (
       "case_product_teeth rows created and discount prices inserted successfully!"
     );
     toast.success("Case created successfully");
-    navigate && navigate("/cases");
+    navigate && navigate(`/cases/${savedCaseId}`);
   } catch (error) {
     console.error("Error while processing case product:", error);
   }
@@ -486,21 +490,25 @@ const updateCases = async (
       notes: product.notes || "",
       tooth_number: product.teeth || "",
       occlusal_shade_id:
-      product.shades.occlusal_shade === "custom"
-        ? null
-        : product.shades.occlusal_shade || null,
-    body_shade_id:
-      product.shades.body_shade === "custom" ? null : product.shades.body_shade || null,
-    gingival_shade_id:
-      product.shades.gingival_shade === "custom"
-        ? null
-        : product.shades.gingival_shade || null,
-    stump_shade_id:
-      product.shades.stump_shade === "custom" ? null : product.shades.stump_shade || null,
-    custom_body_shade: product?.shades.custom_body || null,
-    custom_occlusal_shade: product?.shades.custom_occlusal || null,
-    custom_gingival_shade: product?.shades.custom_gingival || null,
-    custom_stump_shade: product?.shades.custom_stump || null,
+        product.shades.occlusal_shade === "custom"
+          ? null
+          : product.shades.occlusal_shade || null,
+      body_shade_id:
+        product.shades.body_shade === "custom"
+          ? null
+          : product.shades.body_shade || null,
+      gingival_shade_id:
+        product.shades.gingival_shade === "custom"
+          ? null
+          : product.shades.gingival_shade || null,
+      stump_shade_id:
+        product.shades.stump_shade === "custom"
+          ? null
+          : product.shades.stump_shade || null,
+      custom_body_shade: product?.shades.custom_body || null,
+      custom_occlusal_shade: product?.shades.custom_occlusal || null,
+      custom_gingival_shade: product?.shades.custom_gingival || null,
+      custom_stump_shade: product?.shades.custom_stump || null,
     }));
 
     // Step to check if rows exist for product_id before inserting

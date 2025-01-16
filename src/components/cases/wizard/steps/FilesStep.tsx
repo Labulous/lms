@@ -231,34 +231,34 @@ const FilesStep: React.FC<FilesStepProps> = ({
           <ul className="divide-y divide-gray-200">
             {selectedFiles && selectedFiles.length > 0 && (
               <div className="mt-4">
-                <ul className="divide-y divide-gray-200 grid grid-cols-2">
+                <ul className="divide-y divide-gray-200 grid grid-cols-4 gap-2">
                   {selectedFiles.map((file, index) => (
                     <li
                       key={index}
-                      className="px-4 py-3 flex items-center justify-between"
+                      className="flex items-center justify-between p-2"
                     >
-                      <div className="flex items-center">
-                        <img
-                          src={file.url}
-                          height={200}
-                          width={200}
-                          alt="file"
-                        />
-                        {/* <span className="ml-2 text-sm text-gray-500">
-                          (
-                          {(file?.file ? file?.file?.size / 1024 : 0).toFixed(
-                            1
-                          )}{" "}
-                          KB)
-                        </span> */}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="text-gray-400 hover:text-gray-500"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
+                      {/* Check if the file is completed or has a URL */}
+                      {(file.status === "completed" ||
+                        file?.url !== undefined) && (
+                        <div className="flex w-full">
+                          {file?.url && (
+                            <img
+                              src={file.url}
+                              height={100}
+                              width={100}
+                              alt="file"
+                              className="h-20 w-32 mb-1"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(index)}
+                            className="text-gray-400 hover:text-gray-500"
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
