@@ -143,29 +143,16 @@ const saveCaseProduct = async (
     const caseProductTeethRows = cases.products.map((product: any) => ({
       case_product_id: caseProductId,
       is_range: cases.products.length > 0,
-
-      notes: product.notes || "",
       tooth_number: product.teeth || "",
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
       quantity: product.quantity || 1,
-      occlusal_shade_id:
-        product.shades.occlusal === "custom"
-          ? null
-          : product.shades.occlusal || null,
-      body_shade_id:
-        product.shades.body === "custom" ? null : product.shades.body || null,
-      gingival_shade_id:
-        product.shades.gingival === "custom"
-          ? null
-          : product.shades.gingival || null,
-      stump_shade_id:
-        product.shades.stump === "custom" ? null : product.shades.stump || null,
-        customBody: product.teethProduct?.custom_body_shade || null,
-        custom_occlusal_shade: product.teethProduct?.customOcclusal || null,
-        custom_gingival_shade: product.teethProduct?.customGingival || null,
-        custom_stump_shade: product.teethProduct?.customStump || null,
+      notes: product.notes || "",
+      occlusal_shade_id: product.shades.occlusal === "custom" ? product.teethProduct?.custom_occlusal_shade : product.shades.occlusal,
+      body_shade_id: product.shades.body === "custom" ? product.teethProduct?.custom_body_shade : product.shades.body,
+      gingival_shade_id: product.shades.gingival === "custom" ? product.teethProduct?.custom_gingival_shade : product.shades.gingival,
+      stump_shade_id: product.shades.stump === "custom" ? product.teethProduct?.custom_stump_shade : product.shades.stump
     }));
 
     // Calculate discounted prices for products
@@ -480,28 +467,16 @@ const updateCases = async (
     const caseProductTeethRows = cases.products.map((product: any) => ({
       case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
       is_range: cases.products.length > 0,
-      occlusal_shade_id:
-        product.shades.occlusal === "custom"
-          ? null
-          : product.shades.occlusal || null,
-      body_shade_id:
-        product.shades.body === "custom" ? null : product.shades.body || null,
-      gingival_shade_id:
-        product.shades.gingival === "custom"
-          ? null
-          : product.shades.gingival || null,
-      stump_shade_id:
-        product.shades.stump === "custom" ? null : product.shades.stump || null,
-        custom_body_shade: product.shades?.customBody || null,
-      custom_occlusal_shade: product.shades?.customOcclusal || null,
-      custom_gingival_shade: product.shades?.customGingival || null,
-      custom_stump_shade: product.shades?.customStump || null,
-      notes: product.notes || "",
-      tooth_number: product.teeth || "",
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
       quantity: product.quantity || 1,
+      notes: product.notes || "",
+      tooth_number: product.teeth || "",
+      occlusal_shade_id: product.shades.occlusal === "custom" ? product.teethProduct?.custom_occlusal_shade : product.shades.occlusal,
+      body_shade_id: product.shades.body === "custom" ? product.teethProduct?.custom_body_shade : product.shades.body,
+      gingival_shade_id: product.shades.gingival === "custom" ? product.teethProduct?.custom_gingival_shade : product.shades.gingival,
+      stump_shade_id: product.shades.stump === "custom" ? product.teethProduct?.custom_stump_shade : product.shades.stump
     }));
 
     // Step to check if rows exist for product_id before inserting

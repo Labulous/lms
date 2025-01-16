@@ -6,12 +6,7 @@ import OrderDetailsStep from "./steps/OrderDetailsStep";
 import ProductsServicesStep from "./steps/ProductsServicesStep";
 import FilesStep from "./steps/FilesStep";
 import NotesStep from "./steps/NotesStep";
-import {
-  Case,
-  DeliveryMethod,
-  addCase,
-} from "../../../data/mockCasesData";
-import { CaseStatus } from "@/types/supabase";
+import { CaseStatus, DeliveryMethod } from "@/types/supabase";
 import { Client, clientsService } from "../../../services/clientsService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -63,7 +58,7 @@ export interface FormData {
 
 interface CaseWizardProps {
   onClose: () => void;
-  onSave: (caseData: Case) => void;
+  onSave: (caseData: any) => void;
   initialStep?: WizardStep;
 }
 
@@ -218,7 +213,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       return;
     }
 
-    const newCase: Case = {
+    const newCase = {
       id: crypto.randomUUID(),
       caseId: `CASE-${format(new Date(), "yyyyMMdd")}-${Math.floor(
         Math.random() * 1000
@@ -242,10 +237,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       ],
     };
 
-    // Add the case to our mock database
-    addCase(newCase);
-
-    // Call the onSave callback
+    // Call the onSave callback which will handle saving to Supabase
     onSave(newCase);
 
     // Close the wizard and navigate
