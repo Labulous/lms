@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   User,
@@ -21,12 +21,7 @@ import {
   WorkingStationTypes,
   WorkstationForm,
 } from "@/types/supabase";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import CaseProgress, { CaseStep } from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +75,7 @@ import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
 import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
+import OnHoldModal from "./wizard/modals/OnHoldModal";
 
 interface CaseFile {
   id: string;
@@ -869,7 +865,7 @@ const CaseDetails: React.FC = () => {
       }
 
       // Fetch updated case data after updating
-      setOnHoldModal(false)
+      setOnHoldModal(false);
       fetchCaseData();
       toast.success("Case Updated Successfully.");
     } catch (err) {
@@ -1960,47 +1956,13 @@ const CaseDetails: React.FC = () => {
         />
       )}
 
-      {onHoldModal ? (
-        <Dialog open={onHoldModal} onOpenChange={() => setOnHoldModal(false)}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Case on Hold</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">
-                  Reasons for putting the case on hold?
-                </h3>
-
-                <textarea
-                  name="reasonNote"
-                  value={onHoldReason}
-                  onChange={(e) => setOnHoldReason(e.target.value)}
-                  id="reasonNote"
-                  rows={3}
-                  className="border p-1 w-full rounded-md mt-2"
-                ></textarea>
-                <div className="flex justify-end gap-2 mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setOnHoldModal(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => handleUpdateCaseStatus("on_hold")}
-                    disabled={loading}
-                  >
-                    Update
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      ) : (
-        <></>
+      {onHoldModal && (
+        <OnHoldModal
+          onClose={() => setOnHoldModal(false)}
+          onHoldReason={""}
+          setOnHoldReason={setOnHoldReason}
+          handleUpdateCaseStatus={handleUpdateCaseStatus}
+        />
       )}
     </div>
   );

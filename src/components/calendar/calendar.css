@@ -174,6 +174,12 @@
   box-sizing: border-box;
 }
 
+/* Highlight today's date */
+.today-highlight {
+  background-color: #ff9900 !important; /* Or any color you want */
+  color: white;
+}
+
 .count-badge:hover {
   background-color: #2563eb;
   transform: scale(1.05);
@@ -319,6 +325,35 @@
 
 .calendar-container .rbc-header:last-child {
   border-right: none;
+}
+/* Add this to your CSS file */
+.calendar-container .rbc-now {
+  position: relative; /* Make sure the day cell is positioned relative */
+}
+.calendar-container .rbc-event {
+  cursor: pointer !important; /* Make sure the day cell is positioned relative */
+}
+.calendar-container .due-by-tommorow-cell::after {
+  content: "";
+  position: absolute;
+  top: 5px; /* Distance from the top */
+  right: 5px; /* Distance from the right */
+  width: 20px; /* Size of the circle */
+  height: 20px; /* Size of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: #42d2771a; /* Circle color */
+  z-index: 1; /* Ensure it appears above the content */
+}
+.calendar-container .rbc-now::after {
+  content: "";
+  position: absolute;
+  top: 5px; /* Distance from the top */
+  right: 5px; /* Distance from the right */
+  width: 20px; /* Size of the circle */
+  height: 20px; /* Size of the circle */
+  border-radius: 50%; /* Make it a circle */
+  background-color: rgb(59, 130, 246, 0.2); /* Circle color */
+  z-index: 1; /* Ensure it appears above the content */
 }
 
 /* Toolbar */

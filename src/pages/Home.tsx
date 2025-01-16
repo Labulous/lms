@@ -130,7 +130,6 @@ const Home: React.FC = () => {
               )
               .map((caseItem) => caseItem)
           : [];
-        console.log(casesData, "casesData");
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
@@ -146,8 +145,6 @@ const Home: React.FC = () => {
 
     getCompletedInvoices();
   }, []);
-
-  console.log(casesList, "casesList");
 
   const casesInProgress = [
     {
@@ -210,20 +207,13 @@ const Home: React.FC = () => {
       (caseItem) => caseItem.status === "on_hold"
     ).length;
 
-    console.log(casesList, "casesList");
-
     // Group the cases by due date and status
     const groupedCases: Record<string, number> = casesList.reduce(
       (acc, caseItem) => {
-        console.log(
-          `Processing case: ${caseItem.due_date}, Status: ${caseItem.status}`
-        );
-
         if (["in_queue", "in_progress"].includes(caseItem.status)) {
           const dueDate = new Date(caseItem.due_date)
             .toISOString()
             .split("T")[0]; // Ensure consistent UTC date format (YYYY-MM-DD)
-          console.log(`Due Date (UTC formatted): ${dueDate}`);
 
           acc[dueDate] = (acc[dueDate] || 0) + 1;
         }
@@ -233,7 +223,6 @@ const Home: React.FC = () => {
       {} as Record<string, number>
     );
 
-    console.log(groupedCases, "groupedCases");
 
     // Map the grouped cases to calendar events
     const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
