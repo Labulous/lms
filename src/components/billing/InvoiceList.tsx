@@ -76,6 +76,7 @@ import { toast } from "react-hot-toast";
 import { DiscountedPrice } from "@/types/supabase";
 import jsPDF from "jspdf";
 // import { generatePDF } from "@/lib/generatePdf";
+import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -144,6 +145,7 @@ const InvoiceList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
   const [reFreshData, setRefreshData] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const { user } = useAuth();
 
   // Initialize invoices
@@ -1016,39 +1018,13 @@ const InvoiceList: React.FC = () => {
       const invoice = invoices.find((inv) => inv.id === id);
       return ["draft", "overdue"].includes(invoice?.status || "");
     });
-  console.log(invoicesData, "invoicesData");
 
-  const invoiceData = {
-    invoiceNumber: "4507",
-    id: "INC-2024-00-00",
-    date: "1/7/2025",
-    shipTo: {
-      name: "Brookmere Dental Group",
-      address: [
-        "Kourosh Milani",
-        "North Road Coquitlam 101-531",
-        "Coquitlam, BC V3J 1N7",
-      ],
-      phone: "604 492 3388",
-    },
-    patient: "WILLIAM WALLACE",
-    items: [
-      {
-        description: "Digital Model - Quadrant (DISCOUNTED)",
-        details: "(2 x $0.00)",
-        amount: 0.0,
-      },
-      {
-        description: "Full Cast Posterior Crown (Alloy Extra)",
-        details: "Teeth: #46",
-        amount: 140.0,
-      },
-    ],
-    reference: "J4",
+  const handleInvoiceClick = (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
   };
 
-  const handlePrintInvoice = () => {
-    // generatePDF("elementId", "MyDocument.pdf");
+  const handleClosePreview = () => {
+    setSelectedInvoice(null);
   };
 
   return (
@@ -1428,7 +1404,7 @@ const InvoiceList: React.FC = () => {
                     <TableCell className="whitespace-nowrap">
                       <button
                         className="text-primary hover:underline"
-                        onClick={() => handlePrintInvoice()}
+                        onClick={() => handleInvoiceClick(invoice)}
                       >
                         {(() => {
                           const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
@@ -1726,6 +1702,13 @@ const InvoiceList: React.FC = () => {
           mode={editMode}
           onClose={handleCloseEditModal}
           onSave={handleSaveInvoice}
+        />
+      )}
+      {selectedInvoice && (
+        <InvoicePreviewModal
+          isOpen={!!selectedInvoice}
+          onClose={handleClosePreview}
+          invoice={selectedInvoice}
         />
       )}
     </div>

@@ -1,37 +1,19 @@
 import React from "react";
-import { generateInvoice } from "../../services/invoiceService";
-import { InvoiceItem } from "../../data/mockInvoiceData";
+import { Invoice } from "../../services/invoiceService";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { format } from "date-fns";
+import { formatCurrency } from "../../utils/formatters";
 
 interface InvoicePreviewProps {
-  clientId: string;
-  items: InvoiceItem[];
-  discount: number;
-  discountType: "percentage" | "fixed";
-  tax: number;
-  notes?: string;
+  invoice: Invoice;
   onClose: () => void;
 }
 
 const InvoicePreview: React.FC<InvoicePreviewProps> = ({
-  clientId,
-  items,
-  discount,
-  discountType,
-  tax,
-  notes,
+  invoice,
   onClose,
 }) => {
-  const invoice = generateInvoice(
-    clientId,
-    items,
-    discount,
-    discountType,
-    tax,
-    notes
-  );
-
   const handleDownloadPDF = async () => {
     const element = document.getElementById("invoice-preview");
     if (!element) return;
@@ -43,131 +25,82 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`invoice-${invoice.invoiceId}.pdf`);
+      pdf.save(`invoice-${invoice.id}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert("Error generating PDF. Please try again.");
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div className="relative top-20 mx-auto p-5 border w-4/5 shadow-lg rounded-md bg-white">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Invoice Preview</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ×
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div id="invoice-preview" className="space-y-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold">Invoice</h2>
+              <p className="text-gray-600">#{invoice.id.slice(0, 8)}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              ×
+            </button>
+          </div>
 
-        <div id="invoice-preview" className="p-6 bg-white">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-800">INVOICE</h1>
-            <div className="mt-4">
-              <p>
-                <strong>Invoice #:</strong> {invoice.invoiceId}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-500">Created Date</p>
+              <p className="font-medium">
+                {format(new Date(invoice.created_at), 'MMM d, yyyy')}
               </p>
-              <p>
-                <strong>Date:</strong> {invoice.date}
-              </p>
-              <p>
-                <strong>Due Date:</strong> {invoice.dueDate}
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Due Date</p>
+              <p className="font-medium">
+                {format(new Date(invoice.due_date), 'MMM d, yyyy')}
               </p>
             </div>
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4">Bill To:</h2>
-            <p>{invoice.clientName}</p>
-          </div>
-
-          <table className="min-w-full mb-8">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Description</th>
-                <th className="text-right py-2">Quantity</th>
-                <th className="text-right py-2">Unit Price</th>
-                <th className="text-right py-2">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.items.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.description}</td>
-                  <td className="text-right py-2">{item.quantity}</td>
-                  <td className="text-right py-2">
-                    ${item.unitPrice.toFixed(2)}
-                  </td>
-                  <td className="text-right py-2">
-                    ${item.totalPrice.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mb-8">
-            <div className="w-64">
-              <div className="flex justify-between mb-2">
-                <span>Subtotal:</span>
-                <span>${invoice.subTotal.toFixed(2)}</span>
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-2">Amount Details</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Total Amount:</span>
+                <span className="font-medium">{formatCurrency(invoice.amount)}</span>
               </div>
-              <div className="flex justify-between mb-2">
-                <span>Discount:</span>
-                <span>
-                  {discountType === "percentage"
-                    ? `${discount}%`
-                    : `$${discount}`}
-                </span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span>Tax ({tax}%):</span>
-                <span>
-                  $
-                  {(
-                    invoice.totalAmount -
-                    (invoice.subTotal -
-                      (discountType === "percentage"
-                        ? (invoice.subTotal * discount) / 100
-                        : discount))
-                  ).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between font-bold">
-                <span>Total:</span>
-                <span>${invoice.totalAmount.toFixed(2)}</span>
+              <div className="flex justify-between">
+                <span>Due Amount:</span>
+                <span className="font-medium">{formatCurrency(invoice.due_amount)}</span>
               </div>
             </div>
           </div>
 
-          {notes && (
-            <div className="mb-8">
-              <h3 className="font-bold mb-2">Notes:</h3>
-              <p className="text-gray-600">{notes}</p>
-            </div>
-          )}
-        </div>
+          <div className="border-t pt-4">
+            <h3 className="font-semibold mb-2">Status</h3>
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${
+                invoice.status === "paid"
+                  ? "bg-green-100 text-green-800"
+                  : invoice.status === "pending"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-red-100 text-red-800"
+              }`}
+            >
+              {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+            </span>
+          </div>
 
-        <div className="flex justify-end space-x-4 mt-4">
-          <button
-            onClick={handlePrint}
-            className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-          >
-            Print
-          </button>
-          <button
-            onClick={handleDownloadPDF}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            Download PDF
-          </button>
+          <div className="flex justify-end space-x-4 mt-6">
+            <button
+              onClick={handleDownloadPDF}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Download PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
