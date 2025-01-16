@@ -184,7 +184,10 @@ const InvoiceList: React.FC = () => {
                 phone
               )
             ),
-            pan_tag,
+            tag:working_tags!pan_tag_id (
+                name,
+                color
+              ),
             rx_number,
             isDueDateTBD,
             appointment_date,
@@ -192,7 +195,6 @@ const InvoiceList: React.FC = () => {
             otherItems,
             lab_notes,
             invoice_notes,
-            technician_notes,
             occlusal_type,
             contact_type,
             pontic_type,
