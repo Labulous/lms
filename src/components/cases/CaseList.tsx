@@ -68,6 +68,7 @@ import {
 } from "@/components/ui/popover";
 
 import { PageHeader } from "@/components/ui/page-header";
+import { shortMonths } from "@/lib/months";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -148,8 +149,11 @@ const CaseList: React.FC = () => {
   });
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>(() => {
     const dueDateParam = searchParams.get("dueDate");
-    return dueDateParam ? new Date(dueDateParam) : undefined;
+
+    // Parse the date as UTC and return it, or undefined if no date is provided
+    return dueDateParam ? new Date(Date.parse(dueDateParam)) : undefined;
   });
+
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -167,6 +171,9 @@ const CaseList: React.FC = () => {
     [pageIndex, pageSize]
   );
   console.log(filteredCases, "filteredCases");
+  const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
+  const month = date.getMonth() + 1; // Months are 0-indexed
+  const day = date.getDate();
   const columns: ColumnDef<Case>[] = [
     {
       accessorKey: "select",
@@ -538,7 +545,7 @@ const CaseList: React.FC = () => {
                 <ChevronsUpDown className="ml-2 h-4 w-4" />
                 {dueDateFilter && (
                   <Badge variant="outline" className="ml-2 bg-background">
-                    {format(dueDateFilter, "MMM d")}
+                    {`${shortMonths[month]} ${day}`}
                   </Badge>
                 )}
               </div>
@@ -676,7 +683,6 @@ const CaseList: React.FC = () => {
       pagination,
     },
   });
-
   useEffect(() => {
     if (statusFilter.length > 0) {
       table.getColumn("status")?.setFilterValue(statusFilter);
@@ -685,6 +691,7 @@ const CaseList: React.FC = () => {
     }
   }, [statusFilter]);
 
+  console.log(dueDateFilter,"dueDateFilter")
   useEffect(() => {
     if (dueDateFilter) {
       table.getColumn("due_date")?.setFilterValue(dueDateFilter);
@@ -829,37 +836,43 @@ const CaseList: React.FC = () => {
     const filter = searchParams.get("filter");
 
     if (filter) {
+      // Get today's date in UTC at midnight
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const todayUTC = Date.UTC(
+        today.getUTCFullYear(),
+        today.getUTCMonth(),
+        today.getUTCDate()
+      );
 
-      switch (filter) {
-        case "past_due":
-          setFilteredCases(cases.filter(caseItem => {
-            const dueDate = new Date(caseItem.due_date);
-            return dueDate < today && caseItem.status !== "completed";
-          }));
-          break;
-        case "due_today":
-          setFilteredCases(cases.filter(caseItem => {
-            const dueDate = new Date(caseItem.due_date);
-            return dueDate.toDateString() === today.toDateString() && caseItem.status !== "completed";
-          }));
-          break;
-        case "due_tomorrow":
-          setFilteredCases(cases.filter(caseItem => {
-            const dueDate = new Date(caseItem.due_date);
-            return dueDate.toDateString() === tomorrow.toDateString() && caseItem.status !== "completed";
-          }));
-          break;
-        case "on_hold":
-          setFilteredCases(cases.filter(caseItem => caseItem.status === "on_hold"));
-          break;
-        default:
-          setFilteredCases(cases);
-      }
+      // Calculate tomorrow's date in UTC
+      const tomorrowUTC = todayUTC + 24 * 60 * 60 * 1000; // Add one day in milliseconds
+
+      const filteredCases = cases.filter((caseItem) => {
+        const dueDate = new Date(caseItem.due_date);
+        
+        const dueDateUTC = Date.UTC(
+          dueDate.getUTCFullYear(),
+          dueDate.getUTCMonth(),
+          dueDate.getUTCDate()
+        );
+
+        switch (filter) {
+          case "past_due":
+            return dueDateUTC < todayUTC && caseItem.status !== "completed";
+          case "due_today":
+            return dueDateUTC === todayUTC && caseItem.status !== "completed";
+          case "due_tomorrow":
+            return (
+              dueDateUTC === tomorrowUTC && caseItem.status !== "completed"
+            );
+          case "on_hold":
+            return caseItem.status === "on_hold";
+          default:
+            return true;
+        }
+      });
+
+      setFilteredCases(filteredCases);
     } else {
       setFilteredCases(cases);
     }

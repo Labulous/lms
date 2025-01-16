@@ -591,7 +591,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   }, selectedProducts);
 
-  console.log(shadeData, "shadeData");
+  console.log(shadesItems, "shadeData");
+
+  const sortedShadesItems = shadesItems.sort((a, b) => {
+    // Compare the names in ascending order
+    if (a.name === "Custom") return 1; // "Custom" should go to the bottom
+    if (b.name === "Custom") return -1; // "Custom" should go to the bottom
+    return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
+  });
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -810,7 +817,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {shadesItems.map((shade) => (
+                                    {sortedShadesItems.map((shade) => (
                                       <SelectItem
                                         key={shade.id}
                                         value={shade.id}
@@ -862,7 +869,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {shadesItems.map((shade) => (
+                                    {sortedShadesItems.map((shade) => (
                                       <SelectItem
                                         key={shade.id}
                                         value={shade.id}
@@ -914,7 +921,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {shadesItems.map((shade) => (
+                                    {sortedShadesItems.map((shade) => (
                                       <SelectItem
                                         key={shade.id}
                                         value={shade.id}
@@ -967,7 +974,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     <SelectValue placeholder="N/A" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {shadesItems.map((shade) => (
+                                    {sortedShadesItems.map((shade) => (
                                       <SelectItem
                                         key={shade.id}
                                         value={shade.id}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
 import {
   format,
@@ -10,12 +10,9 @@ import {
 } from "date-fns";
 import enUS from "date-fns/locale/en-US";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import CustomDateCell from "./CustomDateCell";
-import { Case, getCases } from "../../data/mockCasesData";
-import "./calendar.css";
-import { position } from "html2canvas/dist/types/css/property-descriptors/position";
 import { useNavigate } from "react-router-dom";
 import { CalendarEvents } from "@/pages/Home";
+import "./calendar.css";
 
 const locales = {
   "en-US": enUS,
@@ -40,43 +37,40 @@ interface CustomToolbarProps {
   label: string;
 }
 
-/* eslint-disable no-unused-vars */
 const CustomToolbar: React.FC<CustomToolbarProps> = ({
   date,
   onNavigate,
   label,
-}) => {
-  return (
-    <div className="rbc-toolbar">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onNavigate("PREV")}
-          className="rbc-btn-group"
-          aria-label="Previous month"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onNavigate("NEXT")}
-          className="rbc-btn-group"
-          aria-label="Next month"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        <h2 className="text-lg font-semibold">{label}</h2>
-      </div>
+}) => (
+  <div className="rbc-toolbar">
+    <div className="flex items-center gap-2">
       <button
         type="button"
-        onClick={() => onNavigate("TODAY")}
+        onClick={() => onNavigate("PREV")}
         className="rbc-btn-group"
+        aria-label="Previous month"
       >
-        Today
+        <ChevronLeft className="h-4 w-4" />
       </button>
+      <button
+        type="button"
+        onClick={() => onNavigate("NEXT")}
+        className="rbc-btn-group"
+        aria-label="Next month"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+      <h2 className="text-lg font-semibold">{label}</h2>
     </div>
-  );
-};
+    <button
+      type="button"
+      onClick={() => onNavigate("TODAY")}
+      className="rbc-btn-group"
+    >
+      Today
+    </button>
+  </div>
+);
 
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
@@ -87,6 +81,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     "left" | "right" | null
   >(null);
   const navigate = useNavigate();
+
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
       let newDate;
@@ -117,16 +112,23 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     [currentDate]
   );
 
-  const components = {
-    dateCell: (props: any) => {
-      const { date } = props;
-      const dateStr = format(date, "yyyy-MM-dd");
-      const dateEvents = events.filter(
-        (event) => format(new Date(event.start), "yyyy-MM-dd") === dateStr
-      );
+  const dayPropGetter = (date: Date) => {
+    const today = new Date();
+    if (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    ) {
+      return {
+        style: {
+          backgroundColor: "#DEECF9", // Highlight color
+        },
+      };
+    }
+    return {};
+  };
 
-      return <CustomDateCell value={date} events={dateEvents} />;
-    },
+  const components = {
     toolbar: (props: any) => (
       <CustomToolbar
         date={props.date}
@@ -163,6 +165,21 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
+  const rbcNowElement = document.querySelector(".rbc-now");
+  useEffect(() => {
+
+    if (rbcNowElement) {
+      const nextSibling = rbcNowElement.nextElementSibling;
+      if (nextSibling && nextSibling instanceof HTMLElement) {
+        nextSibling.classList.add("due-by-tommorow-cell");
+      } else {
+        console.log("Next sibling not found or not an HTMLElement");
+      }
+    } else {
+      console.log("rbc-now element not found");
+    }
+  }, [rbcNowElement]);
+
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div
@@ -181,7 +198,8 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           date={currentDate}
           onNavigate={handleNavigate as any}
           eventPropGetter={eventStyleGetter}
-          onSelectEvent={handleEventClick} // Add the event click handler
+          onSelectEvent={handleEventClick}
+          dayPropGetter={dayPropGetter}
           className="calendar-container"
         />
       </div>

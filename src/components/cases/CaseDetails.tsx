@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   User,
@@ -21,6 +21,7 @@ import {
   WorkingStationTypes,
   WorkstationForm,
 } from "@/types/supabase";
+
 import CaseProgress, { CaseStep } from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -74,6 +75,8 @@ import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
 import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
+import OnHoldModal from "./wizard/modals/OnHoldModal";
+import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
 
 interface CaseFile {
   id: string;
@@ -262,12 +265,15 @@ const CaseDetails: React.FC = () => {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
+  const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
+  const [onHoldReason, setOnHoldReason] = useState<string>("");
   const [selectedPaperSize, setSelectedPaperSize] =
     useState<keyof typeof PAPER_SIZES>("LETTER");
 
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
+  const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -407,262 +413,263 @@ const CaseDetails: React.FC = () => {
     } finally {
     }
   };
+
+  const fetchCaseData = async () => {
+    try {
+      setLoading(true);
+      const lab = await getLabIdByUserId(user?.id as string);
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
+      setLab(lab);
+
+      const { data: caseData, error } = await supabase
+        .from("cases")
+        .select(
+          `
+            id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            attachements,
+            case_number,
+            invoice:invoices!case_id (
+              id,
+              case_id,
+              amount,
+              status,
+              due_date
+            ),
+            client:clients!client_id (
+              id,
+              client_name,
+              phone
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            tag:working_tags!pan_tag_id (
+              name,
+              color
+            ),
+            rx_number,
+            received_date,
+            invoice_notes,
+            isDueDateTBD,
+            appointment_date,
+            instruction_notes,
+            otherItems,
+            lab_notes,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            qr_code,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            created_by:users!created_by (
+              name,
+              id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            )
+          `
+        )
+        .eq("id", caseId)
+        .single();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        setError(error.message);
+        return;
+      }
+
+      if (!caseData) {
+        console.error("No case data found");
+        setError("Case not found");
+        return;
+      }
+      let caseDataApi: any = caseData;
+      setCaseDetail(caseDataApi);
+      getWorkStationDetails(caseData?.created_at);
+
+      if (caseData.product_ids?.[0]?.products_id) {
+        const productsIdArray = caseData.product_ids[0].products_id;
+        const caseProductId = caseData.product_ids[0].id;
+
+        // Fetch products
+        if (productsIdArray?.length > 0) {
+          const { data: productData, error: productsError } = await supabase
+            .from("products")
+            .select(
+              `
+                id,
+                name,
+                price,
+                lead_time,
+                is_client_visible,
+                is_taxable,
+                created_at,
+                updated_at,
+                requires_shade,
+                material:materials!material_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                product_type:product_types!product_type_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                billing_type:billing_types!billing_type_id (
+                  name,
+                  label,
+                  description,
+                  is_active
+                )
+              `
+            )
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.labId);
+
+          if (productsError) {
+            setError(productsError.message);
+            return;
+          }
+
+          // Fetch discounted prices
+          const { data: discountedPriceData, error: discountedPriceError } =
+            await supabase
+              .from("discounted_price")
+              .select(
+                `
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity
+              `
+              )
+              .in("product_id", productsIdArray)
+              .eq("case_id", caseId);
+
+          if (discountedPriceError) {
+            console.error(
+              "Error fetching discounted prices:",
+              discountedPriceError
+            );
+            setError(discountedPriceError.message);
+            return;
+          }
+
+          // Fetch teeth products if case product ID exists
+          let teethProducts: any = [];
+          if (caseProductId) {
+            const { data: teethProductData, error: teethProductsError } =
+              await supabase
+                .from("case_product_teeth")
+                .select(
+                  `
+                  is_range,
+                  occlusal_shade:shade_options!occlusal_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  body_shade:shade_options!body_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  gingival_shade:shade_options!gingival_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  stump_shade_id:shade_options!stump_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  tooth_number,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  type
+                `
+                )
+                .eq("case_product_id", caseProductId);
+
+            if (teethProductsError) {
+              setError(teethProductsError.message);
+              return;
+            }
+            teethProducts = teethProductData;
+          }
+
+          // Combine all product data
+          const productsWithDiscounts = productData.map((product: any) => {
+            const discountedPrice = discountedPriceData.find(
+              (discount: { product_id: string }) =>
+                discount.product_id === product.id
+            );
+            const productTeeth = teethProducts.find(
+              (teeth: any) => teeth.product_id === product.id
+            );
+            return {
+              ...product,
+              discounted_price: discountedPrice,
+              teethProduct: productTeeth,
+            };
+          });
+
+          setCaseDetail({
+            ...(caseData as any),
+            products: productsWithDiscounts,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching case data:", error);
+      toast.error("Failed to load case details");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
       setLoading(false);
       return;
     }
-    const fetchCaseData = async () => {
-      try {
-        setLoading(true);
-        const lab = await getLabIdByUserId(user?.id as string);
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-        setLab(lab);
-
-        const { data: caseData, error } = await supabase
-          .from("cases")
-          .select(
-            `
-              id,
-              created_at,
-              received_date,
-              ship_date,
-              status,
-              patient_name,
-              due_date,
-              attachements,
-              case_number,
-              invoice:invoices!case_id (
-                id,
-                case_id,
-                amount,
-                status,
-                due_date
-              ),
-              client:clients!client_id (
-                id,
-                client_name,
-                phone
-              ),
-              doctor:doctors!doctor_id (
-                id,
-                name,
-                client:clients!client_id (
-                  id,
-                  client_name,
-                  phone
-                )
-              ),
-              tag:working_tags!pan_tag_id (
-                name,
-                color
-              ),
-              rx_number,
-              received_date,
-              invoice_notes,
-              isDueDateTBD,
-              appointment_date,
-              instruction_notes,
-              otherItems,
-              lab_notes,
-              occlusal_type,
-              contact_type,
-              pontic_type,
-              qr_code,
-              custom_contact_details,
-              custom_occulusal_details,
-              custom_pontic_details,
-              enclosed_items:enclosed_case!enclosed_case_id (
-                impression,
-                biteRegistration,
-                photos,
-                jig,
-                opposingModel,
-                articulator,
-                returnArticulator,
-                cadcamFiles,
-                consultRequested,
-                user_id
-              ),
-              created_by:users!created_by (
-                name,
-                id
-              ),
-              product_ids:case_products!id (
-                products_id,
-                id
-              )
-            `
-          )
-          .eq("id", caseId)
-          .single();
-
-        if (error) {
-          console.error("Supabase error:", error);
-          setError(error.message);
-          return;
-        }
-
-        if (!caseData) {
-          console.error("No case data found");
-          setError("Case not found");
-          return;
-        }
-        let caseDataApi: any = caseData;
-        setCaseDetail(caseDataApi);
-        getWorkStationDetails(caseData?.created_at);
-
-        if (caseData.product_ids?.[0]?.products_id) {
-          const productsIdArray = caseData.product_ids[0].products_id;
-          const caseProductId = caseData.product_ids[0].id;
-
-          // Fetch products
-          if (productsIdArray?.length > 0) {
-            const { data: productData, error: productsError } = await supabase
-              .from("products")
-              .select(
-                `
-                  id,
-                  name,
-                  price,
-                  lead_time,
-                  is_client_visible,
-                  is_taxable,
-                  created_at,
-                  updated_at,
-                  requires_shade,
-                  material:materials!material_id (
-                    name,
-                    description,
-                    is_active
-                  ),
-                  product_type:product_types!product_type_id (
-                    name,
-                    description,
-                    is_active
-                  ),
-                  billing_type:billing_types!billing_type_id (
-                    name,
-                    label,
-                    description,
-                    is_active
-                  )
-                `
-              )
-              .in("id", productsIdArray)
-              .eq("lab_id", lab.labId);
-
-            if (productsError) {
-              setError(productsError.message);
-              return;
-            }
-
-            // Fetch discounted prices
-            const { data: discountedPriceData, error: discountedPriceError } =
-              await supabase
-                .from("discounted_price")
-                .select(
-                  `
-                  product_id,
-                  discount,
-                  final_price,
-                  price,
-                  quantity
-                `
-                )
-                .in("product_id", productsIdArray)
-                .eq("case_id", caseId);
-
-            if (discountedPriceError) {
-              console.error(
-                "Error fetching discounted prices:",
-                discountedPriceError
-              );
-              setError(discountedPriceError.message);
-              return;
-            }
-
-            // Fetch teeth products if case product ID exists
-            let teethProducts: any = [];
-            if (caseProductId) {
-              const { data: teethProductData, error: teethProductsError } =
-                await supabase
-                  .from("case_product_teeth")
-                  .select(
-                    `
-                    is_range,
-                    occlusal_shade:shade_options!occlusal_shade_id (
-                      name,
-                      category,
-                      is_active
-                    ),
-                    body_shade:shade_options!body_shade_id (
-                      name,
-                      category,
-                      is_active
-                    ),
-                    gingival_shade:shade_options!gingival_shade_id (
-                      name,
-                      category,
-                      is_active
-                    ),
-                    stump_shade_id:shade_options!stump_shade_id (
-                      name,
-                      category,
-                      is_active
-                    ),
-                    tooth_number,
-                    notes,
-                    product_id,
-                    custom_body_shade,
-                    custom_occlusal_shade,
-                    custom_gingival_shade,
-                    custom_stump_shade,
-                    type
-                  `
-                  )
-                  .eq("case_product_id", caseProductId);
-
-              if (teethProductsError) {
-                setError(teethProductsError.message);
-                return;
-              }
-              teethProducts = teethProductData;
-            }
-
-            // Combine all product data
-            const productsWithDiscounts = productData.map((product: any) => {
-              const discountedPrice = discountedPriceData.find(
-                (discount: { product_id: string }) =>
-                  discount.product_id === product.id
-              );
-              const productTeeth = teethProducts.find(
-                (teeth: any) => teeth.product_id === product.id
-              );
-              return {
-                ...product,
-                discounted_price: discountedPrice,
-                teethProduct: productTeeth,
-              };
-            });
-
-            setCaseDetail({
-              ...(caseData as any),
-              products: productsWithDiscounts,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching case data:", error);
-        toast.error("Failed to load case details");
-      } finally {
-        setLoading(false);
-      }
-    };
 
     if (caseId) {
       fetchCaseData();
@@ -740,6 +747,7 @@ const CaseDetails: React.FC = () => {
   }
 
   const handleCreateNewWorkStation = () => {
+    setSelectedFiles([]);
     const newCreateStep = {
       date: new Date().toISOString(),
       technician: {
@@ -836,6 +844,73 @@ const CaseDetails: React.FC = () => {
     }
   };
   console.log(caseDetail, "caseDetail");
+
+  const handleUpdateCaseStatus = async (status: string) => {
+    try {
+      // Update the case status in the database
+      const updateData = {
+        status: status,
+      };
+      const updateDataWithNotes = {
+        status: status,
+        onhold_notes: onHoldReason,
+      };
+      const { error: updateError } = await supabase
+        .from("cases")
+        .update(status === "on_hold" ? updateDataWithNotes : updateData)
+        .eq("id", caseId);
+
+      if (updateError) {
+        console.error("Error updating case status:", updateError);
+        toast.error("Failed to Update the case Status");
+        return;
+      }
+
+      // Fetch updated case data after updating
+      setOnHoldModal(false);
+      fetchCaseData();
+      toast.success("Case Updated Successfully.");
+    } catch (err) {
+      console.error("Error in handleUpdateCaseStatus:", err);
+      toast.error("Failed to Update the case Status");
+    }
+  };
+  const handleCaseComplete = () => {
+    // Step 1: Check if all steps are completed
+    const isWorkstationCompleted = stepsData.every((item) => {
+      // Check if the step has technician.name === "System" and isNew === true, ignore this step
+      if (item?.technician?.name === "System" && item.isNew === true) {
+        return true;
+      }
+      // If the technician is "System" but is not new, treat it as completed
+      if (item?.technician?.name === "System") {
+        return item.status === "completed"; // only consider status if not new
+      }
+      // For all other steps, they must be completed
+      return item.status === "completed";
+    });
+
+    // Log the result to check if everything is as expected
+    console.log("isWorkstationCompleted:", isWorkstationCompleted);
+
+    // Step 2: Return false if there is only one item with technician.name === "System"
+
+    if (stepsData && stepsData.length === 1) {
+      console.log("System step count is 1, returning false");
+      return toast.error("Workstation steps have not been created yet.");
+    }
+
+    // If workstation is completed, proceed to update the case status
+    if (isWorkstationCompleted) {
+      console.log("Workstation is completed. Proceeding with status update.");
+
+      handleUpdateCaseStatus("completed");
+    } else {
+      // If workstation is not completed, show error
+      toast.error("Please Complete the Workstations First.");
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="w-full bg-white border-b border-gray-200">
@@ -978,11 +1053,34 @@ const CaseDetails: React.FC = () => {
                     >
                       Edit Case
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Delete Case</DropdownMenuItem>
-                    <DropdownMenuItem>Archive Case</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (caseDetail.status === "in_queue") {
+                          toast.error("Working on Case is not started yet.");
+                        } else if (caseDetail.status === "completed") {
+                          toast.error("Case is Already Completed.");
+                        } else {
+                          setOnHoldModal(true);
+                        }
+                      }}
+                    >
+                      On Hold
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>Cancel Case</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button size="sm">Complete</Button>
+                <Button
+                  onClick={() =>
+                    caseDetail.status === "completed"
+                      ? setIsScheduleModal(true)
+                      : handleCaseComplete()
+                  }
+                  size="sm"
+                >
+                  {caseDetail.status === "completed"
+                    ? "Schedule Delivery"
+                    : "Complete"}
+                </Button>
               </div>
 
               <div className="flex items-center space-x-4">
@@ -1867,6 +1965,18 @@ const CaseDetails: React.FC = () => {
           }}
           onComplete={() => setActivePrintType(null)}
         />
+      )}
+
+      {onHoldModal && (
+        <OnHoldModal
+          onClose={() => setOnHoldModal(false)}
+          onHoldReason={onHoldReason}
+          setOnHoldReason={setOnHoldReason}
+          handleUpdateCaseStatus={handleUpdateCaseStatus}
+        />
+      )}
+      {isScheduleModal && (
+        <ScheduleDelivery onClose={() => setIsScheduleModal(false)} />
       )}
     </div>
   );

@@ -130,7 +130,6 @@ const Home: React.FC = () => {
               )
               .map((caseItem) => caseItem)
           : [];
-        console.log(casesData, "casesData");
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
@@ -146,8 +145,6 @@ const Home: React.FC = () => {
 
     getCompletedInvoices();
   }, []);
-
-  console.log(casesList, "casesList");
 
   const casesInProgress = [
     {
@@ -183,8 +180,12 @@ const Home: React.FC = () => {
   };
 
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0];
-    const tomorrow = new Date(new Date().setDate(new Date().getDate() + 1))
+    const today = new Date().toISOString().split("T")[0]; // UTC today (YYYY-MM-DD)
+
+    // Calculate tomorrow in UTC
+    const tomorrow = new Date(
+      new Date().setUTCDate(new Date().getUTCDate() + 1)
+    )
       .toISOString()
       .split("T")[0];
 
@@ -206,21 +207,13 @@ const Home: React.FC = () => {
       (caseItem) => caseItem.status === "on_hold"
     ).length;
 
-    console.log(casesList, "casesList");
-
     // Group the cases by due date and status
     const groupedCases: Record<string, number> = casesList.reduce(
       (acc, caseItem) => {
-        // Debugging log to inspect each case
-        console.log(
-          `Processing case: ${caseItem.due_date}, Status: ${caseItem.status}`
-        );
-
         if (["in_queue", "in_progress"].includes(caseItem.status)) {
           const dueDate = new Date(caseItem.due_date)
             .toISOString()
-            .split("T")[0]; // Ensure consistent date format (YYYY-MM-DD)
-          console.log(`Due Date (formatted): ${dueDate}`);
+            .split("T")[0]; // Ensure consistent UTC date format (YYYY-MM-DD)
 
           acc[dueDate] = (acc[dueDate] || 0) + 1;
         }
@@ -230,24 +223,22 @@ const Home: React.FC = () => {
       {} as Record<string, number>
     );
 
-    console.log(groupedCases, "groupedCases");
 
     // Map the grouped cases to calendar events
     const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
-      // Parse the date string into a Date object
-      const eventDate = new Date(date);
+      const eventDate = new Date(date); // Ensure date parsing in UTC
 
-      // Extract the year, month, and day
-      const year = eventDate.getFullYear();
-      const month = eventDate.getMonth(); // Month is 0-based, so it will be 0-11
-      const day = eventDate.getDate();
+      // Extract the year, month, and day in UTC
+      const year = eventDate.getUTCFullYear();
+      const month = eventDate.getUTCMonth(); // 0-based
+      const day = eventDate.getUTCDate();
 
-      // Format the event date (for display purposes)
+      // Format the event date for display purposes
       const formattedDate = format(eventDate, "MMM dd, yyyy");
 
-      // Create the start and end Date objects based on the parsed eventDate
-      const start = new Date(year, month, day, 9, 0); // 9 AM
-      const end = new Date(year, month, day, 17, 0); // 5 PM
+      // Create the start and end Date objects based on UTC
+      const start = new Date(Date.UTC(year, month, day, 9, 0)); // 9 AM UTC
+      const end = new Date(Date.UTC(year, month, day, 17, 0)); // 5 PM UTC
 
       return {
         title: count.toString(),
