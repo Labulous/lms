@@ -23,6 +23,7 @@ import SystemSettings from "./pages/settings/system";
 import ProductCatalogSettings from "./pages/settings/product-catalog";
 import CaseWorkflowSettings from "./pages/settings/case-workflow";
 import WorkingTagsSettings from "./pages/settings/working-tags-page";
+import PrintPreview from "./pages/PrintPreview";
 
 const App: React.FC = () => {
   return (
@@ -193,6 +194,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
