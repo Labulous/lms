@@ -591,13 +591,13 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                         <TableCell>{invoice.case_number}</TableCell>
                         <TableCell>{invoice.patient_name}</TableCell>
                         <TableCell className="text-right">
-                          ${invoice.invoicesData[0].amount.toFixed(2)}
+                          ${invoice.invoicesData[0].amount  || 0}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${invoice.invoicesData[0].due_amount.toFixed(2)}
+                          ${invoice.invoicesData[0].due_amount || 0}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${(paymentAllocation[invoice.id] || 0).toFixed(2)}
+                          ${(paymentAllocation[invoice.id] || 0)}
                         </TableCell>
                         <TableCell>
                           <Checkbox

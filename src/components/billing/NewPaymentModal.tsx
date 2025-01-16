@@ -397,7 +397,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           )
         );
 
-        setInvoices(filteredCases);
+        setInvoices(filteredCases || []);
 
         // Fetch balance_tracking data for the selected client
         const { data: balanceData, error: balanceError } = await supabase
@@ -603,6 +603,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                 </TableHeader>
                 <TableBody>
                   {invoices &&
+                    invoices.length > 0 &&
                     invoices?.map((invoice) => (
                       <TableRow key={invoice.id}>
                         <TableCell>
@@ -618,13 +619,16 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
                         </TableCell>
                         <TableCell>{invoice.patient_name}</TableCell>
                         <TableCell className="text-right">
-                          ${invoice?.invoicesData[0]?.amount.toFixed(2) ?? 0}
+                          ${invoice?.invoicesData[0]?.amount ?? 0}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${invoice.invoicesData[0].due_amount.toFixed(2)}
+                          ${invoice.invoicesData[0].due_amount ?? 0}
                         </TableCell>
                         <TableCell className="text-right">
-                          ${(paymentAllocation[invoice.id] || 0).toFixed(2)}
+                          $
+                          {paymentAllocation[invoice.id] >= 0
+                            ? paymentAllocation[invoice.id]
+                            : 0}
                         </TableCell>
                         <TableCell>
                           <Checkbox
