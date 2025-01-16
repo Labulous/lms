@@ -7,9 +7,7 @@ import html2canvas from "html2canvas";
  * @param {string} fileName - The name of the downloaded PDF file.
  */
 export const generatePDF = async (
-  elementId: string,
-  fileName = "document.pdf"
-) => {
+elementId: string, fileName = "document.pdf", p0: { format: (612 | 792 | 1008 | 396)[]; orientation: string; }) => {
   try {
     // Get the HTML element by ID
     const element = document.getElementById(elementId);

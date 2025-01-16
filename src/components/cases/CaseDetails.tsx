@@ -71,8 +71,9 @@ import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
-import PrintHandler from './print/PrintHandler';
-import { PAPER_SIZES } from './print/PrintHandler';
+import { FileWithStatus } from "./wizard/steps/FilesStep";
+import PrintHandler from "./print/PrintHandler";
+import { PAPER_SIZES } from "./print/PrintHandler";
 
 interface CaseFile {
   id: string;
@@ -174,6 +175,7 @@ export interface ExtendedCase {
   custom_occlusal_details: string;
   occlusal_type: string;
   pontic_type: string;
+  attachements: string[];
   contact_type: string;
   appointment_date: string;
   instruction_notes: string | null;
@@ -191,6 +193,10 @@ export interface ExtendedCase {
     returnArticulator: number;
   };
   products: any[];
+  tag: {
+    name: string;
+    id: string;
+  };
   invoice: {
     id: string;
     case_id: string;
@@ -202,13 +208,13 @@ export interface ExtendedCase {
     notes?: string;
     items?: any;
     discount_type?: string;
-  };
+  }[];
   teethProducts?: {
     tooth_number: number[];
-    body_shade?: { name: string; };
-    gingival_shade?: { name: string; };
-    occlusal_shade?: { name: string; };
-    stump_shade_id?: { name: string; };
+    body_shade?: { name: string };
+    gingival_shade?: { name: string };
+    occlusal_shade?: { name: string };
+    stump_shade_id?: { name: string };
   }[];
 }
 
@@ -254,8 +260,10 @@ const CaseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
-  const [selectedPaperSize, setSelectedPaperSize] = useState<keyof typeof PAPER_SIZES>('LETTER');
+  const [selectedPaperSize, setSelectedPaperSize] =
+    useState<keyof typeof PAPER_SIZES>("LETTER");
 
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
@@ -299,6 +307,7 @@ const CaseDetails: React.FC = () => {
          started_at,
          completed_at,
          issue_reported_at,
+         attachements,
          custom_workstation_type,
          started_notes,
          completed_notes,
@@ -369,6 +378,7 @@ const CaseDetails: React.FC = () => {
                 name: item.created_by.name,
               },
               isEditOn: false,
+              files: item.attachements,
             };
           }),
         ];
@@ -424,6 +434,7 @@ const CaseDetails: React.FC = () => {
               status,
               patient_name,
               due_date,
+              attachements,
               case_number,
               invoice:invoices!case_id (
                 id,
@@ -501,14 +512,14 @@ const CaseDetails: React.FC = () => {
           setError("Case not found");
           return;
         }
-
-        setCaseDetail(caseData);
+        let caseDataApi: any = caseData;
+        setCaseDetail(caseDataApi);
         getWorkStationDetails(caseData?.created_at);
 
         if (caseData.product_ids?.[0]?.products_id) {
           const productsIdArray = caseData.product_ids[0].products_id;
           const caseProductId = caseData.product_ids[0].id;
-          
+
           // Fetch products
           if (productsIdArray?.length > 0) {
             const { data: productData, error: productsError } = await supabase
@@ -551,33 +562,38 @@ const CaseDetails: React.FC = () => {
             }
 
             // Fetch discounted prices
-            const { data: discountedPriceData, error: discountedPriceError } = await supabase
-              .from("discounted_price")
-              .select(
-                `
+            const { data: discountedPriceData, error: discountedPriceError } =
+              await supabase
+                .from("discounted_price")
+                .select(
+                  `
                   product_id,
                   discount,
                   final_price,
                   price,
                   quantity
                 `
-              )
-              .in("product_id", productsIdArray)
-              .eq("case_id", caseId);
+                )
+                .in("product_id", productsIdArray)
+                .eq("case_id", caseId);
 
             if (discountedPriceError) {
-              console.error("Error fetching discounted prices:", discountedPriceError);
+              console.error(
+                "Error fetching discounted prices:",
+                discountedPriceError
+              );
               setError(discountedPriceError.message);
               return;
             }
 
             // Fetch teeth products if case product ID exists
-            let teethProducts = [];
+            let teethProducts: any = [];
             if (caseProductId) {
-              const { data: teethProductData, error: teethProductsError } = await supabase
-                .from("case_product_teeth")
-                .select(
-                  `
+              const { data: teethProductData, error: teethProductsError } =
+                await supabase
+                  .from("case_product_teeth")
+                  .select(
+                    `
                     is_range,
                     occlusal_shade:shade_options!occlusal_shade_id (
                       name,
@@ -608,8 +624,8 @@ const CaseDetails: React.FC = () => {
                     custom_stump_shade,
                     type
                   `
-                )
-                .eq("case_product_id", caseProductId);
+                  )
+                  .eq("case_product_id", caseProductId);
 
               if (teethProductsError) {
                 setError(teethProductsError.message);
@@ -621,7 +637,8 @@ const CaseDetails: React.FC = () => {
             // Combine all product data
             const productsWithDiscounts = productData.map((product: any) => {
               const discountedPrice = discountedPriceData.find(
-                (discount: { product_id: string }) => discount.product_id === product.id
+                (discount: { product_id: string }) =>
+                  discount.product_id === product.id
               );
               const productTeeth = teethProducts.find(
                 (teeth: any) => teeth.product_id === product.id
@@ -639,7 +656,6 @@ const CaseDetails: React.FC = () => {
             });
           }
         }
-
       } catch (error) {
         console.error("Error fetching case data:", error);
         toast.error("Failed to load case details");
@@ -677,13 +693,13 @@ const CaseDetails: React.FC = () => {
         doctor: caseDetail.doctor,
         created_at: caseDetail.created_at,
         due_date: caseDetail.due_date,
-        tag: caseDetail.tag
-      }
+        tag: caseDetail.tag,
+      },
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
     const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
-    window.open(previewUrl, '_blank');
+    window.open(previewUrl, "_blank");
   };
 
   if (loading) {
@@ -771,6 +787,7 @@ const CaseDetails: React.FC = () => {
       custom_workstation_type: workstationForm.custom_workstation_type
         ? workstationForm.custom_workstation_type
         : null, // Optional field
+      attachements: selectedFiles.map((item) => item.url),
     };
     setWorkstationLoading(true);
     try {
@@ -850,7 +867,9 @@ const CaseDetails: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
                     <span className="text-sm font-medium text-primary">
-                      {caseDetail?.invoice_number || "N/A"}
+                      {caseDetail?.invoice.length > 0
+                        ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                        : "N/A"}
                     </span>
                   </div>
                 </div>
@@ -904,30 +923,42 @@ const CaseDetails: React.FC = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger>Paper Size</DropdownMenuSubTrigger>
+                      <DropdownMenuSubTrigger>
+                        Paper Size
+                      </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent>
-                        <DropdownMenuItem onSelect={() => setSelectedPaperSize('LETTER')}>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LETTER")}
+                        >
                           Letter (8.5 x 11")
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setSelectedPaperSize('LEGAL')}>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LEGAL")}
+                        >
                           Legal (8.5 x 14")
                         </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setSelectedPaperSize('HALF')}>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("HALF")}
+                        >
                           Half (5.5 x 8.5")
                         </DropdownMenuItem>
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => handlePrint('qr-code')}>
+                    <DropdownMenuItem onSelect={() => handlePrint("qr-code")}>
                       QR Code Label
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handlePrint('lab-slip')}>
+                    <DropdownMenuItem onSelect={() => handlePrint("lab-slip")}>
                       Lab Slip
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handlePrint('address-label')}>
+                    <DropdownMenuItem
+                      onSelect={() => handlePrint("address-label")}
+                    >
                       Address Label
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handlePrint('patient-label')}>
+                    <DropdownMenuItem
+                      onSelect={() => handlePrint("patient-label")}
+                    >
                       Patient Label
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -972,7 +1003,9 @@ const CaseDetails: React.FC = () => {
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Ship Date</span>
                   <span className="text-xs font-medium">
-                    {caseDetail.ship_date ? formatDate(caseDetail.ship_date) : "Not Shipped"}
+                    {caseDetail.ship_date
+                      ? formatDate(caseDetail.ship_date)
+                      : "Not Shipped"}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -1013,6 +1046,8 @@ const CaseDetails: React.FC = () => {
                     getWorkStationDetails={getWorkStationDetails}
                     caseId={caseId as string}
                     caseCreatedAt={caseDetail.created_at}
+                    selectedFiles={selectedFiles}
+                    setSelectedFiles={setSelectedFiles}
                   />
                 )}
               </CardContent>
@@ -1495,68 +1530,74 @@ const CaseDetails: React.FC = () => {
                   ) : null}
                 </div>
 
-                {caseDetail.teethProducts?.map((product: { 
-                  tooth_number: number[]; 
-                  body_shade?: { name: string; };
-                  gingival_shade?: { name: string; };
-                  occlusal_shade?: { name: string; };
-                  stump_shade_id?: { name: string; };
-                }, index: number) => (
-                  <div
-                    key={index}
-                    className="border-b last:border-b-0 pb-4 mb-4"
-                  >
-                    <div>
-                      <h3 className="text-lg font-medium mb-2 flex items-center">
-                        <CircleDot className="mr-2" size={16} /> Selected Teeth
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 p-3 rounded">
-                          <p className="font-medium mb-2">
-                            Tooth #
-                            {product.tooth_number.length > 1
-                              ? product.tooth_number
-                                  .map((i) => `${i}`)
-                                  .join(", ")
-                              : product.tooth_number[0]}
-                          </p>
-                          <div className="text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Body Shade:
-                              </span>
-                              <span>{product.body_shade?.name || "N/A"}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Gingival Shade:
-                              </span>
-                              <span>
-                                {product.gingival_shade?.name || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Occlusal Shade:
-                              </span>
-                              <span>
-                                {product.occlusal_shade?.name || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Stump Shade:
-                              </span>
-                              <span>
-                                {product.stump_shade_id?.name || "N/A"}
-                              </span>
+                {caseDetail.teethProducts?.map(
+                  (
+                    product: {
+                      tooth_number: number[];
+                      body_shade?: { name: string };
+                      gingival_shade?: { name: string };
+                      occlusal_shade?: { name: string };
+                      stump_shade_id?: { name: string };
+                    },
+                    index: number
+                  ) => (
+                    <div
+                      key={index}
+                      className="border-b last:border-b-0 pb-4 mb-4"
+                    >
+                      <div>
+                        <h3 className="text-lg font-medium mb-2 flex items-center">
+                          <CircleDot className="mr-2" size={16} /> Selected
+                          Teeth
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div className="bg-gray-50 p-3 rounded">
+                            <p className="font-medium mb-2">
+                              Tooth #
+                              {product.tooth_number.length > 1
+                                ? product.tooth_number
+                                    .map((i) => `${i}`)
+                                    .join(", ")
+                                : product.tooth_number[0]}
+                            </p>
+                            <div className="text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Body Shade:
+                                </span>
+                                <span>{product.body_shade?.name || "N/A"}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Gingival Shade:
+                                </span>
+                                <span>
+                                  {product.gingival_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Occlusal Shade:
+                                </span>
+                                <span>
+                                  {product.occlusal_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Stump Shade:
+                                </span>
+                                <span>
+                                  {product.stump_shade_id?.name || "N/A"}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1762,16 +1803,27 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Attachments</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {/* {caseDetail.case_files?.length || 0} */}
+                            {caseDetail?.attachements?.length ?? 0}
                           </span>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                      <p className="text-sm text-gray-500">
-                        Files and photos will be implemented when DB is
-                        connected
-                      </p>
+                      <p className="text-sm text-gray-500">Files and photos</p>
+
+                      <div className="flex flex-col gap-2">
+                        {caseDetail?.attachements?.map((item) => {
+                          return (
+                            <img
+                              src={item}
+                              height={200}
+                              width={200}
+                              alt="attachement"
+                              className="p-2 border rounded-md"
+                            />
+                          );
+                        })}
+                      </div>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>
@@ -1790,11 +1842,11 @@ const CaseDetails: React.FC = () => {
           }}
           formData={{
             clientId: caseDetail.client?.id,
-            items: caseDetail.invoice?.items || [],
-            discount: caseDetail.invoice?.discount || 0,
-            discountType: caseDetail.invoice?.discount_type || "percentage",
-            tax: caseDetail.invoice?.tax || 0,
-            notes: caseDetail.invoice?.notes || "",
+            items: caseDetail.invoice?.[0].items || [],
+            discount: caseDetail.invoice?.[0].discount || 0,
+            discountType: caseDetail.invoice?.[0].discount_type || "percentage",
+            tax: caseDetail.invoice?.[0].tax || 0,
+            notes: caseDetail.invoice?.[0].notes || "",
           }}
         />
       )}
@@ -1811,7 +1863,7 @@ const CaseDetails: React.FC = () => {
             doctor: caseDetail.doctor,
             created_at: caseDetail.created_at,
             due_date: caseDetail.due_date,
-            tag: caseDetail.tag
+            // tag: caseDetail.tag,
           }}
           onComplete={() => setActivePrintType(null)}
         />

@@ -6,7 +6,7 @@ import OrderDetailsStep from "./steps/OrderDetailsStep";
 import ProductsServicesStep from "./steps/ProductsServicesStep";
 import FilesStep from "./steps/FilesStep";
 import NotesStep from "./steps/NotesStep";
-import { CaseStatus, DeliveryMethod } from "@/types/supabase";
+import { CaseStatus } from "@/types/supabase";
 import { Client, clientsService } from "../../../services/clientsService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -14,6 +14,7 @@ import { useAuth } from "../../../contexts/AuthContext";
 import { createLogger } from "../../../utils/logger";
 import { SavedProduct } from "./modals/AddProductModal";
 import { getLabIdByUserId } from "@/services/authService";
+import { DeliveryMethod } from "@/data/mockCasesData";
 
 const logger = createLogger({ module: "CaseWizard" });
 
@@ -285,6 +286,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
             onChange={(items: any) =>
               setFormData({ ...formData, enclosedItems: items })
             }
+            storage="cases"
           />
         );
       case "notes":

@@ -148,11 +148,23 @@ const saveCaseProduct = async (
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
       quantity: product.quantity || 1,
+      occlusal_shade_id:
+        product.shades.occlusal_shade === "custom"
+          ? null
+          : product.shades.occlusal_shade || null,
+      body_shade_id:
+        product.shades.body_shade === "custom" ? null : product.shades.body_shade || null,
+      gingival_shade_id:
+        product.shades.gingival_shade === "custom"
+          ? null
+          : product.shades.gingival_shade || null,
+      stump_shade_id:
+        product.shades.stump_shade === "custom" ? null : product.shades.stump_shade || null,
+      custom_body_shade: product?.shades.custom_body || null,
+      custom_occlusal_shade: product?.shades.custom_occlusal || null,
+      custom_gingival_shade: product?.shades.custon_gingival || null,
+      custom_stump_shade: product?.shades.custom_stump || null,
       notes: product.notes || "",
-      occlusal_shade_id: product.shades.occlusal === "custom" ? product.teethProduct?.custom_occlusal_shade : product.shades.occlusal,
-      body_shade_id: product.shades.body === "custom" ? product.teethProduct?.custom_body_shade : product.shades.body,
-      gingival_shade_id: product.shades.gingival === "custom" ? product.teethProduct?.custom_gingival_shade : product.shades.gingival,
-      stump_shade_id: product.shades.stump === "custom" ? product.teethProduct?.custom_stump_shade : product.shades.stump
     }));
 
     // Calculate discounted prices for products
@@ -473,10 +485,22 @@ const updateCases = async (
       quantity: product.quantity || 1,
       notes: product.notes || "",
       tooth_number: product.teeth || "",
-      occlusal_shade_id: product.shades.occlusal === "custom" ? product.teethProduct?.custom_occlusal_shade : product.shades.occlusal,
-      body_shade_id: product.shades.body === "custom" ? product.teethProduct?.custom_body_shade : product.shades.body,
-      gingival_shade_id: product.shades.gingival === "custom" ? product.teethProduct?.custom_gingival_shade : product.shades.gingival,
-      stump_shade_id: product.shades.stump === "custom" ? product.teethProduct?.custom_stump_shade : product.shades.stump
+      occlusal_shade_id:
+      product.shades.occlusal_shade === "custom"
+        ? null
+        : product.shades.occlusal_shade || null,
+    body_shade_id:
+      product.shades.body_shade === "custom" ? null : product.shades.body_shade || null,
+    gingival_shade_id:
+      product.shades.gingival_shade === "custom"
+        ? null
+        : product.shades.gingival_shade || null,
+    stump_shade_id:
+      product.shades.stump_shade === "custom" ? null : product.shades.stump_shade || null,
+    custom_body_shade: product?.shades.custom_body || null,
+    custom_occlusal_shade: product?.shades.custom_occlusal || null,
+    custom_gingival_shade: product?.shades.custom_gingival || null,
+    custom_stump_shade: product?.shades.custom_stump || null,
     }));
 
     // Step to check if rows exist for product_id before inserting

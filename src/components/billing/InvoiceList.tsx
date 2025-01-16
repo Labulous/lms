@@ -75,7 +75,7 @@ import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
 import { DiscountedPrice } from "@/types/supabase";
 import jsPDF from "jspdf";
-import { generatePDF } from "@/lib/generatePdf";
+// import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
   key: keyof Invoice;
@@ -184,7 +184,10 @@ const InvoiceList: React.FC = () => {
                 phone
               )
             ),
-            pan_tag,
+            tag:working_tags!pan_tag_id (
+                name,
+                color
+              ),
             rx_number,
             isDueDateTBD,
             appointment_date,
@@ -192,7 +195,6 @@ const InvoiceList: React.FC = () => {
             otherItems,
             lab_notes,
             invoice_notes,
-            technician_notes,
             occlusal_type,
             contact_type,
             pontic_type,
@@ -1046,7 +1048,7 @@ const InvoiceList: React.FC = () => {
   };
 
   const handlePrintInvoice = () => {
-    generatePDF("elementId", "MyDocument.pdf");
+    // generatePDF("elementId", "MyDocument.pdf");
   };
 
   return (
