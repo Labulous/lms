@@ -173,12 +173,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin", "super_admin"],
     },
     {
-      icon: FileText,
-      label: "Generate an Invoice",
-      href: "/invoices/new",
-      roles: ["admin", "super_admin"],
-    },
-    {
       icon: Package,
       label: "Add an Inventory Item",
       href: "/inventory/add",
