@@ -76,6 +76,7 @@ import { FileWithStatus } from "./wizard/steps/FilesStep";
 import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
 import OnHoldModal from "./wizard/modals/OnHoldModal";
+import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
 
 interface CaseFile {
   id: string;
@@ -272,6 +273,7 @@ const CaseDetails: React.FC = () => {
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
+  const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -1067,8 +1069,17 @@ const CaseDetails: React.FC = () => {
                     <DropdownMenuItem>Cancel Case</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={() => handleCaseComplete()} size="sm">
-                  Complete
+                <Button
+                  onClick={() =>
+                    caseDetail.status === "completed"
+                      ? setIsScheduleModal(true)
+                      : handleCaseComplete()
+                  }
+                  size="sm"
+                >
+                  {caseDetail.status === "completed"
+                    ? "Schedule Delivery"
+                    : "Complete"}
                 </Button>
               </div>
 
@@ -1959,10 +1970,13 @@ const CaseDetails: React.FC = () => {
       {onHoldModal && (
         <OnHoldModal
           onClose={() => setOnHoldModal(false)}
-          onHoldReason={""}
+          onHoldReason={onHoldReason}
           setOnHoldReason={setOnHoldReason}
           handleUpdateCaseStatus={handleUpdateCaseStatus}
         />
+      )}
+      {isScheduleModal && (
+        <ScheduleDelivery onClose={() => setIsScheduleModal(false)} />
       )}
     </div>
   );
