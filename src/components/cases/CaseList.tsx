@@ -129,18 +129,19 @@ type Case = {
 };
 
 const CaseList: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState<Case[]>([]);
   const [filteredCases, setFilteredCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const [selectedRows, setSelectedRows] = useState<Row<Case>[]>([]);
+  const [labId, setLabId] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [labId, setLabId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(() => {
     const statusParam = searchParams.get('status');
     return statusParam ? statusParam.split(',') as CaseStatus[] : [];
@@ -847,7 +848,7 @@ const CaseList: React.FC = () => {
     } else {
       setFilteredCases(cases);
     }
-  }, [filter, cases]);
+  }, [searchParams, cases]);
 
   const handlePrint = (selectedRows: Row<Case>[]) => {
     console.log("Printing selected rows:", selectedRows);

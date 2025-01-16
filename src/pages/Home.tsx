@@ -301,11 +301,11 @@ const Home: React.FC = () => {
             {keyMetrics.map((metric, index) => (
               <div
                 key={index}
-                className="bg-white p-4 rounded-lg shadow flex items-center space-x-4 cursor-pointer"
+                className="bg-white p-4 rounded-lg shadow flex items-center space-x-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 hover:bg-gray-50"
                 onClick={metric.onClick}
               >
                 <div
-                  className={`p-3 rounded-full ${metric.color} bg-opacity-10 flex items-center justify-center`}
+                  className={`p-3 rounded-full ${metric.color} bg-opacity-10 flex items-center justify-center transition-all duration-200 group-hover:bg-opacity-20`}
                 >
                   <metric.icon
                     className={`w-6 h-6 ${metric.color.replace(
