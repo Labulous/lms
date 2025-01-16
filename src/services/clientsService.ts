@@ -120,12 +120,13 @@ class ClientsService {
       contact_name: client.contactName,
       phone: client.phone,
       email: client.email,
-      street: client.address.street,
-      city: client.address.city,
-      state: client.address.state,
-      zip_code: client.address.zipCode,
+      street: client.address?.street,
+      city: client.address?.city,
+      state: client.address?.state,
+      zip_code: client.address?.zipCode,
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
+      account_number: client.accountNumber, // Keep the account number when updating
     };
   }
 
@@ -366,13 +367,7 @@ class ClientsService {
 
   async updateClient(id: string, clientData: ClientInput): Promise<Client> {
     try {
-      if (
-        clientData &&
-        !validateAccountNumber(clientData.accountNumber as string)
-      ) {
-        throw new Error("Invalid account number format");
-      }
-
+      // First, update the client data
       const { error: clientError } = await supabase
         .from("clients")
         .update(this.transformClientToDB(clientData) as any)
@@ -380,35 +375,87 @@ class ClientsService {
 
       if (clientError) throw clientError;
 
-      if (clientData.doctors) {
-        const { error: deleteError } = await supabase
+      // Only update doctors if the doctors array is explicitly provided
+      if (clientData.doctors !== undefined) {
+        // Get current doctors to check if we need to update
+        const { data: currentDoctors, error: fetchError } = await supabase
           .from("doctors")
-          .delete()
+          .select("*")
           .eq("client_id", id);
 
-        if (deleteError) throw deleteError;
+        if (fetchError) {
+          logger.error("Error fetching current doctors", { fetchError });
+          throw fetchError;
+        }
 
-        if (clientData.doctors.length > 0) {
-          const { error: doctorsError } = await supabase.from("doctors").insert(
-            clientData.doctors.map(
-              (doctor) =>
-                ({
+        // Compare current doctors with new doctors to see if we need to update
+        const currentDoctorsSet = new Set(
+          currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+        );
+        const newDoctorsSet = new Set(
+          clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+        );
+
+        // Only update if there are actual changes
+        if (currentDoctors.length !== clientData.doctors.length || 
+            ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
+          
+          // First try to update existing doctors instead of deleting
+          for (let i = 0; i < clientData.doctors.length; i++) {
+            const doctor = clientData.doctors[i];
+            const currentDoctor = currentDoctors[i];
+            
+            if (currentDoctor) {
+              // Update existing doctor
+              const { error: updateError } = await supabase
+                .from("doctors")
+                .update({
                   ...this.transformDoctorToDB(doctor),
                   client_id: id,
-                } as any)
-            )
-          );
+                })
+                .eq("id", currentDoctor.id);
 
-          if (doctorsError) throw doctorsError;
+              if (updateError) {
+                logger.error("Error updating doctor", { updateError, doctor });
+                throw updateError;
+              }
+            } else {
+              // Insert new doctor
+              const { error: insertError } = await supabase
+                .from("doctors")
+                .insert({
+                  ...this.transformDoctorToDB(doctor),
+                  client_id: id,
+                });
+
+              if (insertError) {
+                logger.error("Error inserting doctor", { insertError, doctor });
+                throw insertError;
+              }
+            }
+          }
+
+          // Remove any excess doctors
+          if (currentDoctors.length > clientData.doctors.length) {
+            const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
+            const { error: deleteError } = await supabase
+              .from("doctors")
+              .delete()
+              .eq("client_id", id)
+              .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
+
+            if (deleteError) {
+              logger.error("Error removing excess doctors", { deleteError });
+              throw deleteError;
+            }
+          }
         }
       }
 
-      const updatedClient = await this.getClientById(id);
-      if (!updatedClient) throw new Error("Failed to fetch updated client");
-
-      return updatedClient;
+      // Return the updated client
+      return this.getClientById(id) as Promise<Client>;
     } catch (error) {
-      logger.error("Error updating client", { id, error });
+      logger.error("Error updating client", { error });
       throw error;
     }
   }

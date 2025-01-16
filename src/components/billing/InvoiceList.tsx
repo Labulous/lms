@@ -620,7 +620,7 @@ const InvoiceList: React.FC = () => {
 
   useEffect(() => {
     const completedCaseInvoices = mockInvoices.filter(
-      (invoice) => invoice?.case?.caseStatus === "completed"
+      (invoice) => invoice?.case?.status === "completed"
     );
     setInvoices(completedCaseInvoices);
     setFilteredInvoices(completedCaseInvoices);

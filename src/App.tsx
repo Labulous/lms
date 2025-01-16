@@ -12,7 +12,6 @@ import Reports from "./pages/Reports";
 import Inventory from "./pages/Inventory";
 import Login from "./pages/Login";
 import Layout from "./components/layout/Layout";
-import ClientActivity from "./pages/ClientActivity";
 import ProductsServices from "./pages/settings/ProductsServices";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Invoices from "./pages/billing/Invoices";
@@ -24,6 +23,7 @@ import SystemSettings from "./pages/settings/system";
 import ProductCatalogSettings from "./pages/settings/product-catalog";
 import CaseWorkflowSettings from "./pages/settings/case-workflow";
 import WorkingTagsSettings from "./pages/settings/working-tags-page";
+import PrintPreview from "./pages/PrintPreview";
 
 const App: React.FC = () => {
   return (
@@ -72,16 +72,6 @@ const App: React.FC = () => {
               >
                 <Layout>
                   <Clients />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/client-activity"
-            element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
-                <Layout>
-                  <ClientActivity />
                 </Layout>
               </ProtectedRoute>
             }
@@ -204,6 +194,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>

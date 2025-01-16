@@ -15,6 +15,8 @@ import {
 } from "../ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import ClientAccountInfo from "./ClientAccountInfo";
+import ClientSalesActivity from "./ClientSalesActivity";
+import { ClientCaseActivity } from "./ClientCaseActivity";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -144,7 +146,7 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
           <TabsTrigger value="client-information">
             Client Information
           </TabsTrigger>
-          <TabsTrigger value="case-information">Case Activity</TabsTrigger>
+          <TabsTrigger value="case-activity">Case Activity</TabsTrigger>
           <TabsTrigger value="invoice">Billing</TabsTrigger>
           <TabsTrigger value="sales-activity">Sales Activity</TabsTrigger>
         </TabsList>
@@ -152,38 +154,27 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
         <TabsContent value="client-information">
           <ClientAccountInfo
             client={client}
-            isEditing={isEditing}
-            editedData={editedData}
-            setEditedData={setEditedData}
             onEdit={onEdit}
             onDelete={onDelete}
+            isEditing={isEditing}
             setIsEditing={setIsEditing}
+            editedData={editedData}
+            setEditedData={setEditedData}
           />
         </TabsContent>
 
-        <TabsContent value="case-information">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold">Case Information</h2>
-            <p className="text-gray-500">
-              Case information content coming soon...
-            </p>
-          </div>
+        <TabsContent value="case-activity">
+          <ClientCaseActivity clientId={client.id} />
         </TabsContent>
 
         <TabsContent value="invoice">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold">Invoice</h2>
-            <p className="text-gray-500">Invoice content coming soon...</p>
+          <div className="text-center py-8 text-gray-500">
+            Billing information coming soon
           </div>
         </TabsContent>
 
         <TabsContent value="sales-activity">
-          <div className="p-4">
-            <h2 className="text-lg font-semibold">Sales Activity</h2>
-            <p className="text-gray-500">
-              Sales activity content coming soon...
-            </p>
-          </div>
+          <ClientSalesActivity clientId={client.id} />
         </TabsContent>
       </Tabs>
     </div>

@@ -29,7 +29,6 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
     if (path.startsWith("/cases")) return "Cases";
     if (path.startsWith("/shipping")) return "Shipping";
     if (path.startsWith("/clients")) return "Clients";
-    if (path.startsWith("/client-activity")) return "Client Activity";
     if (path.startsWith("/billing")) return "Billing";
     if (path.startsWith("/reports")) return "Reports";
     if (path.startsWith("/inventory")) return "Inventory";

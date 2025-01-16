@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Clock,
@@ -28,35 +29,61 @@ export interface CalendarEvents {
   end: Date;
 }
 
-const initialKeyMetrics = [
-  {
-    icon: AlertTriangle,
-    label: "Cases Past Due",
-    value: 0,
-    color: "bg-red-500",
-  },
-  { icon: Package, label: "Cases Due Today", value: 0, color: "bg-blue-500" },
-  {
-    icon: Clock,
-    label: "Cases Due Tomorrow",
-    value: 0,
-    color: "bg-green-400",
-  },
-  {
-    icon: PauseCircle,
-    label: "Cases On Hold",
-    value: 0,
-    color: "bg-yellow-500",
-  },
-];
-
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+
+  const handleCardClick = (filterType: string) => {
+    switch (filterType) {
+      case "past_due":
+        navigate("/cases?filter=past_due");
+        break;
+      case "due_today":
+        navigate("/cases?filter=due_today");
+        break;
+      case "due_tomorrow":
+        navigate("/cases?filter=due_tomorrow");
+        break;
+      case "on_hold":
+        navigate("/cases?filter=on_hold");
+        break;
+    }
+  };
+
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [cases, setCases] = useState<Case[]>([]);
   const [casesList, setCasesList] = useState<CasesDues[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [greeting, setGreeting] = useState("");
-  const [keyMetrics, setKeyMetrics] = useState(initialKeyMetrics);
+  const [keyMetrics, setKeyMetrics] = useState([
+    {
+      icon: AlertTriangle,
+      label: "Cases Past Due",
+      value: 0,
+      color: "bg-red-500",
+      onClick: () => handleCardClick("past_due"),
+    },
+    {
+      icon: Package,
+      label: "Cases Due Today",
+      value: 0,
+      color: "bg-blue-500",
+      onClick: () => handleCardClick("due_today"),
+    },
+    {
+      icon: Clock,
+      label: "Cases Due Tomorrow",
+      value: 0,
+      color: "bg-green-400",
+      onClick: () => handleCardClick("due_tomorrow"),
+    },
+    {
+      icon: PauseCircle,
+      label: "Cases On Hold",
+      value: 0,
+      color: "bg-yellow-500",
+      onClick: () => handleCardClick("on_hold"),
+    },
+  ]);
   const [casesEvents, setCasesEvents] = useState<CalendarEvents[]>([]);
   const [activeTab, setActiveTab] = useState("operations");
   const { user } = useAuth();
@@ -237,24 +264,28 @@ const Home: React.FC = () => {
         label: "Cases Past Due",
         value: pastDue,
         color: "bg-red-500",
+        onClick: () => handleCardClick("past_due"),
       },
       {
         icon: Package,
         label: "Cases Due Today",
         value: dueToday,
         color: "bg-blue-500",
+        onClick: () => handleCardClick("due_today"),
       },
       {
         icon: Clock,
         label: "Cases Due Tomorrow",
         value: dueTomorrow,
         color: "bg-green-400",
+        onClick: () => handleCardClick("due_tomorrow"),
       },
       {
         icon: PauseCircle,
         label: "Cases On Hold",
         value: onHold,
         color: "bg-yellow-500",
+        onClick: () => handleCardClick("on_hold"),
       },
     ]);
 
@@ -294,10 +325,11 @@ const Home: React.FC = () => {
             {keyMetrics.map((metric, index) => (
               <div
                 key={index}
-                className="bg-white p-4 rounded-lg shadow flex items-center space-x-4"
+                className="bg-white p-4 rounded-lg shadow flex items-center space-x-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-105 hover:bg-gray-50"
+                onClick={metric.onClick}
               >
                 <div
-                  className={`p-3 rounded-full ${metric.color} bg-opacity-10 flex items-center justify-center`}
+                  className={`p-3 rounded-full ${metric.color} bg-opacity-10 flex items-center justify-center transition-all duration-200 group-hover:bg-opacity-20`}
                 >
                   <metric.icon
                     className={`w-6 h-6 ${metric.color.replace(

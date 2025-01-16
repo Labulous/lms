@@ -129,12 +129,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin", "super_admin", "technician"],
     },
     {
-      icon: Activity,
-      label: "Client Activity",
-      href: "/client-activity",
-      roles: ["admin", "super_admin"],
-    },
-    {
       icon: DollarSign,
       label: "Billing",
       href: "/billing",

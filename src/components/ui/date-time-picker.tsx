@@ -247,6 +247,7 @@ export function DateTimePicker({
       newDate.setMinutes(minutes);
       setSelectedDate(newDate);
       onSelect?.(newDate);
+      setIsOpen(false); // Close the picker after time selection
     }
   };
 

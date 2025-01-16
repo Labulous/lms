@@ -1,11 +1,38 @@
 import React, { Dispatch, SetStateAction } from "react";
 import {
-  Address,
   Client,
   ClientInput,
   Doctor,
 } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import {
+  Pencil,
+  Trash2,
+  Save,
+  X,
+  UserPlus,
+  UserMinus,
+  Phone,
+  Mail,
+  Building,
+  MapPin,
+  User,
+  FileText,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ClientAccountInfoProps {
   client: Client;
@@ -27,8 +54,28 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   setIsEditing,
 }) => {
   const handleEditClick = () => {
-    const { id, accountNumber, created_at, updated_at, ...clientData } = client;
-    setEditedData(clientData);
+    // Initialize editedData with all current client data
+    setEditedData({
+      accountNumber: client.accountNumber,
+      clientName: client.clientName,
+      contactName: client.contactName,
+      phone: client.phone,
+      email: client.email,
+      address: {
+        street: client.address.street,
+        city: client.address.city,
+        state: client.address.state,
+        zipCode: client.address.zipCode,
+      },
+      clinicRegistrationNumber: client.clinicRegistrationNumber,
+      notes: client.notes ?? "",
+      doctors: client.doctors.map(doctor => ({
+        name: doctor.name,
+        email: doctor.email,
+        phone: doctor.phone,
+        notes: doctor.notes ?? "",
+      })),
+    });
     setIsEditing(true);
   };
 
@@ -121,270 +168,308 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     setEditedData(null);
   };
 
-  const renderField = (
-    label: string,
-    name: keyof ClientInput,
-    value: string
-  ) => {
-    if (name === ("accountNumber" as keyof ClientInput)) {
-      return isEditing ? (
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2">
-            {label}
-          </label>
-          <input
-            type="text"
-            value={client.accountNumber}
-            disabled
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded text-gray-500 cursor-not-allowed"
-          />
-        </div>
-      ) : (
-        <div className="mb-4">
-          <span className="block text-gray-700 text-sm font-bold mb-2">
-            {label}
-          </span>
-          <span className="text-gray-700">{client.accountNumber}</span>
-        </div>
-      );
-    }
-
-    return isEditing ? (
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">
-          {label}
-        </label>
-        <input
-          type="text"
-          name={name}
-          value={(editedData?.[name] as keyof Client) || ""}
-          onChange={handleInputChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        />
-      </div>
-    ) : (
-      <div className="mb-4">
-        <span className="block text-gray-700 text-sm font-bold mb-2">
-          {label}
-        </span>
-        <span className="text-gray-700">{value}</span>
-      </div>
-    );
-  };
-
-  const renderAddressField = (
-    label: string,
-    field: keyof Address,
-    value: string
-  ) => {
-    // Check if editedData and address are defined
-    return isEditing ? (
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2">
-          {label}
-        </label>
-        <input
-          type="text"
-          name={`address.${field}`}
-          value={editedData?.address?.[field] || ""} // Correct dynamic property access
-          onChange={handleInputChange}
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        />
-      </div>
-    ) : (
-      <div className="mb-4">
-        <span className="block text-gray-700 text-sm font-bold mb-2">
-          {label}
-        </span>
-        <span className="text-gray-700">{value}</span>
-      </div>
-    );
-  };
-
   return (
-    <div className="bg-white rounded-lg p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Account Details</h2>
-        <div className="space-x-2">
-          {!isEditing ? (
-            <>
-              <button
-                onClick={handleEditClick}
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Edit
-              </button>
-              <button
-                onClick={onDelete}
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Delete
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleSave}
-                className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Save
-              </button>
-              <button
-                onClick={handleCancel}
-                className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Cancel
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          {renderField(
-            "Account Number",
-            "accountNumber" as keyof ClientInput,
-            client.accountNumber
-          )}
-          {renderField("Client Name", "clientName", client.clientName)}
-          {renderField("Contact Name", "contactName", client.contactName)}
-          {renderField("Phone", "phone", client.phone)}
-          {renderField("Email", "email", client.email)}
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Address</h3>
-          {renderAddressField("Street", "street", client.address.street)}
-          {renderAddressField("City", "city", client.address.city)}
-          {renderAddressField("State", "state", client.address.state)}
-          {renderAddressField("Zip Code", "zipCode", client.address.zipCode)}
-        </div>
-      </div>
-
-      <div className="mt-6">
-        {renderField(
-          "Clinic Registration Number",
-          "clinicRegistrationNumber",
-          client.clinicRegistrationNumber
-        )}
-        {renderField("Notes", "notes", client.notes || "")}
-      </div>
-
-      {/* Doctors Section */}
-      <div className="mt-8">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Doctors</h3>
-          {isEditing && (
-            <button
-              onClick={addDoctor}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm"
-            >
-              Add Doctor
-            </button>
-          )}
-        </div>
-        {!client.doctors || client.doctors.length === 0 ? (
-          <p className="text-gray-500">No doctors assigned</p>
-        ) : (
-          <div className="space-y-4">
-            {(isEditing ? editedData?.doctors : client.doctors)?.map(
-              (doctor, index) => (
-                <div key={index} className="border rounded-lg p-4 bg-gray-50">
-                  {isEditing ? (
-                    <>
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="font-medium">Doctor #{index + 1}</h4>
-                        <button
-                          onClick={() => removeDoctor(index)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Name
-                          </label>
-                          <input
-                            type="text"
-                            value={doctor.name}
-                            onChange={(e) =>
-                              handleDoctorChange(index, "name", e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            value={doctor.email}
-                            onChange={(e) =>
-                              handleDoctorChange(index, "email", e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Phone
-                          </label>
-                          <input
-                            type="tel"
-                            value={doctor.phone}
-                            onChange={(e) =>
-                              handleDoctorChange(index, "phone", e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">
-                            Notes
-                          </label>
-                          <input
-                            type="text"
-                            value={doctor.notes || ""}
-                            onChange={(e) =>
-                              handleDoctorChange(index, "notes", e.target.value)
-                            }
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div>
-                      <h4 className="font-medium text-lg mb-2">
-                        {doctor.name}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium">Email:</span>{" "}
-                          {doctor.email}
-                        </div>
-                        <div>
-                          <span className="font-medium">Phone:</span>{" "}
-                          {doctor.phone}
-                        </div>
-                        {doctor.notes && (
-                          <div className="col-span-2">
-                            <span className="font-medium">Notes:</span>{" "}
-                            {doctor.notes}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div className="space-y-1">
+            <CardTitle className="text-xl font-semibold">
+              Account Details
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline">
+                      Last Updated: {client.updated_at ? format(new Date(client.updated_at), "PPp") : "N/A"}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Created: {client.created_at ? format(new Date(client.created_at), "PPp") : "N/A"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
+          <div className="space-x-2">
+            {!isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditClick}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={onDelete}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </>
             )}
           </div>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Basic Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Account Number</Label>
+                  <Input
+                    value={client.accountNumber}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Client Name</Label>
+                  <div className="relative">
+                    <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="clientName"
+                      value={isEditing ? editedData?.clientName ?? "" : client.clientName}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Contact Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="contactName"
+                      value={isEditing ? editedData?.contactName ?? "" : client.contactName}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Phone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="phone"
+                      value={isEditing ? editedData?.phone ?? "" : client.phone}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="email"
+                      value={isEditing ? editedData?.email ?? "" : client.email}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Address</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Street</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="address.street"
+                      value={isEditing ? editedData?.address?.street ?? "" : client.address.street}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">City</Label>
+                  <Input
+                    name="address.city"
+                    value={isEditing ? editedData?.address?.city ?? "" : client.address.city}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">State</Label>
+                  <Input
+                    name="address.state"
+                    value={isEditing ? editedData?.address?.state ?? "" : client.address.state}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Zip Code</Label>
+                  <Input
+                    name="address.zipCode"
+                    value={isEditing ? editedData?.address?.zipCode ?? "" : client.address.zipCode}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Additional Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Clinic Registration Number</Label>
+                <Input
+                  name="clinicRegistrationNumber"
+                  value={isEditing ? editedData?.clinicRegistrationNumber ?? "" : client.clinicRegistrationNumber}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Notes</Label>
+                <Textarea
+                  name="notes"
+                  value={isEditing ? editedData?.notes ?? "" : client.notes ?? ""}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className="min-h-[100px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mt-6">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-lg">Doctors</CardTitle>
+              {isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addDoctor}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Doctor
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {!client.doctors || client.doctors.length === 0 ? (
+                <div className="text-muted-foreground text-center py-4">
+                  No doctors assigned
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(isEditing ? editedData?.doctors : client.doctors)?.map(
+                    (doctor, index) => (
+                      <Card key={index}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3">
+                          <CardTitle className="text-base">
+                            Doctor #{index + 1}
+                          </CardTitle>
+                          {isEditing && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeDoctor(index)}
+                            >
+                              <UserMinus className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label>Name</Label>
+                            <Input
+                              value={doctor.name}
+                              onChange={(e) =>
+                                handleDoctorChange(index, "name", e.target.value)
+                              }
+                              disabled={!isEditing}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                              type="email"
+                              value={doctor.email}
+                              onChange={(e) =>
+                                handleDoctorChange(index, "email", e.target.value)
+                              }
+                              disabled={!isEditing}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Phone</Label>
+                            <Input
+                              type="tel"
+                              value={doctor.phone}
+                              onChange={(e) =>
+                                handleDoctorChange(index, "phone", e.target.value)
+                              }
+                              disabled={!isEditing}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Notes</Label>
+                            <Input
+                              value={doctor.notes ?? ""}
+                              onChange={(e) =>
+                                handleDoctorChange(index, "notes", e.target.value)
+                              }
+                              disabled={!isEditing}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 };

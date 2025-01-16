@@ -48,6 +48,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Accordion,
@@ -68,6 +72,8 @@ import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
+import PrintHandler from "./print/PrintHandler";
+import { PAPER_SIZES } from "./print/PrintHandler";
 
 interface CaseFile {
   id: string;
@@ -133,7 +139,15 @@ interface Invoice {
   notes?: string;
 }
 
-export interface ExtendedCase extends Case {
+export interface ExtendedCase {
+  id: string;
+  created_at: string;
+  received_date: string | null;
+  ship_date: string | null;
+  status: CaseStatus;
+  patient_name: string;
+  due_date: string;
+  case_number: string;
   client: {
     id: string;
     client_name: string;
@@ -148,7 +162,6 @@ export interface ExtendedCase extends Case {
       phone: string;
     };
   };
-  case_number: string;
   case_products: CaseProduct[];
   product_ids: {
     id: string;
@@ -192,6 +205,13 @@ export interface ExtendedCase extends Case {
     items?: any;
     discount_type?: string;
   };
+  teethProducts?: {
+    tooth_number: number[];
+    body_shade?: { name: string };
+    gingival_shade?: { name: string };
+    occlusal_shade?: { name: string };
+    stump_shade_id?: { name: string };
+  }[];
 }
 
 const TYPE_COLORS = {
@@ -237,6 +257,9 @@ const CaseDetails: React.FC = () => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
+  const [activePrintType, setActivePrintType] = useState<string | null>(null);
+  const [selectedPaperSize, setSelectedPaperSize] =
+    useState<keyof typeof PAPER_SIZES>("LETTER");
 
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
@@ -386,15 +409,16 @@ const CaseDetails: React.FC = () => {
       setLoading(false);
       return;
     }
-    let caseDataApi: any = null;
     const fetchCaseData = async () => {
       try {
+        setLoading(true);
         const lab = await getLabIdByUserId(user?.id as string);
         if (!lab?.labId) {
           console.error("Lab ID not found.");
           return;
         }
         setLab(lab);
+
         const { data: caseData, error } = await supabase
           .from("cases")
           .select(
@@ -405,9 +429,9 @@ const CaseDetails: React.FC = () => {
               ship_date,
               status,
               patient_name,
-              case_number,
               due_date,
               attachements,
+              case_number,
               invoice:invoices!case_id (
                 id,
                 case_id,
@@ -430,8 +454,8 @@ const CaseDetails: React.FC = () => {
                 )
               ),
               tag:working_tags!pan_tag_id (
-              name,
-              color
+                name,
+                color
               ),
               rx_number,
               received_date,
@@ -461,8 +485,8 @@ const CaseDetails: React.FC = () => {
                 user_id
               ),
               created_by:users!created_by (
-              name,
-              id
+                name,
+                id
               ),
               product_ids:case_products!id (
                 products_id,
@@ -482,168 +506,155 @@ const CaseDetails: React.FC = () => {
         if (!caseData) {
           console.error("No case data found");
           setError("Case not found");
-
           return;
         }
+
+        setCaseDetail(caseData);
         getWorkStationDetails(caseData?.created_at);
-        caseDataApi = caseDetail;
-        const caseDetails: any = caseData;
-        const productsIdArray = caseDetails?.product_ids[0].products_id;
-        const caseProductId = caseDetails?.product_ids[0]?.id;
-        let products: Product[] = [];
-        let teethProducts: ToothInfo[] = [];
-        let discountedPrices: DiscountedPrice[];
 
-        if (productsIdArray?.length > 0) {
-          const { data: productData, error: productsError } = await supabase
-            .from("products")
-            .select(
-              `
-                id,
-                name,
-                price,
-                lead_time,
-                is_client_visible,
-                is_taxable,
-                created_at,
-                updated_at,
-                requires_shade,
-                material:materials!material_id (
+        if (caseData.product_ids?.[0]?.products_id) {
+          const productsIdArray = caseData.product_ids[0].products_id;
+          const caseProductId = caseData.product_ids[0].id;
+
+          // Fetch products
+          if (productsIdArray?.length > 0) {
+            const { data: productData, error: productsError } = await supabase
+              .from("products")
+              .select(
+                `
+                  id,
                   name,
-                  description,
-                  is_active
-                ),
-                product_type:product_types!product_type_id (
-                  name,
-                  description,
-                  is_active
-                ),
-                billing_type:billing_types!billing_type_id (
-                  name,
-                  label,
-                  description,
-                  is_active
+                  price,
+                  lead_time,
+                  is_client_visible,
+                  is_taxable,
+                  created_at,
+                  updated_at,
+                  requires_shade,
+                  material:materials!material_id (
+                    name,
+                    description,
+                    is_active
+                  ),
+                  product_type:product_types!product_type_id (
+                    name,
+                    description,
+                    is_active
+                  ),
+                  billing_type:billing_types!billing_type_id (
+                    name,
+                    label,
+                    description,
+                    is_active
+                  )
+                `
+              )
+              .in("id", productsIdArray)
+              .eq("lab_id", lab.labId);
+
+            if (productsError) {
+              setError(productsError.message);
+              return;
+            }
+
+            // Fetch discounted prices
+            const { data: discountedPriceData, error: discountedPriceError } =
+              await supabase
+                .from("discounted_price")
+                .select(
+                  `
+                  product_id,
+                  discount,
+                  final_price,
+                  price,
+                  quantity
+                `
                 )
-              `
-            )
-            .in("id", productsIdArray)
-            .eq("lab_id", lab.labId);
+                .in("product_id", productsIdArray)
+                .eq("case_id", caseId);
 
-          if (productsError) {
-            setError(productsError.message);
-          } else {
-            const productsData: any[] = productData.map((item: any) => ({
-              ...item,
-              material: {
-                name: item.name,
-                description: item.description,
-                is_active: item.is_active,
-              },
-            }));
-            products = productsData;
+            if (discountedPriceError) {
+              console.error(
+                "Error fetching discounted prices:",
+                discountedPriceError
+              );
+              setError(discountedPriceError.message);
+              return;
+            }
+
+            // Fetch teeth products if case product ID exists
+            let teethProducts = [];
+            if (caseProductId) {
+              const { data: teethProductData, error: teethProductsError } =
+                await supabase
+                  .from("case_product_teeth")
+                  .select(
+                    `
+                    is_range,
+                    occlusal_shade:shade_options!occlusal_shade_id (
+                      name,
+                      category,
+                      is_active
+                    ),
+                    body_shade:shade_options!body_shade_id (
+                      name,
+                      category,
+                      is_active
+                    ),
+                    gingival_shade:shade_options!gingival_shade_id (
+                      name,
+                      category,
+                      is_active
+                    ),
+                    stump_shade_id:shade_options!stump_shade_id (
+                      name,
+                      category,
+                      is_active
+                    ),
+                    tooth_number,
+                    notes,
+                    product_id,
+                    custom_body_shade,
+                    custom_occlusal_shade,
+                    custom_gingival_shade,
+                    custom_stump_shade,
+                    type
+                  `
+                  )
+                  .eq("case_product_id", caseProductId);
+
+              if (teethProductsError) {
+                setError(teethProductsError.message);
+                return;
+              }
+              teethProducts = teethProductData;
+            }
+
+            // Combine all product data
+            const productsWithDiscounts = productData.map((product: any) => {
+              const discountedPrice = discountedPriceData.find(
+                (discount: { product_id: string }) =>
+                  discount.product_id === product.id
+              );
+              const productTeeth = teethProducts.find(
+                (teeth: any) => teeth.product_id === product.id
+              );
+              return {
+                ...product,
+                discounted_price: discountedPrice,
+                teethProduct: productTeeth,
+              };
+            });
+
+            setCaseDetail({
+              ...(caseData as any),
+              products: productsWithDiscounts,
+            });
           }
-
-          const { data: discountedPriceData, error: discountedPriceError } =
-            await supabase
-              .from("discounted_price")
-              .select(
-                `
-                product_id,
-                discount,
-                final_price,
-                price,
-                quantity
-              `
-              )
-              .in("product_id", productsIdArray)
-              .eq("case_id", caseDetails.id);
-
-          if (discountedPriceError) {
-            console.error(
-              "Error fetching discounted prices:",
-              discountedPriceError
-            );
-            setError(discountedPriceError.message);
-          } else {
-            discountedPrices = discountedPriceData.map((item: any) => item);
-          }
-        } else {
-          console.log("No products associated with this case.");
         }
-
-        if (caseProductId) {
-          const { data: teethProductData, error: teethProductsError } =
-            await supabase
-              .from("case_product_teeth")
-              .select(
-                `
-                is_range,
-                occlusal_shade:shade_options!occlusal_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                body_shade:shade_options!body_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                gingival_shade:shade_options!gingival_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                stump_shade_id:shade_options!stump_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                tooth_number,
-                notes,
-                product_id,
-                custom_body_shade,
-                custom_occlusal_shade,
-                custom_gingival_shade,
-                custom_stump_shade,
-                type
-              `
-              )
-              .eq("case_product_id", caseProductId);
-
-          if (teethProductsError) {
-            setError(teethProductsError.message);
-          } else {
-            teethProducts = teethProductData.map((item: any) => item);
-          }
-        } else {
-          console.log("No caseProductId found for fetching teeth products.");
-        }
-        const productsWithDiscounts = products.map((product: any) => {
-          const discountedPrice = discountedPrices.find(
-            (discount: { product_id: string }) =>
-              discount.product_id === product.id
-          );
-          const productTeeth = teethProducts.find(
-            (teeth: any) => teeth.product_id === product.id
-          );
-          return {
-            ...product,
-            discounted_price: discountedPrice,
-            teethProduct: productTeeth,
-          };
-        });
-
-        setCaseDetail({
-          ...(caseData as any),
-          products: productsWithDiscounts,
-        });
       } catch (error) {
         console.error("Error fetching case data:", error);
-        setError(
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred"
-        );
+        toast.error("Failed to load case details");
       } finally {
         setLoading(false);
       }
@@ -660,6 +671,31 @@ const CaseDetails: React.FC = () => {
 
   const handlePhotoUpload = async (file: File) => {
     console.log(`Uploading photo: ${file.name}`);
+  };
+
+  const handlePrint = (type: string) => {
+    if (!caseDetail) return;
+
+    // Create the preview URL with state encoded in base64
+    const previewState = {
+      type,
+      paperSize: selectedPaperSize,
+      caseData: {
+        id: caseDetail.id,
+        patient_name: caseDetail.patient_name,
+        case_number: caseDetail.case_number,
+        qr_code: `https://app.labulous.com/cases/${caseDetail.id}`,
+        client: caseDetail.client,
+        doctor: caseDetail.doctor,
+        created_at: caseDetail.created_at,
+        due_date: caseDetail.due_date,
+        tag: caseDetail.tag,
+      },
+    };
+
+    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
+    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    window.open(previewUrl, "_blank");
   };
 
   if (loading) {
@@ -825,40 +861,10 @@ const CaseDetails: React.FC = () => {
                   </div>
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Invoice #:</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="link"
-                            className={cn(
-                              "text-sm font-medium text-primary p-0 h-auto",
-                              "hover:text-primary/80 hover:underline transition-colors",
-                              "flex items-center gap-1",
-                              { "opacity-50 cursor-wait": isLoadingPreview }
-                            )}
-                            onClick={async () => {
-                              setIsLoadingPreview(true);
-                              setIsPreviewModalOpen(true);
-                            }}
-                            disabled={isLoadingPreview}
-                          >
-                            {(() => {
-                              const caseNumber = caseDetail?.case_number ?? "";
-                              const parts = caseNumber.split("-");
-                              parts[0] = "INV";
-                              return parts.join("-");
-                            })()}
-                            {isLoadingPreview && (
-                              <span className="animate-spin">⟳</span>
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Click to preview invoice</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <span className="text-sm text-gray-500">INV #:</span>
+                    <span className="text-sm font-medium text-primary">
+                      {caseDetail?.invoice_number || "N/A"}
+                    </span>
                   </div>
                 </div>
                 <div className="mt-2">
@@ -904,21 +910,56 @@ const CaseDetails: React.FC = () => {
               <div className="flex items-center space-x-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className="gap-2">
                       <Printer className="mr-2 h-4 w-4" />
                       Print
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem>Print Case Details</DropdownMenuItem>
-                    <DropdownMenuItem>Print Label</DropdownMenuItem>
-                    <DropdownMenuItem>Print Invoice</DropdownMenuItem>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        Paper Size
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LETTER")}
+                        >
+                          Letter (8.5 x 11")
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LEGAL")}
+                        >
+                          Legal (8.5 x 14")
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("HALF")}
+                        >
+                          Half (5.5 x 8.5")
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => handlePrint("qr-code")}>
+                      QR Code Label
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handlePrint("lab-slip")}>
+                      Lab Slip
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handlePrint("address-label")}
+                    >
+                      Address Label
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => handlePrint("patient-label")}
+                    >
+                      Patient Label
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className="gap-2">
                       <MoreHorizontal className="mr-2 h-4 w-4" />
                       Actions
                     </Button>
@@ -935,27 +976,36 @@ const CaseDetails: React.FC = () => {
                     <DropdownMenuItem>Archive Case</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button>Complete</Button>
+                <Button size="sm">Complete</Button>
               </div>
 
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
-                  <span className="text-sm text-gray-500">Received Date</span>
-                  <span className="font-medium">
+                  <span className="text-xs text-gray-500">Received Date</span>
+                  <span className="text-xs font-medium">
                     {formatDate(caseDetail.created_at)}
                   </span>
                 </div>
-                <Separator orientation="vertical" className="h-8" />
+                <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
-                  <span className="text-sm text-gray-500">Due Date</span>
-                  <span className="font-medium">
+                  <span className="text-xs text-gray-500">Due Date</span>
+                  <span className="text-xs font-medium">
                     {formatDate(caseDetail.due_date)}
                   </span>
                 </div>
-                <Separator orientation="vertical" className="h-8" />
+                <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
-                  <span className="text-sm text-gray-500">Appointment</span>
-                  <span className="font-medium">
+                  <span className="text-xs text-gray-500">Ship Date</span>
+                  <span className="text-xs font-medium">
+                    {caseDetail.ship_date
+                      ? formatDate(caseDetail.ship_date)
+                      : "Not Shipped"}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Appointment</span>
+                  <span className="text-xs font-medium">
                     {formatDateWithTime(caseDetail.appointment_date)}
                   </span>
                 </div>
@@ -1219,56 +1269,9 @@ const CaseDetails: React.FC = () => {
 
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-xl">
-                    <FileText className="mr-2" size={20} /> Invoice
-                  </CardTitle>
-                  <InvoiceActions
-                    caseStatus={caseDetail.status as CaseStatus}
-                    invoiceStatus={caseDetail.invoice?.status || null}
-                    onEditInvoice={() => {
-                      // Navigate to invoice edit page
-                      navigate(`/invoices/${caseDetail.invoice?.id}/edit`);
-                    }}
-                    onApproveInvoice={async () => {
-                      try {
-                        // Validate case is completed
-                        if (caseDetail.status !== "completed") {
-                          throw new Error(
-                            "Case must be completed before approving invoice"
-                          );
-                        }
-
-                        // Validate invoice is in draft
-                        if (
-                          !caseDetail.invoice ||
-                          caseDetail.invoice.status !== "draft"
-                        ) {
-                          throw new Error(
-                            "Only draft invoices can be approved"
-                          );
-                        }
-
-                        // Update invoice status to unpaid
-                        const { error } = await supabase
-                          .from("invoices")
-                          .update({ status: "unpaid" })
-                          .eq("id", caseDetail.invoice.id);
-
-                        if (error) throw error;
-
-                        toast.success("Invoice has been approved");
-                        // Refresh the page to show updated status
-                        window.location.reload();
-                      } catch (error: any) {
-                        toast.error(error.message);
-
-                        // Refresh the page to show updated status
-                        window.location.reload();
-                      }
-                    }}
-                  />
-                </div>
+                <CardTitle className="flex items-center text-xl">
+                  <FileText className="mr-2" size={20} /> Invoice
+                </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
                 <div className="border rounded-lg bg-white">
@@ -1521,62 +1524,74 @@ const CaseDetails: React.FC = () => {
                   ) : null}
                 </div>
 
-                {caseDetail.teethProducts?.map((product, index) => (
-                  <div
-                    key={index}
-                    className="border-b last:border-b-0 pb-4 mb-4"
-                  >
-                    <div>
-                      <h3 className="text-lg font-medium mb-2 flex items-center">
-                        <CircleDot className="mr-2" size={16} /> Selected Teeth
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        <div className="bg-gray-50 p-3 rounded">
-                          <p className="font-medium mb-2">
-                            Tooth #
-                            {product.tooth_number.length > 1
-                              ? product.tooth_number
-                                  .map((i) => `${i}`)
-                                  .join(", ")
-                              : product.tooth_number[0]}
-                          </p>
-                          <div className="text-sm">
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Body Shade:
-                              </span>
-                              <span>{product.body_shade?.name || "N/A"}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Gingival Shade:
-                              </span>
-                              <span>
-                                {product.gingival_shade?.name || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Occlusal Shade:
-                              </span>
-                              <span>
-                                {product.occlusal_shade?.name || "N/A"}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-600 capitalize">
-                                Stump Shade:
-                              </span>
-                              <span>
-                                {product.stump_shade_id?.name || "N/A"}
-                              </span>
+                {caseDetail.teethProducts?.map(
+                  (
+                    product: {
+                      tooth_number: number[];
+                      body_shade?: { name: string };
+                      gingival_shade?: { name: string };
+                      occlusal_shade?: { name: string };
+                      stump_shade_id?: { name: string };
+                    },
+                    index: number
+                  ) => (
+                    <div
+                      key={index}
+                      className="border-b last:border-b-0 pb-4 mb-4"
+                    >
+                      <div>
+                        <h3 className="text-lg font-medium mb-2 flex items-center">
+                          <CircleDot className="mr-2" size={16} /> Selected
+                          Teeth
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div className="bg-gray-50 p-3 rounded">
+                            <p className="font-medium mb-2">
+                              Tooth #
+                              {product.tooth_number.length > 1
+                                ? product.tooth_number
+                                    .map((i) => `${i}`)
+                                    .join(", ")
+                                : product.tooth_number[0]}
+                            </p>
+                            <div className="text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Body Shade:
+                                </span>
+                                <span>{product.body_shade?.name || "N/A"}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Gingival Shade:
+                                </span>
+                                <span>
+                                  {product.gingival_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Occlusal Shade:
+                                </span>
+                                <span>
+                                  {product.occlusal_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Stump Shade:
+                                </span>
+                                <span>
+                                  {product.stump_shade_id?.name || "N/A"}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </CardContent>
             </Card>
           </div>
@@ -1827,6 +1842,24 @@ const CaseDetails: React.FC = () => {
             tax: caseDetail.invoice?.tax || 0,
             notes: caseDetail.invoice?.notes || "",
           }}
+        />
+      )}
+      {activePrintType && caseDetail && (
+        <PrintHandler
+          type={activePrintType as any}
+          paperSize={selectedPaperSize}
+          caseData={{
+            id: caseDetail.id,
+            patient_name: caseDetail.patient_name,
+            case_number: caseDetail.case_number,
+            qr_code: `https://app.labulous.com/cases/${caseDetail.id}`,
+            client: caseDetail.client,
+            doctor: caseDetail.doctor,
+            created_at: caseDetail.created_at,
+            due_date: caseDetail.due_date,
+            tag: caseDetail.tag,
+          }}
+          onComplete={() => setActivePrintType(null)}
         />
       )}
     </div>

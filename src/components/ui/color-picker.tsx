@@ -2,7 +2,6 @@ import React, { SetStateAction, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { HexColorPicker } from "react-colorful";
-
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { WorkingTag } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
@@ -11,6 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "./input";
 import { FormData as CaseFormData } from "../cases/wizard/CaseWizard";
+import { Label } from "./label";
+
 interface ColorPickerProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
   className?: string;
@@ -18,37 +19,58 @@ interface ColorPickerProps
   onColorChange?: (color: string) => void;
   disabled?: boolean;
   selectedColor: string;
-  onFormChange: (field: keyof CaseFormData, value: string) => void;
+  onFormChange?: (field: keyof CaseFormData, value: string) => void;
   tags: WorkingTag[];
   setTags: React.Dispatch<SetStateAction<WorkingTag[]>>;
+  onClose?: () => void;
+  initiallyOpen?: boolean;
+  mode?: 'select' | 'create';
+  trigger?: React.ReactNode;
 }
 
 const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
   (
     {
       className,
-      selectedColor,
-      value = "#FF0000",
-      disabled,
+      value,
       onColorChange,
+      disabled,
+      selectedColor,
       onFormChange,
       tags,
       setTags,
+      onClose,
+      initiallyOpen = false,
+      mode = 'select',
+      trigger,
       ...props
     },
     ref
   ) => {
+    const [open, setOpen] = useState(initiallyOpen);
     const [customColor, setCustomColor] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [color, setColor] = useState("#000000");
-    const [open, setOpen] = useState(false);
     const [formData, setFormData] = useState({
-      id: "",
       name: "",
       color: "#000000",
+      id: "",
     });
 
     const { user } = useAuth();
+
+    useEffect(() => {
+      if (initiallyOpen) {
+        setCustomColor(true);
+        setOpen(true);
+      }
+    }, [initiallyOpen]);
+
+    const handleOpenChange = (newOpen: boolean) => {
+      setOpen(newOpen);
+      if (!newOpen && onClose) {
+        onClose();
+      }
+    };
 
     const fetchTags = async () => {
       try {
@@ -69,7 +91,7 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         setTags(data || []);
         setLoading(false);
         onColorChange?.(data[0]?.color);
-        onFormChange("workingPanName" as keyof CaseFormData, data[0]?.id);
+        onFormChange?.("workingPanName" as keyof CaseFormData, data[0]?.id);
       } catch (error) {
         console.error("Error fetching tags:", error);
         toast.error("Failed to load tags");
@@ -80,8 +102,6 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
     useEffect(() => {
       fetchTags();
     }, [user?.id]);
-
-    console.log(user, "user  her");
 
     const handleSubmit = async (e: React.FormEvent) => {
       if (!formData.name) {
@@ -109,115 +129,74 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         if (error) throw error;
         toast.success("Tag created successfully");
         onColorChange?.(formData.color);
-        onFormChange("workingPanName" as keyof CaseFormData, formData.id);
+        onFormChange?.("workingPanName" as keyof CaseFormData, formData.id);
         setFormData({ name: "", color: "#000000", id: "" });
         fetchTags();
         setLoading(false);
         setOpen(false);
+        onClose?.();
       } catch (error) {
         console.error("Error saving tag:", error);
         toast.error("Failed to save tag");
         setLoading(false);
       }
     };
+
     return (
       <div
         ref={ref}
         className={cn("flex items-center gap-2", className)}
         {...props}
       >
-        <Popover open={open}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn(
-                "w-8 h-8 p-0",
-                disabled && "opacity-50 cursor-not-allowed"
-              )}
-              style={{ backgroundColor: value }}
-              disabled={disabled}
-              onClick={() => setOpen(!open)}
-            >
-              <span className="sr-only">Pick a color</span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64 p-3">
-            {(user?.role === "admin" || user?.role === "super_admin") && (
-              <div className="flex justify-center items-center">
-                <button
-                  onClick={() => setCustomColor(!customColor)} // Fixed typo here
-                  className={`py-2 w-full bg-${
-                    selectedColor ?? "black"
-                  } px-5 rounded-md text-white mb-2 text-sm font-semibold`}
-                  style={{ backgroundColor: selectedColor }}
-                >
-                  {customColor ? "Select Existing Tag" : "Add New Tag"}
-                </button>
-              </div>
-            )}
-
-            {!(user?.role === "admin" || user?.role === "super_admin") && (
-              <h2>hello</h2>
-            )}
-
-            {customColor ? (
-              <div className="flex flex-col gap-4">
+        <Popover open={open} onOpenChange={handleOpenChange}>
+          {mode === 'select' ? (
+            <PopoverTrigger asChild>
+              <div
+                className={cn(
+                  "h-5 w-5 rounded-md border border-input",
+                  disabled && "opacity-50 cursor-not-allowed"
+                )}
+                style={{ backgroundColor: selectedColor }}
+              />
+            </PopoverTrigger>
+          ) : trigger ? (
+            <PopoverTrigger asChild>
+              {trigger}
+            </PopoverTrigger>
+          ) : null}
+          <PopoverContent className="w-[220px] p-3">
+            <div className="space-y-2">
+              <div className="space-y-2">
+                <Label>Tag Name</Label>
                 <Input
                   id="name"
+                  placeholder="Enter tag name"
                   value={formData.name}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                    setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="Enter tag name"
-                  required
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Color</Label>
                 <HexColorPicker
-                  color={color}
-                  onChange={(value) =>
-                    setFormData((prev) => ({ ...prev, color: value }))
+                  color={formData.color}
+                  onChange={(color) =>
+                    setFormData({ ...formData, color })
                   }
-                  className="w-64 max-w-full"
                   style={{ width: "100% !important" }}
                 />
-
                 <Button
                   type="submit"
                   disabled={loading}
-                  style={{ backgroundColor: color }}
+                  style={{ backgroundColor: formData.color }}
                   onClick={(e) => handleSubmit(e)}
+                  className="w-full text-white"
                 >
                   {loading ? "Creating tag" : "Create Tag"}
                 </Button>
               </div>
-            ) : (
-              <div className="grid grid-cols-5 gap-2">
-                {tags.map((color) => (
-                  <Button
-                    key={color.id}
-                    variant="outline"
-                    size="sm"
-                    className={cn(
-                      "w-8 h-8 p-0",
-                      value === color.color &&
-                        "ring-2 ring-primary ring-offset-2"
-                    )}
-                    style={{ backgroundColor: color.color }}
-                    onClick={() => {
-                      onFormChange(
-                        "workingPanName" as keyof CaseFormData,
-                        color.id
-                      );
-
-                      onColorChange?.(color.color);
-                    }}
-                    title={color.name}
-                  >
-                    <span className="sr-only">{color.color}</span>
-                  </Button>
-                ))}
-              </div>
-            )}
+            </div>
           </PopoverContent>
         </Popover>
       </div>
