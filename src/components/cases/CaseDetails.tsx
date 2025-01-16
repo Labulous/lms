@@ -67,6 +67,7 @@ import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
+import { FileWithStatus } from "./wizard/steps/FilesStep";
 
 interface CaseFile {
   id: string;
@@ -161,6 +162,7 @@ export interface ExtendedCase extends Case {
   custom_occlusal_details: string;
   occlusal_type: string;
   pontic_type: string;
+  attachements: string[];
   contact_type: string;
   appointment_date: string;
   instruction_notes: string | null;
@@ -234,6 +236,7 @@ const CaseDetails: React.FC = () => {
   const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
 
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
@@ -277,6 +280,7 @@ const CaseDetails: React.FC = () => {
          started_at,
          completed_at,
          issue_reported_at,
+         attachements,
          custom_workstation_type,
          started_notes,
          completed_notes,
@@ -347,6 +351,7 @@ const CaseDetails: React.FC = () => {
                 name: item.created_by.name,
               },
               isEditOn: false,
+              files: item.attachements,
             };
           }),
         ];
@@ -402,6 +407,7 @@ const CaseDetails: React.FC = () => {
               patient_name,
               case_number,
               due_date,
+              attachements,
               invoice:invoices!case_id (
                 id,
                 case_id,
@@ -741,6 +747,7 @@ const CaseDetails: React.FC = () => {
       custom_workstation_type: workstationForm.custom_workstation_type
         ? workstationForm.custom_workstation_type
         : null, // Optional field
+      attachements: selectedFiles.map((item) => item.url),
     };
     setWorkstationLoading(true);
     try {
@@ -983,6 +990,8 @@ const CaseDetails: React.FC = () => {
                     getWorkStationDetails={getWorkStationDetails}
                     caseId={caseId as string}
                     caseCreatedAt={caseDetail.created_at}
+                    selectedFiles={selectedFiles}
+                    setSelectedFiles={setSelectedFiles}
                   />
                 )}
               </CardContent>
@@ -1773,16 +1782,27 @@ const CaseDetails: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Attachments</span>
                           <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
-                            {/* {caseDetail.case_files?.length || 0} */}
+                            {caseDetail?.attachements?.length ?? 0}
                           </span>
                         </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                      <p className="text-sm text-gray-500">
-                        Files and photos will be implemented when DB is
-                        connected
-                      </p>
+                      <p className="text-sm text-gray-500">Files and photos</p>
+
+                      <div className="flex flex-col gap-2">
+                        {caseDetail?.attachements?.map((item) => {
+                          return (
+                            <img
+                              src={item}
+                              height={200}
+                              width={200}
+                              alt="attachement"
+                              className="p-2 border rounded-md"
+                            />
+                          );
+                        })}
+                      </div>
                     </AccordionContent>
                   </AccordionItem>
                 </Accordion>

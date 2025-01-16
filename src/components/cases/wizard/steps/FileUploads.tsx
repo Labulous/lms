@@ -1,7 +1,5 @@
 import React, { useRef, Dispatch, SetStateAction, useState } from "react";
 import { Upload, Camera, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabase"; // Assuming you have initialized Supabase in this file
 import toast from "react-hot-toast";
@@ -33,20 +31,14 @@ interface FormData {
 }
 
 interface FilesStepProps {
-  formData: FormData;
-  onChange: (data: FormData) => void;
   selectedFiles?: FileWithStatus[];
   setSelectedFiles?: Dispatch<SetStateAction<FileWithStatus[]>>;
-  errors?: Partial<FormData>;
   storage: string;
 }
 
-const FilesStep: React.FC<FilesStepProps> = ({
-  formData,
-  onChange,
+const FileUploads: React.FC<FilesStepProps> = ({
   selectedFiles,
   setSelectedFiles,
-  errors,
   storage,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,7 +70,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
 
         // Create a unique file path for storage
         const filePath = `${storage}/${new Date().getTime()}-${
-          fileUpload.file?.name
+          fileUpload?.file?.name
         }`;
 
         // Start uploading the file to Supabase storage
@@ -95,7 +87,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
 
         // Get the public URL for the uploaded file
         const { data: publicUrlData } = supabase.storage
-          .from("cases")
+          .from(storage)
           .getPublicUrl(filePath);
 
         if (!publicUrlData) {
@@ -153,39 +145,6 @@ const FilesStep: React.FC<FilesStepProps> = ({
     }
   };
 
-  const handleEnclosedItemChange = (key: string, value: string) => {
-    const numValue = parseInt(value) || 0;
-    onChange({
-      ...formData,
-      enclosedItems: {
-        ...(formData.enclosedItems || {}),
-        [key]: numValue,
-      },
-    });
-  };
-
-  const handleOtherItemsChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    onChange({
-      ...formData,
-      otherItems: e.target.value,
-    });
-  };
-
-  const enclosedItemsList = [
-    { key: "impression", label: "Impression" },
-    { key: "biteRegistration", label: "Bite registration" },
-    { key: "photos", label: "Photos" },
-    { key: "jig", label: "Jig" },
-    { key: "opposingModel", label: "Opposing Model" },
-    { key: "articulator", label: "Articulator" },
-    { key: "returnArticulator", label: "Return Articulator" },
-    { key: "cadcamFiles", label: "CAD/CAM Files" },
-    { key: "consultRequested", label: "Consult Requested" },
-  ] as const;
-
-  const enclosedItems = formData.enclosedItems || {};
   console.log(selectedFiles, "Seleced files");
   return (
     <div>
@@ -229,98 +188,33 @@ const FilesStep: React.FC<FilesStepProps> = ({
       {selectedFiles && selectedFiles.length > 0 && (
         <div className="mt-4">
           <ul className="divide-y divide-gray-200">
-            {selectedFiles && selectedFiles.length > 0 && (
-              <div className="mt-4">
-                <ul className="divide-y divide-gray-200 grid grid-cols-2">
-                  {selectedFiles.map((file, index) => (
-                    <li
-                      key={index}
-                      className="px-4 py-3 flex items-center justify-between"
-                    >
-                      <div className="flex items-center">
-                        <img
-                          src={file.url}
-                          height={200}
-                          width={200}
-                          alt="file"
-                        />
-                        {/* <span className="ml-2 text-sm text-gray-500">
-                          (
-                          {(file?.file ? file?.file?.size / 1024 : 0).toFixed(
-                            1
-                          )}{" "}
-                          KB)
-                        </span> */}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFile(index)}
-                        className="text-gray-400 hover:text-gray-500"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {selectedFiles.map((file, index) => (
+              <li
+                key={index}
+                className="px-4 py-3 flex items-center justify-between"
+              >
+                <div className="flex items-center">
+                  <img src={file.url} height={100} width={100} alt="file" />
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({(file.file ? file.file.size / 1024 : 0).toFixed(1)} KB)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(index)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       )}
 
       <Separator className="my-6" />
-
-      {/* Enclosed With Case Section */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Enclosed with Case</h3>
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-2">
-            {enclosedItemsList.map(({ key, label }) => (
-              <div key={key} className="flex items-center space-x-2">
-                <Input
-                  type="number"
-                  id={key}
-                  name={key}
-                  min="0"
-                  value={enclosedItems[key] || 0}
-                  onChange={(e) =>
-                    handleEnclosedItemChange(key, e.target.value)
-                  }
-                  className="w-16 bg-white text-center h-7 px-2"
-                />
-                <label htmlFor={key} className="text-sm text-gray-700">
-                  {label}
-                </label>
-              </div>
-            ))}
-          </div>
-
-          {/* Other Items Field */}
-          <div>
-            <label
-              htmlFor="otherItems"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Other items:
-            </label>
-            <Textarea
-              id="otherItems"
-              name="otherItems"
-              rows={4}
-              value={formData.otherItems || ""}
-              onChange={handleOtherItemsChange}
-              className="mt-1 bg-white"
-              placeholder="Enter any additional items..."
-            />
-
-            {errors?.otherItems && (
-              <p className="mt-2 text-sm text-red-500">{errors?.otherItems}</p>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
-export default FilesStep;
+export default FileUploads;

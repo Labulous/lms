@@ -142,16 +142,16 @@ const CaseList: React.FC = () => {
   const [rowSelection, setRowSelection] = useState({});
   const [labId, setLabId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(() => {
-    const statusParam = searchParams.get('status');
-    return statusParam ? statusParam.split(',') as CaseStatus[] : [];
+    const statusParam = searchParams.get("status");
+    return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
   });
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>(() => {
-    const dueDateParam = searchParams.get('dueDate');
+    const dueDateParam = searchParams.get("dueDate");
     return dueDateParam ? new Date(dueDateParam) : undefined;
   });
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
-    const tagParam = searchParams.get('tags');
-    return tagParam ? tagParam.split(',') : [];
+    const tagParam = searchParams.get("tags");
+    return tagParam ? tagParam.split(",") : [];
   });
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -165,7 +165,7 @@ const CaseList: React.FC = () => {
     }),
     [pageIndex, pageSize]
   );
-
+  console.log(filteredCases, "filteredCases");
   const columns: ColumnDef<Case>[] = [
     {
       accessorKey: "select",
@@ -217,7 +217,7 @@ const CaseList: React.FC = () => {
                     onClick={() => {
                       setTagFilter([]);
                       column.setFilterValue(undefined);
-                      searchParams.delete('tags');
+                      searchParams.delete("tags");
                       setSearchParams(searchParams);
                     }}
                     className="h-8 px-2 text-xs"
@@ -230,47 +230,54 @@ const CaseList: React.FC = () => {
                 {Array.from(
                   new Set(
                     cases
-                      .filter(c => c.tags?.name)
-                      .map(c => JSON.stringify({ name: c.tags?.name, color: c.tags?.color }))
+                      .filter((c) => c.tags?.name)
+                      .map((c) =>
+                        JSON.stringify({
+                          name: c.tags?.name,
+                          color: c.tags?.color,
+                        })
+                      )
                   )
                 )
-                  .map(str => JSON.parse(str))
+                  .map((str) => JSON.parse(str))
                   .map((tag) => (
-                  <div key={tag.name} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`tag-${tag.name}`}
-                      checked={tagFilter.includes(tag.name)}
-                      onCheckedChange={(checked) => {
-                        const newTagFilter = checked
-                          ? [...tagFilter, tag.name]
-                          : tagFilter.filter((t) => t !== tag.name);
-                        setTagFilter(newTagFilter);
-                        column.setFilterValue(newTagFilter.length ? newTagFilter : undefined);
-                        if (newTagFilter.length > 0) {
-                          searchParams.set('tags', newTagFilter.join(','));
-                        } else {
-                          searchParams.delete('tags');
-                        }
-                        setSearchParams(searchParams);
-                      }}
-                    />
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-4 h-4 rounded border"
-                        style={{
-                          backgroundColor: tag.color || "#f3f4f6",
-                          borderColor: 'rgba(0,0,0,0.1)',
+                    <div key={tag.name} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`tag-${tag.name}`}
+                        checked={tagFilter.includes(tag.name)}
+                        onCheckedChange={(checked) => {
+                          const newTagFilter = checked
+                            ? [...tagFilter, tag.name]
+                            : tagFilter.filter((t) => t !== tag.name);
+                          setTagFilter(newTagFilter);
+                          column.setFilterValue(
+                            newTagFilter.length ? newTagFilter : undefined
+                          );
+                          if (newTagFilter.length > 0) {
+                            searchParams.set("tags", newTagFilter.join(","));
+                          } else {
+                            searchParams.delete("tags");
+                          }
+                          setSearchParams(searchParams);
                         }}
                       />
-                      <label
-                        htmlFor={`tag-${tag.name}`}
-                        className="text-sm font-medium capitalize cursor-pointer"
-                      >
-                        {tag.name}
-                      </label>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded border"
+                          style={{
+                            backgroundColor: tag.color || "#f3f4f6",
+                            borderColor: "rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <label
+                          htmlFor={`tag-${tag.name}`}
+                          className="text-sm font-medium capitalize cursor-pointer"
+                        >
+                          {tag.name}
+                        </label>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </div>
           </PopoverContent>
@@ -291,7 +298,7 @@ const CaseList: React.FC = () => {
                     className="w-8 h-6 rounded flex items-center justify-center text-xs font-medium border"
                     style={{
                       backgroundColor: color,
-                      borderColor: 'rgba(0,0,0,0.1)',
+                      borderColor: "rgba(0,0,0,0.1)",
                       color: getContrastColor(color),
                     }}
                   >
@@ -309,7 +316,7 @@ const CaseList: React.FC = () => {
       filterFn: (row, id, value: string[]) => {
         if (!value?.length) return true;
         const tag = row.getValue(id) as { name: string; color: string };
-        return value.includes(tag?.name || '');
+        return value.includes(tag?.name || "");
       },
     },
     {
@@ -374,7 +381,7 @@ const CaseList: React.FC = () => {
                     size="sm"
                     onClick={() => {
                       setStatusFilter([]);
-                      searchParams.delete('status');
+                      searchParams.delete("status");
                       setSearchParams(searchParams);
                     }}
                     className="h-8 px-2 text-xs"
@@ -397,15 +404,20 @@ const CaseList: React.FC = () => {
                     onCheckedChange={(checked) => {
                       let newStatusFilter: CaseStatus[];
                       if (checked) {
-                        newStatusFilter = [...statusFilter, status as CaseStatus];
+                        newStatusFilter = [
+                          ...statusFilter,
+                          status as CaseStatus,
+                        ];
                       } else {
-                        newStatusFilter = statusFilter.filter((s) => s !== status);
+                        newStatusFilter = statusFilter.filter(
+                          (s) => s !== status
+                        );
                       }
                       setStatusFilter(newStatusFilter);
                       if (newStatusFilter.length > 0) {
-                        searchParams.set('status', newStatusFilter.join(','));
+                        searchParams.set("status", newStatusFilter.join(","));
                       } else {
-                        searchParams.delete('status');
+                        searchParams.delete("status");
                       }
                       setSearchParams(searchParams);
                     }}
@@ -541,7 +553,7 @@ const CaseList: React.FC = () => {
                     onClick={() => {
                       setDueDateFilter(undefined);
                       column.setFilterValue(undefined);
-                      searchParams.delete('dueDate');
+                      searchParams.delete("dueDate");
                       setSearchParams(searchParams);
                     }}
                     className="h-8 px-2 text-xs"
@@ -557,9 +569,9 @@ const CaseList: React.FC = () => {
                   setDueDateFilter(date || undefined);
                   column.setFilterValue(date || undefined);
                   if (date) {
-                    searchParams.set('dueDate', format(date, "yyyy-MM-dd"));
+                    searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
                   } else {
-                    searchParams.delete('dueDate');
+                    searchParams.delete("dueDate");
                   }
                   setSearchParams(searchParams);
                 }}
@@ -571,7 +583,10 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        return date ? format(new Date(date), "MMM d, yyyy") : "TBD";
+        console.log(date, "date");
+        const parsedDate = new Date(date);
+
+        return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
@@ -622,7 +637,7 @@ const CaseList: React.FC = () => {
                 View Details
               </DropdownMenuItem>
             </Link>
-            <Link to={`/cases/update?caseId=${row.original.id}/edit`}>
+            <Link to={`/cases/update?caseId=${row.original.id}`}>
               <DropdownMenuItem>
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
@@ -830,9 +845,11 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string) => {
-    const selectedCases = table.getSelectedRowModel().rows.map(row => row.original);
+    const selectedCases = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original);
     console.log(`Printing ${option} for cases:`, selectedCases);
-    
+
     switch (option) {
       case "workTicket":
         // Handle work ticket printing for selected cases
@@ -875,7 +892,10 @@ const CaseList: React.FC = () => {
               <>
                 <span className="text-sm text-muted-foreground mr-2">
                   {table.getSelectedRowModel().rows.length}{" "}
-                  {table.getSelectedRowModel().rows.length === 1 ? "case" : "cases"} selected
+                  {table.getSelectedRowModel().rows.length === 1
+                    ? "case"
+                    : "cases"}{" "}
+                  selected
                 </span>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -885,19 +905,27 @@ const CaseList: React.FC = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("workTicket")}>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("workTicket")}
+                    >
                       <Printer className="h-4 w-4 mr-2" />
                       Print Work Tickets
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("invoice")}>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("invoice")}
+                    >
                       <Printer className="h-4 w-4 mr-2" />
                       Print Invoices
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("qrCode")}>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("qrCode")}
+                    >
                       <FileText className="h-4 w-4 mr-2" />
                       Print QR Codes
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handlePrintOptionSelect("shippingLabel")}>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("shippingLabel")}
+                    >
                       <FileText className="h-4 w-4 mr-2" />
                       Print Shipping Labels
                     </DropdownMenuItem>
@@ -1004,18 +1032,18 @@ const CaseList: React.FC = () => {
 
 function getContrastColor(hexcolor: string): string {
   // Default to black text for empty or invalid colors
-  if (!hexcolor || hexcolor === 'transparent') return '#000000';
-  
+  if (!hexcolor || hexcolor === "transparent") return "#000000";
+
   // Convert hex to RGB
   const r = parseInt(hexcolor.slice(1, 3), 16);
   const g = parseInt(hexcolor.slice(3, 5), 16);
   const b = parseInt(hexcolor.slice(5, 7), 16);
-  
+
   // Calculate relative luminance
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
+
   // Return black or white depending on background color luminance
-  return luminance > 0.5 ? '#000000' : '#ffffff';
+  return luminance > 0.5 ? "#000000" : "#ffffff";
 }
 
 export default CaseList;

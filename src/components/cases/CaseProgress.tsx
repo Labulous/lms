@@ -30,6 +30,8 @@ import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
+import FileUploads from "./wizard/steps/FileUploads";
+import { FileWithStatus } from "./wizard/steps/FilesStep";
 export interface CaseStep {
   id?: string;
   date?: string;
@@ -51,6 +53,7 @@ export interface CaseStep {
   started_notes?: string;
   completed_notes?: string;
   issue_reported_notes?: string;
+  files?: string[];
 }
 
 interface CaseProgressProps {
@@ -67,6 +70,8 @@ interface CaseProgressProps {
   getWorkStationDetails: (case_created_at: string) => void;
   caseId: string;
   caseCreatedAt: string;
+  selectedFiles: FileWithStatus[];
+  setSelectedFiles: React.Dispatch<SetStateAction<FileWithStatus[]>>;
 }
 
 const status = [
@@ -96,6 +101,8 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
   setLoading,
   getWorkStationDetails,
   caseCreatedAt,
+  selectedFiles,
+  setSelectedFiles,
 }) => {
   const [technicians, setTechnicians] = useState<
     { name: string; id: string }[] | null
@@ -198,6 +205,13 @@ id
             : { ...item, isEditOn: false } // Set isEditOn to false for the rest
       )
     );
+
+    const files = selectedWorkstation.files
+      ? selectedWorkstation.files.map((item) => {
+          return { url: item as string }; // Explicitly return an object with the `url`
+        })
+      : [];
+    setSelectedFiles(files);
   };
 
   const handleUpdateWorkstation = async (id: string) => {
@@ -234,6 +248,7 @@ id
       started_notes: editWorkstationForm.started_notes,
       completed_notes: editWorkstationForm.completed_notes,
       issue_reported_notes: editWorkstationForm.issue_reported_notes,
+      attachements: selectedFiles.map((item) => item.url),
     };
     setLoading(true);
     try {
@@ -254,7 +269,7 @@ id
       setLoading(false);
     }
   };
-
+  console.log(steps, "setpps");
   return (
     <div className="relative">
       <div className="space-y-8">
@@ -537,15 +552,23 @@ id
                                     />
                                   </div>
                                 </div>
-                                <div className="h-full w-full flex justify-end items-end">
-                                  <Button
-                                    className=""
-                                    disabled={isLoading}
-                                    onClick={() => handleSubmitWorkstation()}
-                                  >
-                                    Save
-                                  </Button>
-                                </div>
+                              </div>
+                              <div className="space-y-4 mt-5">
+                                <FileUploads
+                                  selectedFiles={selectedFiles}
+                                  setSelectedFiles={setSelectedFiles}
+                                  storage="workstation"
+                                />
+                              </div>
+
+                              <div className="h-full w-full flex justify-end items-end">
+                                <Button
+                                  className=""
+                                  disabled={isLoading}
+                                  onClick={() => handleSubmitWorkstation()}
+                                >
+                                  Save
+                                </Button>
                               </div>
                             </CardContent>
                           </>
@@ -950,7 +973,13 @@ id
                                   </div>
                                 </>
                               )}
-
+                              {step.isEditOn && (
+                                <FileUploads
+                                  selectedFiles={selectedFiles}
+                                  setSelectedFiles={setSelectedFiles}
+                                  storage="workstation"
+                                />
+                              )}
                               <div className="h-full w-full flex justify-end items-end">
                                 <Button
                                   className=""
@@ -966,6 +995,31 @@ id
                                   {step.isEditOn ? "Save" : "Edit"}
                                 </Button>
                               </div>
+
+                              {!step.isEditOn && (
+                                <div className="flex flex-col gap-4 space-y-2">
+                                  <div className="text-sm text-gray-500 text-start">
+                                    Attachements{" "}
+                                    {(step.files && step.files.length) || 0}
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {step.files &&
+                                      step.files.map((item, index) => {
+                                        return (
+                                          <div key={index}>
+                                            <img
+                                              src={item}
+                                              height={100}
+                                              width={100}
+                                              alt="file"
+                                              className="rounded-md border p-2"
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                  </div>
+                                </div>
+                              )}
                             </AccordionContent>
                           </>
                         )}

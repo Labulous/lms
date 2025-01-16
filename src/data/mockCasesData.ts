@@ -162,7 +162,7 @@ const saveCaseProduct = async (
           : product.shades.gingival || null,
       stump_shade_id:
         product.shades.stump === "custom" ? null : product.shades.stump || null,
-        customBody: product.teethProduct?.custom_body_shade || null,
+        custom_body_shade: product.teethProduct?.custom_body_shade || null,
         custom_occlusal_shade: product.teethProduct?.customOcclusal || null,
         custom_gingival_shade: product.teethProduct?.customGingival || null,
         custom_stump_shade: product.teethProduct?.customStump || null,

@@ -20,6 +20,7 @@ import {
   Product,
   DiscountedPrice,
 } from "@/components/cases/CaseDetails";
+import { FileWithStatus } from "@/components/cases/wizard/steps/FileUploads";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -63,7 +64,7 @@ const UpdateCase: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
@@ -285,6 +286,7 @@ const UpdateCase: React.FC = () => {
             pan_tag_id: formData.workingPanName,
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
+            attachements: selectedFiles.map((item) => item.url),
           },
           products: selectedProducts.filter((item) => item.id && item.type),
           enclosedItems: transformedData.enclosedItems,
@@ -326,6 +328,7 @@ const UpdateCase: React.FC = () => {
               patient_name,
               case_number,
               due_date,
+              attachements,
               invoice:invoices!case_id (
                 id,
                 case_id,
@@ -401,6 +404,13 @@ const UpdateCase: React.FC = () => {
         }
 
         const caseDetails: any = caseData;
+        const files = caseDetails?.attachements
+          ? caseDetails.attachements.map((item: any) => {
+              return { url: item as string }; // Explicitly return an object with the `url`
+            })
+          : [];
+        setSelectedFiles(files);
+        console.log(caseDetails, "caseDetails  ");
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
 
@@ -702,6 +712,7 @@ const UpdateCase: React.FC = () => {
                 errors={errors}
                 selectedFiles={selectedFiles}
                 setSelectedFiles={setSelectedFiles}
+                storage="cases"
               />
             </div>
           </div>

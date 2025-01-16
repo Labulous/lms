@@ -15,6 +15,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SalesDashboard from "@/components/dashboard/SalesDashboard";
+import { format } from "date-fns";
 
 interface CasesDues {
   due_date: string;
@@ -102,6 +103,7 @@ const Home: React.FC = () => {
               )
               .map((caseItem) => caseItem)
           : [];
+        console.log(casesData, "casesData");
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
@@ -159,8 +161,10 @@ const Home: React.FC = () => {
       .toISOString()
       .split("T")[0];
 
+    // Count cases based on the given conditions
     const pastDue = casesList.filter(
-      (caseItem) => new Date(caseItem.due_date) < new Date(today)
+      (caseItem) =>
+        new Date(caseItem.due_date).toISOString().split("T")[0] < today
     ).length;
 
     const dueToday = casesList.filter(
@@ -175,38 +179,58 @@ const Home: React.FC = () => {
       (caseItem) => caseItem.status === "on_hold"
     ).length;
 
+    console.log(casesList, "casesList");
+
+    // Group the cases by due date and status
     const groupedCases: Record<string, number> = casesList.reduce(
       (acc, caseItem) => {
+        // Debugging log to inspect each case
+        console.log(
+          `Processing case: ${caseItem.due_date}, Status: ${caseItem.status}`
+        );
+
         if (["in_queue", "in_progress"].includes(caseItem.status)) {
           const dueDate = new Date(caseItem.due_date)
             .toISOString()
-            .split("T")[0];
+            .split("T")[0]; // Ensure consistent date format (YYYY-MM-DD)
+          console.log(`Due Date (formatted): ${dueDate}`);
+
           acc[dueDate] = (acc[dueDate] || 0) + 1;
         }
+
         return acc;
       },
       {} as Record<string, number>
     );
+
+    console.log(groupedCases, "groupedCases");
+
+    // Map the grouped cases to calendar events
     const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
+      // Parse the date string into a Date object
       const eventDate = new Date(date);
+
+      // Extract the year, month, and day
+      const year = eventDate.getFullYear();
+      const month = eventDate.getMonth(); // Month is 0-based, so it will be 0-11
+      const day = eventDate.getDate();
+
+      // Format the event date (for display purposes)
+      const formattedDate = format(eventDate, "MMM dd, yyyy");
+
+      // Create the start and end Date objects based on the parsed eventDate
+      const start = new Date(year, month, day, 9, 0); // 9 AM
+      const end = new Date(year, month, day, 17, 0); // 5 PM
+
       return {
         title: count.toString(),
-        start: new Date(
-          eventDate.getFullYear(),
-          eventDate.getMonth(),
-          eventDate.getDate(),
-          9,
-          0
-        ),
-        end: new Date(
-          eventDate.getFullYear(),
-          eventDate.getMonth(),
-          eventDate.getDate(),
-          17,
-          0
-        ),
+        start,
+        end,
+        formattedDate, // Optionally add this for display purposes
       };
     });
+
+    // Update key metrics
     setKeyMetrics([
       {
         icon: AlertTriangle,
@@ -234,7 +258,7 @@ const Home: React.FC = () => {
       },
     ]);
 
-    // Update the calendar events
+    // Update calendar events
     setCasesEvents(calendarEvents);
   }, [casesList]);
 

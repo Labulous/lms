@@ -4,7 +4,9 @@ import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import OrderDetailsStep from "../../components/cases/wizard/steps/OrderDetailsStep";
 import ProductConfiguration from "../../components/cases/wizard/ProductConfiguration";
-import FilesStep from "../../components/cases/wizard/steps/FilesStep";
+import FilesStep, {
+  FileWithStatus,
+} from "../../components/cases/wizard/steps/FilesStep";
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData } from "@/types/supabase";
 import { addCase, DeliveryMethod } from "../../data/mockCasesData";
@@ -54,7 +56,7 @@ const NewCase: React.FC = () => {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<FormData>>({});
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
@@ -276,11 +278,11 @@ const NewCase: React.FC = () => {
             lab_id: lab?.labId,
             pan_tag_id: formData.workingPanName,
             case_number: caseNumber,
+            attachements: selectedFiles.map((item) => item.url),
           },
           products: selectedProducts.filter((item) => item.id && item.type),
 
           enclosedItems: transformedData.enclosedItems,
-          files: selectedFiles,
         };
         // Add case to database
         await addCase(newCase, navigate, setLoadingState);
@@ -359,6 +361,7 @@ const NewCase: React.FC = () => {
                 errors={errors}
                 selectedFiles={selectedFiles}
                 setSelectedFiles={setSelectedFiles}
+                storage="cases"
               />
             </div>
           </div>
