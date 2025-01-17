@@ -1940,11 +1940,12 @@ const CaseDetails: React.FC = () => {
           }}
           formData={{
             clientId: caseDetail.client?.id,
-            items: caseDetail.invoice?.[0].items || [],
-            discount: caseDetail.invoice?.[0].discount || 0,
-            discountType: caseDetail.invoice?.[0].discount_type || "percentage",
-            tax: caseDetail.invoice?.[0].tax || 0,
-            notes: caseDetail.invoice?.[0].notes || "",
+            items: caseDetail.invoice?.[0]?.items || [],
+            discount: caseDetail.invoice?.[0]?.discount || 0,
+            discountType:
+              caseDetail.invoice?.[0]?.discount_type || "percentage",
+            tax: caseDetail.invoice?.[0]?.tax || 0,
+            notes: caseDetail.invoice?.[0]?.notes || "",
           }}
         />
       )}

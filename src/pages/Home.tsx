@@ -21,12 +21,27 @@ import { format } from "date-fns";
 interface CasesDues {
   due_date: string;
   status: string;
+  id: string;
+  case_number: string;
+  client_name: {
+    client_name: string;
+  };
+  product_ids: { products_id: string[] };
+  doctor: { name: string };
+  products: any[];
 }
 
 export interface CalendarEvents {
   title: string;
   start: Date;
   end: Date;
+
+  formattedCases: {
+    case_id: string;
+    client_name: string;
+    doctor: { name: string };
+    case_products: { name: string; product_type: { name: string } }[];
+  }[];
 }
 
 const Home: React.FC = () => {
@@ -50,7 +65,7 @@ const Home: React.FC = () => {
   };
 
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
-  const [cases, setCases] = useState<Case[]>([]);
+  // const [cases, setCases] = useState<Case[]>([]);
   const [casesList, setCasesList] = useState<CasesDues[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [greeting, setGreeting] = useState("");
@@ -90,7 +105,7 @@ const Home: React.FC = () => {
   const userName = user ? user.name : "User";
 
   useEffect(() => {
-    setCases(getCases());
+    // setCases(getCases());
 
     const hour = new Date().getHours();
     if (hour < 12) setGreeting(`Good morning, ${userName}!`);
@@ -113,29 +128,69 @@ const Home: React.FC = () => {
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
+            `   
+              case_number,
+              id,
+              status,
+              due_date,
+              client_name:clients!client_id (
+                client_name
+              ),
+              product_ids:case_products!id (
+                products_id
+              ),
+              doctor:doctors!doctor_id (
+                name
+              )
             `
-                id,
-                status,
-               due_date
-              `
           )
           .eq("lab_id", lab.labId)
+          .in("status", ["in_queue", "in_progress"]) // Filter for both statuses
           .order("created_at", { ascending: true });
-        const data = casesData
-          ? casesData
-              .filter(
-                (caseItem) =>
-                  caseItem.status !== "completed" &&
-                  caseItem.status !== "cancelled"
-              )
-              .map((caseItem) => caseItem)
-          : [];
+
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
         }
 
-        setCasesList(data);
+        const enhancedCases = await Promise.all(
+          casesData.map(async (singleCase) => {
+            const productsIdArray =
+              singleCase.product_ids?.map((p) => p.products_id) || [];
+
+            if (productsIdArray.length === 0) {
+              return { ...singleCase, products: [] }; // No products for this case
+            }
+
+            // Fetch products for the current case
+            const { data: productData, error: productsError } = await supabase
+              .from("products")
+              .select(
+                `
+                  id,
+                  name,
+                  product_type:product_types!product_type_id (
+                    name
+                  )
+                `
+              )
+              .eq("lab_id", lab.labId)
+              .in("id", productsIdArray);
+
+            if (productsError) {
+              console.error(
+                `Error fetching products for case ${singleCase.id}:`,
+                productsError
+              );
+            }
+
+            return { ...singleCase, products: productData || [] };
+          })
+        );
+
+        console.log(enhancedCases, "enhancedCases");
+
+        setCasesList(enhancedCases as any); // Set the enhanced cases list
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
       } finally {
@@ -170,85 +225,75 @@ const Home: React.FC = () => {
     },
   ];
 
-  const formatCurrentDate = () => {
-    return new Date().toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   useEffect(() => {
-    const today = new Date().toISOString().split("T")[0]; // UTC today (YYYY-MM-DD)
-
-    // Calculate tomorrow in UTC
+    const today = new Date().toISOString().split("T")[0];
     const tomorrow = new Date(
       new Date().setUTCDate(new Date().getUTCDate() + 1)
     )
       .toISOString()
       .split("T")[0];
 
-    // Count cases based on the given conditions
     const pastDue = casesList.filter(
-      (caseItem) =>
+      (caseItem: CasesDues) =>
         new Date(caseItem.due_date).toISOString().split("T")[0] < today
     ).length;
 
     const dueToday = casesList.filter(
-      (caseItem) => caseItem.due_date.split("T")[0] === today
+      (caseItem: CasesDues) => caseItem.due_date.split("T")[0] === today
     ).length;
 
     const dueTomorrow = casesList.filter(
-      (caseItem) => caseItem.due_date.split("T")[0] === tomorrow
+      (caseItem: CasesDues) => caseItem.due_date.split("T")[0] === tomorrow
     ).length;
 
     const onHold = casesList.filter(
-      (caseItem) => caseItem.status === "on_hold"
+      (caseItem: CasesDues) => caseItem.status === "on_hold"
     ).length;
 
-    // Group the cases by due date and status
-    const groupedCases: Record<string, number> = casesList.reduce(
-      (acc, caseItem) => {
+    const groupedCases = casesList.reduce(
+      (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
         if (["in_queue", "in_progress"].includes(caseItem.status)) {
           const dueDate = new Date(caseItem.due_date)
             .toISOString()
-            .split("T")[0]; // Ensure consistent UTC date format (YYYY-MM-DD)
-
-          acc[dueDate] = (acc[dueDate] || 0) + 1;
+            .split("T")[0];
+          acc[dueDate] = acc[dueDate] || [];
+          acc[dueDate].push(caseItem);
         }
-
         return acc;
       },
-      {} as Record<string, number>
+      {}
     );
 
+    const calendarEvents: CalendarEvents[] = Object.entries(groupedCases).map(
+      ([date, cases]) => {
+        const eventDate = new Date(date);
+        const year = eventDate.getUTCFullYear();
+        const month = eventDate.getUTCMonth();
+        const day = eventDate.getUTCDate();
+        const start = new Date(Date.UTC(year, month, day, 9, 0));
+        const end = new Date(Date.UTC(year, month, day, 17, 0));
 
-    // Map the grouped cases to calendar events
-    const calendarEvents = Object.entries(groupedCases).map(([date, count]) => {
-      const eventDate = new Date(date); // Ensure date parsing in UTC
+        const formattedCases = cases.map((caseItem) => ({
+          case_id: caseItem.id,
+          case_number: caseItem.case_number,
+          client_name: caseItem.client_name.client_name,
+          doctor: caseItem.doctor,
+          status: caseItem.status,
+          case_products: caseItem.products.map((product) => ({
+            name: product.name,
+            product_type: product.product_type,
+          })),
+        }));
 
-      // Extract the year, month, and day in UTC
-      const year = eventDate.getUTCFullYear();
-      const month = eventDate.getUTCMonth(); // 0-based
-      const day = eventDate.getUTCDate();
+        return {
+          title: `${cases.length}`, // Example: "3 cases"
+          start,
+          end,
+          formattedCases,
+        };
+      }
+    );
 
-      // Format the event date for display purposes
-      const formattedDate = format(eventDate, "MMM dd, yyyy");
-
-      // Create the start and end Date objects based on UTC
-      const start = new Date(Date.UTC(year, month, day, 9, 0)); // 9 AM UTC
-      const end = new Date(Date.UTC(year, month, day, 17, 0)); // 5 PM UTC
-
-      return {
-        title: count.toString(),
-        start,
-        end,
-        formattedDate, // Optionally add this for display purposes
-      };
-    });
-
-    // Update key metrics
     setKeyMetrics([
       {
         icon: AlertTriangle,
@@ -280,7 +325,6 @@ const Home: React.FC = () => {
       },
     ]);
 
-    // Update calendar events
     setCasesEvents(calendarEvents);
   }, [casesList]);
 

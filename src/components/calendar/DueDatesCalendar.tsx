@@ -13,6 +13,20 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CalendarEvents } from "@/pages/Home";
 import "./calendar.css";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "../ui/button";
 
 const locales = {
   "en-US": enUS,
@@ -77,6 +91,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   height = 500,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
   const [animationDirection, setAnimationDirection] = useState<
     "left" | "right" | null
   >(null);
@@ -136,6 +151,148 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
         label={format(props.date, "MMMM yyyy")}
       />
     ),
+    event: ({ event }: { event: CalendarEvents }) => (
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <div onMouseEnter={() => handleEventHover(event)} title="">
+            {event.title}
+          </div>
+        </HoverCardTrigger>
+        <HoverCardContent
+          className="w-80"
+          align="end"
+          onMouseLeave={() => handleEventHover(null)}
+        >
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-medium">
+                  {format(event.start, "MMMM d, yyyy")}
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {event.title} {events.length === 1 ? "case" : "cases"} due
+                </p>
+              </div>
+              <div>
+                <Button onClick={() => handleEventClick(event)}>
+                  View CaseList
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            <ScrollArea className="h-[200px] pr-4">
+              <div className="space-y-2">
+                {event.formattedCases.map((event: any, index: number) => (
+                  <div
+                    key={index}
+                    className="flex flex-col space-y-1 rounded-md p-2 hover:bg-muted/50 cursor-pointer"
+                    onClick={() => navigate(`/cases/${event.case_id}`)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">#{event.case_number}</span>
+                      <Badge
+                        variant={
+                          event.status === "in_progress"
+                            ? "default"
+                            : event.status === "on_hold"
+                            ? "secondary"
+                            : "outline"
+                        }
+                        className="text-xs"
+                      >
+                        {event.status}
+                      </Badge>
+                    </div>
+
+                    <div className="flex flex-col text-sm text-muted-foreground">
+                      <div className="flex justify-between">
+                        <span>Client:</span>
+                        <span className="font-medium text-foreground">
+                          {event.client_name}
+                        </span>
+                      </div>
+                      {event.doctor?.name && (
+                        <div className="flex justify-between">
+                          <span>Doctor:</span>
+                          <span className="font-medium text-foreground">
+                            {event.doctor.name}
+                          </span>
+                        </div>
+                      )}
+                      {event.case_products?.[0]?.products?.name && (
+                        <div className="flex justify-between">
+                          <span>Product:</span>
+                          <span className="font-medium text-foreground">
+                            {event.case_products[0].products.name}
+                            {event.case_products.length > 1 &&
+                              ` +${event.case_products.length - 1}`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="space-y-1">
+                <p className="font-medium text-start">Status Breakdown</p>
+                {Object.entries(
+                  event.formattedCases.reduce(
+                    (acc: Record<string, number>, event: any) => {
+                      acc[event.status] = (acc[event.status] || 0) + 1;
+                      return acc;
+                    },
+                    {}
+                  )
+                ).map(([status, count]) => (
+                  <div
+                    key={status}
+                    className="flex justify-between text-muted-foreground"
+                  >
+                    <span className="capitalize">
+                      {status.replace("_", " ")}
+                    </span>
+                    <span>{count}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1 px-4">
+                <p className="font-medium text-start">Product Types</p>
+                {Object.entries(
+                  event.formattedCases.reduce(
+                    (acc: Record<string, number>, currentCase: any) => {
+                      currentCase.case_products?.forEach((cp: any) => {
+                        const productTypeName = cp.product_type?.name;
+                        if (productTypeName) {
+                          acc[productTypeName] =
+                            (acc[productTypeName] || 0) + 1;
+                        }
+                      });
+                      return acc;
+                    },
+                    {}
+                  )
+                ).map(([type, count]) => (
+                  <div
+                    key={type}
+                    className="flex justify-between text-muted-foreground"
+                  >
+                    <span>{type}</span>
+                    <span>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    ),
   };
 
   const eventStyleGetter = (
@@ -167,7 +324,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const rbcNowElement = document.querySelector(".rbc-now");
   useEffect(() => {
-
     if (rbcNowElement) {
       const nextSibling = rbcNowElement.nextElementSibling;
       if (nextSibling && nextSibling instanceof HTMLElement) {
@@ -180,6 +336,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     }
   }, [rbcNowElement]);
 
+  const handleEventHover = (event: CalendarEvents | null) => {
+    setHoveredEvent(event);
+  };
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div
@@ -198,7 +357,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           date={currentDate}
           onNavigate={handleNavigate as any}
           eventPropGetter={eventStyleGetter}
-          onSelectEvent={handleEventClick}
+          // onSelectEvent={handleEventClick}
           dayPropGetter={dayPropGetter}
           className="calendar-container"
         />
