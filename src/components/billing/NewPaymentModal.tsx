@@ -346,7 +346,6 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
   useEffect(() => {
     const getCompletedInvoices = async () => {
       setLoading(true);
-
       try {
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
@@ -386,7 +385,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           console.error("Error fetching completed invoices:", casesError);
           return;
         }
-
+        console.log(casesData, "casesData");
         // Filter cases where invoicesData contains statuses not "draft", "paid", or "cancelled"
         const filteredCases: any = casesData?.filter((caseItem) =>
           caseItem.invoicesData.some(
@@ -423,7 +422,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
       getCompletedInvoices();
     }
   }, [selectedClient]);
-
+console.log(invoices,"set Invoices")
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">

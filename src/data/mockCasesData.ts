@@ -176,7 +176,10 @@ const saveCaseProduct = async (
       product_id: product.id,
       price: product.price,
       discount: product.discount,
-      final_price: product.price - (product.price * product.discount) / 100,
+      quantity: product.quantity,
+      final_price:
+        (product.price - (product.price * product.discount) / 100) *
+        product.quantity,
       case_id: savedCaseId as string,
       user_id: cases.overview.created_by,
     }));
@@ -302,10 +305,25 @@ const saveCases = async (
       }
 
       // Step 4: Create invoice for the case
+      const totalAmount = cases.products.reduce(
+        (
+          sum: number,
+          item: { price: number; quantity: number; discount: number }
+        ) => {
+          const itemTotal = item.price * item.quantity; // Total price without discount
+          const discountedTotal =
+            itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
+          return sum + discountedTotal; // Add to the sum
+        },
+        0
+      );
+
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
+        amount: totalAmount,
+        due_amount: totalAmount,
         status: "Unpaid",
         due_date: updateDueDate(),
       };
@@ -397,7 +415,6 @@ const updateCases = async (
       products_id: productIds,
     };
 
-    console.log("runing discounted");
     // Calculate discounted prices for products
     for (const product of cases.products) {
       // Prepare the data row
@@ -405,8 +422,10 @@ const updateCases = async (
         product_id: product.id,
         price: product.price || 0,
         discount: product.discount || 0,
+        quantity: product.quantity,
         final_price:
-          product.price - (product.price * product.discount) / 100 || 0,
+          (product.price - (product.price * product.discount) / 100 || 0) *
+          product.quantity,
         case_id: caseId,
         user_id: cases.overview.created_by || "",
       };
@@ -689,7 +708,7 @@ export const fetchShadeOptions = async (labId: string) => {
     }
 
     console.log("Fetched shade options:", data);
-    return data; // Return fetched items
+    return data; // Return fetched itemsmeeting
   } catch (err) {
     console.error("Unexpected error fetching shade options:", err);
     return null; // Return null or handle accordingly
