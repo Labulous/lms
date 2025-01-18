@@ -187,7 +187,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                 {event.formattedCases.map((event: any, index: number) => (
                   <div
                     key={index}
-                    className="flex flex-col space-y-1 rounded-md p-2 hover:bg-muted/50 cursor-pointer"
+                    className="flex flex-col space-y-1 rounded-md p-2 hover:bg-muted/50 cursor-pointer border"
                     onClick={() => navigate(`/cases/${event.case_id}`)}
                   >
                     <div className="flex items-center justify-between">
@@ -221,16 +221,52 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                           </span>
                         </div>
                       )}
-                      {event.case_products?.[0]?.products?.name && (
+                      {event.case_products?.[0]?.name && (
                         <div className="flex justify-between">
                           <span>Product:</span>
                           <span className="font-medium text-foreground">
-                            {event.case_products[0].products.name}
+                            {event.case_products[0].name}
                             {event.case_products.length > 1 &&
                               ` +${event.case_products.length - 1}`}
                           </span>
                         </div>
                       )}
+
+                      <div>
+                        {event.invoicesData?.length > 0 && (
+                          <div className="flex justify-between">
+                            <span className="font-bold">Invoices:</span>
+                            <span className="font-medium text-foreground">
+                              {""}
+                            </span>
+                          </div>
+                        )}
+
+                        {event.invoicesData?.[0]?.status && (
+                          <div className="flex justify-between">
+                            <span>Status:</span>
+                            <span className="font-medium text-foreground">
+                              {event.invoicesData?.[0]?.status}
+                            </span>
+                          </div>
+                        )}
+                        {event.invoicesData?.[0]?.amount && (
+                          <div className="flex justify-between">
+                            <span>Total Amount:</span>
+                            <span className="font-medium text-foreground">
+                              ${event.invoicesData?.[0]?.amount}
+                            </span>
+                          </div>
+                        )}
+                        {event.invoicesData?.[0]?.due_amount && (
+                          <div className="flex justify-between">
+                            <span>Due Amount:</span>
+                            <span className="font-medium text-foreground">
+                              ${event.invoicesData?.[0]?.due_amount}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -339,6 +375,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
+  console.log(events, "nextSibling");
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div

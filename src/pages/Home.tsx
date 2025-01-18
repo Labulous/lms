@@ -29,6 +29,14 @@ interface CasesDues {
   product_ids: { products_id: string[] };
   doctor: { name: string };
   products: any[];
+  invoicesData:
+    | {
+        amount: number;
+        due_amount: number;
+        status: String;
+        created_at: string;
+      }[]
+    | [];
 }
 
 export interface CalendarEvents {
@@ -41,6 +49,14 @@ export interface CalendarEvents {
     client_name: string;
     doctor: { name: string };
     case_products: { name: string; product_type: { name: string } }[];
+    invoicesData:
+      | {
+          amount: number;
+          due_amount: number;
+          status: String;
+          created_at: string;
+        }[]
+      | [];
   }[];
 }
 
@@ -141,6 +157,13 @@ const Home: React.FC = () => {
               ),
               doctor:doctors!doctor_id (
                 name
+              ),
+              invoicesData:invoices!case_id (
+              id,
+                amount,
+                status,
+                due_amount,
+                created_at
               )
             `
           )
@@ -283,6 +306,7 @@ const Home: React.FC = () => {
             name: product.name,
             product_type: product.product_type,
           })),
+          invoicesData: caseItem.invoicesData,
         }));
 
         return {
