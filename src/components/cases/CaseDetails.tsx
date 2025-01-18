@@ -633,29 +633,47 @@ const CaseDetails: React.FC = () => {
                   type
                 `
                 )
-                .eq("case_product_id", caseProductId);
+                .eq("case_product_id", caseProductId)
+                .eq("case_id", caseData.id);
 
             if (teethProductsError) {
               setError(teethProductsError.message);
               return;
             }
             teethProducts = teethProductData;
+            console.log(teethProductData, "teethProductData");
           }
-
+          console.log(productData, "productData");
+          console.log(discountedPriceData, "discountedPriceData");
           // Combine all product data
-          const productsWithDiscounts = productData.map((product: any) => {
-            const discountedPrice = discountedPriceData.find(
+          const productsWithDiscounts = productData.flatMap((product: any) => {
+            // Find all the discounted prices for this product
+            const relevantDiscounts = discountedPriceData.filter(
               (discount: { product_id: string }) =>
                 discount.product_id === product.id
             );
-            const productTeeth = teethProducts.find(
+
+            // Find all the teeth products for this product
+            const relevantTeethProducts = teethProducts.filter(
               (teeth: any) => teeth.product_id === product.id
             );
-            return {
-              ...product,
-              discounted_price: discountedPrice,
-              teethProduct: productTeeth,
-            };
+
+            // Return a flattened array of products with the relevant discounted prices and teeth products
+            return relevantTeethProducts.map((teeth: any) => {
+              // Find the discounted price for this teeth product (assuming there's a one-to-one match between discounted price and teeth)
+              const discountedPrice = relevantDiscounts.find(
+                (discount: { product_id: string }) =>
+                  discount.product_id === product.id
+              );
+
+              return {
+                ...product,
+                discounted_price: discountedPrice,
+                teethProduct: {
+                  ...teeth,
+                }, // Add the teeth product associated with this instance
+              };
+            });
           });
 
           setCaseDetail({
@@ -1453,9 +1471,7 @@ const CaseDetails: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {caseDetail?.products &&
-                        duplicateProductsByTeethNumber(
-                          caseDetail?.products
-                        )?.map((product, index) => {
+                        caseDetail?.products?.map((product, index) => {
                           const price = product?.discounted_price?.price || 0;
                           const discount =
                             product?.discounted_price?.discount || 0;

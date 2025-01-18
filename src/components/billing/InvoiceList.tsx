@@ -77,6 +77,7 @@ import { DiscountedPrice } from "@/types/supabase";
 import jsPDF from "jspdf";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { NewPaymentModal } from "./NewPaymentModal";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 // import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
@@ -123,6 +124,7 @@ const InvoiceList: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
+  const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "date",
@@ -164,7 +166,7 @@ const InvoiceList: React.FC = () => {
           console.error("Lab ID not found.");
           return;
         }
-
+        setLab(lab);
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
@@ -289,18 +291,21 @@ const InvoiceList: React.FC = () => {
 
             if (productsError) {
               console.error("Error fetching products for case:", productsError);
+              return { ...singleCase, products: [] }; // Return empty products if there's an error
             }
+
             const { data: discountedPriceData, error: discountedPriceError } =
               await supabase
                 .from("discounted_price")
                 .select(
                   `
-     product_id,
-     discount,
-     final_price,
-     price,
-     quantity
-   `
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity
+              `
                 )
                 .in("product_id", productsIdArray)
                 .eq("case_id", singleCase.id);
@@ -311,12 +316,16 @@ const InvoiceList: React.FC = () => {
                 discountedPriceError
               );
             }
+
             const { data: teethProductData, error: teethProductsError } =
               await supabase
                 .from("case_product_teeth")
                 .select(
                   `
+                id,
                 is_range,
+                tooth_number,
+                product_id,
                 occlusal_shade:shade_options!occlusal_shade_id (
                   name,
                   category,
@@ -336,13 +345,11 @@ const InvoiceList: React.FC = () => {
                   name,
                   category,
                   is_active
-                ),
-                tooth_number,
-                product_id
+                )
               `
                 )
                 .in("product_id", productsIdArray)
-                .eq("case_product_id", singleCase?.product_ids[0].id);
+                .eq("case_product_id", singleCase?.product_ids[0]?.id);
 
             if (teethProductsError) {
               console.error(
@@ -350,30 +357,40 @@ const InvoiceList: React.FC = () => {
                 teethProductsError
               );
             }
-            const discountedPriceMap: DiscountedPriceMap = (
-              discountedPriceData ?? []
-            ).reduce((acc: DiscountedPriceMap, item: DiscountedPrice) => {
-              acc[item.product_id] = item;
-              return acc;
-            }, {} as DiscountedPriceMap);
-            const teethProductMap: any = (teethProductData ?? []).reduce(
-              (acc: any, item: any) => {
-                acc[item.product_id] = item;
-                return acc;
-              },
-              {} as any
+            console.log(teethProductData, "teethProductData");
+            // Combine products with their relevant discounts and teeth products
+            const productsWithDiscounts = productData.flatMap(
+              (product: any) => {
+                const relevantDiscounts =
+                  discountedPriceData?.filter(
+                    (discount: { product_id: string }) =>
+                      discount.product_id === product.id
+                  ) || [];
+
+                const relevantTeethProducts =
+                  teethProductData?.filter(
+                    (teeth: any) => teeth.product_id === product.id
+                  ) || [];
+
+                return relevantTeethProducts
+                  .map((teeth: any, index: number) => {
+                    const discountedPrice = relevantDiscounts[index] || null;
+
+                    return {
+                      ...product,
+                      discounted_price: { ...discountedPrice },
+                      teethProduct: {
+                        ...teeth,
+                      },
+                    };
+                  })
+                  .filter((item) => item.teethProduct.tooth_number !== null);
+              }
             );
 
-            const products = productData?.map((product) => {
-              return {
-                ...product,
-                discounted_price: discountedPriceMap[product.id] || null,
-                teethProduct: teethProductMap[product.id] || null,
-              };
-            });
             return {
               ...singleCase,
-              products,
+              products: productsWithDiscounts,
             };
           })
         );
@@ -418,6 +435,7 @@ const InvoiceList: React.FC = () => {
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice.items.map((item) => item.id);
     console.log(updatedInvoice, "updatedInvoice");
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
 
@@ -431,133 +449,221 @@ const InvoiceList: React.FC = () => {
       if (updateCaseProductsError) {
         throw new Error(updateCaseProductsError.message);
       }
+      console.log(updatedCaseProducts, "updatedCaseProducts");
+      // for (const updatedCaseProduct of updatedCaseProducts) {
+      //   const { id: caseProductId, products_id } = updatedCaseProduct;
 
-      for (const updatedCaseProduct of updatedCaseProducts) {
-        const { id: caseProductId, products_id } = updatedCaseProduct;
+      //   if (Array.isArray(products_id)) {
+      //     for (const product_id of products_id) {
+      //       // const { data: existingTeeth, error: fetchError } = await supabase
+      //       //   .from("case_product_teeth")
+      //       //   .select("id")
+      //       //   .eq("case_product_id", caseProductId)
+      //       //   .eq("product_id", product_id)
+      //       //   .single();
 
-        if (Array.isArray(products_id)) {
-          for (const product_id of products_id) {
-            const { data: existingTeeth, error: fetchError } = await supabase
-              .from("case_product_teeth")
-              .select("id")
-              .eq("case_product_id", caseProductId)
-              .eq("product_id", product_id)
-              .single();
+      //       // if (fetchError && fetchError.code !== "PGRST116") {
+      //       //   throw new Error(fetchError.message);
+      //       // }
 
-            if (fetchError && fetchError.code !== "PGRST116") {
-              throw new Error(fetchError.message);
-            }
+      //       // if (existingTeeth) {
+      //       //   const { error: updateTeethError } = await supabase
+      //       //     .from("case_product_teeth")
+      //       //     .update({
+      //       //       tooth_number: updatedInvoice.items.filter(
+      //       //         (item) => item.id === product_id
+      //       //       )[0]?.toothNumber?.[0],
+      //       //     })
+      //       //     .eq("case_product_id", caseProductId)
+      //       //     .eq("product_id", product_id);
 
-            if (existingTeeth) {
-              const { error: updateTeethError } = await supabase
-                .from("case_product_teeth")
-                .update({
-                  tooth_number: updatedInvoice.items
-                    .filter((item) => item.id === product_id)[0]
-                    ?.toothNumber.split(",")
-                    .map(Number),
-                })
-                .eq("case_product_id", caseProductId)
-                .eq("product_id", product_id);
+      //       //   if (updateTeethError) throw new Error(updateTeethError.message);
+      //       // } else {
+      //       //   const { error: insertTeethError } = await supabase
+      //       //     .from("case_product_teeth")
+      //       //     .insert({
+      //       //       case_product_id: caseProductId,
+      //       //       product_id,
+      //       //       tooth_number: updatedInvoice.items
+      //       //         .filter((item) => item.id === product_id)[0]
+      //       //         ?.toothNumber?.[0]
+      //       //     });
 
-              if (updateTeethError) throw new Error(updateTeethError.message);
-            } else {
-              const { error: insertTeethError } = await supabase
-                .from("case_product_teeth")
-                .insert({
-                  case_product_id: caseProductId,
-                  product_id,
-                  tooth_number: updatedInvoice.items
-                    .filter((item) => item.id === product_id)[0]
-                    ?.toothNumber.split(",")
-                    .map(Number),
-                });
+      //       //   if (insertTeethError) throw new Error(insertTeethError.message);
+      //       // }
 
-              if (insertTeethError) throw new Error(insertTeethError.message);
-            }
+      //       const { data: existingDiscount, error: discountFetchError } =
+      //         await supabase
+      //           .from("discounted_price")
+      //           .select("id")
+      //           .eq("case_id", updatedInvoice.id)
+      //           .eq("product_id", product_id)
+      //           .single();
 
-            const { data: existingDiscount, error: discountFetchError } =
+      //       if (discountFetchError && discountFetchError.code !== "PGRST116") {
+      //         throw new Error(discountFetchError.message);
+      //       }
+
+      //       if (existingDiscount) {
+      //         const { data: updatedDiscount, error: updateDiscountError } =
+      //           await supabase
+      //             .from("discounted_price")
+      //             .update({
+      //               discount: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].discount,
+      //               quantity: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].quantity,
+      //               price: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].unitPrice,
+      //               final_price:
+      //                 updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].quantity *
+      //                 updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].unitPrice *
+      //                 (1 -
+      //                   (updatedInvoice.items.filter(
+      //                     (item) => item.id === product_id
+      //                   )[0].discount || 0) /
+      //                     100),
+      //             }) // Update discount value
+      //             .eq("case_id", updatedInvoice.id)
+      //             .eq("product_id", product_id)
+      //             .select();
+
+      //         if (updateDiscountError)
+      //           throw new Error(updateDiscountError.message);
+      //       } else {
+      //         const { error: insertDiscountError } = await supabase
+      //           .from("discounted_price")
+      //           .insert({
+      //             case_id: updatedInvoice.id,
+      //             product_id,
+      //             discount: updatedInvoice?.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].discount, // New discount value
+      //             quantity: updatedInvoice.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].quantity,
+      //             price: updatedInvoice.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].unitPrice,
+      //             final_price:
+      //               updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].quantity *
+      //               updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].unitPrice *
+      //               (1 -
+      //                 (updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].discount || 0) /
+      //                   100),
+      //           })
+      //           .select();
+      //         if (insertDiscountError)
+      //           throw new Error(insertDiscountError.message);
+      //       }
+      //     }
+      //   } else {
+      //     console.warn(
+      //       `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+      //     );
+      //   }
+      // }
+      for (const item of updatedInvoice.items) {
+        try {
+          // Calculate the final price based on the quantity, unit price, and discount
+          const finalPrice =
+            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+
+          if (item.discountId && item.caseProductTeethId) {
+            // Update the discounted_price table
+            const { data: updatedDiscount, error: updateDiscountError } =
               await supabase
                 .from("discounted_price")
-                .select("id")
-                .eq("case_id", updatedInvoice.id)
-                .eq("product_id", product_id)
-                .single();
-
-            if (discountFetchError && discountFetchError.code !== "PGRST116") {
-              throw new Error(discountFetchError.message);
-            }
-
-            if (existingDiscount) {
-              const { data: updatedDiscount, error: updateDiscountError } =
-                await supabase
-                  .from("discounted_price")
-                  .update({
-                    discount: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].discount,
-                    quantity: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].quantity,
-                    price: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].unitPrice,
-                    final_price:
-                      updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].quantity *
-                      updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].unitPrice *
-                      (1 -
-                        (updatedInvoice.items.filter(
-                          (item) => item.id === product_id
-                        )[0].discount || 0) /
-                          100),
-                  }) // Update discount value
-                  .eq("case_id", updatedInvoice.id)
-                  .eq("product_id", product_id)
-                  .select();
-
-              if (updateDiscountError)
-                throw new Error(updateDiscountError.message);
-            } else {
-              const { error: insertDiscountError } = await supabase
-                .from("discounted_price")
-                .insert({
-                  case_id: updatedInvoice.id,
-                  product_id,
-                  discount: updatedInvoice?.items.filter(
-                    (item) => item.id === product_id
-                  )[0].discount, // New discount value
-                  quantity: updatedInvoice.items.filter(
-                    (item) => item.id === product_id
-                  )[0].quantity,
-                  price: updatedInvoice.items.filter(
-                    (item) => item.id === product_id
-                  )[0].unitPrice,
-                  final_price:
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].quantity *
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].unitPrice *
-                    (1 -
-                      (updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].discount || 0) /
-                        100),
+                .update({
+                  discount: item.discount,
+                  quantity: item.quantity,
+                  price: item.unitPrice,
+                  final_price: finalPrice,
                 })
+                .eq("id", item.discountId)
                 .select();
-              if (insertDiscountError)
-                throw new Error(insertDiscountError.message);
+
+            if (updateDiscountError) {
+              throw new Error(updateDiscountError.message);
             }
+
+            // Update the case_product_teeth table
+            const { data: updateTeeth, error: updateTeethError } =
+              await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [item.toothNumber],
+                })
+                .eq("id", item.caseProductTeethId)
+                .select("*");
+
+            console.log("Updated discount row:", updatedDiscount);
+            console.log("Updated teeth row:", updateTeeth);
+          } else {
+            // Create a new discounted_price row
+            const { data: newDiscount, error: newDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .insert([
+                  {
+                    discount: item.discount,
+                    quantity: item.quantity,
+                    price: item.unitPrice,
+                    final_price: finalPrice,
+                    product_id: item.id,
+                    case_id: updatedInvoice.id,
+                    user_id: user?.id,
+                  },
+                ])
+                .select();
+
+            if (newDiscountError) {
+              throw new Error(newDiscountError.message);
+            }
+
+            console.log("Created new discount row:", newDiscount);
+
+            // Create a new case_product_teeth row
+            const { data: newTeeth, error: newTeethError } = await supabase
+              .from("case_product_teeth")
+              .insert([
+                {
+                  tooth_number: [Number(item.toothNumber)],
+                  product_id: item.id, // Ensure to include the product_id
+                  case_id: updatedInvoice.id,
+                  lab_id: lab?.labId,
+                  case_product_id: updatedCaseProducts[0].id,
+                },
+              ])
+              .select("*");
+
+            if (newTeethError) {
+              throw new Error(newTeethError.message);
+            }
+
+            console.log("Created new teeth row:", newTeeth);
           }
-        } else {
-          console.warn(
-            `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+
+          await updateBalanceTracking();
+        } catch (error) {
+          console.error(
+            `Error processing item with productId ${item.id}:`,
+            error
           );
+          // Optionally, continue with the next item instead of throwing
         }
       }
 
@@ -596,7 +702,6 @@ const InvoiceList: React.FC = () => {
       setRefreshData(true);
     }
   };
-
   // Cleanup function for modal state
   useEffect(() => {
     return () => {

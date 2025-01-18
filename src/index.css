@@ -216,24 +216,3 @@
 [data-title] {
   position: relative;
 }
-
-@media print {
-  @page {
-    size: A4;
-    margin: 0;
-  }
-
-  body {
-    margin: 0;
-    padding: 0;
-  }
-
-  .print-container {
-    width: 210mm;
-    min-height: 297mm;
-    padding: 20mm;
-    margin: 0;
-    background-color: white;
-    box-sizing: border-box;
-  }
-}

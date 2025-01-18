@@ -11,6 +11,8 @@ export interface InvoiceItem {
   caseId?: string;
   toothNumber: string;
   discount: number;
+  discountId?: string;
+  caseProductTeethId?: string;
   notes?: {
     instructionNotes: string;
     invoiceNotes: string;

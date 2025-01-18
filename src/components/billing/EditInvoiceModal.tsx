@@ -67,7 +67,9 @@ export function EditInvoiceModal({
         unitPrice: item?.discounted_price?.price ?? 0,
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,
-        toothNumber: item.teethProducts?.tooth_number?.join(",") || "1",
+        discountId: item?.discounted_price?.id,
+        caseProductTeethId: item.teethProduct.id,
+        toothNumber: item.teethProduct?.tooth_number?.[0] || 0,
         description: item.name,
         id: item.id,
       }));
@@ -127,6 +129,8 @@ export function EditInvoiceModal({
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           discount: item.discount,
+          discountId: item.discountId,
+          caseProductTeethId: item.caseProductTeethId,
           toothNumber: item.toothNumber,
           total:
             item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
@@ -168,6 +172,7 @@ export function EditInvoiceModal({
         .from("discounted_price")
         .select(
           `
+                id,
                 product_id,
                 discount,
                 final_price,
@@ -191,6 +196,7 @@ export function EditInvoiceModal({
                   unitPrice: data[0].price,
                   id: data[0].product_id,
                   description: product.name,
+                  discountId: data[0].id,
                   quantity: data[0]?.quantity ?? 1,
                 }
               : item
@@ -206,6 +212,7 @@ export function EditInvoiceModal({
                   discount: 0,
                   unitPrice: 0,
                   id: product.id,
+                  discountId: "",
                   description: product.name,
                   quantity: 1,
                 }
@@ -217,6 +224,7 @@ export function EditInvoiceModal({
       console.error("An unexpected error occurred:", err);
     }
   };
+  console.log(items, "items");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -445,7 +453,9 @@ export function EditInvoiceModal({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setItems(items.filter((_, i) => i !== index));
+                            setItems((prevItems) =>
+                              prevItems.filter((_, i) => i !== index)
+                            );
                           }}
                         >
                           <X className="h-4 w-4" />
