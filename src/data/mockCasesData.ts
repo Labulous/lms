@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { CaseStatus } from "@/types/supabase";
+import { SavedProduct } from "./mockProductData";
+import { duplicateProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -305,12 +307,10 @@ const saveCases = async (
       }
 
       // Step 4: Create invoice for the case
-      const totalAmount = cases.products.reduce(
-        (
-          sum: number,
-          item: { price: number; quantity: number; discount: number }
-        ) => {
-          const itemTotal = item.price * item.quantity; // Total price without discount
+
+      const totalAmount = duplicateProductsByTeeth(cases.products).reduce(
+        (sum: number, item: SavedProduct) => {
+          const itemTotal = item.price * (item?.quantity ? item?.quantity : 1); // Total price without discount
           const discountedTotal =
             itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
           return sum + discountedTotal; // Add to the sum

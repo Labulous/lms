@@ -29,6 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { ProductType } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
@@ -57,9 +58,12 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
+  console.log(invoice?.products, "invoice?.products");
   useEffect(() => {
     if (invoice) {
-      const transformedItems = (invoice?.products ?? []).map((item) => ({
+      const transformedItems = duplicateInvoiceProductsByTeeth(
+        invoice?.products as any
+      ).map((item) => ({
         unitPrice: item?.discounted_price?.price ?? 0,
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,

@@ -644,7 +644,7 @@ const InvoiceList: React.FC = () => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
   };
-
+console.log(invoices,"invoices")
   /* eslint-disable no-unused-vars */
   const getStatusBadgeVariant = (
     status: Invoice["status"],

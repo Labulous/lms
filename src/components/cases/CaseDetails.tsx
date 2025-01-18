@@ -77,6 +77,10 @@ import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
 import OnHoldModal from "./wizard/modals/OnHoldModal";
 import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
+import {
+  duplicateProductsByTeeth,
+  duplicateProductsByTeethNumber,
+} from "@/lib/dulicateProductsByTeeth";
 
 interface CaseFile {
   id: string;
@@ -1443,19 +1447,22 @@ const CaseDetails: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {caseDetail?.products &&
-                        caseDetail?.products?.map((product, index) => {
+                        duplicateProductsByTeethNumber(
+                          caseDetail?.products
+                        )?.map((product, index) => {
                           const price = product?.discounted_price?.price || 0;
                           const discount =
                             product?.discounted_price?.discount || 0;
                           const finalPrice =
                             product?.discounted_price?.final_price || price;
-                          const quantity = product?.tooth_number?.length || 1;
+                          const quantity =
+                            product?.discounted_price.quantity || 1;
                           const subtotal = finalPrice * quantity;
 
                           return (
                             <TableRow key={index}>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.tooth_number?.length > 1
+                                {product.teethProduct.tooth_number?.length > 1
                                   ? formatTeethRange(
                                       product.teethProduct?.tooth_number
                                     )
@@ -1558,7 +1565,7 @@ const CaseDetails: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
                           $
-                          {caseDetail.products
+                          {duplicateProductsByTeethNumber(caseDetail.products)
                             ?.reduce((total, product) => {
                               const finalPrice =
                                 product.discounted_price?.final_price ||
