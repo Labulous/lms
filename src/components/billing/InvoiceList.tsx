@@ -75,6 +75,8 @@ import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
 import { DiscountedPrice } from "@/types/supabase";
 import jsPDF from "jspdf";
+import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
+import { NewPaymentModal } from "./NewPaymentModal";
 // import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
@@ -120,6 +122,8 @@ const InvoiceList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
+
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "date",
     direction: "desc",
@@ -144,6 +148,8 @@ const InvoiceList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
   const [reFreshData, setRefreshData] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
   const { user } = useAuth();
 
   // Initialize invoices
@@ -213,10 +219,11 @@ const InvoiceList: React.FC = () => {
               consultRequested,
               user_id
             ),
-            invoicesData:invoices!case_id (
+            invoice:invoices!case_id (
             case_id,
             amount,
             status,
+            due_amount,
             due_date
             ),
             product_ids:case_products!id (
@@ -361,7 +368,7 @@ const InvoiceList: React.FC = () => {
               return {
                 ...product,
                 discounted_price: discountedPriceMap[product.id] || null,
-                teethProducts: teethProductMap[product.id] || null,
+                teethProduct: teethProductMap[product.id] || null,
               };
             });
             return {
@@ -644,7 +651,7 @@ const InvoiceList: React.FC = () => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
   };
-console.log(invoices,"invoices")
+  console.log(invoices, "invoices");
   /* eslint-disable no-unused-vars */
   const getStatusBadgeVariant = (
     status: Invoice["status"],
@@ -742,7 +749,7 @@ console.log(invoices,"invoices")
     switch (action) {
       case "exportPDF":
       case "exportCSV":
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await setIsPreviewModalOpen(true);
         break;
       case "delete":
       case "markPaid":
@@ -807,7 +814,7 @@ console.log(invoices,"invoices")
           break;
       }
 
-      setProcessingFeedback("Processing completed successfully!");
+      // setProcessingFeedback("Processing completed successfully!");
     } catch (error) {
       setProcessingFeedback("Error occurred during processing");
       console.error("Bulk action error:", error);
@@ -1050,7 +1057,7 @@ console.log(invoices,"invoices")
   const handlePrintInvoice = () => {
     // generatePDF("elementId", "MyDocument.pdf");
   };
-
+  console.log(selectedInvoices, "selectedInvoices");
   return (
     <div className="space-y-4" id="elementId">
       <div className="flex justify-between items-center">
@@ -1275,7 +1282,6 @@ console.log(invoices,"invoices")
                         </div>
                         {[
                           "unpaid",
-                          "approved",
                           "paid",
                           "partially_paid",
                           "overdue",
@@ -1441,9 +1447,9 @@ console.log(invoices,"invoices")
                     <TableCell>
                       <Badge
                         variant={
-                          invoice?.invoicesData?.[0]?.status
+                          invoice?.invoice?.[0]?.status
                             ? (getStatusBadgeVariant(
-                                invoice.invoicesData[0].status as
+                                invoice.invoice[0].status as
                                   | "draft"
                                   | "unpaid"
                                   | "pending"
@@ -1469,11 +1475,9 @@ console.log(invoices,"invoices")
                             : "Bridge"
                         }
                       >
-                        {invoice?.invoicesData?.[0]?.status
-                          ? invoice.invoicesData[0].status
-                              .charAt(0)
-                              .toUpperCase() +
-                            invoice.invoicesData[0].status.slice(1)
+                        {invoice?.invoice?.[0]?.status
+                          ? invoice.invoice[0].status.charAt(0).toUpperCase() +
+                            invoice.invoice[0].status.slice(1)
                           : "No Status"}
                       </Badge>
                     </TableCell>
@@ -1573,8 +1577,8 @@ console.log(invoices,"invoices")
                               Edit Invoice
                             </DropdownMenuItem>
                           )}
-                          {["approved", "partially_paid", "completed"].includes(
-                            invoice.status as
+                          {["unpaid", "partially_paid", "paid"].includes(
+                            invoice.invoice?.[0]?.status as
                               | "draft"
                               | "unpaid"
                               | "pending"
@@ -1588,6 +1592,25 @@ console.log(invoices,"invoices")
                               onClick={() =>
                                 handleOpenEditModal(invoice, "payment")
                               }
+                              className="cursor-pointer"
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Invoice
+                            </DropdownMenuItem>
+                          )}
+                          {["unpaid", "partially_paid"].includes(
+                            invoice.invoice?.[0]?.status as
+                              | "draft"
+                              | "unpaid"
+                              | "pending"
+                              | "approved"
+                              | "paid"
+                              | "overdue"
+                              | "partially_paid"
+                              | "cancelled"
+                          ) && (
+                            <DropdownMenuItem
+                              onClick={() => setShowNewPaymentModal(true)}
                               className="cursor-pointer"
                             >
                               <Pencil className="mr-2 h-4 w-4" />
@@ -1726,6 +1749,28 @@ console.log(invoices,"invoices")
           mode={editMode}
           onClose={handleCloseEditModal}
           onSave={handleSaveInvoice}
+        />
+      )}
+
+      {isPreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+          }}
+          caseDetails={invoicesData.filter((invoice: any) =>
+            selectedInvoices.includes(invoice.id)
+          )} // Filter selected invoices based on their IDs
+        />
+      )}
+
+      {showNewPaymentModal && (
+        <NewPaymentModal
+          onClose={() => {
+            console.log("Closing new payment modal");
+            setShowNewPaymentModal(false);
+          }}
+          onSubmit={() => alert("")}
         />
       )}
     </div>

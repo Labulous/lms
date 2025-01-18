@@ -178,7 +178,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
           caseItem.invoicesData.some(
             (invoice) =>
               invoice.status !== "Draft" &&
-              invoice.status !== "Paid" &&
+              invoice.status !== "paid" &&
               invoice.status !== "Cancelled"
           )
         );

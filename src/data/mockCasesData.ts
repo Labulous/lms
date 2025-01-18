@@ -5,7 +5,6 @@ import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { CaseStatus } from "@/types/supabase";
 import { SavedProduct } from "./mockProductData";
-import { duplicateProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -171,6 +170,7 @@ const saveCaseProduct = async (
       custom_gingival_shade: product?.shades.custon_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
       notes: product.notes || "",
+      case_id: savedCaseId,
     }));
 
     // Calculate discounted prices for products
@@ -308,7 +308,7 @@ const saveCases = async (
 
       // Step 4: Create invoice for the case
 
-      const totalAmount = duplicateProductsByTeeth(cases.products).reduce(
+      const totalAmount = cases.products.reduce(
         (sum: number, item: SavedProduct) => {
           const itemTotal = item.price * (item?.quantity ? item?.quantity : 1); // Total price without discount
           const discountedTotal =
@@ -324,7 +324,7 @@ const saveCases = async (
         lab_id: cases.overview.lab_id,
         amount: totalAmount,
         due_amount: totalAmount,
-        status: "Unpaid",
+        status: "unpaid",
         due_date: updateDueDate(),
       };
 
@@ -528,6 +528,7 @@ const updateCases = async (
       custom_occlusal_shade: product?.shades.custom_occlusal || null,
       custom_gingival_shade: product?.shades.custom_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
+      case_id: caseId,
     }));
 
     // Step to check if rows exist for product_id before inserting

@@ -5,17 +5,21 @@ import { Invoice } from "../../data/mockInvoiceData";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { InvoiceTemplate } from "../cases/print/PrintTemplates";
+import { ExtendedCase } from "../cases/CaseDetails";
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  formData: any;
+  formData?: any;
+  caseDetails: ExtendedCase[];
 }
 
 const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   isOpen,
   onClose,
   formData,
+  caseDetails,
 }) => {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,45 +68,70 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     }
   };
 
+  useEffect(() => {
+    console.log("invoiceRef.current after mount:", invoiceRef.current);
+  }, []);
+
   const handlePrint = useReactToPrint({
-    content: () => invoiceRef.current, // Works with any type
+    contentRef: invoiceRef, // Pass the ref directly here
     onBeforeGetContent: () => {
-      setIsPrinting(true);
+      setIsPrinting(true); // Set state before printing starts
     },
     onAfterPrint: () => {
-      setIsPrinting(false);
+      setIsPrinting(false); // Reset state after printing finishes
     },
     pageStyle: `
       @page {
         size: A4;
         margin: 20mm;
       }
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+      }
     `,
-  } as Partial<UseReactToPrintOptions>);
-
+  } as UseReactToPrintOptions);
   const handleDownloadPDF = async () => {
-    if (!invoiceRef.current || !invoice) return;
+    console.log(invoiceRef.current, "ref");
+
+    if (!invoiceRef.current) {
+      console.log("Invoice reference or invoiceId is missing");
+      return;
+    }
 
     setIsDownloading(true);
+
     try {
+      // Capture the screenshot of the invoice as a canvas
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2,
         logging: false,
         useCORS: true,
       });
 
+      console.log("Canvas created successfully");
+
+      // Convert canvas to PNG image data
       const imgData = canvas.toDataURL("image/png");
+
+      // Create a new PDF using jsPDF
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4",
       });
 
+      // A4 size in mm is 210mm width, calculate the height based on aspect ratio
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
+      // Add image to the PDF
       pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-      pdf.save(`Invoice-${invoice.invoiceId}.pdf`);
+
+      // Save the PDF
+      pdf.save(`Invoice-${"invoice.invoiceId"}.pdf`);
+
+      console.log("PDF downloaded successfully");
     } catch (err) {
       console.error("Error generating PDF:", err);
       setError("Failed to generate PDF");
@@ -138,8 +167,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
               </h3>
               <div className="flex items-center space-x-2">
                 <button
-                  onClick={handleDownloadPDF}
-                  disabled={isDownloading || !invoice}
+                  onClick={() => handleDownloadPDF()}
+                  disabled={isDownloading}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
@@ -147,7 +176,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 </button>
                 <button
                   onClick={() => handlePrint()}
-                  disabled={isPrinting || !invoice}
+                  disabled={isPrinting}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
                   <Printer className="h-4 w-4 mr-2" />
@@ -164,163 +193,35 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </div>
 
           {/* Content */}
-          <div className="px-6 py-4">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              </div>
-            ) : error ? (
-              <div className="text-red-600 text-center py-8">{error}</div>
-            ) : invoice ? (
-              <div ref={invoiceRef} className="space-y-6 p-6 bg-white">
-                {/* Company Logo and Info */}
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Labulous Dental Lab
-                  </h2>
-                  <p className="text-gray-600">123 Lab Street, Suite 100</p>
-                  <p className="text-gray-600">Lab City, LC 12345</p>
-                  <p className="text-gray-600">Phone: (555) 123-4567</p>
-                </div>
-
-                {/* Invoice Title and Number */}
-                <div className="text-center mb-8">
-                  <h1 className="text-3xl font-bold text-gray-900">INVOICE</h1>
-                  <p className="text-gray-600">#{invoice.invoiceNumber}</p>
-                </div>
-
-                {/* Header Information */}
-                <div className="grid grid-cols-2 gap-8 mb-8">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Bill To:</h4>
-                    <p className="text-gray-800 font-medium">
-                      {invoice.clientName}
-                    </p>
-                    <p className="text-gray-600">
-                      {invoice.client?.address.street}
-                    </p>
-                    <p className="text-gray-600">
-                      {invoice.client?.address.city},{" "}
-                      {invoice.client?.address.state}{" "}
-                      {invoice.client?.address.zipCode}
-                    </p>
-                  </div>
-                  <div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-gray-600">Invoice Date:</p>
-                        <p className="font-medium">{invoice.date}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600">Due Date:</p>
-                        <p className="font-medium">{invoice.dueDate}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Items Table */}
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr>
-                      <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Description
-                      </th>
-                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Quantity
-                      </th>
-                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Unit Price
-                      </th>
-                      <th className="px-6 py-3 bg-gray-50 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {invoice.items.map((item, index) => (
-                      <tr key={index}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.description}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          {item.quantity}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          {formatCurrency(item.unitPrice)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                          {formatCurrency(item.totalPrice)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* Totals */}
-                <div className="mt-8">
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex justify-end space-y-2">
-                      <div className="w-64">
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-600">Subtotal</span>
-                          <span className="text-gray-900">
-                            {formatCurrency(invoice.subTotal)}
-                          </span>
-                        </div>
-                        {invoice.discount && (
-                          <div className="flex justify-between py-2">
-                            <span className="text-gray-600">
-                              Discount (
-                              {invoice.discount.type === "percentage"
-                                ? `${invoice.discount.value}%`
-                                : "Fixed"}
-                              )
-                            </span>
-                            <span className="text-gray-900">
-                              -{formatCurrency(invoice.discount.amount)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex justify-between py-2">
-                          <span className="text-gray-600">
-                            Tax ({invoice.tax.value}%)
-                          </span>
-                          <span className="text-gray-900">
-                            {formatCurrency(invoice.tax.amount)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-2 border-t border-gray-200 font-bold">
-                          <span>Total</span>
-                          <span>{formatCurrency(invoice.totalAmount)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes */}
-                {invoice.notes && (
-                  <div className="mt-8 border-t border-gray-200 pt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                    <p className="text-gray-600">{invoice.notes}</p>
-                  </div>
-                )}
-
-                {/* Payment Terms */}
-                <div className="mt-8 text-sm text-gray-600">
-                  <p>Payment Terms: {invoice.paymentTerms}</p>
-                  <p className="mt-2">
-                    Please make checks payable to: Labulous Dental Lab
-                  </p>
-                </div>
-
-                {/* Thank You Note */}
-                <div className="mt-8 text-center text-gray-600">
-                  <p>Thank you for your business!</p>
-                </div>
-              </div>
-            ) : null}
+          <div ref={invoiceRef}>
+            {caseDetails.map((item, index) => {
+              return (
+                <InvoiceTemplate
+                  caseData={{
+                    id: "2323",
+                    patient_name: "Hussain abbas",
+                    case_number: "SOL-2025-0025",
+                    qr_code: "",
+                    client: {
+                      client_name: "zahid",
+                      phone: "zahi",
+                    },
+                    doctor: {
+                      name: "zahid",
+                    },
+                    created_at: "11 june",
+                    due_date: "11 june",
+                    tag: {
+                      name: "ffff",
+                    },
+                  }}
+                  paperSize={"LETTER"}
+                  caseDetails={item}
+                  ref={invoiceRef}
+                  key={index}
+                />
+              );
+            })}
           </div>
 
           {/* Footer */}

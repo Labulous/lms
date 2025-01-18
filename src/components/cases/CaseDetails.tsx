@@ -211,6 +211,7 @@ export interface ExtendedCase {
     status: string;
     due_date: string;
     discount?: string;
+    due_amount?: string;
     tax?: string;
     notes?: string;
     items?: any;
@@ -271,9 +272,10 @@ const CaseDetails: React.FC = () => {
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
   const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
   const [onHoldReason, setOnHoldReason] = useState<string>("");
+  const [invoicePreviewModalOpen, setInvoicePreviewModalOpen] =
+    useState<boolean>(false);
   const [selectedPaperSize, setSelectedPaperSize] =
     useState<keyof typeof PAPER_SIZES>("LETTER");
-
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
@@ -446,6 +448,7 @@ const CaseDetails: React.FC = () => {
               case_id,
               amount,
               status,
+              due_amount,
               due_date
             ),
             client:clients!client_id (
@@ -945,11 +948,14 @@ const CaseDetails: React.FC = () => {
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
-                    <span className="text-sm font-medium text-primary">
+                    <div
+                      className="text-sm font-medium text-primary"
+                      onMouseEnter={() => setIsPreviewModalOpen(true)}
+                    >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
                         : "N/A"}
-                    </span>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-2">
@@ -1938,7 +1944,7 @@ const CaseDetails: React.FC = () => {
         </div>
       </div>
       {/* Invoice Preview Modal */}
-      {caseDetail && (
+      {isPreviewModalOpen && (
         <InvoicePreviewModal
           isOpen={isPreviewModalOpen}
           onClose={() => {
@@ -1954,6 +1960,7 @@ const CaseDetails: React.FC = () => {
             tax: caseDetail.invoice?.[0]?.tax || 0,
             notes: caseDetail.invoice?.[0]?.notes || "",
           }}
+          caseDetails={[caseDetail]}
         />
       )}
       {activePrintType && caseDetail && (
@@ -1986,6 +1993,13 @@ const CaseDetails: React.FC = () => {
       {isScheduleModal && (
         <ScheduleDelivery onClose={() => setIsScheduleModal(false)} />
       )}
+
+      {/* {invoicePreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={invoicePreviewModalOpen}
+          onClose={() => setInvoicePreviewModalOpen(false)}
+        />
+      )} */}
     </div>
   );
 };

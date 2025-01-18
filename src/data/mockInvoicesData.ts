@@ -124,6 +124,15 @@ export interface Invoice {
     client_id: string;
     due_amount?: number;
   }[];
+  invoice?: {
+    status: string;
+    amount: number;
+    due_date: string;
+    lab_id: string;
+    case_id: string;
+    client_id: string;
+    due_amount?: number;
+  }[];
 }
 
 const today = new Date();

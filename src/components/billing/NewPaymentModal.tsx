@@ -391,7 +391,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
           caseItem.invoicesData.some(
             (invoice) =>
               invoice.status !== "Draft" &&
-              invoice.status !== "Paid" &&
+              invoice.status !== "paid" &&
               invoice.status !== "Cancelled"
           )
         );

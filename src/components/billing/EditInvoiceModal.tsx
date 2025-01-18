@@ -58,7 +58,7 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
-  console.log(invoice?.products, "invoice?.products");
+  console.log(invoice, "invoice?.products");
   useEffect(() => {
     if (invoice) {
       const transformedItems = duplicateInvoiceProductsByTeeth(
@@ -269,6 +269,7 @@ export function EditInvoiceModal({
               <Button
                 type="button"
                 variant="outline"
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onClick={() => {
                   const hasNullId = items.some((item) => item.id === "");
 
@@ -314,6 +315,7 @@ export function EditInvoiceModal({
                         {
                           <Input
                             value={item.toothNumber || ""}
+                            disabled={invoice?.invoice?.[0]?.status === "paid"}
                             onChange={(e) => {
                               const updatedItems = [...items];
                               updatedItems[index] = {
@@ -341,13 +343,17 @@ export function EditInvoiceModal({
                         /> */}
                         <div className="">
                           <DropdownMenu>
-                            <DropdownMenuTrigger className="flex justify-between items-center p-2 border w-full gap-2 hover:text-gray-600 focus:outline-none">
+                            <DropdownMenuTrigger
+                              disabled={
+                                invoice?.invoice?.[0]?.status === "paid"
+                              }
+                              className="flex justify-between items-center p-2 border w-full gap-2 hover:text-gray-600 focus:outline-none"
+                            >
                               <h2 className="text-gray-900">
                                 {item.description ?? "select the product"}
                               </h2>
                               <ChevronDown className="h-5 w-5 text-gray-500" />
                             </DropdownMenuTrigger>
-
                             <DropdownMenuContent
                               align="start"
                               className="bg-white border"
@@ -382,6 +388,7 @@ export function EditInvoiceModal({
                       <TableCell>
                         <Input
                           type="number"
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           value={item.unitPrice}
                           onChange={(e) => {
                             const updatedItems = [...items];
@@ -396,6 +403,7 @@ export function EditInvoiceModal({
                       <TableCell>
                         <Input
                           type="number"
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           value={item.quantity}
                           onChange={(e) => {
                             const updatedItems = [...items];
@@ -411,6 +419,7 @@ export function EditInvoiceModal({
                         <Input
                           type="number"
                           value={item.discount}
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           onChange={(e) => {
                             const updatedItems = [...items];
                             updatedItems[index] = {
@@ -455,6 +464,7 @@ export function EditInvoiceModal({
               <h3 className="text-lg font-medium mb-2">Invoice Notes</h3>
               <textarea
                 value={notes?.invoiceNotes}
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onChange={(e) =>
                   setNotes(
                     (prevNotes) =>
@@ -474,6 +484,7 @@ export function EditInvoiceModal({
               <h3 className="text-lg font-medium mb-2">Lab Notes</h3>
               <textarea
                 value={notes?.labNotes}
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onChange={(e) =>
                   setNotes(
                     (prevNotes) =>
@@ -511,7 +522,7 @@ export function EditInvoiceModal({
           <Button
             type="button"
             variant="default"
-            disabled={isSubmitting}
+            disabled={isSubmitting || invoice?.invoice?.[0]?.status === "paid"}
             onClick={handleSave}
           >
             {isSubmitting ? "Saving..." : "Complete"}

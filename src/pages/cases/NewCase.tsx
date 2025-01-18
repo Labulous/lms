@@ -288,7 +288,7 @@ const NewCase: React.FC = () => {
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
           },
-          products: selectedProducts.filter((item) => item.id && item.type),
+          products: duplicateProductsByTeeth(selectedProducts),
 
           enclosedItems: transformedData.enclosedItems,
         };
