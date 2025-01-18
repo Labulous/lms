@@ -1,3 +1,9 @@
+/**
+ * Invoice Service
+ * Handles invoice generation, calculations, and related utilities
+ * for the Labulous application.
+ */
+
 import { Invoice, InvoiceItem } from "../data/mockInvoiceData";
 import { mockClients } from "../data/mockClientsData";
 
