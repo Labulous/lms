@@ -38,7 +38,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       generatePreview();
     }
   }, [isOpen, formData]);
-
+  console.log(caseDetails, "caseDetails");
   const generatePreview = async () => {
     setLoading(true);
     setError(null);

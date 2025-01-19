@@ -167,47 +167,47 @@ export function NewPaymentModal({
         );
         setOverpaymentAmount(Math.max(0, paymentAmount - newTotalAllocated));
 
+        // Update `due_amount` in updatedInvoices after allocation
+        setUpdatedInvoices((prevInvoices) => {
+          const updatedInvoices = [...prevInvoices];
+          const existingInvoiceIndex = updatedInvoices.findIndex(
+            (inv) => inv.id === invoiceId
+          );
+
+          if (existingInvoiceIndex !== -1) {
+            updatedInvoices[existingInvoiceIndex] = {
+              ...updatedInvoices[existingInvoiceIndex],
+              invoicesData: updatedInvoices[existingInvoiceIndex]?.invoicesData
+                ? [
+                    {
+                      ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
+                      due_amount: Math.max(
+                        0,
+                        updatedInvoices[existingInvoiceIndex].invoicesData[0]
+                          .due_amount - allocated
+                      ),
+                    },
+                  ]
+                : [],
+            };
+          } else {
+            updatedInvoices.push({
+              ...invoice,
+              invoicesData: invoice?.invoicesData
+                ? [
+                    {
+                      ...invoice.invoicesData[0],
+                      due_amount: Math.max(0, due_amount - allocated),
+                    },
+                  ]
+                : [],
+            });
+          }
+
+          return updatedInvoices;
+        });
+
         return updatedAllocation;
-      });
-
-      setUpdatedInvoices((prevInvoices) => {
-        const updatedInvoices = [...prevInvoices];
-        const existingInvoiceIndex = updatedInvoices.findIndex(
-          (inv) => inv.id === invoiceId
-        );
-
-        if (existingInvoiceIndex !== -1) {
-          updatedInvoices[existingInvoiceIndex] = {
-            ...updatedInvoices[existingInvoiceIndex],
-            invoicesData: updatedInvoices[existingInvoiceIndex]
-              ?.invoicesData?.[0]
-              ? [
-                  {
-                    ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
-                    due_amount: Math.max(
-                      0,
-                      updatedInvoices[existingInvoiceIndex].invoicesData[0]
-                        .due_amount - allocatedAmount!
-                    ),
-                  },
-                ]
-              : [],
-          };
-        } else {
-          updatedInvoices.push({
-            ...invoice,
-            invoicesData: invoice?.invoicesData
-              ? [
-                  {
-                    ...invoice.invoicesData[0],
-                    due_amount: Math.max(0, due_amount - allocatedAmount!),
-                  },
-                ]
-              : [],
-          });
-        }
-
-        return updatedInvoices;
       });
     } else {
       // Handle deselection
@@ -233,7 +233,6 @@ export function NewPaymentModal({
       );
     }
   };
-
   const handleSubmit = () => {
     const paymentData = {
       client: selectedClient,
@@ -371,6 +370,7 @@ export function NewPaymentModal({
     }
   }, [selectedClient, lab]);
   console.log(invoices, "set Invoices");
+  console.log(updatedInvoices, "updated INovices");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">

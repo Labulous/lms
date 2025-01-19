@@ -340,11 +340,11 @@ const saveCases = async (
         console.log("Invoice created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
+        await updateBalanceTracking();
       }
     }
 
     // Step 5: Save the overview to localStorage
-    await updateBalanceTracking();
 
     localStorage.setItem("cases", JSON.stringify(cases));
   } catch (error) {

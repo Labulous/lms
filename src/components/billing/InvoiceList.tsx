@@ -1165,6 +1165,84 @@ const InvoiceList: React.FC = () => {
     // generatePDF("elementId", "MyDocument.pdf");
   };
   console.log(selectedInvoices, "selectedInvoices");
+
+  const handleNewPayment = async (paymentData: any) => {
+    console.log("New payment data:", paymentData);
+
+    try {
+      const {
+        updatedInvoices,
+        client,
+        date,
+        paymentMethod,
+        paymentAmount,
+        overpaymentAmount,
+        remainingBalance,
+      } = paymentData;
+
+      if (!updatedInvoices || !client) {
+        console.error("Missing updatedInvoices or client information.");
+        return;
+      }
+
+      // Step 1: Update invoices
+      for (const invoice of updatedInvoices) {
+        const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
+        const { id } = invoice.invoicesData[0];
+        const status = dueAmount === 0 ? "paid" : "partially_paid";
+
+        const invoiceUpdate = {
+          status,
+          due_amount: dueAmount,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await supabase
+          .from("invoices")
+          .update(invoiceUpdate)
+          .eq("id", id)
+          .eq("lab_id", lab?.labId);
+
+        if (updateError) {
+          throw new Error(
+            `Failed to update invoice with ID ${id}: ${updateError.message}`
+          );
+        }
+      }
+
+      console.log("All invoices updated successfully.");
+
+      // Step 2: Insert payment data
+      const paymentDataToInsert = {
+        client_id: client,
+        payment_date: date,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        status: "Completed",
+        over_payment: overpaymentAmount || 0,
+        remaining_payment: remainingBalance || 0,
+        lab_id: lab?.labId,
+      };
+
+      const { data: insertedPayment, error: paymentError } = await supabase
+        .from("payments")
+        .insert(paymentDataToInsert)
+        .select("*");
+
+      if (paymentError) {
+        throw new Error(`Failed to insert payment: ${paymentError.message}`);
+      }
+
+      console.log("Payment inserted successfully.", insertedPayment);
+      await updateBalanceTracking();
+    } catch (err) {
+      console.error("Error handling new payment:", err);
+      toast.error("Failed to add payment or update balance tracking.");
+    } finally {
+      toast.success("New payment added successfully.");
+      setShowNewPaymentModal(false);
+    }
+  };
   return (
     <div className="space-y-4" id="elementId">
       <div className="flex justify-between items-center">
@@ -1898,7 +1976,7 @@ const InvoiceList: React.FC = () => {
             console.log("Closing new payment modal");
             setShowNewPaymentModal(false);
           }}
-          onSubmit={() => alert("")}
+          onSubmit={handleNewPayment}
           isSingleInvoice={true}
           clientId={selectedClient}
           invoiceId={selectedInvoice}

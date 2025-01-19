@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   QRCodeTemplate,
   LabSlipTemplate,
@@ -10,7 +10,7 @@ import {
 import { PAPER_SIZES } from "@/components/cases/print/PrintHandler";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
-import CaseDetails, { ExtendedCase } from "@/components/cases/CaseDetails";
+import { ExtendedCase } from "@/components/cases/CaseDetails";
 
 interface PrintPreviewState {
   type:
@@ -50,13 +50,10 @@ const PrintPreview = () => {
 
   useEffect(() => {
     try {
-      // Get state from URL parameter
       const stateParam = searchParams.get("state");
       if (!stateParam) {
         throw new Error("No state parameter found");
       }
-
-      // Decode and parse state
       const decodedState = JSON.parse(atob(decodeURIComponent(stateParam)));
       setPreviewState(decodedState);
     } catch (error) {
@@ -65,7 +62,6 @@ const PrintPreview = () => {
     }
   }, [searchParams, navigate]);
 
-  // If no state, show loading or return null
   if (!previewState) {
     return null;
   }
@@ -75,12 +71,14 @@ const PrintPreview = () => {
   const handlePrint = () => {
     window.print();
   };
+
   const renderTemplate = () => {
     const props = {
       caseData,
       paperSize,
       caseDetails,
     };
+
     switch (type) {
       case "qr-code":
         return <QRCodeTemplate {...props} />;
@@ -93,25 +91,8 @@ const PrintPreview = () => {
       case "invoice_slip":
         return (
           <InvoiceTemplate
-            caseData={{
-              id: "2323",
-              patient_name: "Hussain abbas",
-              case_number: "SOL-2025-0025",
-              qr_code: "",
-              client: {
-                client_name: "zahid",
-                phone: "zahi",
-              },
-              doctor: {
-                name: "zahid",
-              },
-              created_at: "11 june",
-              due_date: "11 june",
-              tag: {
-                name: "ffff",
-              },
-            }}
-            paperSize={"LETTER"}
+            caseData={caseData}
+            paperSize={paperSize}
             caseDetails={caseDetails}
           />
         );
@@ -120,7 +101,6 @@ const PrintPreview = () => {
     }
   };
 
-  // Get paper dimensions with fallback to LETTER size
   const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
   const containerStyle = {
     width: `${dimensions.width / 72}in`,
@@ -170,23 +150,11 @@ const PrintPreview = () => {
             }
 
             .print-container {
-              position: absolute;
-              left: 0;
-              top: 0;
-              margin: 0;
-              padding: 0;
+              position: relative;
+              page-break-after: always;
               width: ${dimensions.width / 72}in;
               height: ${dimensions.height / 72}in;
-              max-width: 100%;
-              max-height: 100%;
-              box-sizing: border-box;
             }
-          }
-
-          /* Preview styles */
-          .print-container {
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            background-color: white;
           }
         `}
       </style>

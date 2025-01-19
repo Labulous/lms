@@ -126,7 +126,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
   <div>
     {caseDetails?.map((invoice, index) => {
       return (
-        <div key={index} className="min-h-full w-[190mm] mx-auto bg-white">
+        <div
+          key={index}
+          className="min-h-[277mm] w-[190mm] mx-auto bg-white"
+          style={{
+            height: "277mm", // Fixed height to match LETTER page size
+          }}
+        >
           <div className="py-2">
             <div className="border border-gray-800">
               <div className="p-6">
