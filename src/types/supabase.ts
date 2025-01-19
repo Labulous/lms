@@ -197,6 +197,7 @@ export interface OfficeAddress {
   state_province?: string;
   zip_postal?: string;
   country?: string;
+  phone_number?: string;
 }
 
 export interface labDetail {

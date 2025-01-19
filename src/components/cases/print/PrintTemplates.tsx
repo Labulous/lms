@@ -150,10 +150,17 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     />
                     <div className="text-sm font-medium">
                       <h3 className="font-bold mb-1 text-xl">
-                        Solaris Dental Design
+                        {invoice.labDetail?.name}
                       </h3>
-                      <p>101-17 Fawcett Road</p>
-                      <p>Coquitlam, BC V3K 6V2</p>
+                      <p>{invoice.labDetail?.office_address.address_1}</p>
+                      <p>{invoice.labDetail?.office_address.address_2}</p>
+                      <p>
+                        <span>{invoice.labDetail?.office_address.city}</span>,{" "}
+                        {invoice.labDetail?.office_address.state_province}{" "}
+                        <span>
+                          {invoice.labDetail?.office_address.zip_postal}
+                        </span>
+                      </p>
                       <p>(604) 777-0665</p>
                     </div>
                   </div>
@@ -174,11 +181,12 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     </p>
                     <div className="mt-4 font-medium">
                       <p className="font-bold">Ship To:</p>
-                      <p>Brookmere Dental Group</p>
-                      <p>Kourosh Milani</p>
-                      <p>North Road Coquitlam 101-531</p>
-                      <p>Coquitlam, BC V3J 1N7</p>
-                      <p>604 492 3388</p>
+                      <p>{invoice.client.street}</p>
+                      <p>
+                        {invoice.client.city}{", "}
+                        <span>{invoice.client.state}</span>
+                      </p>
+                      <p>{invoice.client.phone}</p>
                     </div>
                   </div>
                 </div>

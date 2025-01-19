@@ -476,7 +476,8 @@ export const getLabDataByUserId = async (
                  city,
                  state_province,
                  zip_postal,
-                 country
+                 country,
+                 phone_number
                )
              `
       )
