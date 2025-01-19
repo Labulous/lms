@@ -39,6 +39,9 @@ import { formatDate } from "@/lib/formatedDate";
 interface NewPaymentModalProps {
   onClose: () => void;
   onSubmit: (data: any) => void;
+  isSingleInvoice?: boolean;
+  clientId?: string;
+  invoiceId?: string;
 }
 
 interface Invoice {
@@ -82,7 +85,13 @@ const PAYMENT_METHODS = [
   "Other",
 ];
 
-export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
+export function NewPaymentModal({
+  onClose,
+  onSubmit,
+  isSingleInvoice,
+  clientId,
+  invoiceId,
+}: NewPaymentModalProps) {
   const [date, setDate] = useState<Date>();
   const [selectedClient, setSelectedClient] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -319,7 +328,7 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
     const fetchClients = async () => {
       try {
         setLoading(true);
-
+        setSelectedClient(clientId ? clientId : "");
         const labData = await getLabIdByUserId(user?.id as string);
         if (!labData) {
           toast.error("Unable to get Lab Id");
@@ -388,12 +397,24 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
         console.log(casesData, "casesData");
         // Filter cases where invoicesData contains statuses not "draft", "paid", or "cancelled"
         const filteredCases: any = casesData?.filter((caseItem) =>
-          caseItem.invoicesData.some(
-            (invoice) =>
+          caseItem.invoicesData.some((invoice) => {
+            // Check if invoiceId is provided
+            if (invoiceId) {
+              // Only include items where invoice.id matches invoiceId
+              return (
+                invoice.id === invoiceId &&
+                invoice.status !== "Draft" &&
+                invoice.status !== "paid" &&
+                invoice.status !== "Cancelled"
+              );
+            }
+            // Otherwise, apply the existing conditions
+            return (
               invoice.status !== "Draft" &&
               invoice.status !== "paid" &&
               invoice.status !== "Cancelled"
-          )
+            );
+          })
         );
 
         setInvoices(filteredCases || []);
@@ -418,11 +439,11 @@ export function NewPaymentModal({ onClose, onSubmit }: NewPaymentModalProps) {
       }
     };
 
-    if (selectedClient) {
+    if (selectedClient && lab?.labId) {
       getCompletedInvoices();
     }
-  }, [selectedClient]);
-console.log(invoices,"set Invoices")
+  }, [selectedClient, lab]);
+  console.log(invoices, "set Invoices");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">
@@ -444,6 +465,7 @@ console.log(invoices,"set Invoices")
                 </label>
                 <Select
                   value={selectedClient}
+                  disabled={isSingleInvoice}
                   onValueChange={setSelectedClient}
                 >
                   <SelectTrigger>

@@ -127,6 +127,7 @@ export interface Invoice {
     due_amount?: number;
   }[];
   invoice?: {
+    id?: string;
     status: string;
     amount: number;
     due_date: string;
