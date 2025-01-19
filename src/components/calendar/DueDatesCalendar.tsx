@@ -138,23 +138,18 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     ),
   };
 
-  const eventStyleGetter = (
-    event: any,
-    start: Date,
-    end: Date,
-    isSelected: boolean
-  ) => {
+  const eventStyleGetter = (event: any) => {
+    const isPastDue = event.resource?.isPastDue;
     return {
       style: {
-        backgroundColor: isSelected ? "#3174ad" : "#3B82F6", // Highlight selected events
-        borderRadius: "5px",
+        backgroundColor: isPastDue ? "#ef4444" : "#2563eb", // red-500 for past due, blue-600 for normal
         color: "white",
         border: "0px",
-        padding: "2px", // Ensure padding fits within the box
-        whiteSpace: "nowrap", // Prevent text overflow
-        overflow: "hidden", // Hide overflow content
-        textOverflow: "ellipsis", // Add ellipsis for long text
-        display: "block", //
+        padding: "2px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        display: "block",
       },
     };
   };
