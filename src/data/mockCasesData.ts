@@ -5,6 +5,7 @@ import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { CaseStatus } from "@/types/supabase";
 import { SavedProduct } from "./mockProductData";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -343,6 +344,8 @@ const saveCases = async (
     }
 
     // Step 5: Save the overview to localStorage
+    await updateBalanceTracking();
+
     localStorage.setItem("cases", JSON.stringify(cases));
   } catch (error) {
     console.error("Error in saveCases function:", error);
