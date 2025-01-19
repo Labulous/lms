@@ -7,6 +7,8 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { InvoiceTemplate } from "../cases/print/PrintTemplates";
 import { ExtendedCase } from "../cases/CaseDetails";
+import { PAPER_SIZES } from "../cases/print/PrintHandler";
+import { name } from "ejs";
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
@@ -26,6 +28,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedPaperSize, setSelectedPaperSize] =
+    useState<keyof typeof PAPER_SIZES>("LETTER");
 
   const invoiceRef = useRef<HTMLDivElement>(null);
 
@@ -71,65 +75,79 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   useEffect(() => {
     console.log("invoiceRef.current after mount:", invoiceRef.current);
   }, []);
+  const handlePrint = (type: string) => {
+    // Create the preview URL with state encoded in base64
+    const previewState = {
+      type,
+      paperSize: selectedPaperSize,
+      caseData: {
+        id: "2323",
+        patient_name: "Hussain abbas",
+        case_number: "SOL-2025-0025",
+        qr_code: "",
+        client: {
+          client_name: "zahid",
+          phone: "zahi",
+        },
+        doctor: {
+          name: "zahid",
+        },
+        created_at: "11 june",
+        due_date: "11 june",
+        tag: {
+          name: "ffff",
+        },
+      },
+      caseDetails: caseDetails,
+    };
 
-  const handlePrint = useReactToPrint({
-    contentRef: invoiceRef, // Pass the ref directly here
-    onBeforeGetContent: () => {
-      setIsPrinting(true); // Set state before printing starts
-    },
-    onAfterPrint: () => {
-      setIsPrinting(false); // Reset state after printing finishes
-    },
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 20mm;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 12px;
-      }
-    `,
-  } as UseReactToPrintOptions);
+    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
+    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    window.open(previewUrl, "_blank");
+  };
   const handleDownloadPDF = async () => {
-    console.log(invoiceRef.current, "ref");
-
     if (!invoiceRef.current) {
-      console.log("Invoice reference or invoiceId is missing");
+      console.log("Invoice reference is missing");
       return;
     }
 
     setIsDownloading(true);
+    setError(null);
 
     try {
-      // Capture the screenshot of the invoice as a canvas
+      // Capture the screenshot of the invoice as a canvas with higher resolution
       const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
+        scale: 4, // Increase scale for better quality
         logging: false,
         useCORS: true,
       });
 
       console.log("Canvas created successfully");
 
-      // Convert canvas to PNG image data
+      // Calculate PDF dimensions
       const imgData = canvas.toDataURL("image/png");
-
-      // Create a new PDF using jsPDF
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
-      // A4 size in mm is 210mm width, calculate the height based on aspect ratio
       const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // Add image to the PDF
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      // Create a new PDF
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      // Calculate the number of pages
+      const pageCount = Math.ceil(imgHeight / pageHeight);
+
+      // Add image to the PDF, potentially across multiple pages
+      for (let i = 0; i < pageCount; i++) {
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const position = -i * pageHeight; // Shift position for each page
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      }
 
       // Save the PDF
-      pdf.save(`Invoice-${"invoice.invoiceId"}.pdf`);
+      pdf.save(`Invoice-${caseDetails[0]?.case_number || "unknown"}.pdf`);
 
       console.log("PDF downloaded successfully");
     } catch (err) {
@@ -139,7 +157,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       setIsDownloading(false);
     }
   };
-
   if (!isOpen) return null;
 
   const formatCurrency = (amount: number) => {
@@ -175,7 +192,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                   {isDownloading ? "Downloading..." : "Download PDF"}
                 </button>
                 <button
-                  onClick={() => handlePrint()}
+                  onClick={() => handlePrint("invoice_slip")}
                   disabled={isPrinting}
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
@@ -194,34 +211,29 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
           {/* Content */}
           <div ref={invoiceRef}>
-            {caseDetails.map((item, index) => {
-              return (
-                <InvoiceTemplate
-                  caseData={{
-                    id: "2323",
-                    patient_name: "Hussain abbas",
-                    case_number: "SOL-2025-0025",
-                    qr_code: "",
-                    client: {
-                      client_name: "zahid",
-                      phone: "zahi",
-                    },
-                    doctor: {
-                      name: "zahid",
-                    },
-                    created_at: "11 june",
-                    due_date: "11 june",
-                    tag: {
-                      name: "ffff",
-                    },
-                  }}
-                  paperSize={"LETTER"}
-                  caseDetails={item}
-                  ref={invoiceRef}
-                  key={index}
-                />
-              );
-            })}
+            <InvoiceTemplate
+              caseData={{
+                id: "2323",
+                patient_name: "Hussain abbas",
+                case_number: "SOL-2025-0025",
+                qr_code: "",
+                client: {
+                  client_name: "zahid",
+                  phone: "zahi",
+                },
+                doctor: {
+                  name: "zahid",
+                },
+                created_at: "11 june",
+                due_date: "11 june",
+                tag: {
+                  name: "ffff",
+                },
+              }}
+              paperSize={"LETTER"}
+              caseDetails={caseDetails}
+              ref={invoiceRef}
+            />
           </div>
 
           {/* Footer */}

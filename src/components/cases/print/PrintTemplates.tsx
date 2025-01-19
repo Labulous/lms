@@ -23,7 +23,7 @@ interface PrintTemplateProps {
       name: string;
     };
   };
-  caseDetails?: ExtendedCase;
+  caseDetails?: ExtendedCase[];
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
 }
@@ -122,113 +122,120 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
 );
 export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
   caseDetails,
-  ref,
 }) => (
-  <div className="min-h-full w-[210mm] mx-auto bg-white">
-    <div className="py-2" ref={ref}>
-      <div className="border border-gray-800">
-        <div className="p-6">
-          {/* Header Section */}
-          <div className="flex justify-between mb-8">
-            {/* Company Info */}
-            <div className="flex flex-col gap-0 items-start">
-              <img
-                src={staticLabLogo}
-                alt="Solaris Dental Design Logo"
-                width={120}
-                height={120}
-                className="object-contain flex justify-center items-center"
-              />
-              <div className="text-sm font-medium">
-                <h3 className="font-bold mb-1 text-xl">
-                  Solaris Dental Design
-                </h3>
-                <p>101-17 Fawcett Road</p>
-                <p>Coquitlam, BC V3K 6V2</p>
-                <p>(604) 777-0665</p>
-              </div>
-            </div>
+  <div>
+    {caseDetails?.map((invoice, index) => {
+      return (
+        <div key={index} className="min-h-full w-[190mm] mx-auto bg-white">
+          <div className="py-2">
+            <div className="border border-gray-800">
+              <div className="p-6">
+                {/* Header Section */}
+                <div className="flex justify-between mb-8">
+                  {/* Company Info */}
+                  <div className="flex flex-col gap-0 items-start">
+                    <img
+                      src={staticLabLogo}
+                      alt="Solaris Dental Design Logo"
+                      width={120}
+                      height={120}
+                      className="object-contain flex justify-center items-center"
+                    />
+                    <div className="text-sm font-medium">
+                      <h3 className="font-bold mb-1 text-xl">
+                        Solaris Dental Design
+                      </h3>
+                      <p>101-17 Fawcett Road</p>
+                      <p>Coquitlam, BC V3K 6V2</p>
+                      <p>(604) 777-0665</p>
+                    </div>
+                  </div>
 
-            {/* Invoice Details */}
-            <div className="text-sm">
-              <h1 className="text-xl font-bold mb-2">INVOICE</h1>
-              <p className="font-bold">
-                No. {caseDetails?.case_number || "4507"}
-              </p>
-              <p className="font-bold">
-                {formatDate(caseDetails?.created_at || "1/7/2025")}
-              </p>
-              <div className="mt-4 font-medium">
-                <p className="font-bold">Ship To:</p>
-                <p>Brookmere Dental Group</p>
-                <p>Kourosh Milani</p>
-                <p>North Road Coquitlam 101-531</p>
-                <p>Coquitlam, BC V3J 1N7</p>
-                <p>604 492 3388</p>
-              </div>
-            </div>
-          </div>
+                  {/* Invoice Details */}
+                  <div className="text-sm">
+                    <h1 className="text-xl font-bold mb-2">INVOICE</h1>
+                    <p className="font-bold">
+                      No. {invoice?.case_number || "4507"}
+                    </p>
+                    <p className="font-bold">
+                      {formatDate(invoice?.created_at || "1/7/2025")}
+                    </p>
+                    <div className="mt-4 font-medium">
+                      <p className="font-bold">Ship To:</p>
+                      <p>Brookmere Dental Group</p>
+                      <p>Kourosh Milani</p>
+                      <p>North Road Coquitlam 101-531</p>
+                      <p>Coquitlam, BC V3J 1N7</p>
+                      <p>604 492 3388</p>
+                    </div>
+                  </div>
+                </div>
 
-          {/* Patient Section */}
-          <div className="mb-6">
-            <p className="font-medium">
-              <span className="font-bold">Patient:</span>{" "}
-              {caseDetails?.patient_name}
-            </p>
-          </div>
+                {/* Patient Section */}
+                <div className="mb-6">
+                  <p className="font-medium">
+                    <span className="font-bold">Patient:</span>{" "}
+                    {invoice?.patient_name}
+                  </p>
+                </div>
 
-          {/* Services Table */}
-          <div className="mb-8">
-            <div className="grid grid-cols-4 border-b border-gray-800 pb-2 mb-4">
-              <h2 className="font-bold">Description</h2>
-              <h2 className="font-bold text-right">Dicount %</h2>
-              <h2 className="font-bold text-right">Amount</h2>
-              <h2 className="font-bold text-right">Final Amount</h2>
-            </div>
+                {/* Services Table */}
+                <div className="mb-8">
+                  <div className="grid grid-cols-4 border-b border-gray-800 pb-2 mb-4">
+                    <h2 className="font-bold">Description</h2>
+                    <h2 className="font-bold text-right">Dicount %</h2>
+                    <h2 className="font-bold text-right">Amount</h2>
+                    <h2 className="font-bold text-right">Final Amount</h2>
+                  </div>
 
-            {caseDetails?.products.map((item, index) => {
-              return (
-                <div className="grid grid-cols-4">
-                  <div key={index} className="space-y-4 font-medium">
-                    <div>
-                      <p>{item.name}</p>
-                      <p className="text-sm">
-                        Teeth: #{item.teethProduct?.tooth_number[0]}
+                  {invoice?.products.map((item, index) => {
+                    return (
+                      <div className="grid grid-cols-4 text-sm">
+                        <div key={index} className="space-y-4 font-medium">
+                          <div>
+                            <p>{item.name}</p>
+                            <p className="text-sm">
+                              Teeth: #{item.teethProduct?.tooth_number[0]}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-right">
+                          {item.discounted_price.discount}%
+                        </p>
+                        <p className="text-right">
+                          ${item.discounted_price.price}
+                        </p>
+                        <p className="text-right">
+                          ${item.discounted_price.final_price}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-800">
+                    <p className="text-sm">J4</p>
+                    <div className="flex flex-col gap-2 items-end">
+                      <p className="font-bold">
+                        Total: ${invoice?.invoice?.[0]?.amount}
+                      </p>
+                      <p className="font-bold">
+                        Total Due: ${invoice?.invoice?.[0]?.due_amount}
                       </p>
                     </div>
                   </div>
-                  <p className="text-right">
-                    {item.discounted_price.discount}%
-                  </p>
-                  <p className="text-right">${item.discounted_price.price}</p>
-                  <p className="text-right">
-                    ${item.discounted_price.final_price}
-                  </p>
                 </div>
-              );
-            })}
 
-            <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-800">
-              <p className="text-sm">J4</p>
-              <div className="flex flex-col gap-2 items-end">
-                <p className="font-bold">
-                  Total: ${caseDetails?.invoice?.[0]?.amount}
-                </p>
-                <p className="font-bold">
-                  Total Due: ${caseDetails?.invoice?.[0]?.due_amount}
-                </p>
+                {/* Footer */}
+
+                <div className="text-center mt-4 font-medium">
+                  <p className="text-sm">Thank you for your business!</p>
+                </div>
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-
-          <div className="text-center mt-4 font-medium">
-            <p className="text-sm">Thank you for your business!</p>
-          </div>
         </div>
-      </div>
-    </div>
+      );
+    })}
   </div>
 );
 
