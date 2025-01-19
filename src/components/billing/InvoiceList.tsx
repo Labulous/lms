@@ -68,12 +68,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase";
-import { getLabIdByUserId } from "@/services/authService";
+import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
-import { DiscountedPrice } from "@/types/supabase";
+import { DiscountedPrice, labDetail } from "@/types/supabase";
 import jsPDF from "jspdf";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { NewPaymentModal } from "./NewPaymentModal";
@@ -124,7 +124,7 @@ const InvoiceList: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
+  const [lab, setLab] = useState<labDetail | null>(null);
   const [selectedClient, setSelectedClient] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -161,9 +161,9 @@ const InvoiceList: React.FC = () => {
       setLoading(true);
 
       try {
-        const lab = await getLabIdByUserId(user?.id as string);
+        const lab = await getLabDataByUserId(user?.id as string);
 
-        if (!lab?.labId) {
+        if (!lab?.id) {
           console.error("Lab ID not found.");
           return;
         }
@@ -182,7 +182,11 @@ const InvoiceList: React.FC = () => {
             client:clients!client_id (
               id,
               client_name,
-              phone
+              phone,
+              street,
+              city,
+              state,
+              zip_code
             ),
             doctor:doctors!doctor_id (
               id,
@@ -236,7 +240,7 @@ const InvoiceList: React.FC = () => {
             )
           `
           )
-          .eq("lab_id", lab.labId)
+          .eq("lab_id", lab.id)
           .eq("status", "completed")
           .order("created_at", { ascending: false });
 
@@ -288,7 +292,7 @@ const InvoiceList: React.FC = () => {
                 )
               `
               )
-              .eq("lab_id", lab.labId)
+              .eq("lab_id", lab.id)
               .in("id", productsIdArray);
 
             if (productsError) {
@@ -393,6 +397,7 @@ const InvoiceList: React.FC = () => {
             return {
               ...singleCase,
               products: productsWithDiscounts,
+              labDetail: lab,
             };
           })
         );
@@ -646,7 +651,7 @@ const InvoiceList: React.FC = () => {
                   tooth_number: [Number(item.toothNumber)],
                   product_id: item.id, // Ensure to include the product_id
                   case_id: updatedInvoice.id,
-                  lab_id: lab?.labId,
+                  lab_id: lab?.id,
                   case_product_id: updatedCaseProducts[0].id,
                 },
               ])
@@ -1201,7 +1206,7 @@ const InvoiceList: React.FC = () => {
           .from("invoices")
           .update(invoiceUpdate)
           .eq("id", id)
-          .eq("lab_id", lab?.labId);
+          .eq("lab_id", lab?.id);
 
         if (updateError) {
           throw new Error(
@@ -1221,7 +1226,7 @@ const InvoiceList: React.FC = () => {
         status: "Completed",
         over_payment: overpaymentAmount || 0,
         remaining_payment: remainingBalance || 0,
-        lab_id: lab?.labId,
+        lab_id: lab?.id,
       };
 
       const { data: insertedPayment, error: paymentError } = await supabase

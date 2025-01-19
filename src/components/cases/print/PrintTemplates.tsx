@@ -82,6 +82,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
         <div>
           <h1 className="text-3xl font-bold mb-2">Lab Slip</h1>
           <p className="text-gray-600">Case #: {caseData.case_number}</p>
+
           <p className="text-gray-600">
             Date: {formatDate(caseData.created_at)}
           </p>
@@ -161,7 +162,12 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                   <div className="text-sm">
                     <h1 className="text-xl font-bold mb-2">INVOICE</h1>
                     <p className="font-bold">
-                      No. {invoice?.case_number || "4507"}
+                      <p className="text-gray-600">
+                        Inv #:{" "}
+                        {invoice.case_number
+                          ? invoice.case_number.replace(/^.{3}/, "INV")
+                          : "N/A"}
+                      </p>
                     </p>
                     <p className="font-bold">
                       {formatDate(invoice?.created_at || "1/7/2025")}

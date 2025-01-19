@@ -21,6 +21,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import logomark from "../../assets/logomark.svg";
 import logotext from "../../assets/logotext.svg";
 import { supabase } from "@/lib/supabase";
+import { labDetail } from "@/types/supabase";
 interface MenuItem {
   icon: any;
   label: string;
@@ -33,17 +34,6 @@ interface MenuItem {
   }[];
 }
 
-interface OfficeAddress {
-  address_1: string;
-  address_2: string;
-  city: string;
-}
-
-interface OfficeData {
-  name: string;
-  office_address: OfficeAddress; // office_address should be an array of objects
-}
-
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
@@ -54,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const { user } = useAuth();
   const [openDropdowns, setOpenDropdowns] = useState<string[]>([]);
 
-  const [labs, setLabs] = useState<OfficeData[]>([]);
+  const [labs, setLabs] = useState<labDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   useEffect(() => {

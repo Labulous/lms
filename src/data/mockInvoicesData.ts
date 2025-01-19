@@ -1,6 +1,7 @@
 import { format, addDays } from "date-fns";
 import { mockClients } from "./mockClientsData";
 import { Case } from "./mockCasesData";
+import { labDetail } from "@/types/supabase";
 
 export interface InvoiceItem {
   id?: string;
@@ -136,6 +137,7 @@ export interface Invoice {
     client_id: string;
     due_amount?: number;
   }[];
+  labDetail?: labDetail;
 }
 
 const today = new Date();

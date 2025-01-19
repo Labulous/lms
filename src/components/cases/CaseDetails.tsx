@@ -20,6 +20,7 @@ import {
   WorkingStationLog,
   WorkingStationTypes,
   WorkstationForm,
+  labDetail,
 } from "@/types/supabase";
 
 import CaseProgress, { CaseStep } from "./CaseProgress";
@@ -159,6 +160,10 @@ export interface ExtendedCase {
     id: string;
     client_name: string;
     phone: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
   };
   doctor: {
     id: string;
@@ -224,6 +229,7 @@ export interface ExtendedCase {
     occlusal_shade?: { name: string };
     stump_shade_id?: { name: string };
   }[];
+  labDetail?: labDetail;
 }
 
 const TYPE_COLORS = {
@@ -454,7 +460,11 @@ const CaseDetails: React.FC = () => {
             client:clients!client_id (
               id,
               client_name,
-              phone
+              phone,
+              street,
+              city,
+              state,
+              zip_code
             ),
             doctor:doctors!doctor_id (
               id,
