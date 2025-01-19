@@ -120,6 +120,17 @@ export function NewPaymentModal({
     }
   };
 
+  useEffect(() => {
+    // Ensure pointer-events are reset when the component unmounts
+    return () => {
+      document.body.style.pointerEvents = "auto";
+    };
+  }, []);
+
+  const handleClose = () => {
+    document.body.style.pointerEvents = "auto"; // Reset pointer-events
+    onClose();
+  };
   const handleInvoiceSelect = (
     invoiceId: string,
     checked: boolean,
@@ -361,7 +372,7 @@ export function NewPaymentModal({
   }, [selectedClient, lab]);
   console.log(invoices, "set Invoices");
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={true} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto">
         <DialogHeader className="pb-4 border-b">
           <DialogTitle className="text-2xl">New Payment</DialogTitle>
@@ -602,7 +613,7 @@ export function NewPaymentModal({
         </div>
 
         <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={() => handleClose()}>
             Cancel
           </Button>
           <Button
