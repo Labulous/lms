@@ -318,7 +318,7 @@ export function EditInvoiceModal({
                 </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={index}>
                       <TableCell>
                         {
                           <Input
@@ -374,9 +374,9 @@ export function EditInvoiceModal({
                                   </DropdownMenuItem>
                                 ) : (
                                   <div className="">
-                                    {products.map((c) => (
+                                    {products.map((c, i) => (
                                       <div
-                                        key={c.id}
+                                        key={i}
                                         onClick={() =>
                                           // navigate(`/clients/${c.id}`)
                                           handleSelectedProduct(c)

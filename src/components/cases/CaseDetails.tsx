@@ -658,20 +658,16 @@ const CaseDetails: React.FC = () => {
               (teeth: any) => teeth.product_id === product.id
             );
 
-            // Return a flattened array of products with the relevant discounted prices and teeth products
-            return relevantTeethProducts.map((teeth: any) => {
-              // Find the discounted price for this teeth product (assuming there's a one-to-one match between discounted price and teeth)
-              const discountedPrice = relevantDiscounts.find(
-                (discount: { product_id: string }) =>
-                  discount.product_id === product.id
-              );
+            // Map each teeth product to a corresponding discounted price
+            return relevantTeethProducts.map((teeth: any, index: number) => {
+              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
+              const discountedPrice =
+                relevantDiscounts[index % relevantDiscounts.length] || null;
 
               return {
                 ...product,
                 discounted_price: discountedPrice,
-                teethProduct: {
-                  ...teeth,
-                }, // Add the teeth product associated with this instance
+                teethProduct: teeth, // Add the teeth product associated with this instance
               };
             });
           });

@@ -589,7 +589,7 @@ const InvoiceList: React.FC = () => {
                 .from("discounted_price")
                 .update({
                   discount: item.discount,
-                  quantity: item.quantity,
+                  quantity: item.quantity || 1,
                   price: item.unitPrice,
                   final_price: finalPrice,
                 })
