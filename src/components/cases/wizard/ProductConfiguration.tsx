@@ -1347,6 +1347,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 + Add Product Row
               </Button>
             </div>
+
+            {formErrors.itemsError && (
+              <p className="mt-1 text-sm text-red-600 p-3 pr-0">
+                {formErrors.itemsError}
+              </p>
+            )}
           </Table>
         </div>
 

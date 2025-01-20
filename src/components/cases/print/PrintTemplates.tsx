@@ -161,7 +161,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           {invoice.labDetail?.office_address.zip_postal}
                         </span>
                       </p>
-                      <p>(604) 777-0665</p>
+                      <p>{invoice.labDetail?.office_address.phone_number}</p>
                     </div>
                   </div>
 
@@ -172,7 +172,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <p className="text-gray-600">
                         Inv #:{" "}
                         {invoice.case_number
-                          ? invoice.case_number.replace(/^.{3}/, "INV")
+                          ? invoice.case_number.split("-")[2]
                           : "N/A"}
                       </p>
                     </p>
@@ -183,7 +183,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <p className="font-bold">Ship To:</p>
                       <p>{invoice.client.street}</p>
                       <p>
-                        {invoice.client.city}{", "}
+                        {invoice.client.city}
+                        {", "}
                         <span>{invoice.client.state}</span>
                       </p>
                       <p>{invoice.client.phone}</p>
