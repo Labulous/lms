@@ -1,22 +1,59 @@
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { mockDashboardData } from "@/data/mockSalesData";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import {
   LineChart,
   Line,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
 } from "recharts";
 import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { TimeFilter, TimeFilterOption, timeFilterOptions } from "@/components/ui/time-filter";
+import { mockDashboardData } from "@/data/mockSalesData";
 
 const SalesDashboard: React.FC = () => {
+  // Individual time filters for each card
+  const [revenueFilter, setRevenueFilter] = useState(timeFilterOptions[0]);
+  const [expensesFilter, setExpensesFilter] = useState(timeFilterOptions[0]);
+  const [incomeExpenseFilter, setIncomeExpenseFilter] = useState(timeFilterOptions[0]);
+  const [patientsFilter, setPatientsFilter] = useState(timeFilterOptions[0]);
+  const [productsFilter, setProductsFilter] = useState(timeFilterOptions[0]);
+  const [stockFilter, setStockFilter] = useState(timeFilterOptions[0]);
+
+  // Generate data based on selected time periods
+  const generateData = (days: number) => {
+    const baseRevenue = 25000;
+    const scaleFactor = days / 7;
+    
+    return {
+      revenue: Math.round(baseRevenue * scaleFactor),
+      growth: Math.round((Math.random() * 15 + 5) * 10) / 10,
+      expenses: Math.round(baseRevenue * scaleFactor * 0.4),
+      monthlyData: Array.from({ length: days }, (_, i) => ({
+        month: new Date(Date.now() - (days - 1 - i) * 24 * 60 * 60 * 1000)
+          .toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        income: Math.round(baseRevenue / 7 * (0.8 + Math.random() * 0.4)),
+        expenses: Math.round((baseRevenue / 7) * 0.4 * (0.8 + Math.random() * 0.4))
+      }))
+    };
+  };
+
+  const revenueData = generateData(revenueFilter.days);
+  const expensesData = generateData(expensesFilter.days);
+  const incomeExpenseData = generateData(incomeExpenseFilter.days);
+
   const {
     cashflow,
     expenses,
@@ -30,31 +67,32 @@ const SalesDashboard: React.FC = () => {
     <div className="grid grid-cols-12 gap-4">
       {/* Cashflow Section */}
       <Card className="col-span-8">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <TimeFilter selectedFilter={revenueFilter} onFilterChange={setRevenueFilter} />
+        </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <p className="text-sm text-gray-500">TOTAL REVENUE</p>
+              <p className="text-sm text-gray-500">Total Revenue</p>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold">${cashflow.totalCash.toLocaleString()}</h2>
+                <h2 className="text-2xl font-bold">${revenueData.revenue.toLocaleString()}</h2>
                 <span className="text-sm text-green-500 flex items-center">
                   <ArrowUpIcon className="w-4 h-4" />
-                  {cashflow.growthPercentage}%
+                  {revenueData.growth}%
                 </span>
               </div>
             </div>
-            <select className="text-sm border rounded-md px-2 py-1">
-              <option>Last 12 month</option>
-            </select>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={cashflow.monthlyData}>
+            <LineChart data={revenueData.monthlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip />
               <Line
                 type="monotone"
-                dataKey="amount"
+                dataKey="income"
                 stroke="#3b82f6"
                 strokeWidth={2}
               />
@@ -65,17 +103,18 @@ const SalesDashboard: React.FC = () => {
 
       {/* Expenses Section */}
       <Card className="col-span-4">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Expenses</CardTitle>
+          <TimeFilter selectedFilter={expensesFilter} onFilterChange={setExpensesFilter} />
+        </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold">Expenses</h3>
-            <select className="text-sm border rounded-md px-2 py-1">
-              <option>Last 6 months</option>
-            </select>
           </div>
           <div className="flex justify-center items-center relative mb-6">
             <div className="absolute inset-0 flex items-center justify-center flex-col">
               <p className="text-sm text-gray-500">Total Expense</p>
-              <p className="text-xl font-bold">${expenses.total.toLocaleString()}</p>
+              <p className="text-xl font-bold">${expensesData.expenses.toLocaleString()}</p>
             </div>
             <ResponsiveContainer width="100%" height={200}>
               <div className="w-full h-full flex items-center justify-center">
@@ -123,12 +162,16 @@ const SalesDashboard: React.FC = () => {
 
       {/* Income & Expense Section */}
       <Card className="col-span-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Income & Expense</CardTitle>
+          <TimeFilter 
+            selectedFilter={incomeExpenseFilter} 
+            onFilterChange={setIncomeExpenseFilter} 
+          />
+        </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold">Income & Expense</h3>
-            <select className="text-sm border rounded-md px-2 py-1">
-              <option>Last 6 months</option>
-            </select>
           </div>
           <div className="space-y-4 mb-6">
             <div>
@@ -173,12 +216,13 @@ const SalesDashboard: React.FC = () => {
 
       {/* Patients Section */}
       <Card className="col-span-3">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Patients</CardTitle>
+          <TimeFilter selectedFilter={patientsFilter} onFilterChange={setPatientsFilter} />
+        </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-semibold">Patients</h3>
-            <select className="text-sm border rounded-md px-2 py-1">
-              <option>This month</option>
-            </select>
           </div>
           <div className="space-y-6">
             <div className="space-y-2">
@@ -203,6 +247,10 @@ const SalesDashboard: React.FC = () => {
 
       {/* Popular Products Section */}
       <Card className="col-span-3">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Popular Products</CardTitle>
+          <TimeFilter selectedFilter={productsFilter} onFilterChange={setProductsFilter} />
+        </CardHeader>
         <CardContent className="p-6">
           <h3 className="font-semibold mb-6">Popular Products</h3>
           <div className="space-y-4">
@@ -225,6 +273,10 @@ const SalesDashboard: React.FC = () => {
 
       {/* Stock Availability Section */}
       <Card className="col-span-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Stock availability</CardTitle>
+          <TimeFilter selectedFilter={stockFilter} onFilterChange={setStockFilter} />
+        </CardHeader>
         <CardContent className="p-6">
           <h3 className="font-semibold mb-6">Stock availability</h3>
           <div className="grid grid-cols-2 gap-6 mb-6">

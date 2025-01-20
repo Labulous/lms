@@ -16,6 +16,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SalesDashboard from "@/components/dashboard/SalesDashboard";
+import DailyCountsCard from "../components/operations/DailyCountsCard";
 import { format } from "date-fns";
 
 interface CasesDues {
@@ -308,6 +309,7 @@ const Home: React.FC = () => {
           })),
           invoicesData: caseItem.invoicesData,
         }));
+        // Map the grouped cases to calendar events
 
         return {
           title: `${cases.length}`, // Example: "3 cases"
@@ -380,6 +382,7 @@ const Home: React.FC = () => {
         </TabsList>
 
         <TabsContent value="operations">
+          {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {keyMetrics.map((metric, index) => (
               <div
@@ -405,19 +408,28 @@ const Home: React.FC = () => {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold">Due Dates Calendar</h2>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsCalendarModalOpen(true)}
-                >
-                  <Maximize2 className="h-4 w-4" />
-                </Button>
+          {/* Calendar and Daily Counts */}
+          <div className="grid grid-cols-12 gap-4">
+            {/* Calendar Section */}
+            <div className="col-span-12 lg:col-span-8">
+              <div className="bg-white p-6 rounded-lg shadow">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-lg font-semibold">Due Dates Calendar</h2>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setIsCalendarModalOpen(true)}
+                  >
+                    <Maximize2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <DueDatesCalendar events={casesEvents} />
               </div>
-              <DueDatesCalendar events={casesEvents} />
+            </div>
+
+            {/* Daily Counts Section */}
+            <div className="col-span-12 lg:col-span-4">
+              <DailyCountsCard />
             </div>
           </div>
 

@@ -25,6 +25,7 @@ import CaseWorkflowSettings from "./pages/settings/case-workflow";
 import WorkingTagsSettings from "./pages/settings/working-tags-page";
 import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
+import Dashboard from "./pages/Dashboard";
 
 const App: React.FC = () => {
   return (
@@ -32,13 +33,14 @@ const App: React.FC = () => {
       <>
         <Toaster position="top-right" />
         <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" />} />
           <Route path="/login" element={<Login />} />
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Home />
+                  <Dashboard />
                 </Layout>
               </ProtectedRoute>
             }

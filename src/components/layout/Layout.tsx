@@ -10,7 +10,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const isDashboard = location.pathname === '/';
+  const isDashboard = location.pathname === '/dashboard';
 
   return (
     <div className="flex h-screen bg-white">
