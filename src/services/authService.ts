@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
-import { Database } from "@/types/supabase";
+import { Database, labDetail } from "@/types/supabase";
 
 const logger = createLogger({ module: "AuthService" });
 
@@ -453,6 +453,45 @@ export const getLabIdByUserId = async (
 
     // If no match is found, return null
     return null;
+  } catch (error) {
+    console.error("Error in getLabIdByUserId function:", error);
+    throw error;
+  }
+};
+export const getLabDataByUserId = async (
+  userId: string
+): Promise<labDetail | null> => {
+  try {
+    // Fetch all labs
+
+    const { data, error } = await supabase
+      .from("labs")
+      .select(
+        `
+               name,
+               id,
+               office_address:office_address!office_address_id (
+                 address_1,
+                 address_2,
+                 city,
+                 state_province,
+                 zip_postal,
+                 country,
+                 phone_number
+               )
+             `
+      )
+      .or(
+        `super_admin_id.eq.${userId},admin_ids.cs.{${userId}},technician_ids.cs.{${userId}},client_ids.cs.{${userId}}`
+      )
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    // If no match is found, return null
+    return data as unknown as labDetail;
   } catch (error) {
     console.error("Error in getLabIdByUserId function:", error);
     throw error;

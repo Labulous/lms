@@ -190,6 +190,22 @@ export interface ShadeData {
   custom_body?: string;
 }
 
+export interface OfficeAddress {
+  address_1: string;
+  address_2: string;
+  city: string;
+  state_province?: string;
+  zip_postal?: string;
+  country?: string;
+  phone_number?: string;
+}
+
+export interface labDetail {
+  name: string;
+  id?: string;
+  office_address: OfficeAddress; // office_address should be an array of objects
+}
+
 /**
  * Shade data with resolved names for display
  */
@@ -738,7 +754,7 @@ export interface Case {
   created_at: string;
   received_date: string | null;
   ship_date: string | null;
-  status: 'active' | 'completed' | 'on_hold';
+  status: "active" | "completed" | "on_hold";
   patient_name: string;
   due_date: string;
   case_number: string;
@@ -778,6 +794,7 @@ export interface FormData {
   appointmentTime?: string;
   assignedTechnicians?: string[];
   workingPanName?: string;
+  workingTagName?: string;
   workingPanColor?: string;
   enclosedItems: {
     impression: number;

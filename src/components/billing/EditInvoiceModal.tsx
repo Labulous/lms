@@ -29,6 +29,7 @@ import { supabase } from "@/lib/supabase";
 import { ProductType } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
@@ -57,13 +58,18 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
+  console.log(invoice, "invoice?.products");
   useEffect(() => {
     if (invoice) {
-      const transformedItems = (invoice?.products ?? []).map((item) => ({
+      const transformedItems = duplicateInvoiceProductsByTeeth(
+        invoice?.products as any
+      ).map((item) => ({
         unitPrice: item?.discounted_price?.price ?? 0,
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,
-        toothNumber: item.teethProducts?.tooth_number?.join(",") || "1",
+        discountId: item?.discounted_price?.id,
+        caseProductTeethId: item.teethProduct.id,
+        toothNumber: item.teethProduct?.tooth_number?.[0] || 0,
         description: item.name,
         id: item.id,
       }));
@@ -123,6 +129,8 @@ export function EditInvoiceModal({
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           discount: item.discount,
+          discountId: item.discountId,
+          caseProductTeethId: item.caseProductTeethId,
           toothNumber: item.toothNumber,
           total:
             item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
@@ -164,6 +172,7 @@ export function EditInvoiceModal({
         .from("discounted_price")
         .select(
           `
+                id,
                 product_id,
                 discount,
                 final_price,
@@ -187,6 +196,7 @@ export function EditInvoiceModal({
                   unitPrice: data[0].price,
                   id: data[0].product_id,
                   description: product.name,
+                  discountId: data[0].id,
                   quantity: data[0]?.quantity ?? 1,
                 }
               : item
@@ -202,6 +212,7 @@ export function EditInvoiceModal({
                   discount: 0,
                   unitPrice: 0,
                   id: product.id,
+                  discountId: "",
                   description: product.name,
                   quantity: 1,
                 }
@@ -213,6 +224,7 @@ export function EditInvoiceModal({
       console.error("An unexpected error occurred:", err);
     }
   };
+  console.log(items, "items");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -265,6 +277,7 @@ export function EditInvoiceModal({
               <Button
                 type="button"
                 variant="outline"
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onClick={() => {
                   const hasNullId = items.some((item) => item.id === "");
 
@@ -305,11 +318,12 @@ export function EditInvoiceModal({
                 </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={item.id}>
+                    <TableRow key={index}>
                       <TableCell>
                         {
                           <Input
                             value={item.toothNumber || ""}
+                            disabled={invoice?.invoice?.[0]?.status === "paid"}
                             onChange={(e) => {
                               const updatedItems = [...items];
                               updatedItems[index] = {
@@ -337,13 +351,17 @@ export function EditInvoiceModal({
                         /> */}
                         <div className="">
                           <DropdownMenu>
-                            <DropdownMenuTrigger className="flex justify-between items-center p-2 border w-full gap-2 hover:text-gray-600 focus:outline-none">
+                            <DropdownMenuTrigger
+                              disabled={
+                                invoice?.invoice?.[0]?.status === "paid"
+                              }
+                              className="flex justify-between items-center p-2 border w-full gap-2 hover:text-gray-600 focus:outline-none"
+                            >
                               <h2 className="text-gray-900">
                                 {item.description ?? "select the product"}
                               </h2>
                               <ChevronDown className="h-5 w-5 text-gray-500" />
                             </DropdownMenuTrigger>
-
                             <DropdownMenuContent
                               align="start"
                               className="bg-white border"
@@ -356,9 +374,9 @@ export function EditInvoiceModal({
                                   </DropdownMenuItem>
                                 ) : (
                                   <div className="">
-                                    {products.map((c) => (
+                                    {products.map((c, i) => (
                                       <div
-                                        key={c.id}
+                                        key={i}
                                         onClick={() =>
                                           // navigate(`/clients/${c.id}`)
                                           handleSelectedProduct(c)
@@ -378,6 +396,7 @@ export function EditInvoiceModal({
                       <TableCell>
                         <Input
                           type="number"
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           value={item.unitPrice}
                           onChange={(e) => {
                             const updatedItems = [...items];
@@ -392,6 +411,7 @@ export function EditInvoiceModal({
                       <TableCell>
                         <Input
                           type="number"
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           value={item.quantity}
                           onChange={(e) => {
                             const updatedItems = [...items];
@@ -407,6 +427,7 @@ export function EditInvoiceModal({
                         <Input
                           type="number"
                           value={item.discount}
+                          disabled={invoice?.invoice?.[0]?.status === "paid"}
                           onChange={(e) => {
                             const updatedItems = [...items];
                             updatedItems[index] = {
@@ -432,7 +453,9 @@ export function EditInvoiceModal({
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setItems(items.filter((_, i) => i !== index));
+                            setItems((prevItems) =>
+                              prevItems.filter((_, i) => i !== index)
+                            );
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -451,6 +474,7 @@ export function EditInvoiceModal({
               <h3 className="text-lg font-medium mb-2">Invoice Notes</h3>
               <textarea
                 value={notes?.invoiceNotes}
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onChange={(e) =>
                   setNotes(
                     (prevNotes) =>
@@ -470,6 +494,7 @@ export function EditInvoiceModal({
               <h3 className="text-lg font-medium mb-2">Lab Notes</h3>
               <textarea
                 value={notes?.labNotes}
+                disabled={invoice?.invoice?.[0]?.status === "paid"}
                 onChange={(e) =>
                   setNotes(
                     (prevNotes) =>
@@ -507,7 +532,7 @@ export function EditInvoiceModal({
           <Button
             type="button"
             variant="default"
-            disabled={isSubmitting}
+            disabled={isSubmitting || invoice?.invoice?.[0]?.status === "paid"}
             onClick={handleSave}
           >
             {isSubmitting ? "Saving..." : "Complete"}

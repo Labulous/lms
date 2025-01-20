@@ -59,8 +59,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 }) => {
   // Debug log for initial render and props
   const [tags, setTags] = useState<WorkingTag[]>([]);
+  const [pans, setPans] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isAddingPan, setIsAddingPan] = useState(false);
   const addTagTriggerRef = useRef<HTMLButtonElement>(null);
   const [newTagData, setNewTagData] = useState({ name: "", color: "#000000" });
   const { user } = useAuth();
@@ -106,14 +108,23 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         return;
       }
 
-      const { data, error } = await supabase
+      const { data: tags, error } = await supabase
         .from("working_tags")
         .select("*")
         .eq("lab_id", labData.labId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTags(data || []);
+      setTags(tags || []);
+      const { data: pans, error: panError } = await supabase
+        .from("working_pans")
+        .select("*")
+        .eq("lab_id", labData.labId)
+        .order("created_at", { ascending: false });
+
+      if (panError) throw error;
+      setPans(pans || []);
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching tags:", error);
@@ -523,58 +534,122 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="grid gap-2">
-              <div className="flex justify-between items-center">
-                <Label className="text-xs">Working Pan</Label>
-                <ColorPicker
-                  mode="create"
-                  selectedColor="#000000"
-                  tags={[]}
-                  setTags={setTags}
-                  onClose={() => setIsAddingTag(false)}
-                  initiallyOpen={isAddingTag}
-                  trigger={
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingTag(true)}
-                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      Add New Tag
-                    </button>
-                  }
-                />
-              </div>
-              <div className="flex gap-2">
-                <Select
-                  value={formData.workingPanName}
-                  onValueChange={(value) =>
-                    onChange("workingPanName", value)
-                  }
-                >
-                  <SelectTrigger className="bg-white">
-                    <SelectValue placeholder="Select working pan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tags && tags.length > 0 ? (
-                      tags.map((tag) => (
-                        <SelectItem key={tag.id} value={tag.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: tag.color }}
-                            />
-                            {tag.name || "Unnamed tag"}
-                          </div>
+            <div className="grid grid-cols-2 gap-5 w-full">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Working Pan</Label>
+                  <ColorPicker
+                    mode="create"
+                    selectedColor="#000000"
+                    tags={[]}
+                    type={"pan"}
+                    setTags={setPans}
+                    setPans={setPans}
+                    pans={[]}
+                    onClose={() => setIsAddingPan(false)}
+                    initiallyOpen={isAddingPan}
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingTag(false);
+                          setIsAddingPan(true);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add New Pan
+                      </button>
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.workingPanName}
+                    onValueChange={(value) => onChange("workingPanName", value)}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select working pan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pans && pans.length > 0 ? (
+                        pans.map((pan) => (
+                          <SelectItem key={pan.id} value={pan.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: pan.color }}
+                              />
+                              {pan.name || "Unnamed pan"}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="_no_tags" disabled>
+                          No tags available
                         </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="_no_tags" disabled>
-                        No tags available
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Working Tag</Label>
+                  <ColorPicker
+                    mode="create"
+                    selectedColor="#000000"
+                    tags={[]}
+                    setTags={setTags}
+                    setPans={setPans}
+                    pans={[]}
+                    onClose={() => setIsAddingTag(false)}
+                    initiallyOpen={isAddingTag}
+                    type={"tag"}
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingPan(false);
+                          setIsAddingTag(!isAddingTag);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add New Tag
+                      </button>
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.workingTagName}
+                    onValueChange={(value) => onChange("workingTagName", value)}
+                  >
+                    <SelectTrigger className="bg-white">
+                      <SelectValue placeholder="Select working Tag" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tags && tags.length > 0 ? (
+                        tags.map((tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: tag.color }}
+                              />
+                              {tag.name || "Unnamed tag"}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="_no_tags" disabled>
+                          No tags available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>

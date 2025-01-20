@@ -31,6 +31,7 @@ export interface FormData {
   patientFirstName: string;
   doctorId?: string;
   workingPanName?: string;
+  workingTagName?: string;
   workingPanColor?: string;
   patientLastName: string;
   orderDate: string;

@@ -13,6 +13,20 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CalendarEvents } from "@/pages/Home";
 import "./calendar.css";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "../ui/button";
 
 const locales = {
   "en-US": enUS,
@@ -92,6 +106,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   height = 500,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
   const [animationDirection, setAnimationDirection] = useState<
     "left" | "right" | null
   >(null);
@@ -188,7 +203,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const rbcNowElement = document.querySelector(".rbc-now");
   useEffect(() => {
-
     if (rbcNowElement) {
       const nextSibling = rbcNowElement.nextElementSibling;
       if (nextSibling && nextSibling instanceof HTMLElement) {
@@ -201,6 +215,10 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     }
   }, [rbcNowElement]);
 
+  const handleEventHover = (event: CalendarEvents | null) => {
+    setHoveredEvent(event);
+  };
+  console.log(events, "nextSibling");
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div
@@ -219,7 +237,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           date={currentDate}
           onNavigate={handleNavigate as any}
           eventPropGetter={eventStyleGetter}
-          onSelectEvent={handleEventClick}
+          // onSelectEvent={handleEventClick}
           dayPropGetter={dayPropGetter}
           className="calendar-container"
         />

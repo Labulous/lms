@@ -88,7 +88,7 @@ const Adjustments = () => {
         for (const invoice of updatedInvoices) {
           const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
           const { id } = invoice.invoicesData[0];
-          const status = dueAmount === 0 ? "Paid" : "Partial_Paid";
+          const status = dueAmount === 0 ? "paid" : "partially_paid";
 
           const invoiceUpdate = {
             status,
@@ -136,7 +136,7 @@ const Adjustments = () => {
           .from("invoices")
           .select("due_amount, due_date")
           .eq("client_id", client)
-          .in("status", ["Unpaid", "Partial_Paid"])
+          .in("status", ["unpaid", "partially_paid"])
           .gt("due_amount", 0);
 
         if (fetchError) {

@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { CaseStatus } from "@/types/supabase";
+import { SavedProduct } from "./mockProductData";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -169,6 +171,7 @@ const saveCaseProduct = async (
       custom_gingival_shade: product?.shades.custon_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
       notes: product.notes || "",
+      case_id: savedCaseId,
     }));
 
     // Calculate discounted prices for products
@@ -176,7 +179,10 @@ const saveCaseProduct = async (
       product_id: product.id,
       price: product.price,
       discount: product.discount,
-      final_price: product.price - (product.price * product.discount) / 100,
+      quantity: product.quantity,
+      final_price:
+        (product.price - (product.price * product.discount) / 100) *
+        product.quantity,
       case_id: savedCaseId as string,
       user_id: cases.overview.created_by,
     }));
@@ -302,11 +308,24 @@ const saveCases = async (
       }
 
       // Step 4: Create invoice for the case
+
+      const totalAmount = cases.products.reduce(
+        (sum: number, item: SavedProduct) => {
+          const itemTotal = item.price * (item?.quantity ? item?.quantity : 1); // Total price without discount
+          const discountedTotal =
+            itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
+          return sum + discountedTotal; // Add to the sum
+        },
+        0
+      );
+
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        status: "Unpaid",
+        amount: totalAmount,
+        due_amount: totalAmount,
+        status: "unpaid",
         due_date: updateDueDate(),
       };
 
@@ -321,10 +340,12 @@ const saveCases = async (
         console.log("Invoice created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
+        await updateBalanceTracking();
       }
     }
 
     // Step 5: Save the overview to localStorage
+
     localStorage.setItem("cases", JSON.stringify(cases));
   } catch (error) {
     console.error("Error in saveCases function:", error);
@@ -397,7 +418,6 @@ const updateCases = async (
       products_id: productIds,
     };
 
-    console.log("runing discounted");
     // Calculate discounted prices for products
     for (const product of cases.products) {
       // Prepare the data row
@@ -405,8 +425,10 @@ const updateCases = async (
         product_id: product.id,
         price: product.price || 0,
         discount: product.discount || 0,
+        quantity: product.quantity,
         final_price:
-          product.price - (product.price * product.discount) / 100 || 0,
+          (product.price - (product.price * product.discount) / 100 || 0) *
+          product.quantity,
         case_id: caseId,
         user_id: cases.overview.created_by || "",
       };
@@ -509,6 +531,7 @@ const updateCases = async (
       custom_occlusal_shade: product?.shades.custom_occlusal || null,
       custom_gingival_shade: product?.shades.custom_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
+      case_id: caseId,
     }));
 
     // Step to check if rows exist for product_id before inserting
@@ -689,7 +712,7 @@ export const fetchShadeOptions = async (labId: string) => {
     }
 
     console.log("Fetched shade options:", data);
-    return data; // Return fetched items
+    return data; // Return fetched itemsmeeting
   } catch (err) {
     console.error("Unexpected error fetching shade options:", err);
     return null; // Return null or handle accordingly

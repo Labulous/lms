@@ -22,10 +22,13 @@ interface ColorPickerProps
   onFormChange?: (field: keyof CaseFormData, value: string) => void;
   tags: WorkingTag[];
   setTags: React.Dispatch<SetStateAction<WorkingTag[]>>;
+  pans: WorkingTag[];
+  setPans: React.Dispatch<SetStateAction<WorkingTag[]>>;
   onClose?: () => void;
   initiallyOpen?: boolean;
-  mode?: 'select' | 'create';
+  mode?: "select" | "create";
   trigger?: React.ReactNode;
+  type?: string;
 }
 
 const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
@@ -39,10 +42,13 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
       onFormChange,
       tags,
       setTags,
+      pans,
+      setPans,
       onClose,
       initiallyOpen = false,
-      mode = 'select',
+      mode = "select",
       trigger,
+      type,
       ...props
     },
     ref
@@ -86,12 +92,20 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
           .select("*")
           .eq("lab_id", labData.labId)
           .order("created_at", { ascending: false });
+        const { data: pans, error: errorPan } = await supabase
+          .from("working_pans")
+          .select("*")
+          .eq("lab_id", labData.labId)
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
+        if (errorPan) throw error;
         setTags(data || []);
+        setPans(pans || []);
         setLoading(false);
         onColorChange?.(data[0]?.color);
-        onFormChange?.("workingPanName" as keyof CaseFormData, data[0]?.id);
+        onFormChange?.("workingPanName" as keyof CaseFormData, pans[0]?.id);
+        onFormChange?.("workingTagName" as keyof CaseFormData, data[0]?.id);
       } catch (error) {
         console.error("Error fetching tags:", error);
         toast.error("Failed to load tags");
@@ -129,15 +143,53 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         if (error) throw error;
         toast.success("Tag created successfully");
         onColorChange?.(formData.color);
-        onFormChange?.("workingPanName" as keyof CaseFormData, formData.id);
-        setFormData({ name: "", color: "#000000", id: "" });
         fetchTags();
+        onFormChange?.("workingTagName" as keyof CaseFormData, formData.id);
+        setFormData({ name: "", color: "#000000", id: "" });
         setLoading(false);
         setOpen(false);
         onClose?.();
       } catch (error) {
         console.error("Error saving tag:", error);
         toast.error("Failed to save tag");
+        setLoading(false);
+      }
+    };
+    const handlePanSubmit = async (e: React.FormEvent) => {
+      if (!formData.name) {
+        toast.error("Pan Name is Required!!");
+        return;
+      }
+      setLoading(true);
+      e.preventDefault();
+      try {
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData?.labId) {
+          toast.error("Lab not found");
+          return;
+        }
+
+        const { error } = await supabase.from("working_pans").insert([
+          {
+            name: formData.name,
+            color: formData.color,
+            lab_id: labData.labId,
+            created_by: user?.id,
+          },
+        ]);
+
+        if (error) throw error;
+        toast.success("Pan created successfully");
+        onColorChange?.(formData.color);
+        fetchTags();
+        onFormChange?.("workingPanName" as keyof CaseFormData, formData.id);
+        setFormData({ name: "", color: "#000000", id: "" });
+        setLoading(false);
+        setOpen(false);
+        onClose?.();
+      } catch (error) {
+        console.error("Error saving Pan:", error);
+        toast.error("Failed to save Pan");
         setLoading(false);
       }
     };
@@ -149,7 +201,7 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
         {...props}
       >
         <Popover open={open} onOpenChange={handleOpenChange}>
-          {mode === 'select' ? (
+          {mode === "select" ? (
             <PopoverTrigger asChild>
               <div
                 className={cn(
@@ -160,14 +212,12 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
               />
             </PopoverTrigger>
           ) : trigger ? (
-            <PopoverTrigger asChild>
-              {trigger}
-            </PopoverTrigger>
+            <PopoverTrigger asChild>{trigger}</PopoverTrigger>
           ) : null}
           <PopoverContent className="w-[220px] p-3">
             <div className="space-y-2">
               <div className="space-y-2">
-                <Label>Tag Name</Label>
+                <Label>{type === "pan" ? "Pan" : "Tag"} Name</Label>
                 <Input
                   id="name"
                   placeholder="Enter tag name"
@@ -181,19 +231,23 @@ const ColorPicker = React.forwardRef<HTMLDivElement, ColorPickerProps>(
                 <Label>Color</Label>
                 <HexColorPicker
                   color={formData.color}
-                  onChange={(color) =>
-                    setFormData({ ...formData, color })
-                  }
+                  onChange={(color) => setFormData({ ...formData, color })}
                   style={{ width: "100% !important" }}
                 />
                 <Button
                   type="submit"
                   disabled={loading}
                   style={{ backgroundColor: formData.color }}
-                  onClick={(e) => handleSubmit(e)}
+                  onClick={(e) =>
+                    type === "pan" ? handlePanSubmit(e) : handleSubmit(e)
+                  }
                   className="w-full text-white"
                 >
-                  {loading ? "Creating tag" : "Create Tag"}
+                  {loading
+                    ? "Creating tag"
+                    : type === "pan"
+                    ? "Create Pan"
+                    : "Create Tag"}
                 </Button>
               </div>
             </div>

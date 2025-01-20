@@ -1,17 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   QRCodeTemplate,
   LabSlipTemplate,
   AddressLabelTemplate,
   PatientLabelTemplate,
-} from '@/components/cases/print/PrintTemplates';
-import { PAPER_SIZES } from '@/components/cases/print/PrintHandler';
-import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+  InvoiceTemplate,
+} from "@/components/cases/print/PrintTemplates";
+import { PAPER_SIZES } from "@/components/cases/print/PrintHandler";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { ExtendedCase } from "@/components/cases/CaseDetails";
 
 interface PrintPreviewState {
-  type: 'qr-code' | 'lab-slip' | 'address-label' | 'patient-label';
+  type:
+    | "qr-code"
+    | "lab-slip"
+    | "address-label"
+    | "patient-label"
+    | "invoice_slip";
   paperSize: keyof typeof PAPER_SIZES;
   caseData: {
     id: string;
@@ -31,36 +38,35 @@ interface PrintPreviewState {
       name: string;
     };
   };
+  caseDetails?: ExtendedCase[];
 }
 
 const PrintPreview = () => {
   const [searchParams] = useSearchParams();
-  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(null);
+  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(
+    null
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
     try {
-      // Get state from URL parameter
-      const stateParam = searchParams.get('state');
+      const stateParam = searchParams.get("state");
       if (!stateParam) {
-        throw new Error('No state parameter found');
+        throw new Error("No state parameter found");
       }
-
-      // Decode and parse state
       const decodedState = JSON.parse(atob(decodeURIComponent(stateParam)));
       setPreviewState(decodedState);
     } catch (error) {
-      console.error('Error parsing state:', error);
-      navigate('/', { replace: true });
+      console.error("Error parsing state:", error);
+      navigate("/", { replace: true });
     }
   }, [searchParams, navigate]);
 
-  // If no state, show loading or return null
   if (!previewState) {
     return null;
   }
 
-  const { type, paperSize = 'LETTER', caseData } = previewState;
+  const { type, paperSize = "LETTER", caseData, caseDetails } = previewState;
 
   const handlePrint = () => {
     window.print();
@@ -70,30 +76,38 @@ const PrintPreview = () => {
     const props = {
       caseData,
       paperSize,
+      caseDetails,
     };
 
     switch (type) {
-      case 'qr-code':
+      case "qr-code":
         return <QRCodeTemplate {...props} />;
-      case 'lab-slip':
+      case "lab-slip":
         return <LabSlipTemplate {...props} />;
-      case 'address-label':
+      case "address-label":
         return <AddressLabelTemplate {...props} />;
-      case 'patient-label':
+      case "patient-label":
         return <PatientLabelTemplate {...props} />;
+      case "invoice_slip":
+        return (
+          <InvoiceTemplate
+            caseData={caseData}
+            paperSize={paperSize}
+            caseDetails={caseDetails}
+          />
+        );
       default:
         return <div>Invalid template type</div>;
     }
   };
 
-  // Get paper dimensions with fallback to LETTER size
   const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
   const containerStyle = {
     width: `${dimensions.width / 72}in`,
     height: `${dimensions.height / 72}in`,
-    margin: '0',
-    backgroundColor: 'white',
-    position: 'relative' as const,
+    margin: "0",
+    backgroundColor: "white",
+    position: "relative" as const,
   };
 
   return (
@@ -106,7 +120,7 @@ const PrintPreview = () => {
             Print
           </Button>
         </div>
-        
+
         <div className="bg-white shadow-lg rounded-lg overflow-hidden">
           <div style={containerStyle} className="print-container">
             {renderTemplate()}
@@ -122,7 +136,6 @@ const PrintPreview = () => {
               size: ${paperSize.toLowerCase()};
               margin: 0mm;  
             }
-            
             body {
               margin: 0;
               padding: 0;
@@ -137,23 +150,11 @@ const PrintPreview = () => {
             }
 
             .print-container {
-              position: absolute;
-              left: 0;
-              top: 0;
-              margin: 0;
-              padding: 0;
+              position: relative;
+              page-break-after: always;
               width: ${dimensions.width / 72}in;
               height: ${dimensions.height / 72}in;
-              max-width: 100%;
-              max-height: 100%;
-              box-sizing: border-box;
             }
-          }
-
-          /* Preview styles */
-          .print-container {
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            background-color: white;
           }
         `}
       </style>

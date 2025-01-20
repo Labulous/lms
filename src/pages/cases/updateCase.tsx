@@ -268,7 +268,8 @@ const UpdateCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
-            pan_tag_id: formData.workingPanName,
+            working_tag_id: formData.workingTagName,
+            working_pan_id: formData.workingPanName,
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
             attachements: selectedFiles.map((item) => item.url),
@@ -335,7 +336,10 @@ const UpdateCase: React.FC = () => {
                   phone
                 )
               ),
-              tags:working_tags!pan_tag_id (
+              tags:working_tags!working_tag_id (
+              id,
+              color,name),
+              pans:working_tags!working_pan_id (
               id,
               color,name),
               rx_number,
@@ -545,8 +549,9 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.tags.id || "",
-          workingPanColor: caseDataApi.tags.color || "",
+          workingPanName: caseDataApi.pans.id || "",
+          workingTagName: caseDataApi.tags.id || "",
+          workingPanColor: caseDataApi.pans.color || "",
 
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override

@@ -20,6 +20,7 @@ import {
   WorkingStationLog,
   WorkingStationTypes,
   WorkstationForm,
+  labDetail,
 } from "@/types/supabase";
 
 import CaseProgress, { CaseStep } from "./CaseProgress";
@@ -77,6 +78,10 @@ import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
 import OnHoldModal from "./wizard/modals/OnHoldModal";
 import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
+import {
+  duplicateProductsByTeeth,
+  duplicateProductsByTeethNumber,
+} from "@/lib/dulicateProductsByTeeth";
 
 interface CaseFile {
   id: string;
@@ -155,6 +160,10 @@ export interface ExtendedCase {
     id: string;
     client_name: string;
     phone: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
   };
   doctor: {
     id: string;
@@ -207,6 +216,7 @@ export interface ExtendedCase {
     status: string;
     due_date: string;
     discount?: string;
+    due_amount?: string;
     tax?: string;
     notes?: string;
     items?: any;
@@ -219,6 +229,7 @@ export interface ExtendedCase {
     occlusal_shade?: { name: string };
     stump_shade_id?: { name: string };
   }[];
+  labDetail?: labDetail;
 }
 
 const TYPE_COLORS = {
@@ -267,9 +278,10 @@ const CaseDetails: React.FC = () => {
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
   const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
   const [onHoldReason, setOnHoldReason] = useState<string>("");
+  const [invoicePreviewModalOpen, setInvoicePreviewModalOpen] =
+    useState<boolean>(false);
   const [selectedPaperSize, setSelectedPaperSize] =
     useState<keyof typeof PAPER_SIZES>("LETTER");
-
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
@@ -442,12 +454,17 @@ const CaseDetails: React.FC = () => {
               case_id,
               amount,
               status,
+              due_amount,
               due_date
             ),
             client:clients!client_id (
               id,
               client_name,
-              phone
+              phone,
+              street,
+              city,
+              state,
+              zip_code
             ),
             doctor:doctors!doctor_id (
               id,
@@ -458,7 +475,11 @@ const CaseDetails: React.FC = () => {
                 phone
               )
             ),
-            tag:working_tags!pan_tag_id (
+            tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+            pan:working_tags!working_pan__id (
               name,
               color
             ),
@@ -626,29 +647,43 @@ const CaseDetails: React.FC = () => {
                   type
                 `
                 )
-                .eq("case_product_id", caseProductId);
+                .eq("case_product_id", caseProductId)
+                .eq("case_id", caseData.id);
 
             if (teethProductsError) {
               setError(teethProductsError.message);
               return;
             }
             teethProducts = teethProductData;
+            console.log(teethProductData, "teethProductData");
           }
-
+          console.log(productData, "productData");
+          console.log(discountedPriceData, "discountedPriceData");
           // Combine all product data
-          const productsWithDiscounts = productData.map((product: any) => {
-            const discountedPrice = discountedPriceData.find(
+          const productsWithDiscounts = productData.flatMap((product: any) => {
+            // Find all the discounted prices for this product
+            const relevantDiscounts = discountedPriceData.filter(
               (discount: { product_id: string }) =>
                 discount.product_id === product.id
             );
-            const productTeeth = teethProducts.find(
+
+            // Find all the teeth products for this product
+            const relevantTeethProducts = teethProducts.filter(
               (teeth: any) => teeth.product_id === product.id
             );
-            return {
-              ...product,
-              discounted_price: discountedPrice,
-              teethProduct: productTeeth,
-            };
+
+            // Map each teeth product to a corresponding discounted price
+            return relevantTeethProducts.map((teeth: any, index: number) => {
+              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
+              const discountedPrice =
+                relevantDiscounts[index % relevantDiscounts.length] || null;
+
+              return {
+                ...product,
+                discounted_price: discountedPrice,
+                teethProduct: teeth, // Add the teeth product associated with this instance
+              };
+            });
           });
 
           setCaseDetail({
@@ -941,11 +976,14 @@ const CaseDetails: React.FC = () => {
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
-                    <span className="text-sm font-medium text-primary">
+                    <div
+                      className="text-sm font-medium text-primary"
+                      onMouseEnter={() => setIsPreviewModalOpen(true)}
+                    >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
                         : "N/A"}
-                    </span>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-2">
@@ -1449,13 +1487,14 @@ const CaseDetails: React.FC = () => {
                             product?.discounted_price?.discount || 0;
                           const finalPrice =
                             product?.discounted_price?.final_price || price;
-                          const quantity = product?.tooth_number?.length || 1;
+                          const quantity =
+                            product?.discounted_price.quantity || 1;
                           const subtotal = finalPrice * quantity;
 
                           return (
                             <TableRow key={index}>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.tooth_number?.length > 1
+                                {product.teethProduct.tooth_number?.length > 1
                                   ? formatTeethRange(
                                       product.teethProduct?.tooth_number
                                     )
@@ -1558,7 +1597,7 @@ const CaseDetails: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
                           $
-                          {caseDetail.products
+                          {duplicateProductsByTeethNumber(caseDetail.products)
                             ?.reduce((total, product) => {
                               const finalPrice =
                                 product.discounted_price?.final_price ||
@@ -1931,7 +1970,7 @@ const CaseDetails: React.FC = () => {
         </div>
       </div>
       {/* Invoice Preview Modal */}
-      {caseDetail && (
+      {isPreviewModalOpen && (
         <InvoicePreviewModal
           isOpen={isPreviewModalOpen}
           onClose={() => {
@@ -1940,12 +1979,14 @@ const CaseDetails: React.FC = () => {
           }}
           formData={{
             clientId: caseDetail.client?.id,
-            items: caseDetail.invoice?.[0].items || [],
-            discount: caseDetail.invoice?.[0].discount || 0,
-            discountType: caseDetail.invoice?.[0].discount_type || "percentage",
-            tax: caseDetail.invoice?.[0].tax || 0,
-            notes: caseDetail.invoice?.[0].notes || "",
+            items: caseDetail.invoice?.[0]?.items || [],
+            discount: caseDetail.invoice?.[0]?.discount || 0,
+            discountType:
+              caseDetail.invoice?.[0]?.discount_type || "percentage",
+            tax: caseDetail.invoice?.[0]?.tax || 0,
+            notes: caseDetail.invoice?.[0]?.notes || "",
           }}
+          caseDetails={[caseDetail]}
         />
       )}
       {activePrintType && caseDetail && (
@@ -1978,6 +2019,13 @@ const CaseDetails: React.FC = () => {
       {isScheduleModal && (
         <ScheduleDelivery onClose={() => setIsScheduleModal(false)} />
       )}
+
+      {/* {invoicePreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={invoicePreviewModalOpen}
+          onClose={() => setInvoicePreviewModalOpen(false)}
+        />
+      )} */}
     </div>
   );
 };

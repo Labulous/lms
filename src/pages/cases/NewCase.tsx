@@ -86,6 +86,29 @@ const NewCase: React.FC = () => {
     }));
   };
 
+  function duplicateProductsByTeeth(products: SavedProduct[]): SavedProduct[] {
+    const duplicatedProducts: SavedProduct[] = [];
+
+    // Filter products with id and type
+    const validProducts = products.filter((item) => item.id && item.type);
+
+    validProducts.forEach((product) => {
+      if (product.teeth && product.teeth.length > 0) {
+        product.teeth.forEach((tooth) => {
+          duplicatedProducts.push({
+            ...product,
+            teeth: [tooth], // Create a new product with a single tooth
+          });
+        });
+      } else {
+        // If no teeth, push the original product
+        duplicatedProducts.push(product);
+      }
+    });
+
+    return duplicatedProducts;
+  }
+
   const handleFormChange = (field: keyof FormData, value: any) => {
     setFormData((prevData) => {
       if (prevData[field] === value) {
@@ -261,11 +284,12 @@ const NewCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
-            pan_tag_id: formData.workingPanName,
+            working_tag_id: formData.workingTagName,
+            working_pan_id: formData.workingPanName,
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
           },
-          products: selectedProducts.filter((item) => item.id && item.type),
+          products: duplicateProductsByTeeth(selectedProducts),
 
           enclosedItems: transformedData.enclosedItems,
         };
@@ -279,8 +303,6 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-  // console.log(selectedProducts, "selected");
-  console.log(selectedProducts, "selected products");
   return (
     <div className="p-6">
       <div className="space-y-4">

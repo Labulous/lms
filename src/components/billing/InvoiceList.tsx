@@ -68,13 +68,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { supabase } from "@/lib/supabase";
-import { getLabIdByUserId } from "@/services/authService";
+import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
-import { DiscountedPrice } from "@/types/supabase";
+import { DiscountedPrice, labDetail } from "@/types/supabase";
 import jsPDF from "jspdf";
+import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
+import { NewPaymentModal } from "./NewPaymentModal";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 // import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
@@ -120,6 +123,10 @@ const InvoiceList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
+  const [lab, setLab] = useState<labDetail | null>(null);
+  const [selectedClient, setSelectedClient] = useState("");
+  const [selectedInvoice, setSelectedInvoice] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "date",
     direction: "desc",
@@ -144,6 +151,8 @@ const InvoiceList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
   const [reFreshData, setRefreshData] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
   const { user } = useAuth();
 
   // Initialize invoices
@@ -152,13 +161,13 @@ const InvoiceList: React.FC = () => {
       setLoading(true);
 
       try {
-        const lab = await getLabIdByUserId(user?.id as string);
+        const lab = await getLabDataByUserId(user?.id as string);
 
-        if (!lab?.labId) {
+        if (!lab?.id) {
           console.error("Lab ID not found.");
           return;
         }
-
+        setLab(lab);
         const { data: casesData, error: casesError } = await supabase
           .from("cases")
           .select(
@@ -173,7 +182,11 @@ const InvoiceList: React.FC = () => {
             client:clients!client_id (
               id,
               client_name,
-              phone
+              phone,
+              street,
+              city,
+              state,
+              zip_code
             ),
             doctor:doctors!doctor_id (
               id,
@@ -184,7 +197,11 @@ const InvoiceList: React.FC = () => {
                 phone
               )
             ),
-            tag:working_tags!pan_tag_id (
+            tag:working_tags!working_tag_id (
+                name,
+                color
+              ),
+            pan:working_tags!working_pan_id (
                 name,
                 color
               ),
@@ -213,10 +230,12 @@ const InvoiceList: React.FC = () => {
               consultRequested,
               user_id
             ),
-            invoicesData:invoices!case_id (
+            invoice:invoices!case_id (
+            id,
             case_id,
             amount,
             status,
+            due_amount,
             due_date
             ),
             product_ids:case_products!id (
@@ -225,7 +244,7 @@ const InvoiceList: React.FC = () => {
             )
           `
           )
-          .eq("lab_id", lab.labId)
+          .eq("lab_id", lab.id)
           .eq("status", "completed")
           .order("created_at", { ascending: false });
 
@@ -277,23 +296,26 @@ const InvoiceList: React.FC = () => {
                 )
               `
               )
-              .eq("lab_id", lab.labId)
+              .eq("lab_id", lab.id)
               .in("id", productsIdArray);
 
             if (productsError) {
               console.error("Error fetching products for case:", productsError);
+              return { ...singleCase, products: [] }; // Return empty products if there's an error
             }
+
             const { data: discountedPriceData, error: discountedPriceError } =
               await supabase
                 .from("discounted_price")
                 .select(
                   `
-     product_id,
-     discount,
-     final_price,
-     price,
-     quantity
-   `
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity
+              `
                 )
                 .in("product_id", productsIdArray)
                 .eq("case_id", singleCase.id);
@@ -304,12 +326,16 @@ const InvoiceList: React.FC = () => {
                 discountedPriceError
               );
             }
+
             const { data: teethProductData, error: teethProductsError } =
               await supabase
                 .from("case_product_teeth")
                 .select(
                   `
+                id,
                 is_range,
+                tooth_number,
+                product_id,
                 occlusal_shade:shade_options!occlusal_shade_id (
                   name,
                   category,
@@ -329,13 +355,11 @@ const InvoiceList: React.FC = () => {
                   name,
                   category,
                   is_active
-                ),
-                tooth_number,
-                product_id
+                )
               `
                 )
                 .in("product_id", productsIdArray)
-                .eq("case_product_id", singleCase?.product_ids[0].id);
+                .eq("case_product_id", singleCase?.product_ids[0]?.id);
 
             if (teethProductsError) {
               console.error(
@@ -343,30 +367,41 @@ const InvoiceList: React.FC = () => {
                 teethProductsError
               );
             }
-            const discountedPriceMap: DiscountedPriceMap = (
-              discountedPriceData ?? []
-            ).reduce((acc: DiscountedPriceMap, item: DiscountedPrice) => {
-              acc[item.product_id] = item;
-              return acc;
-            }, {} as DiscountedPriceMap);
-            const teethProductMap: any = (teethProductData ?? []).reduce(
-              (acc: any, item: any) => {
-                acc[item.product_id] = item;
-                return acc;
-              },
-              {} as any
+            console.log(teethProductData, "teethProductData");
+            // Combine products with their relevant discounts and teeth products
+            const productsWithDiscounts = productData.flatMap(
+              (product: any) => {
+                const relevantDiscounts =
+                  discountedPriceData?.filter(
+                    (discount: { product_id: string }) =>
+                      discount.product_id === product.id
+                  ) || [];
+
+                const relevantTeethProducts =
+                  teethProductData?.filter(
+                    (teeth: any) => teeth.product_id === product.id
+                  ) || [];
+
+                return relevantTeethProducts
+                  .map((teeth: any, index: number) => {
+                    const discountedPrice = relevantDiscounts[index] || null;
+
+                    return {
+                      ...product,
+                      discounted_price: { ...discountedPrice },
+                      teethProduct: {
+                        ...teeth,
+                      },
+                    };
+                  })
+                  .filter((item) => item.teethProduct.tooth_number !== null);
+              }
             );
 
-            const products = productData?.map((product) => {
-              return {
-                ...product,
-                discounted_price: discountedPriceMap[product.id] || null,
-                teethProducts: teethProductMap[product.id] || null,
-              };
-            });
             return {
               ...singleCase,
-              products,
+              products: productsWithDiscounts,
+              labDetail: lab,
             };
           })
         );
@@ -411,6 +446,7 @@ const InvoiceList: React.FC = () => {
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice.items.map((item) => item.id);
     console.log(updatedInvoice, "updatedInvoice");
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
 
@@ -424,133 +460,221 @@ const InvoiceList: React.FC = () => {
       if (updateCaseProductsError) {
         throw new Error(updateCaseProductsError.message);
       }
+      console.log(updatedCaseProducts, "updatedCaseProducts");
+      // for (const updatedCaseProduct of updatedCaseProducts) {
+      //   const { id: caseProductId, products_id } = updatedCaseProduct;
 
-      for (const updatedCaseProduct of updatedCaseProducts) {
-        const { id: caseProductId, products_id } = updatedCaseProduct;
+      //   if (Array.isArray(products_id)) {
+      //     for (const product_id of products_id) {
+      //       // const { data: existingTeeth, error: fetchError } = await supabase
+      //       //   .from("case_product_teeth")
+      //       //   .select("id")
+      //       //   .eq("case_product_id", caseProductId)
+      //       //   .eq("product_id", product_id)
+      //       //   .single();
 
-        if (Array.isArray(products_id)) {
-          for (const product_id of products_id) {
-            const { data: existingTeeth, error: fetchError } = await supabase
-              .from("case_product_teeth")
-              .select("id")
-              .eq("case_product_id", caseProductId)
-              .eq("product_id", product_id)
-              .single();
+      //       // if (fetchError && fetchError.code !== "PGRST116") {
+      //       //   throw new Error(fetchError.message);
+      //       // }
 
-            if (fetchError && fetchError.code !== "PGRST116") {
-              throw new Error(fetchError.message);
-            }
+      //       // if (existingTeeth) {
+      //       //   const { error: updateTeethError } = await supabase
+      //       //     .from("case_product_teeth")
+      //       //     .update({
+      //       //       tooth_number: updatedInvoice.items.filter(
+      //       //         (item) => item.id === product_id
+      //       //       )[0]?.toothNumber?.[0],
+      //       //     })
+      //       //     .eq("case_product_id", caseProductId)
+      //       //     .eq("product_id", product_id);
 
-            if (existingTeeth) {
-              const { error: updateTeethError } = await supabase
-                .from("case_product_teeth")
-                .update({
-                  tooth_number: updatedInvoice.items
-                    .filter((item) => item.id === product_id)[0]
-                    ?.toothNumber.split(",")
-                    .map(Number),
-                })
-                .eq("case_product_id", caseProductId)
-                .eq("product_id", product_id);
+      //       //   if (updateTeethError) throw new Error(updateTeethError.message);
+      //       // } else {
+      //       //   const { error: insertTeethError } = await supabase
+      //       //     .from("case_product_teeth")
+      //       //     .insert({
+      //       //       case_product_id: caseProductId,
+      //       //       product_id,
+      //       //       tooth_number: updatedInvoice.items
+      //       //         .filter((item) => item.id === product_id)[0]
+      //       //         ?.toothNumber?.[0]
+      //       //     });
 
-              if (updateTeethError) throw new Error(updateTeethError.message);
-            } else {
-              const { error: insertTeethError } = await supabase
-                .from("case_product_teeth")
-                .insert({
-                  case_product_id: caseProductId,
-                  product_id,
-                  tooth_number: updatedInvoice.items
-                    .filter((item) => item.id === product_id)[0]
-                    ?.toothNumber.split(",")
-                    .map(Number),
-                });
+      //       //   if (insertTeethError) throw new Error(insertTeethError.message);
+      //       // }
 
-              if (insertTeethError) throw new Error(insertTeethError.message);
-            }
+      //       const { data: existingDiscount, error: discountFetchError } =
+      //         await supabase
+      //           .from("discounted_price")
+      //           .select("id")
+      //           .eq("case_id", updatedInvoice.id)
+      //           .eq("product_id", product_id)
+      //           .single();
 
-            const { data: existingDiscount, error: discountFetchError } =
+      //       if (discountFetchError && discountFetchError.code !== "PGRST116") {
+      //         throw new Error(discountFetchError.message);
+      //       }
+
+      //       if (existingDiscount) {
+      //         const { data: updatedDiscount, error: updateDiscountError } =
+      //           await supabase
+      //             .from("discounted_price")
+      //             .update({
+      //               discount: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].discount,
+      //               quantity: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].quantity,
+      //               price: updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].unitPrice,
+      //               final_price:
+      //                 updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].quantity *
+      //                 updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].unitPrice *
+      //                 (1 -
+      //                   (updatedInvoice.items.filter(
+      //                     (item) => item.id === product_id
+      //                   )[0].discount || 0) /
+      //                     100),
+      //             }) // Update discount value
+      //             .eq("case_id", updatedInvoice.id)
+      //             .eq("product_id", product_id)
+      //             .select();
+
+      //         if (updateDiscountError)
+      //           throw new Error(updateDiscountError.message);
+      //       } else {
+      //         const { error: insertDiscountError } = await supabase
+      //           .from("discounted_price")
+      //           .insert({
+      //             case_id: updatedInvoice.id,
+      //             product_id,
+      //             discount: updatedInvoice?.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].discount, // New discount value
+      //             quantity: updatedInvoice.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].quantity,
+      //             price: updatedInvoice.items.filter(
+      //               (item) => item.id === product_id
+      //             )[0].unitPrice,
+      //             final_price:
+      //               updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].quantity *
+      //               updatedInvoice.items.filter(
+      //                 (item) => item.id === product_id
+      //               )[0].unitPrice *
+      //               (1 -
+      //                 (updatedInvoice.items.filter(
+      //                   (item) => item.id === product_id
+      //                 )[0].discount || 0) /
+      //                   100),
+      //           })
+      //           .select();
+      //         if (insertDiscountError)
+      //           throw new Error(insertDiscountError.message);
+      //       }
+      //     }
+      //   } else {
+      //     console.warn(
+      //       `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+      //     );
+      //   }
+      // }
+      for (const item of updatedInvoice.items) {
+        try {
+          // Calculate the final price based on the quantity, unit price, and discount
+          const finalPrice =
+            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+
+          if (item.discountId && item.caseProductTeethId) {
+            // Update the discounted_price table
+            const { data: updatedDiscount, error: updateDiscountError } =
               await supabase
                 .from("discounted_price")
-                .select("id")
-                .eq("case_id", updatedInvoice.id)
-                .eq("product_id", product_id)
-                .single();
-
-            if (discountFetchError && discountFetchError.code !== "PGRST116") {
-              throw new Error(discountFetchError.message);
-            }
-
-            if (existingDiscount) {
-              const { data: updatedDiscount, error: updateDiscountError } =
-                await supabase
-                  .from("discounted_price")
-                  .update({
-                    discount: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].discount,
-                    quantity: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].quantity,
-                    price: updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].unitPrice,
-                    final_price:
-                      updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].quantity *
-                      updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].unitPrice *
-                      (1 -
-                        (updatedInvoice.items.filter(
-                          (item) => item.id === product_id
-                        )[0].discount || 0) /
-                          100),
-                  }) // Update discount value
-                  .eq("case_id", updatedInvoice.id)
-                  .eq("product_id", product_id)
-                  .select();
-
-              if (updateDiscountError)
-                throw new Error(updateDiscountError.message);
-            } else {
-              const { error: insertDiscountError } = await supabase
-                .from("discounted_price")
-                .insert({
-                  case_id: updatedInvoice.id,
-                  product_id,
-                  discount: updatedInvoice?.items.filter(
-                    (item) => item.id === product_id
-                  )[0].discount, // New discount value
-                  quantity: updatedInvoice.items.filter(
-                    (item) => item.id === product_id
-                  )[0].quantity,
-                  price: updatedInvoice.items.filter(
-                    (item) => item.id === product_id
-                  )[0].unitPrice,
-                  final_price:
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].quantity *
-                    updatedInvoice.items.filter(
-                      (item) => item.id === product_id
-                    )[0].unitPrice *
-                    (1 -
-                      (updatedInvoice.items.filter(
-                        (item) => item.id === product_id
-                      )[0].discount || 0) /
-                        100),
+                .update({
+                  discount: item.discount,
+                  quantity: item.quantity || 1,
+                  price: item.unitPrice,
+                  final_price: finalPrice,
                 })
+                .eq("id", item.discountId)
                 .select();
-              if (insertDiscountError)
-                throw new Error(insertDiscountError.message);
+
+            if (updateDiscountError) {
+              throw new Error(updateDiscountError.message);
             }
+
+            // Update the case_product_teeth table
+            const { data: updateTeeth, error: updateTeethError } =
+              await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [item.toothNumber],
+                })
+                .eq("id", item.caseProductTeethId)
+                .select("*");
+
+            console.log("Updated discount row:", updatedDiscount);
+            console.log("Updated teeth row:", updateTeeth);
+          } else {
+            // Create a new discounted_price row
+            const { data: newDiscount, error: newDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .insert([
+                  {
+                    discount: item.discount,
+                    quantity: item.quantity,
+                    price: item.unitPrice,
+                    final_price: finalPrice,
+                    product_id: item.id,
+                    case_id: updatedInvoice.id,
+                    user_id: user?.id,
+                  },
+                ])
+                .select();
+
+            if (newDiscountError) {
+              throw new Error(newDiscountError.message);
+            }
+
+            console.log("Created new discount row:", newDiscount);
+
+            // Create a new case_product_teeth row
+            const { data: newTeeth, error: newTeethError } = await supabase
+              .from("case_product_teeth")
+              .insert([
+                {
+                  tooth_number: [Number(item.toothNumber)],
+                  product_id: item.id, // Ensure to include the product_id
+                  case_id: updatedInvoice.id,
+                  lab_id: lab?.id,
+                  case_product_id: updatedCaseProducts[0].id,
+                },
+              ])
+              .select("*");
+
+            if (newTeethError) {
+              throw new Error(newTeethError.message);
+            }
+
+            console.log("Created new teeth row:", newTeeth);
           }
-        } else {
-          console.warn(
-            `Unexpected data type for products_id in caseProductId: ${caseProductId}`
+
+          await updateBalanceTracking();
+        } catch (error) {
+          console.error(
+            `Error processing item with productId ${item.id}:`,
+            error
           );
+          // Optionally, continue with the next item instead of throwing
         }
       }
 
@@ -589,7 +713,6 @@ const InvoiceList: React.FC = () => {
       setRefreshData(true);
     }
   };
-
   // Cleanup function for modal state
   useEffect(() => {
     return () => {
@@ -644,7 +767,7 @@ const InvoiceList: React.FC = () => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
   };
-
+  console.log(invoices, "invoices");
   /* eslint-disable no-unused-vars */
   const getStatusBadgeVariant = (
     status: Invoice["status"],
@@ -742,7 +865,7 @@ const InvoiceList: React.FC = () => {
     switch (action) {
       case "exportPDF":
       case "exportCSV":
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await setIsPreviewModalOpen(true);
         break;
       case "delete":
       case "markPaid":
@@ -807,7 +930,7 @@ const InvoiceList: React.FC = () => {
           break;
       }
 
-      setProcessingFeedback("Processing completed successfully!");
+      // setProcessingFeedback("Processing completed successfully!");
     } catch (error) {
       setProcessingFeedback("Error occurred during processing");
       console.error("Bulk action error:", error);
@@ -1050,7 +1173,85 @@ const InvoiceList: React.FC = () => {
   const handlePrintInvoice = () => {
     // generatePDF("elementId", "MyDocument.pdf");
   };
+  console.log(selectedInvoices, "selectedInvoices");
 
+  const handleNewPayment = async (paymentData: any) => {
+    console.log("New payment data:", paymentData);
+
+    try {
+      const {
+        updatedInvoices,
+        client,
+        date,
+        paymentMethod,
+        paymentAmount,
+        overpaymentAmount,
+        remainingBalance,
+      } = paymentData;
+
+      if (!updatedInvoices || !client) {
+        console.error("Missing updatedInvoices or client information.");
+        return;
+      }
+
+      // Step 1: Update invoices
+      for (const invoice of updatedInvoices) {
+        const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
+        const { id } = invoice.invoicesData[0];
+        const status = dueAmount === 0 ? "paid" : "partially_paid";
+
+        const invoiceUpdate = {
+          status,
+          due_amount: dueAmount,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await supabase
+          .from("invoices")
+          .update(invoiceUpdate)
+          .eq("id", id)
+          .eq("lab_id", lab?.id);
+
+        if (updateError) {
+          throw new Error(
+            `Failed to update invoice with ID ${id}: ${updateError.message}`
+          );
+        }
+      }
+
+      console.log("All invoices updated successfully.");
+
+      // Step 2: Insert payment data
+      const paymentDataToInsert = {
+        client_id: client,
+        payment_date: date,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        status: "Completed",
+        over_payment: overpaymentAmount || 0,
+        remaining_payment: remainingBalance || 0,
+        lab_id: lab?.id,
+      };
+
+      const { data: insertedPayment, error: paymentError } = await supabase
+        .from("payments")
+        .insert(paymentDataToInsert)
+        .select("*");
+
+      if (paymentError) {
+        throw new Error(`Failed to insert payment: ${paymentError.message}`);
+      }
+
+      console.log("Payment inserted successfully.", insertedPayment);
+      await updateBalanceTracking();
+    } catch (err) {
+      console.error("Error handling new payment:", err);
+      toast.error("Failed to add payment or update balance tracking.");
+    } finally {
+      toast.success("New payment added successfully.");
+      setShowNewPaymentModal(false);
+    }
+  };
   return (
     <div className="space-y-4" id="elementId">
       <div className="flex justify-between items-center">
@@ -1275,7 +1476,6 @@ const InvoiceList: React.FC = () => {
                         </div>
                         {[
                           "unpaid",
-                          "approved",
                           "paid",
                           "partially_paid",
                           "overdue",
@@ -1392,244 +1592,282 @@ const InvoiceList: React.FC = () => {
               {getSortedAndPaginatedData().length === 0 ? (
                 <EmptyState />
               ) : (
-                getSortedAndPaginatedData().map((invoice, index) => (
-                  <TableRow
-                    key={index}
-                    className={cn(
-                      selectedInvoices.includes(invoice.id as string) &&
-                        "bg-muted/50",
-                      "hover:bg-muted/50 transition-colors"
-                    )}
-                  >
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedInvoices.includes(
-                          invoice.id as string
-                        )}
-                        onCheckedChange={() => {
-                          if (selectedInvoices.includes(invoice.id as string)) {
-                            setSelectedInvoices((prev) =>
-                              prev.filter((id) => id !== (invoice.id as string))
-                            );
-                          } else {
-                            setSelectedInvoices((prev) => [
-                              ...prev,
-                              invoice.id as string,
-                            ]);
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {invoice?.received_date
-                        ? format(new Date(invoice?.received_date), "dd/MM/yy")
-                        : "No Date"}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <button
-                        className="text-primary hover:underline"
-                        onClick={() => handlePrintInvoice()}
-                      >
-                        {(() => {
-                          const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
-                          const parts = caseNumber.split("-");
-                          parts[0] = "INV"; // Replace the first part
-                          return parts.join("-");
-                        })()}
-                      </button>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          invoice?.invoicesData?.[0]?.status
-                            ? (getStatusBadgeVariant(
-                                invoice.invoicesData[0].status as
-                                  | "draft"
-                                  | "unpaid"
-                                  | "pending"
-                                  | "approved"
-                                  | "paid"
-                                  | "overdue"
-                                  | "partially_paid"
-                                  | "cancelled"
-                              ) as
-                                | "filter"
-                                | "secondary"
-                                | "success"
-                                | "destructive"
-                                | "default"
-                                | "warning"
-                                | "outline"
-                                | "Crown"
-                                | "Bridge"
-                                | "Removable"
-                                | "Implant"
-                                | "Coping"
-                                | "Appliance")
-                            : "Bridge"
-                        }
-                      >
-                        {invoice?.invoicesData?.[0]?.status
-                          ? invoice.invoicesData[0].status
-                              .charAt(0)
-                              .toUpperCase() +
-                            invoice.invoicesData[0].status.slice(1)
-                          : "No Status"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {invoice?.client?.client_name || "Unknown Client"}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {invoice.case_number}
-                    </TableCell>
-                    <TableCell className="text-right whitespace-nowrap">
-                      $
-                      {(
-                        (typeof invoice.amount === "number"
-                          ? invoice.amount
-                          : 0) +
-                        (invoice?.products?.reduce(
-                          (sum, item) =>
-                            sum +
-                            (typeof item.discounted_price?.final_price ===
-                            "number"
-                              ? item.discounted_price.final_price
-                              : 0),
-                          0
-                        ) ?? 0)
-                      ).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {new Date(
-                        invoice?.due_date ?? "2000-01-01"
-                      ).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px]">
-                          {invoice.status === "draft" && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleApprove(invoice.id as string)
-                                }
-                                className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleApproveAndPrint(invoice.id as string)
-                                }
-                                className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
-                              >
-                                <PrinterIcon className="mr-2 h-4 w-4" />
-                                Approve + Print
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
+                getSortedAndPaginatedData().map(
+                  (invoice: Invoice, index: React.Key | null | undefined) => (
+                    <TableRow
+                      key={index}
+                      className={cn(
+                        selectedInvoices.includes(invoice.id as string) &&
+                          "bg-muted/50",
+                        "hover:bg-muted/50 transition-colors"
+                      )}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedInvoices.includes(
+                            invoice.id as string
                           )}
-                          <DropdownMenuItem
-                            onClick={() =>
-                              navigate(`/billing/${invoice.id as string}`)
+                          onCheckedChange={() => {
+                            if (
+                              selectedInvoices.includes(invoice.id as string)
+                            ) {
+                              setSelectedInvoices((prev) =>
+                                prev.filter(
+                                  (id) => id !== (invoice.id as string)
+                                )
+                              );
+                            } else {
+                              setSelectedInvoices((prev) => [
+                                ...prev,
+                                invoice.id as string,
+                              ]);
                             }
-                            className="cursor-pointer"
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {invoice?.received_date
+                          ? format(new Date(invoice?.received_date), "dd/MM/yy")
+                          : "No Date"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <button
+                          className="text-primary hover:underline"
+                          onClick={() => handlePrintInvoice()}
+                        >
+                          {(() => {
+                            const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
+                            const parts = caseNumber.split("-");
+                            parts[0] = "INV"; // Replace the first part
+                            return parts.join("-");
+                          })()}
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            invoice?.invoice?.[0]?.status
+                              ? (getStatusBadgeVariant(
+                                  invoice.invoice[0].status as
+                                    | "draft"
+                                    | "unpaid"
+                                    | "pending"
+                                    | "approved"
+                                    | "paid"
+                                    | "overdue"
+                                    | "partially_paid"
+                                    | "cancelled"
+                                ) as
+                                  | "filter"
+                                  | "secondary"
+                                  | "success"
+                                  | "destructive"
+                                  | "default"
+                                  | "warning"
+                                  | "outline"
+                                  | "Crown"
+                                  | "Bridge"
+                                  | "Removable"
+                                  | "Implant"
+                                  | "Coping"
+                                  | "Appliance")
+                              : "Bridge"
+                          }
+                        >
+                          {invoice?.invoice?.[0]?.status
+                            ? invoice.invoice[0].status
+                                .charAt(0)
+                                .toUpperCase() +
+                              invoice.invoice[0].status.slice(1)
+                            : "No Status"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {invoice?.client?.client_name || "Unknown Client"}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {invoice.case_number}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        $
+                        {(
+                          (typeof invoice.amount === "number"
+                            ? invoice.amount
+                            : 0) +
+                          (invoice?.products?.reduce(
+                            (sum, item) =>
+                              sum +
+                              (typeof item.discounted_price?.final_price ===
+                              "number"
+                                ? item.discounted_price.final_price
+                                : 0),
+                            0
+                          ) ?? 0)
+                        ).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {new Date(
+                          invoice?.due_date ?? "2000-01-01"
+                        ).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-[160px]"
                           >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          {["draft", "overdue"].includes(
-                            invoice.status as
-                              | "draft"
-                              | "unpaid"
-                              | "pending"
-                              | "approved"
-                              | "paid"
-                              | "overdue"
-                              | "partially_paid"
-                              | "cancelled"
-                          ) && (
+                            {invoice.status === "draft" && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleApprove(invoice.id as string)
+                                  }
+                                  className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                                >
+                                  <CheckCircle className="mr-2 h-4 w-4" />
+                                  Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleApproveAndPrint(invoice.id as string)
+                                  }
+                                  className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                                >
+                                  <PrinterIcon className="mr-2 h-4 w-4" />
+                                  Approve + Print
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <DropdownMenuItem
                               onClick={() =>
-                                handleOpenEditModal(invoice, "edit")
+                                navigate(`/billing/${invoice.id as string}`)
                               }
                               className="cursor-pointer"
                             >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit Invoice
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
                             </DropdownMenuItem>
-                          )}
-                          {["approved", "partially_paid", "completed"].includes(
-                            invoice.status as
-                              | "draft"
-                              | "unpaid"
-                              | "pending"
-                              | "approved"
-                              | "paid"
-                              | "overdue"
-                              | "partially_paid"
-                              | "cancelled"
-                          ) && (
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleOpenEditModal(invoice, "payment")
-                              }
-                              className="cursor-pointer"
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Record Payment
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem
-                            onClick={() => handleDownload(invoice.id as string)}
-                            className="cursor-pointer"
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download PDF
-                          </DropdownMenuItem>
-                          {["draft", "overdue"].includes(
-                            invoice.status as
-                              | "draft"
-                              | "unpaid"
-                              | "pending"
-                              | "approved"
-                              | "paid"
-                              | "overdue"
-                              | "partially_paid"
-                              | "cancelled"
-                          ) && (
-                            <>
-                              <DropdownMenuSeparator />
+                            {["draft", "overdue"].includes(
+                              invoice.status as
+                                | "draft"
+                                | "unpaid"
+                                | "pending"
+                                | "approved"
+                                | "paid"
+                                | "overdue"
+                                | "partially_paid"
+                                | "cancelled"
+                            ) && (
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleDelete(invoice.id as string)
+                                  handleOpenEditModal(invoice, "edit")
                                 }
-                                className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                className="cursor-pointer"
                               >
-                                <Trash className="mr-2 h-4 w-4" />
-                                Delete Invoice
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit Invoice
                               </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                            )}
+                            {["unpaid", "partially_paid", "paid"].includes(
+                              invoice.invoice?.[0]?.status as
+                                | "draft"
+                                | "unpaid"
+                                | "pending"
+                                | "approved"
+                                | "paid"
+                                | "overdue"
+                                | "partially_paid"
+                                | "cancelled"
+                            ) && (
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleOpenEditModal(invoice, "payment")
+                                }
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit Invoice
+                              </DropdownMenuItem>
+                            )}
+                            {["unpaid", "partially_paid"].includes(
+                              invoice.invoice?.[0]?.status as
+                                | "draft"
+                                | "unpaid"
+                                | "pending"
+                                | "approved"
+                                | "paid"
+                                | "overdue"
+                                | "partially_paid"
+                                | "cancelled"
+                            ) && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setShowNewPaymentModal(true);
+                                  setSelectedClient(
+                                    invoice.client?.id as string
+                                  );
+                                  setSelectedInvoice(
+                                    invoice?.invoice?.[0]?.id as string
+                                  );
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Record Payment
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                handleDownload(invoice.id as string)
+                              }
+                              className="cursor-pointer"
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Download PDF
+                            </DropdownMenuItem>
+                            {["draft", "overdue"].includes(
+                              invoice.status as
+                                | "draft"
+                                | "unpaid"
+                                | "pending"
+                                | "approved"
+                                | "paid"
+                                | "overdue"
+                                | "partially_paid"
+                                | "cancelled"
+                            ) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleDelete(invoice.id as string)
+                                  }
+                                  className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete Invoice
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  )
+                )
               )}
             </TableBody>
           </TableComponent>
@@ -1726,6 +1964,31 @@ const InvoiceList: React.FC = () => {
           mode={editMode}
           onClose={handleCloseEditModal}
           onSave={handleSaveInvoice}
+        />
+      )}
+
+      {isPreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+          }}
+          caseDetails={invoicesData.filter((invoice: any) =>
+            selectedInvoices.includes(invoice.id)
+          )} // Filter selected invoices based on their IDs
+        />
+      )}
+
+      {showNewPaymentModal && (
+        <NewPaymentModal
+          onClose={() => {
+            console.log("Closing new payment modal");
+            setShowNewPaymentModal(false);
+          }}
+          onSubmit={handleNewPayment}
+          isSingleInvoice={true}
+          clientId={selectedClient}
+          invoiceId={selectedInvoice}
         />
       )}
     </div>
