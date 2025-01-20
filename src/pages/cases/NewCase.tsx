@@ -303,6 +303,7 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
+  console.log(formData,"formd data")
   return (
     <div className="p-6">
       <div className="space-y-4">
