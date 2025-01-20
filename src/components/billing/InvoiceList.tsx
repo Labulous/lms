@@ -1129,6 +1129,7 @@ const InvoiceList: React.FC = () => {
   };
 
   const handleInvoiceClick = (invoice: any) => {
+    setSelectedInvoices([invoice?.id as string]);
     setSelectedInvoiceForPreview(invoice);
     setIsPreviewModalOpen(true);
   };
