@@ -794,6 +794,7 @@ export interface FormData {
   appointmentTime?: string;
   assignedTechnicians?: string[];
   workingPanName?: string;
+  workingTagName?: string;
   workingPanColor?: string;
   enclosedItems: {
     impression: number;

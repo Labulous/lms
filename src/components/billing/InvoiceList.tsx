@@ -197,7 +197,11 @@ const InvoiceList: React.FC = () => {
                 phone
               )
             ),
-            tag:working_tags!pan_tag_id (
+            tag:working_tags!working_tag_id (
+                name,
+                color
+              ),
+            pan:working_tags!working_pan_id (
                 name,
                 color
               ),

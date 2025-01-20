@@ -773,8 +773,11 @@ const CaseList: React.FC = () => {
                 phone
               )
             ),
-            tags:working_tags!pan_tag_id (
+            tags:working_tags!working_tag_id (
             name,color),
+            pans:working_tags!working_tag_id (
+            name,color),
+
             rx_number,
             isDueDateTBD,
             appointment_date,
