@@ -768,14 +768,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index].occlusal_shade
-                                    )[0].name || "--"}
+                                    )[0]?.name || "--"}
                                 /
                                 {shadeData[index].body_shade === "custom"
                                   ? shadeData[index].custom_body
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id === shadeData[index].body_shade
-                                    )[0].name || "--"}
+                                    )[0]?.name || "--"}
                                 /
                                 {shadeData[index].gingival_shade === "custom"
                                   ? shadeData[index].custom_gingival
@@ -783,14 +783,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index].gingival_shade
-                                    )[0].name || "--"}
+                                    )[0]?.name || "--"}
                                 /
                                 {shadeData[index].stump_shade === "custom"
                                   ? shadeData[index].custom_stump
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id === shadeData[index].stump_shade
-                                    )[0].name || "--"}
+                                    )[0]?.name || "--"}
                               </div>
                             ) : (
                               " Add Shade"
