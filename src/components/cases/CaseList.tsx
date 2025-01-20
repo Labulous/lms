@@ -109,6 +109,7 @@ type Case = {
   custom_occulusal_details: string | null;
   custom_pontic_details: string | null;
   tags: { name: string; color: string } | null;
+  pans: { name: string; color: string } | null;
   enclosed_items: {
     impression: boolean;
     biteRegistration: boolean;
@@ -158,6 +159,10 @@ const CaseList: React.FC = () => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
   });
+  const [panFilter, setPanFilter] = useState<string[]>(() => {
+    const panParam = searchParams.get("pans");
+    return panParam ? panParam.split(",") : [];
+  });
   const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
@@ -198,13 +203,143 @@ const CaseList: React.FC = () => {
       enableHiding: false,
     },
     {
+      accessorKey: "pans",
+      header: ({ column }) => (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" className="p-0 hover:bg-transparent">
+              <div className="flex items-center">
+                Pan
+                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                {panFilter.length > 0 && (
+                  <Badge variant="outline" className="ml-2 bg-background">
+                    {panFilter.length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2" align="start">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                <span className="text-sm font-medium">Filter by Pan Tag</span>
+                {panFilter.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPanFilter([]);
+                      column.setFilterValue(undefined);
+                      searchParams.delete("tags");
+                      setSearchParams(searchParams);
+                    }}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
+                {Array.from(
+                  new Set(
+                    cases
+                      .filter((c) => c.pans?.name)
+                      .map((c) =>
+                        JSON.stringify({
+                          name: c.pans?.name,
+                          color: c.pans?.color,
+                        })
+                      )
+                  )
+                )
+                  .map((str) => JSON.parse(str))
+                  .map((pan) => (
+                    <div key={pan.name} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`pan-${pan.name}`}
+                        checked={panFilter.includes(pan.name)}
+                        onCheckedChange={(checked) => {
+                          const newPanFilter = checked
+                            ? [...panFilter, pan.name]
+                            : panFilter.filter((t) => t !== pan.name);
+                          setPanFilter(newPanFilter);
+                          column.setFilterValue(
+                            newPanFilter.length ? newPanFilter : undefined
+                          );
+                          if (newPanFilter.length > 0) {
+                            searchParams.set("tags", newPanFilter.join(","));
+                          } else {
+                            searchParams.delete("tags");
+                          }
+                          setSearchParams(searchParams);
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded border"
+                          style={{
+                            backgroundColor: pan.color || "#f3f4f6",
+                            borderColor: "rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <label
+                          htmlFor={`pan-${pan.name}`}
+                          className="text-sm font-medium capitalize cursor-pointer"
+                        >
+                          {pan.name}
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      ),
+      cell: ({ row }) => {
+        const tag = row.getValue("pans") as { name: string; color: string };
+        const color = tag?.color || "#f3f4f6"; // Light gray default color
+        const name = tag?.name || ""; // Empty string if no name
+        const initials = name ? name.slice(0, 2).toUpperCase() : ""; // Get first two letters
+
+        return (
+          <div className="font-medium">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div
+                    className="w-8 h-6 rounded flex items-center justify-center text-xs font-medium border"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: "rgba(0,0,0,0.1)",
+                      color: getContrastColor(color),
+                    }}
+                  >
+                    {initials}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{name || "No pan defined"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
+      filterFn: (row, id, value: string[]) => {
+        if (!value?.length) return true;
+        const tag = row.getValue(id) as { name: string; color: string };
+        return value.includes(tag?.name || "");
+      },
+    },
+    {
       accessorKey: "tags",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="ghost" className="p-0 hover:bg-transparent">
               <div className="flex items-center">
-                Pan Tag
+                Tag
                 <ChevronsUpDown className="ml-2 h-4 w-4" />
                 {tagFilter.length > 0 && (
                   <Badge variant="outline" className="ml-2 bg-background">
@@ -775,7 +910,7 @@ const CaseList: React.FC = () => {
             ),
             tags:working_tags!working_tag_id (
             name,color),
-            pans:working_tags!working_tag_id (
+            pans:working_pans!working_pan_id (
             name,color),
 
             rx_number,
