@@ -201,7 +201,7 @@ const InvoiceList: React.FC = () => {
                 name,
                 color
               ),
-            pan:working_tags!working_pan_id (
+            pans:working_pans!working_pan_id (
                 name,
                 color
               ),
