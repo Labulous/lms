@@ -409,6 +409,7 @@ const InvoiceForm: React.FC = () => {
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
         formData={formData}
+        caseDetails={[]}
       />
     </form>
   );

@@ -78,7 +78,7 @@ export const generateInvoice = (
       amount: 1,
     },
     totalAmount,
-    status: "Pending",
+    status: "pending",
     notes,
     paymentTerms: "",
   };
