@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AlertTriangle, Clock, PauseCircle, Package, Settings, Wrench } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  PauseCircle,
+  Package,
+  Settings,
+  Wrench,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +21,7 @@ import PerformanceMetricsCard from "../components/operations/PerformanceMetricsC
 
 interface WorkstationIssue {
   id: string;
-  workstation_type: {
+  type: {
     id: string;
     name: string;
   };
@@ -23,114 +30,287 @@ interface WorkstationIssue {
   custom_workstation_type?: string;
 }
 
-interface CalendarEvent {
-  id: string;
+export interface CalendarEvents {
   title: string;
   start: Date;
   end: Date;
-  resource?: any;
+  resource: any;
+  formattedCases: {
+    case_id: string;
+    client_name: string;
+    doctor: { name: string };
+    case_products: { name: string; product_type: { name: string } }[];
+    invoicesData:
+      | {
+          amount: number;
+          due_amount: number;
+          status: String;
+          created_at: string;
+        }[]
+      | [];
+  }[];
+}
+interface CasesDues {
+  due_date: string;
+  status: string;
+  id: string;
+  case_number: string;
+  client_name: {
+    client_name: string;
+  };
+  product_ids: { products_id: string[] };
+  doctor: { name: string };
+  products: any[];
+  invoicesData:
+    | {
+        amount: number;
+        due_amount: number;
+        status: String;
+        created_at: string;
+      }[]
+    | [];
 }
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("operations");
   const { user } = useAuth();
-  const [workstationIssues, setWorkstationIssues] = useState<WorkstationIssue[]>([]);
+  const [workstationIssues, setWorkstationIssues] = useState<
+    WorkstationIssue[]
+  >([]);
+  const [casesList, setCasesList] = useState<CasesDues[]>([]);
+
   const [totalWorkstations, setTotalWorkstations] = useState(0);
   const [metrics, setMetrics] = useState({
     pastDue: 0,
     dueToday: 0,
     dueTomorrow: 0,
-    onHold: 0
+    onHold: 0,
   });
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvents[]>([]);
 
+  useEffect(() => {
+    const getCompletedInvoices = async () => {
+      try {
+        const lab = await getLabIdByUserId(user?.id as string);
+
+        if (!lab?.labId) {
+          console.error("Lab ID not found.");
+          return;
+        }
+
+        const { data: casesData, error: casesError } = await supabase
+          .from("cases")
+          .select(
+            `   
+                  case_number,
+                  id,
+                  status,
+                  due_date,
+                  client_name:clients!client_id (
+                    client_name
+                  ),
+                  product_ids:case_products!id (
+                    products_id
+                  ),
+                  doctor:doctors!doctor_id (
+                    name
+                  ),
+                  invoicesData:invoices!case_id (
+                  id,
+                    amount,
+                    status,
+                    due_amount,
+                    created_at
+                  )
+                `
+          )
+          .eq("lab_id", lab.labId)
+          .in("status", ["in_queue", "in_progress"]) // Filter for both statuses
+          .order("created_at", { ascending: true });
+
+        if (casesError) {
+          console.error("Error fetching completed invoices:", casesError);
+          return;
+        }
+
+        const enhancedCases = await Promise.all(
+          casesData.map(async (singleCase) => {
+            const productsIdArray =
+              singleCase.product_ids?.map((p) => p.products_id) || [];
+
+            if (productsIdArray.length === 0) {
+              return { ...singleCase, products: [] }; // No products for this case
+            }
+
+            // Fetch products for the current case
+            const { data: productData, error: productsError } = await supabase
+              .from("products")
+              .select(
+                `
+                      id,
+                      name,
+                      product_type:product_types!product_type_id (
+                        name
+                      )
+                    `
+              )
+              .eq("lab_id", lab.labId)
+              .in("id", productsIdArray);
+
+            if (productsError) {
+              console.error(
+                `Error fetching products for case ${singleCase.id}:`,
+                productsError
+              );
+            }
+
+            return { ...singleCase, products: productData || [] };
+          })
+        );
+
+        console.log(enhancedCases, "enhancedCases");
+
+        setCasesList(enhancedCases as any); // Set the enhanced cases list
+      } catch (error) {
+        console.error("Error fetching completed invoices:", error);
+      } finally {
+        // setLoading(false);
+      }
+    };
+    getCompletedInvoices();
+  }, [user]);
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         if (!user?.id) return;
-        
+
         const labData = await getLabIdByUserId(user.id);
         if (!labData?.labId) return;
 
         // Fetch case metrics and calendar events
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
 
         // Fetch all cases for calendar
         const { data: casesData, error: casesError } = await supabase
-          .from('cases')
-          .select('id, due_date, status')
-          .eq('lab_id', labData.labId)
-          .gte('due_date', new Date(today.getFullYear(), today.getMonth(), 1).toISOString())
-          .lt('due_date', new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString())
-          .neq('status', 'completed');
+          .from("cases")
+          .select("id, due_date, status")
+          .eq("lab_id", labData.labId)
+          .gte(
+            "due_date",
+            new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
+          )
+          .lt(
+            "due_date",
+            new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString()
+          )
+          .neq("status", "completed");
 
         if (casesError) throw casesError;
 
         // Group cases by due date for calendar events
-        const eventsByDate = casesData.reduce((acc: { [key: string]: number }, caseItem: any) => {
-          const date = caseItem.due_date.split('T')[0];
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        }, {});
+        const eventsByDate = casesData.reduce(
+          (acc: { [key: string]: number }, caseItem: any) => {
+            const date = caseItem.due_date.split("T")[0];
+            acc[date] = (acc[date] || 0) + 1;
+            return acc;
+          },
+          {}
+        );
+        const groupedCases = casesList.reduce(
+          (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
+            if (["in_queue", "in_progress"].includes(caseItem.status)) {
+              const dueDate = new Date(caseItem.due_date)
+                .toISOString()
+                .split("T")[0];
+              acc[dueDate] = acc[dueDate] || [];
+              acc[dueDate].push(caseItem);
+            }
+            return acc;
+          },
+          {}
+        );
 
-        const events = Object.entries(eventsByDate).map(([date, count]) => {
-          const eventDate = new Date(date);
-          const isPastDue = eventDate < today;
-          return {
-            id: date,
-            title: `${count}`,
-            start: eventDate,
-            end: eventDate,
-            resource: { count, isPastDue }
-          };
-        });
+        const events: CalendarEvents[] = Object.entries(groupedCases).map(
+          ([date, cases]) => {
+            const eventDate = new Date(date);
+            const year = eventDate.getUTCFullYear();
+            const month = eventDate.getUTCMonth();
+            const day = eventDate.getUTCDate();
+            const start = new Date(Date.UTC(year, month, day, 9, 0));
+            const end = new Date(Date.UTC(year, month, day, 17, 0));
+            const today = new Date();
+            const isPastDue = eventDate < today;
 
+            const formattedCases = cases.map((caseItem) => ({
+              case_id: caseItem.id,
+              case_number: caseItem.case_number,
+              client_name: caseItem.client_name.client_name,
+              doctor: caseItem.doctor,
+              status: caseItem.status,
+              case_products: caseItem.products.map((product) => ({
+                name: product.name,
+                product_type: product.product_type,
+              })),
+              invoicesData: caseItem.invoicesData,
+            }));
+            // Map the grouped cases to calendar events
+
+            return {
+              title: `${cases.length}`, // Example: "3 cases"
+              start,
+              end,
+              resource: { count: cases.length, isPastDue: isPastDue },
+              formattedCases,
+            };
+          }
+        );
         setCalendarEvents(events);
 
         // Fetch past due cases
         const { count: pastDue } = await supabase
-          .from('cases')
-          .select('*', { count: 'exact' })
-          .eq('lab_id', labData.labId)
-          .lt('due_date', today.toISOString())
-          .neq('status', 'completed');
+          .from("cases")
+          .select("*", { count: "exact" })
+          .eq("lab_id", labData.labId)
+          .lt("due_date", today.toISOString())
+          .neq("status", "completed");
 
         // Fetch cases due today
         const { count: dueToday } = await supabase
-          .from('cases')
-          .select('*', { count: 'exact' })
-          .eq('lab_id', labData.labId)
-          .gte('due_date', today.toISOString())
-          .lt('due_date', tomorrow.toISOString())
-          .neq('status', 'completed');
+          .from("cases")
+          .select("*", { count: "exact" })
+          .eq("lab_id", labData.labId)
+          .gte("due_date", today.toISOString())
+          .lt("due_date", tomorrow.toISOString())
+          .neq("status", "completed");
 
         // Fetch cases due tomorrow
         const nextDay = new Date(tomorrow);
         nextDay.setDate(nextDay.getDate() + 1);
         const { count: dueTomorrow } = await supabase
-          .from('cases')
-          .select('*', { count: 'exact' })
-          .eq('lab_id', labData.labId)
-          .gte('due_date', tomorrow.toISOString())
-          .lt('due_date', nextDay.toISOString())
-          .neq('status', 'completed');
+          .from("cases")
+          .select("*", { count: "exact" })
+          .eq("lab_id", labData.labId)
+          .gte("due_date", tomorrow.toISOString())
+          .lt("due_date", nextDay.toISOString())
+          .neq("status", "completed");
 
         // Fetch on hold cases
         const { count: onHold } = await supabase
-          .from('cases')
-          .select('*', { count: 'exact' })
-          .eq('lab_id', labData.labId)
-          .eq('status', 'on_hold');
+          .from("cases")
+          .select("*", { count: "exact" })
+          .eq("lab_id", labData.labId)
+          .eq("status", "on_hold");
 
         // Fetch workstation issues
         const { data: workstationData } = await supabase
           .from("workstation_log")
-          .select(`
+          .select(
+            `
             id,
             type:workstation_types!workstation_type_id (
               id,
@@ -140,7 +320,8 @@ const Dashboard: React.FC = () => {
             issue_reported_at,
             issue_reported_notes,
             custom_workstation_type
-          `)
+          `
+          )
           .eq("status", "issue_reported")
           .eq("lab_id", labData.labId)
           .order("issue_reported_at", { ascending: false });
@@ -148,7 +329,7 @@ const Dashboard: React.FC = () => {
         // Fetch total workstations
         const { count: totalCount } = await supabase
           .from("workstation_types")
-          .select("*", { count: 'exact', head: true })
+          .select("*", { count: "exact", head: true })
           .eq("lab_id", labData.labId)
           .eq("is_active", true);
 
@@ -156,30 +337,34 @@ const Dashboard: React.FC = () => {
           pastDue: pastDue || 0,
           dueToday: dueToday || 0,
           dueTomorrow: dueTomorrow || 0,
-          onHold: onHold || 0
+          onHold: onHold || 0,
         });
-
-        setWorkstationIssues(workstationData?.filter(issue => issue.type !== null) || []);
+        let workstationApi: any = workstationData;
+        setWorkstationIssues(
+          workstationApi?.filter(
+            (issue: WorkstationIssue) => issue.type !== null
+          ) || []
+        );
         setTotalWorkstations(totalCount || 0);
-
       } catch (error) {
-        console.error('Error fetching dashboard data:', error);
+        console.error("Error fetching dashboard data:", error);
       }
     };
-
     fetchDashboardData();
-  }, [user]);
+  }, [user, casesList]);
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    );
+
     if (diffInHours < 24) {
       return `${diffInHours} hours ago`;
     } else {
       const diffInDays = Math.floor(diffInHours / 24);
-      return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+      return `${diffInDays} ${diffInDays === 1 ? "day" : "days"} ago`;
     }
   };
 
@@ -187,11 +372,11 @@ const Dashboard: React.FC = () => {
     const now = new Date();
     const hours = now.getHours();
     if (hours < 12) {
-      return 'morning';
+      return "morning";
     } else if (hours < 17) {
-      return 'afternoon';
+      return "afternoon";
     } else {
-      return 'evening';
+      return "evening";
     }
   };
 
@@ -235,7 +420,9 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="space-y-0.5">
-            <h2 className="text-2xl font-bold tracking-tight">Good {getTimeOfDay()}, {user?.full_name}!</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Good {getTimeOfDay()}, {user?.name}!
+            </h2>
             <p className="text-gray-500">
               Here's what's happening in your lab today.
             </p>
@@ -287,7 +474,9 @@ const Dashboard: React.FC = () => {
               {/* Calendar Section */}
               <Card className="col-span-8 p-6">
                 <CardHeader className="px-0 pt-0 pb-4">
-                  <CardTitle className="text-lg font-medium">Due Dates Calendar</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Due Dates Calendar
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0">
                   <DueDatesCalendar events={calendarEvents} height={400} />
@@ -308,9 +497,12 @@ const Dashboard: React.FC = () => {
                   {/* Summary Stats */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
-                      <p className="text-sm text-gray-500">Active Workstations</p>
+                      <p className="text-sm text-gray-500">
+                        Active Workstations
+                      </p>
                       <p className="text-2xl font-semibold mt-1">
-                        {totalWorkstations - workstationIssues.length}/{totalWorkstations}
+                        {totalWorkstations - workstationIssues.length}/
+                        {totalWorkstations}
                       </p>
                     </div>
                     <div className="flex flex-col items-center text-center p-4 rounded-lg bg-red-50">
@@ -323,24 +515,31 @@ const Dashboard: React.FC = () => {
 
                   {/* Issues List */}
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-500">Active Issues</h4>
+                    <h4 className="text-sm font-medium text-gray-500">
+                      Active Issues
+                    </h4>
                     <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
                       {workstationIssues.map((issue) => (
-                        <div 
-                          key={issue.id} 
+                        <div
+                          key={issue.id}
                           className="border-l-4 border-red-500 pl-4 py-3 bg-gray-50 rounded-r"
                         >
                           <div className="flex justify-between items-start gap-2">
                             <div className="space-y-1 flex-1">
                               <p className="font-medium">
-                                {issue.workstation_type?.name || 'Unknown Workstation'}
-                                {issue.custom_workstation_type && ` - ${issue.custom_workstation_type}`}
+                                {issue.type?.name || "Unknown Workstation"}
+                                {issue.custom_workstation_type &&
+                                  ` - ${issue.custom_workstation_type}`}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {issue.issue_reported_notes || 'No description provided'}
+                                {issue.issue_reported_notes ||
+                                  "No description provided"}
                               </p>
                             </div>
-                            <Badge variant="outline" className="text-xs whitespace-nowrap shrink-0">
+                            <Badge
+                              variant="outline"
+                              className="text-xs whitespace-nowrap shrink-0"
+                            >
                               {getTimeAgo(issue.issue_reported_at)}
                             </Badge>
                           </div>

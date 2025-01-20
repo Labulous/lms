@@ -391,27 +391,14 @@
 .calendar-container .rbc-event {
   cursor: pointer !important; /* Make sure the day cell is positioned relative */
 }
-.calendar-container .due-by-tommorow-cell::after {
-  content: "";
-  position: absolute;
-  top: 5px; /* Distance from the top */
-  right: 5px; /* Distance from the right */
-  width: 20px; /* Size of the circle */
-  height: 20px; /* Size of the circle */
-  border-radius: 50%; /* Make it a circle */
-  background-color: #42d2771a; /* Circle color */
-  z-index: 1; /* Ensure it appears above the content */
+.calendar-container .due-by-tommorow-cell {
+  background-color: #41de80 !important ;/* Circle color */
+  color: white;
+  font: bold;
 }
-.calendar-container .rbc-now::after {
-  content: "";
-  position: absolute;
-  top: 5px; /* Distance from the top */
-  right: 5px; /* Distance from the right */
-  width: 20px; /* Size of the circle */
-  height: 20px; /* Size of the circle */
-  border-radius: 50%; /* Make it a circle */
-  background-color: rgb(59, 130, 246, 0.2); /* Circle color */
-  z-index: 1; /* Ensure it appears above the content */
+.calendar-container .rbc-now {
+  background-color: #3b82fa !important; /* Circle color */
+  color: white;
 }
 
 /* Toolbar */

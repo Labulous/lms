@@ -44,7 +44,7 @@ export interface CalendarEvents {
   title: string;
   start: Date;
   end: Date;
-
+  resources?: any;
   formattedCases: {
     case_id: string;
     client_name: string;

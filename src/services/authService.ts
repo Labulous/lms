@@ -11,6 +11,7 @@ export interface CustomUser {
   email: string;
   role: "admin" | "technician" | "client" | "super_admin";
   name: string;
+  
 }
 type User = Database["public"]["Tables"]["users"]["Row"];
 
