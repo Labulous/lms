@@ -238,7 +238,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   const fetchedProducts = async (selectedType: string) => {
     const selectedId = productTypes.find((item) => item.name === selectedType);
-    console.log(selectedId?.id, "selectedId");
     try {
       setLoading(true);
       const { data: fetchedProducts, error } = await supabase
@@ -761,9 +760,41 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {row.shades.body_shade ||
                             row.shades.gingival_shade ||
                             row.shades.occlusal_shade ||
-                            row.shades.stump_shade
-                              ? "Edit Shade"
-                              : " Add Shade"}
+                            row.shades.stump_shade ? (
+                              <div>
+                                {shadeData[index].occlusal_shade === "custom"
+                                  ? shadeData[index].custom_occlusal
+                                  : shadesItems.filter(
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index].occlusal_shade
+                                    )[0].name || "--"}
+                                /
+                                {shadeData[index].body_shade === "custom"
+                                  ? shadeData[index].custom_body
+                                  : shadesItems.filter(
+                                      (item) =>
+                                        item.id === shadeData[index].body_shade
+                                    )[0].name || "--"}
+                                /
+                                {shadeData[index].gingival_shade === "custom"
+                                  ? shadeData[index].custom_gingival
+                                  : shadesItems.filter(
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index].gingival_shade
+                                    )[0].name || "--"}
+                                /
+                                {shadeData[index].stump_shade === "custom"
+                                  ? shadeData[index].custom_stump
+                                  : shadesItems.filter(
+                                      (item) =>
+                                        item.id === shadeData[index].stump_shade
+                                    )[0].name || "--"}
+                              </div>
+                            ) : (
+                              " Add Shade"
+                            )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -796,7 +827,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </div>
 
                             <div className="grid gap-2">
-                              {/* Occlusal Shade */}
+                              <div className="grid grid-cols-3 items-center gap-4 text-gray-800 text-sm">
+                                <h2></h2>
+                                <h2>type</h2>
+                                <h2>Custom</h2>
+                              </div>
                               <div className="grid grid-cols-3 items-center gap-4">
                                 <Label htmlFor="occlusal">Occlusal</Label>
                                 <Select
@@ -827,25 +862,34 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     ))}
                                   </SelectContent>
                                 </Select>
-                                {shadeData[index]?.occlusal_shade ===
-                                  "custom" && (
-                                  <Input
-                                    type="text"
-                                    value={shadeData[index]?.custom_occlusal}
-                                    onChange={(e) => {
-                                      setShadeData((prev) => {
-                                        const updatedShadeData = [...prev];
+
+                                <Input
+                                  type="text"
+                                  value={shadeData[index]?.custom_occlusal}
+                                  onChange={(e) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      if (e.target.value) {
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
                                           custom_occlusal: e.target.value,
                                           id: row.id,
+                                          occlusal_shade: "custom",
                                         };
-                                        return updatedShadeData;
-                                      });
-                                    }}
-                                    className="w-20 h-7 text-sm bg-white"
-                                  />
-                                )}
+                                      } else {
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_occlusal: "",
+                                          id: row.id,
+                                          occlusal_shade: "",
+                                        };
+                                      }
+
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                  className="w-20 h-7 text-sm bg-white"
+                                />
                               </div>
 
                               {/* Body Shade */}
@@ -880,24 +924,32 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.body_shade === "custom" && (
-                                  <Input
-                                    type="text"
-                                    value={shadeData[index]?.custom_body}
-                                    onChange={(e) => {
-                                      setShadeData((prev) => {
-                                        const updatedShadeData = [...prev];
+                                <Input
+                                  type="text"
+                                  value={shadeData[index]?.custom_body}
+                                  onChange={(e) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      if (e.target.value) {
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
                                           custom_body: e.target.value,
                                           id: row.id,
+                                          body_shade: "custom",
                                         };
-                                        return updatedShadeData;
-                                      });
-                                    }}
-                                    className="w-20 h-7 text-sm bg-white"
-                                  />
-                                )}
+                                      } else {
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_body: "",
+                                          id: row.id,
+                                          body_shade: "",
+                                        };
+                                      }
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                  className="w-20 h-7 text-sm bg-white"
+                                />
                               </div>
 
                               {/* Gingival Shade */}
@@ -932,25 +984,32 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.gingival_shade ===
-                                  "custom" && (
-                                  <Input
-                                    type="text"
-                                    value={shadeData[index]?.custom_gingival}
-                                    onChange={(e) => {
-                                      setShadeData((prev) => {
-                                        const updatedShadeData = [...prev];
+                                <Input
+                                  type="text"
+                                  value={shadeData[index]?.custom_gingival}
+                                  onChange={(e) => {
+                                    setShadeData((prev) => {
+                                      const updatedShadeData = [...prev];
+                                      if (e.target.value) {
                                         updatedShadeData[index] = {
                                           ...updatedShadeData[index],
                                           custom_gingival: e.target.value,
                                           id: row.id,
+                                          gingival_shade: "custom",
                                         };
-                                        return updatedShadeData;
-                                      });
-                                    }}
-                                    className="w-20 h-7 text-sm bg-white"
-                                  />
-                                )}
+                                      } else {
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_gingival: "",
+                                          id: row.id,
+                                          gingival_shade: "",
+                                        };
+                                      }
+                                      return updatedShadeData;
+                                    });
+                                  }}
+                                  className="w-20 h-7 text-sm bg-white"
+                                />
                               </div>
 
                               {/* Stump Shade */}
@@ -985,24 +1044,34 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectContent>
                                 </Select>
 
-                                {shadeData[index]?.stump_shade === "custom" && (
+                                {
                                   <Input
                                     type="text"
                                     value={shadeData[index]?.custom_stump}
                                     onChange={(e) => {
                                       setShadeData((prev) => {
                                         const updatedShadeData = [...prev];
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          custom_stump: e.target.value,
-                                          id: row.id,
-                                        };
+                                        if (e.target.value) {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            custom_stump: e.target.value,
+                                            id: row.id,
+                                            stump_shade: "custom",
+                                          };
+                                        } else {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            custom_stump: "",
+                                            id: row.id,
+                                            stump_shade: "",
+                                          };
+                                        }
                                         return updatedShadeData;
                                       });
                                     }}
                                     className="w-20 h-7 text-sm bg-white"
                                   />
-                                )}
+                                }
                               </div>
                             </div>
 
