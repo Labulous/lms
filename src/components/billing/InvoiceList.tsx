@@ -201,7 +201,7 @@ const InvoiceList: React.FC = () => {
                 name,
                 color
               ),
-            pan:working_tags!working_pan_id (
+            pans:working_pans!working_pan_id (
                 name,
                 color
               ),
@@ -1227,7 +1227,7 @@ const InvoiceList: React.FC = () => {
         payment_date: date,
         amount: paymentAmount,
         payment_method: paymentMethod,
-        status: "Completed",
+        status: "completed",
         over_payment: overpaymentAmount || 0,
         remaining_payment: remainingBalance || 0,
         lab_id: lab?.id,
