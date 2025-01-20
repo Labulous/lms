@@ -70,7 +70,7 @@ import {
 import cn from "classnames";
 import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
-import { getLabIdByUserId } from "@/services/authService";
+import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
@@ -283,7 +283,7 @@ const CaseDetails: React.FC = () => {
   const [selectedPaperSize, setSelectedPaperSize] =
     useState<keyof typeof PAPER_SIZES>("LETTER");
   const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>(null);
+  const [lab, setLab] = useState<labDetail | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
   const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
   const [workStationTypes, setWorkStationTypes] = useState<
@@ -305,8 +305,8 @@ const CaseDetails: React.FC = () => {
   console.log(workstationLoading, "loading");
   const getWorkStationDetails = async (case_ceated_at: string) => {
     try {
-      const lab = await getLabIdByUserId(user?.id as string);
-      if (!lab?.labId) {
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (!lab?.id) {
         console.error("Lab ID not found.");
         return;
       }
@@ -349,7 +349,7 @@ const CaseDetails: React.FC = () => {
         created_at
         `
           )
-          .eq("lab_id", lab.labId);
+          .eq("lab_id", lab.id);
       if (workStationError) {
         setError(workStationError?.message || "");
       } else {
@@ -429,8 +429,8 @@ const CaseDetails: React.FC = () => {
   const fetchCaseData = async () => {
     try {
       setLoading(true);
-      const lab = await getLabIdByUserId(user?.id as string);
-      if (!lab?.labId) {
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (!lab?.id) {
         console.error("Lab ID not found.");
         return;
       }
@@ -574,7 +574,7 @@ const CaseDetails: React.FC = () => {
               `
             )
             .in("id", productsIdArray)
-            .eq("lab_id", lab.labId);
+            .eq("lab_id", lab.id);
 
           if (productsError) {
             setError(productsError.message);
@@ -675,11 +675,11 @@ const CaseDetails: React.FC = () => {
               // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
               const discountedPrice =
                 relevantDiscounts[index % relevantDiscounts.length] || null;
-
+              console.log(lab, "lab");
               return {
                 ...product,
                 discounted_price: discountedPrice,
-                teethProduct: teeth, // Add the teeth product associated with this instance
+                teethProduct: teeth,
               };
             });
           });
@@ -687,6 +687,7 @@ const CaseDetails: React.FC = () => {
           setCaseDetail({
             ...(caseData as any),
             products: productsWithDiscounts,
+            labDetail: lab,
           });
         }
       }
@@ -815,7 +816,7 @@ const CaseDetails: React.FC = () => {
     // Create the dataToFeed object
     const dataToFeed = {
       case_id: workstationForm.case_id,
-      lab_id: lab?.labId, // labId is optional but should be checked if necessary
+      lab_id: lab?.id, // labId is optional but should be checked if necessary
       status: workstationForm.status,
       started_notes: workstationForm.started_notes, // notes can be empty
       technician_id: workstationForm.technician_id,
