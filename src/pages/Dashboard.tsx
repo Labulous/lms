@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getLabIdByUserId } from "@/services/authService";
 import DueDatesCalendar from "@/components/calendar/DueDatesCalendar";
 import SalesDashboard from "@/components/dashboard/SalesDashboard";
+import DailyCountsCard from "../components/operations/DailyCountsCard";
+import PerformanceMetricsCard from "../components/operations/PerformanceMetricsCard";
 
 interface WorkstationIssue {
   id: string;
@@ -232,17 +234,12 @@ const Dashboard: React.FC = () => {
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold">
-            Good {getTimeOfDay()}, {user?.full_name}!
-          </h1>
-          <p className="text-gray-500">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
+          <div className="space-y-0.5">
+            <h2 className="text-2xl font-bold tracking-tight">Good {getTimeOfDay()}, {user?.full_name}!</h2>
+            <p className="text-gray-500">
+              Here's what's happening in your lab today.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -280,62 +277,78 @@ const Dashboard: React.FC = () => {
               ))}
             </div>
 
-            {/* Calendar and Workstation Status */}
+            {/* Daily Counts and Calendar */}
             <div className="grid grid-cols-12 gap-4">
+              {/* Daily Counts */}
+              <div className="col-span-4">
+                <DailyCountsCard />
+              </div>
+
               {/* Calendar Section */}
               <Card className="col-span-8 p-6">
-                <h3 className="text-lg font-semibold mb-4">Due Dates Calendar</h3>
-                <DueDatesCalendar events={calendarEvents} height={400} />
+                <CardHeader className="px-0 pt-0 pb-4">
+                  <CardTitle className="text-lg font-medium">Due Dates Calendar</CardTitle>
+                </CardHeader>
+                <CardContent className="px-0">
+                  <DueDatesCalendar events={calendarEvents} height={400} />
+                </CardContent>
               </Card>
+            </div>
 
+            {/* Metrics Row */}
+            <div className="grid grid-cols-12 gap-4 mt-4">
               {/* Workstation Status */}
-              <Card className="col-span-4 p-6">
-                <CardHeader className="px-0 pt-0">
-                  <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                    <Settings className="w-5 h-5" />
+              <Card className="col-span-12 lg:col-span-6 bg-white h-full p-6">
+                <CardHeader className="px-0 pt-0 pb-4">
+                  <CardTitle className="text-lg font-medium">
                     Workstation Status
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0 space-y-6">
                   {/* Summary Stats */}
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-gray-50">
                       <p className="text-sm text-gray-500">Active Workstations</p>
-                      <p className="text-xl font-semibold">
+                      <p className="text-2xl font-semibold mt-1">
                         {totalWorkstations - workstationIssues.length}/{totalWorkstations}
                       </p>
                     </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
+                    <div className="flex flex-col items-center text-center p-4 rounded-lg bg-red-50">
                       <p className="text-sm text-gray-500">Issues Reported</p>
-                      <p className="text-xl font-semibold text-red-600">{workstationIssues.length}</p>
+                      <p className="text-2xl font-semibold text-red-600 mt-1">
+                        {workstationIssues.length}
+                      </p>
                     </div>
                   </div>
 
                   {/* Issues List */}
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <h4 className="text-sm font-medium text-gray-500">Active Issues</h4>
                     <div className="space-y-3 max-h-[280px] overflow-y-auto pr-2">
                       {workstationIssues.map((issue) => (
-                        <div key={issue.id} className="border-l-4 border-red-500 pl-4 py-2 bg-gray-50 rounded-r">
-                          <div className="flex justify-between items-start">
-                            <div>
+                        <div 
+                          key={issue.id} 
+                          className="border-l-4 border-red-500 pl-4 py-3 bg-gray-50 rounded-r"
+                        >
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="space-y-1 flex-1">
                               <p className="font-medium">
                                 {issue.workstation_type?.name || 'Unknown Workstation'}
                                 {issue.custom_workstation_type && ` - ${issue.custom_workstation_type}`}
                               </p>
-                              <p className="text-sm text-gray-500 mt-1">
+                              <p className="text-sm text-gray-500">
                                 {issue.issue_reported_notes || 'No description provided'}
                               </p>
                             </div>
-                            <Badge variant="outline" className="text-xs whitespace-nowrap ml-2">
+                            <Badge variant="outline" className="text-xs whitespace-nowrap shrink-0">
                               {getTimeAgo(issue.issue_reported_at)}
                             </Badge>
                           </div>
                         </div>
                       ))}
                       {workstationIssues.length === 0 && (
-                        <div className="text-center py-6 text-gray-500">
-                          <Wrench className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                          <Wrench className="h-8 w-8 mb-2 text-gray-400" />
                           <p>No active issues</p>
                         </div>
                       )}
@@ -343,6 +356,11 @@ const Dashboard: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Performance Metrics */}
+              <div className="col-span-12 lg:col-span-6">
+                <PerformanceMetricsCard />
+              </div>
             </div>
           </div>
         </TabsContent>
