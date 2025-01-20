@@ -269,7 +269,7 @@ const Dashboard: React.FC = () => {
             };
           }
         );
-        setCalendarEvents(events);
+        setCalendarEvents(events || []);
 
         // Fetch past due cases
         const { count: pastDue } = await supabase
