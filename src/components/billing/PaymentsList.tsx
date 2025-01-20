@@ -130,7 +130,7 @@ export function PaymentsList() {
         payment_date: date,
         amount: paymentAmount,
         payment_method: paymentMethod,
-        status: "Completed",
+        status: "completed",
         over_payment: overpaymentAmount || 0,
         remaining_payment: remainingBalance || 0,
         lab_id: labData?.labId,
