@@ -24,6 +24,7 @@ import ProductCatalogSettings from "./pages/settings/product-catalog";
 import CaseWorkflowSettings from "./pages/settings/case-workflow";
 import WorkingTagsSettings from "./pages/settings/working-tags-page";
 import PrintPreview from "./pages/PrintPreview";
+import WorkingPansSettings from "./pages/settings/working-pans-page";
 
 const App: React.FC = () => {
   return (
@@ -103,6 +104,10 @@ const App: React.FC = () => {
                   <Route
                     path="working-tags"
                     element={<WorkingTagsSettings />}
+                  />
+                  <Route
+                    path="working-pans"
+                    element={<WorkingPansSettings />}
                   />
                   <Route
                     path="products-services"

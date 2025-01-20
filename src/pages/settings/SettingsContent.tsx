@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { signUp } from "@/services/authService";
 import WorkingTagsSettings from "./working-tags";
+import WorkingPansSettings from "./working-pans";
 
 interface SettingsRow {
   label: string;
@@ -87,6 +88,14 @@ export const WorkingTagsSettingsContent: React.FC = () => {
   return (
     <div className="p-6">
       <WorkingTagsSettings />
+    </div>
+  );
+};
+
+export const WorkingPansSettingsContent: React.FC = () => {
+  return (
+    <div className="p-6">
+      <WorkingPansSettings />
     </div>
   );
 };
