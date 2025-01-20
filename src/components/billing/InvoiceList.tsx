@@ -152,6 +152,7 @@ const InvoiceList: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
   const [reFreshData, setRefreshData] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState<any>(null);
 
   const { user } = useAuth();
 
@@ -1126,247 +1127,422 @@ const InvoiceList: React.FC = () => {
       setShowNewPaymentModal(false);
     }
   };
-  return (
-    <div className="space-y-4" id="elementId">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-2">
-          {selectedInvoices.length > 0 ? (
-            <>
-              <span className="text-sm text-muted-foreground mr-2">
-                {selectedInvoices.length}{" "}
-                {selectedInvoices.length === 1 ? "item" : "items"} selected
-              </span>
-              {canApproveBulk && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleBulkAction("approve")}
-                    disabled={loadingState.isLoading}
-                  >
-                    {loadingState.action === "approve" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="mr-2 h-4 w-4" />
-                    )}
-                    Approve
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleBulkAction("approvePrint")}
-                    disabled={loadingState.isLoading}
-                  >
-                    {loadingState.action === "approvePrint" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <PrinterIcon className="mr-2 h-4 w-4" />
-                    )}
-                    Approve + Print
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsPreviewModalOpen(true)}
-                disabled={loadingState.isLoading}
-              >
-                <PrinterIcon className="mr-2 h-4 w-4" />
-                Print Invoices
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={loadingState.isLoading}
-                  >
-                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                    More Actions
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleBulkAction("sendReminder")}
-                    className="flex items-center"
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    <span>Send Reminder</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <DropdownMenuItem
-                        className="flex items-center cursor-pointer"
-                        onSelect={(e) => e.preventDefault()}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span>Change Due Date</span>
-                      </DropdownMenuItem>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0" align="start">
-                      <CalendarComponent
-                        mode="single"
-                        selected={dateFilter}
-                        onSelect={(date) => {
-                          setDateFilter(date);
-                          handleBulkAction("changeDueDate");
-                        }}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {canDeleteBulk && (
-                    <DropdownMenuItem
-                      onClick={() => handleBulkAction("delete")}
-                      className="flex items-center text-red-600 focus:text-red-600 focus:bg-red-50"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Delete</span>
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ) : null}
-        </div>
-        <div className="relative w-72">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search invoices..."
-            className="pl-8"
-            onChange={(e) => handleSearch(e)}
-          />
-        </div>
-      </div>
 
-      <div className="rounded-md border overflow-hidden">
-        <div className="overflow-x-auto">
-          <TableComponent>
-            <TableHeader>
-              <TableRow className="bg-muted hover:bg-muted">
-                <TableHead className="w-[40px]">
-                  <Checkbox
-                    checked={
-                      getSortedAndPaginatedData().length > 0 &&
-                      getSortedAndPaginatedData().every((invoice) =>
-                        selectedInvoices.includes(invoice.id as string)
-                      )
-                    }
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedInvoices(
-                          getSortedAndPaginatedData().map(
-                            (invoice) => invoice.id as string
-                          )
-                        );
-                      } else {
-                        setSelectedInvoices([]);
+  const handleInvoiceClick = (invoice: any) => {
+    setSelectedInvoiceForPreview(invoice);
+    setIsPreviewModalOpen(true);
+  };
+
+  return (
+    <>
+      <InvoicePreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        caseDetails={selectedInvoiceForPreview ? [selectedInvoiceForPreview] : []}
+      />
+      <div className="space-y-4" id="elementId">
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            {selectedInvoices.length > 0 ? (
+              <>
+                <span className="text-sm text-muted-foreground mr-2">
+                  {selectedInvoices.length}{" "}
+                  {selectedInvoices.length === 1 ? "item" : "items"} selected
+                </span>
+                {canApproveBulk && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkAction("approve")}
+                      disabled={loadingState.isLoading}
+                    >
+                      {loadingState.action === "approve" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="mr-2 h-4 w-4" />
+                      )}
+                      Approve
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleBulkAction("approvePrint")}
+                      disabled={loadingState.isLoading}
+                    >
+                      {loadingState.action === "approvePrint" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <PrinterIcon className="mr-2 h-4 w-4" />
+                      )}
+                      Approve + Print
+                    </Button>
+                  </>
+                )}
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setIsPreviewModalOpen(true)}
+                  disabled={loadingState.isLoading}
+                >
+                  <PrinterIcon className="mr-2 h-4 w-4" />
+                  Print Invoices
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={loadingState.isLoading}
+                    >
+                      <MoreHorizontal className="h-4 w-4 mr-2" />
+                      More Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleBulkAction("sendReminder")}
+                      className="flex items-center"
+                    >
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Send Reminder</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <DropdownMenuItem
+                          className="flex items-center cursor-pointer"
+                          onSelect={(e) => e.preventDefault()}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <span>Change Due Date</span>
+                        </DropdownMenuItem>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0" align="start">
+                        <CalendarComponent
+                          mode="single"
+                          selected={dateFilter}
+                          onSelect={(date) => {
+                            setDateFilter(date);
+                            handleBulkAction("changeDueDate");
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {canDeleteBulk && (
+                      <DropdownMenuItem
+                        onClick={() => handleBulkAction("delete")}
+                        className="flex items-center text-red-600 focus:text-red-600 focus:bg-red-50"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : null}
+          </div>
+          <div className="relative w-72">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search invoices..."
+              className="pl-8"
+              onChange={(e) => handleSearch(e)}
+            />
+          </div>
+        </div>
+
+        <div className="rounded-md border overflow-hidden">
+          <div className="overflow-x-auto">
+            <TableComponent>
+              <TableHeader>
+                <TableRow className="bg-muted hover:bg-muted">
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={
+                        getSortedAndPaginatedData().length > 0 &&
+                        getSortedAndPaginatedData().every((invoice) =>
+                          selectedInvoices.includes(invoice.id as string)
+                        )
                       }
-                    }}
-                  />
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("date")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Date
-                    {getSortIcon("date")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("invoiceNumber")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Invoice #{getSortIcon("invoiceNumber")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("status")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <div className="flex items-center hover:text-primary">
-                        Status
-                        {getSortIcon("status")}
-                        {statusFilter.length > 0 && (
-                          <Badge variant="secondary" className="ml-2">
-                            {statusFilter.length}
-                          </Badge>
-                        )}
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[200px] p-2" align="start">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                          <span className="text-sm font-medium">
-                            Filter by Status
-                          </span>
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedInvoices(
+                            getSortedAndPaginatedData().map(
+                              (invoice) => invoice.id as string
+                            )
+                          );
+                        } else {
+                          setSelectedInvoices([]);
+                        }
+                      }}
+                    />
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("date")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Date
+                      {getSortIcon("date")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("invoiceNumber")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Invoice #{getSortIcon("invoiceNumber")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("status")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <div className="flex items-center hover:text-primary">
+                          Status
+                          {getSortIcon("status")}
                           {statusFilter.length > 0 && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setStatusFilter([])}
-                              className="h-8 px-2 text-xs"
-                            >
-                              Clear
-                            </Button>
+                            <Badge variant="secondary" className="ml-2">
+                              {statusFilter.length}
+                            </Badge>
                           )}
                         </div>
-                        {[
-                          "unpaid",
-                          "paid",
-                          "partially_paid",
-                          "overdue",
-                          "cancelled",
-                        ].map((status, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center space-x-2"
-                          >
-                            <Checkbox
-                              id={`status-${status}`}
-                              checked={
-                                statusFilter.includes(
-                                  status as
-                                    | "draft"
-                                    | "unpaid"
-                                    | "pending"
-                                    | "approved"
-                                    | "paid"
-                                    | "overdue"
-                                    | "partially_paid"
-                                    | "cancelled"
-                                )
-                                  ? true
-                                  : false
-                              }
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setStatusFilter(
-                                    (prev) => [...prev, status] as any
-                                  );
-                                } else {
-                                  setStatusFilter((prev) =>
-                                    prev.filter((s) => s !== status)
-                                  );
-                                }
-                              }}
-                            />
-                            <label
-                              htmlFor={`status-${status}`}
-                              className="flex items-center text-sm font-medium cursor-pointer"
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-2" align="start">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                            <span className="text-sm font-medium">
+                              Filter by Status
+                            </span>
+                            {statusFilter.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setStatusFilter([])}
+                                className="h-8 px-2 text-xs"
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          {[
+                            "unpaid",
+                            "paid",
+                            "partially_paid",
+                            "overdue",
+                            "cancelled",
+                          ].map((status, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center space-x-2"
                             >
-                              <Badge
-                                variant={
-                                  getStatusBadgeVariant(
-                                    status as Invoice["status"]
+                              <Checkbox
+                                id={`status-${status}`}
+                                checked={
+                                  statusFilter.includes(
+                                    status as
+                                      | "draft"
+                                      | "unpaid"
+                                      | "pending"
+                                      | "approved"
+                                      | "paid"
+                                      | "overdue"
+                                      | "partially_paid"
+                                      | "cancelled"
+                                  )
+                                    ? true
+                                    : false
+                                }
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setStatusFilter(
+                                      (prev) => [...prev, status] as any
+                                    );
+                                  } else {
+                                    setStatusFilter((prev) =>
+                                      prev.filter((s) => s !== status)
+                                    );
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`status-${status}`}
+                                className="flex items-center text-sm font-medium cursor-pointer"
+                              >
+                                <Badge
+                                  variant={
+                                    getStatusBadgeVariant(
+                                      status as Invoice["status"]
+                                    ) as
+                                      | "filter"
+                                      | "secondary"
+                                      | "success"
+                                      | "destructive"
+                                      | "default"
+                                      | "warning"
+                                      | "outline"
+                                      | "Crown"
+                                      | "Bridge"
+                                      | "Removable"
+                                      | "Implant"
+                                      | "Coping"
+                                      | "Appliance"
+                                  }
+                                >
+                                  {status === "partially_paid"
+                                    ? "Partially Paid"
+                                    : status.charAt(0).toUpperCase() +
+                                      status.slice(1)}
+                                </Badge>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("clientName")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Client
+                      {getSortIcon("clientName")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("id")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Case #{getSortIcon("id")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("amount")}
+                    className="cursor-pointer text-right whitespace-nowrap"
+                  >
+                    <div className="flex items-center justify-end">
+                      Amount
+                      {getSortIcon("amount")}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("dueDate")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Due Date
+                      {getSortIcon("dueDate")}
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  // Loading skeleton rows
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={`loading-${index}`}>
+                      <TableCell>
+                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : getSortedAndPaginatedData().length === 0 ? (
+                  <EmptyState />
+                ) : (
+                  getSortedAndPaginatedData().map(
+                    (invoice: Invoice, index: React.Key | null | undefined) => (
+                      <TableRow
+                        key={index}
+                        className={cn(
+                          selectedInvoices.includes(invoice.id as string) &&
+                            "bg-muted/50",
+                          "hover:bg-muted/50 transition-colors"
+                        )}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedInvoices.includes(
+                              invoice.id as string
+                            )}
+                            onCheckedChange={() => {
+                              if (
+                                selectedInvoices.includes(invoice.id as string)
+                              ) {
+                                setSelectedInvoices((prev) =>
+                                  prev.filter(
+                                    (id) => id !== (invoice.id as string)
+                                  )
+                                );
+                              } else {
+                                setSelectedInvoices((prev) => [
+                                  ...prev,
+                                  invoice.id as string,
+                                ]);
+                              }
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {invoice?.received_date
+                            ? format(new Date(invoice?.received_date), "dd/MM/yy")
+                            : "No Date"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <button
+                            className="text-primary hover:underline"
+                            onClick={() => handleInvoiceClick(invoice)}
+                          >
+                            {invoice?.case_number}
+                          </button>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              invoice?.invoice?.[0]?.status
+                                ? (getStatusBadgeVariant(
+                                    invoice.invoice[0].status as
+                                      | "draft"
+                                      | "unpaid"
+                                      | "pending"
+                                      | "approved"
+                                      | "paid"
+                                      | "overdue"
+                                      | "partially_paid"
+                                      | "cancelled"
                                   ) as
                                     | "filter"
                                     | "secondary"
@@ -1380,497 +1556,330 @@ const InvoiceList: React.FC = () => {
                                     | "Removable"
                                     | "Implant"
                                     | "Coping"
-                                    | "Appliance"
-                                }
-                              >
-                                {status === "partially_paid"
-                                  ? "Partially Paid"
-                                  : status.charAt(0).toUpperCase() +
-                                    status.slice(1)}
-                              </Badge>
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("clientName")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Client
-                    {getSortIcon("clientName")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("id")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Case #{getSortIcon("id")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("amount")}
-                  className="cursor-pointer text-right whitespace-nowrap"
-                >
-                  <div className="flex items-center justify-end">
-                    Amount
-                    {getSortIcon("amount")}
-                  </div>
-                </TableHead>
-                <TableHead
-                  onClick={() => handleSort("dueDate")}
-                  className="cursor-pointer whitespace-nowrap"
-                >
-                  <div className="flex items-center">
-                    Due Date
-                    {getSortIcon("dueDate")}
-                  </div>
-                </TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                // Loading skeleton rows
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={`loading-${index}`}>
-                    <TableCell>
-                      <div className="h-4 w-4 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-5 w-16 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-16 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-8 w-8 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : getSortedAndPaginatedData().length === 0 ? (
-                <EmptyState />
-              ) : (
-                getSortedAndPaginatedData().map(
-                  (invoice: Invoice, index: React.Key | null | undefined) => (
-                    <TableRow
-                      key={index}
-                      className={cn(
-                        selectedInvoices.includes(invoice.id as string) &&
-                          "bg-muted/50",
-                        "hover:bg-muted/50 transition-colors"
-                      )}
-                    >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedInvoices.includes(
-                            invoice.id as string
-                          )}
-                          onCheckedChange={() => {
-                            if (
-                              selectedInvoices.includes(invoice.id as string)
-                            ) {
-                              setSelectedInvoices((prev) =>
-                                prev.filter(
-                                  (id) => id !== (invoice.id as string)
-                                )
-                              );
-                            } else {
-                              setSelectedInvoices((prev) => [
-                                ...prev,
-                                invoice.id as string,
-                              ]);
+                                    | "Appliance")
+                                : "Bridge"
                             }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {invoice?.received_date
-                          ? format(new Date(invoice?.received_date), "dd/MM/yy")
-                          : "No Date"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        <button
-                          className="text-primary hover:underline"
-                          onClick={() => handlePrintInvoice()}
-                        >
-                          {(() => {
-                            const caseNumber = invoice?.case_number ?? ""; // Default to an empty string if undefined
-                            const parts = caseNumber.split("-");
-                            parts[0] = "INV"; // Replace the first part
-                            return parts.join("-");
-                          })()}
-                        </button>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            invoice?.invoice?.[0]?.status
-                              ? (getStatusBadgeVariant(
-                                  invoice.invoice[0].status as
-                                    | "draft"
-                                    | "unpaid"
-                                    | "pending"
-                                    | "approved"
-                                    | "paid"
-                                    | "overdue"
-                                    | "partially_paid"
-                                    | "cancelled"
-                                ) as
-                                  | "filter"
-                                  | "secondary"
-                                  | "success"
-                                  | "destructive"
-                                  | "default"
-                                  | "warning"
-                                  | "outline"
-                                  | "Crown"
-                                  | "Bridge"
-                                  | "Removable"
-                                  | "Implant"
-                                  | "Coping"
-                                  | "Appliance")
-                              : "Bridge"
-                          }
-                        >
-                          {invoice?.invoice?.[0]?.status
-                            ? invoice.invoice[0].status
-                                .charAt(0)
-                                .toUpperCase() +
-                              invoice.invoice[0].status.slice(1)
-                            : "No Status"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {invoice?.client?.client_name || "Unknown Client"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {invoice.case_number}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">
-                        $
-                        {(
-                          (typeof invoice.amount === "number"
-                            ? invoice.amount
-                            : 0) +
-                          (invoice?.products?.reduce(
-                            (sum, item) =>
-                              sum +
-                              (typeof item.discounted_price?.final_price ===
-                              "number"
-                                ? item.discounted_price.final_price
-                                : 0),
-                            0
-                          ) ?? 0)
-                        ).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                        })}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {new Date(
-                          invoice?.due_date ?? "2000-01-01"
-                        ).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 p-0"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="w-[160px]"
                           >
-                            {invoice.status === "draft" && (
-                              <>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleApprove(invoice.id as string)
-                                  }
-                                  className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
-                                >
-                                  <CheckCircle className="mr-2 h-4 w-4" />
-                                  Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    handleApproveAndPrint(invoice.id as string)
-                                  }
-                                  className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
-                                >
-                                  <PrinterIcon className="mr-2 h-4 w-4" />
-                                  Approve + Print
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                              </>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedInvoices([invoice?.id as string]);
-                                setIsPreviewModalOpen(true);
-                              }}
-                              className="cursor-pointer"
+                            {invoice?.invoice?.[0]?.status
+                              ? invoice.invoice[0].status
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                invoice.invoice[0].status.slice(1)
+                              : "No Status"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {invoice?.client?.client_name || "Unknown Client"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {invoice.case_number}
+                        </TableCell>
+                        <TableCell className="text-right whitespace-nowrap">
+                          $
+                          {(
+                            (typeof invoice.amount === "number"
+                              ? invoice.amount
+                              : 0) +
+                            (invoice?.products?.reduce(
+                              (sum, item) =>
+                                sum +
+                                (typeof item.discounted_price?.final_price ===
+                                "number"
+                                  ? item.discounted_price.final_price
+                                  : 0),
+                              0
+                            ) ?? 0)
+                          ).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                          })}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(
+                            invoice?.due_date ?? "2000-01-01"
+                          ).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 p-0"
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent
+                              align="end"
+                              className="w-[160px]"
                             >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                            {["draft", "overdue"].includes(
-                              invoice.status as
-                                | "draft"
-                                | "unpaid"
-                                | "pending"
-                                | "approved"
-                                | "paid"
-                                | "overdue"
-                                | "partially_paid"
-                                | "cancelled"
-                            ) && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleOpenEditModal(invoice, "edit")
-                                }
-                                className="cursor-pointer"
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Invoice
-                              </DropdownMenuItem>
-                            )}
-                            {["unpaid", "partially_paid", "paid"].includes(
-                              invoice.invoice?.[0]?.status as
-                                | "draft"
-                                | "unpaid"
-                                | "pending"
-                                | "approved"
-                                | "paid"
-                                | "overdue"
-                                | "partially_paid"
-                                | "cancelled"
-                            ) && (
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleOpenEditModal(invoice, "payment")
-                                }
-                                className="cursor-pointer"
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Invoice
-                              </DropdownMenuItem>
-                            )}
-                            {["unpaid", "partially_paid"].includes(
-                              invoice.invoice?.[0]?.status as
-                                | "draft"
-                                | "unpaid"
-                                | "pending"
-                                | "approved"
-                                | "paid"
-                                | "overdue"
-                                | "partially_paid"
-                                | "cancelled"
-                            ) && (
+                              {invoice.status === "draft" && (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleApprove(invoice.id as string)
+                                    }
+                                    className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                                  >
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleApproveAndPrint(invoice.id as string)
+                                    }
+                                    className="cursor-pointer text-primary focus:text-primary-foreground focus:bg-primary"
+                                  >
+                                    <PrinterIcon className="mr-2 h-4 w-4" />
+                                    Approve + Print
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setShowNewPaymentModal(true);
-                                  setSelectedClient(
-                                    invoice.client?.id as string
-                                  );
-                                  setSelectedInvoice(
-                                    invoice?.invoice?.[0]?.id as string
-                                  );
+                                  setSelectedInvoices([invoice?.id as string]);
+                                  setIsPreviewModalOpen(true);
                                 }}
                                 className="cursor-pointer"
                               >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Record Payment
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Details
                               </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={() =>
-                                handleDownload(invoice.id as string)
-                              }
-                              className="cursor-pointer"
-                            >
-                              <Download className="mr-2 h-4 w-4" />
-                              Download PDF
-                            </DropdownMenuItem>
-                            {["draft", "overdue"].includes(
-                              invoice.status as
-                                | "draft"
-                                | "unpaid"
-                                | "pending"
-                                | "approved"
-                                | "paid"
-                                | "overdue"
-                                | "partially_paid"
-                                | "cancelled"
-                            ) && (
-                              <>
-                                <DropdownMenuSeparator />
+                              {["draft", "overdue"].includes(
+                                invoice.status as
+                                  | "draft"
+                                  | "unpaid"
+                                  | "pending"
+                                  | "approved"
+                                  | "paid"
+                                  | "overdue"
+                                  | "partially_paid"
+                                  | "cancelled"
+                              ) && (
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    handleDelete(invoice.id as string)
+                                    handleOpenEditModal(invoice, "edit")
                                   }
-                                  className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                  className="cursor-pointer"
                                 >
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete Invoice
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit Invoice
                                 </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
+                              )}
+                              {["unpaid", "partially_paid", "paid"].includes(
+                                invoice.invoice?.[0]?.status as
+                                  | "draft"
+                                  | "unpaid"
+                                  | "pending"
+                                  | "approved"
+                                  | "paid"
+                                  | "overdue"
+                                  | "partially_paid"
+                                  | "cancelled"
+                              ) && (
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleOpenEditModal(invoice, "payment")
+                                  }
+                                  className="cursor-pointer"
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit Invoice
+                                </DropdownMenuItem>
+                              )}
+                              {["unpaid", "partially_paid"].includes(
+                                invoice.invoice?.[0]?.status as
+                                  | "draft"
+                                  | "unpaid"
+                                  | "pending"
+                                  | "approved"
+                                  | "paid"
+                                  | "overdue"
+                                  | "partially_paid"
+                                  | "cancelled"
+                              ) && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setShowNewPaymentModal(true);
+                                    setSelectedClient(
+                                      invoice.client?.id as string
+                                    );
+                                    setSelectedInvoice(
+                                      invoice?.invoice?.[0]?.id as string
+                                    );
+                                  }}
+                                  className="cursor-pointer"
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Record Payment
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDownload(invoice.id as string)
+                                }
+                                className="cursor-pointer"
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download PDF
+                              </DropdownMenuItem>
+                              {["draft", "overdue"].includes(
+                                invoice.status as
+                                  | "draft"
+                                  | "unpaid"
+                                  | "pending"
+                                  | "approved"
+                                  | "paid"
+                                  | "overdue"
+                                  | "partially_paid"
+                                  | "cancelled"
+                              ) && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      handleDelete(invoice.id as string)
+                                    }
+                                    className="cursor-pointer text-destructive focus:text-destructive-foreground focus:bg-destructive"
+                                  >
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete Invoice
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
                   )
-                )
-              )}
-            </TableBody>
-          </TableComponent>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between mt-4">
-        <Select
-          value={itemsPerPage.toString()}
-          onValueChange={(value) => {
-            setItemsPerPage(Number(value));
-            setCurrentPage(1);
-          }}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="10">10 per page</SelectItem>
-            <SelectItem value="20">20 per page</SelectItem>
-            <SelectItem value="50">50 per page</SelectItem>
-            <SelectItem value="100">100 per page</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="flex justify-center flex-1">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handlePageChange(1)}
-              disabled={currentPage === 1}
-              className="hidden sm:flex transition-all duration-200 hover:scale-105"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="transition-all duration-200 hover:scale-105"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <span className="text-sm">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() =>
-                handlePageChange(Math.min(totalPages, currentPage + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="transition-all duration-200 hover:scale-105"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => handlePageChange(totalPages)}
-              disabled={currentPage === totalPages}
-              className="hidden sm:flex transition-all duration-200 hover:scale-105"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </button>
+                )}
+              </TableBody>
+            </TableComponent>
           </div>
         </div>
-        <div className="w-[180px]" /> {/* Spacer to balance the layout */}
-      </div>
-      {loadingState.isLoading && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg">
-            <div className="text-lg">
-              {loadingState.action === "exportPDF" && "Exporting as PDF..."}
-              {loadingState.action === "exportCSV" && "Exporting as CSV..."}
-              {loadingState.action === "delete" && "Deleting..."}
-              {loadingState.action === "markPaid" && "Marking as paid..."}
-              {loadingState.action === "sendReminder" && "Sending reminders..."}
-              {loadingState.action === "changeDueDate" &&
-                "Changing due date..."}
-              {loadingState.action === "applyDiscount" &&
-                "Applying discount..."}
-              {loadingState.action === "changePaymentTerms" &&
-                "Changing payment terms..."}
-              {loadingState.action === "approve" && "Approving..."}
-              {loadingState.action === "approvePrint" &&
-                "Approving and printing..."}
-              <br />
-              {processingFeedback}
-              <br />
-              {loadingState.progress}% complete
+
+        <div className="flex items-center justify-between mt-4">
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => {
+              setItemsPerPage(Number(value));
+              setCurrentPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10 per page</SelectItem>
+              <SelectItem value="20">20 per page</SelectItem>
+              <SelectItem value="50">50 per page</SelectItem>
+              <SelectItem value="100">100 per page</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex justify-center flex-1">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage === 1}
+                className="hidden sm:flex transition-all duration-200 hover:scale-105"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="transition-all duration-200 hover:scale-105"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() =>
+                  handlePageChange(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="transition-all duration-200 hover:scale-105"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage === totalPages}
+                className="hidden sm:flex transition-all duration-200 hover:scale-105"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
+          <div className="w-[180px]" /> {/* Spacer to balance the layout */}
         </div>
-      )}
+        {loadingState.isLoading && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+            <div className="bg-white p-4 rounded-lg shadow-lg">
+              <div className="text-lg">
+                {loadingState.action === "exportPDF" && "Exporting as PDF..."}
+                {loadingState.action === "exportCSV" && "Exporting as CSV..."}
+                {loadingState.action === "delete" && "Deleting..."}
+                {loadingState.action === "markPaid" && "Marking as paid..."}
+                {loadingState.action === "sendReminder" && "Sending reminders..."}
+                {loadingState.action === "changeDueDate" &&
+                  "Changing due date..."}
+                {loadingState.action === "applyDiscount" &&
+                  "Applying discount..."}
+                {loadingState.action === "changePaymentTerms" &&
+                  "Changing payment terms..."}
+                {loadingState.action === "approve" && "Approving..."}
+                {loadingState.action === "approvePrint" &&
+                  "Approving and printing..."}
+                <br />
+                {processingFeedback}
+                <br />
+                {loadingState.progress}% complete
+              </div>
+            </div>
+          </div>
+        )}
 
-      {editingInvoice && (
-        <EditInvoiceModal
-          invoice={editingInvoice}
-          mode={editMode}
-          onClose={handleCloseEditModal}
-          onSave={handleSaveInvoice}
-        />
-      )}
+        {editingInvoice && (
+          <EditInvoiceModal
+            invoice={editingInvoice}
+            mode={editMode}
+            onClose={handleCloseEditModal}
+            onSave={handleSaveInvoice}
+          />
+        )}
 
-      {isPreviewModalOpen && (
-        <InvoicePreviewModal
-          isOpen={isPreviewModalOpen}
-          onClose={() => {
-            setIsPreviewModalOpen(false);
-          }}
-          caseDetails={invoicesData.filter((invoice: any) =>
-            selectedInvoices.includes(invoice.id)
-          )} // Filter selected invoices based on their IDs
-        />
-      )}
+        {isPreviewModalOpen && (
+          <InvoicePreviewModal
+            isOpen={isPreviewModalOpen}
+            onClose={() => {
+              setIsPreviewModalOpen(false);
+            }}
+            caseDetails={invoicesData.filter((invoice: any) =>
+              selectedInvoices.includes(invoice.id)
+            )} // Filter selected invoices based on their IDs
+          />
+        )}
 
-      {showNewPaymentModal && (
-        <NewPaymentModal
-          onClose={() => {
-            console.log("Closing new payment modal");
-            setShowNewPaymentModal(false);
-          }}
-          onSubmit={handleNewPayment}
-          isSingleInvoice={true}
-          clientId={selectedClient}
-          invoiceId={selectedInvoice}
-        />
-      )}
-    </div>
+        {showNewPaymentModal && (
+          <NewPaymentModal
+            onClose={() => {
+              console.log("Closing new payment modal");
+              setShowNewPaymentModal(false);
+            }}
+            onSubmit={handleNewPayment}
+            isSingleInvoice={true}
+            clientId={selectedClient}
+            invoiceId={selectedInvoice}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

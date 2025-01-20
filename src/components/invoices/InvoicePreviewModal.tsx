@@ -212,25 +212,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           {/* Content */}
           <div ref={invoiceRef}>
             <InvoiceTemplate
-              caseData={{
-                id: "2323",
-                patient_name: "Hussain abbas",
-                case_number: "SOL-2025-0025",
-                qr_code: "",
-                client: {
-                  client_name: "zahid",
-                  phone: "zahi",
-                },
-                doctor: {
-                  name: "zahid",
-                },
-                created_at: "11 june",
-                due_date: "11 june",
-                tag: {
-                  name: "ffff",
-                },
-              }}
-              paperSize={"LETTER"}
+              caseData={caseDetails[0]}
+              paperSize={selectedPaperSize}
               caseDetails={caseDetails}
               ref={invoiceRef}
             />

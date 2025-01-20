@@ -135,12 +135,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         },
       ],
     },
-    {
-      icon: BarChart2,
-      label: "Reports",
-      href: "/reports",
-      roles: ["admin", "super_admin"],
-    },
+    // {
+    //   icon: BarChart2,
+    //   label: "Reports",
+    //   href: "/reports",
+    //   roles: ["admin", "super_admin"],
+    // },
     {
       icon: Package,
       label: "Inventory",
