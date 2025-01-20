@@ -1166,6 +1166,15 @@ const InvoiceList: React.FC = () => {
                   </Button>
                 </>
               )}
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsPreviewModalOpen(true)}
+                disabled={loadingState.isLoading}
+              >
+                <PrinterIcon className="mr-2 h-4 w-4" />
+                Print Invoices
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1181,27 +1190,6 @@ const InvoiceList: React.FC = () => {
                   <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => handleBulkAction("markPaid")}
-                    className="flex items-center"
-                  >
-                    <Banknote className="mr-2 h-4 w-4" />
-                    <span>Mark as Paid</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkAction("exportPDF")}
-                    className="flex items-center"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    <span>Export as PDF</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkAction("exportCSV")}
-                    className="flex items-center"
-                  >
-                    <Table className="mr-2 h-4 w-4" />
-                    <span>Export as CSV</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
                     onClick={() => handleBulkAction("sendReminder")}
                     className="flex items-center"
                   >
@@ -1209,7 +1197,6 @@ const InvoiceList: React.FC = () => {
                     <span>Send Reminder</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-
                   <Popover>
                     <PopoverTrigger asChild>
                       <DropdownMenuItem
@@ -1232,22 +1219,6 @@ const InvoiceList: React.FC = () => {
                       />
                     </PopoverContent>
                   </Popover>
-
-                  <DropdownMenuItem
-                    onClick={() => handleBulkAction("applyDiscount")}
-                    className="flex items-center"
-                  >
-                    <PercentIcon className="mr-2 h-4 w-4" />
-                    <span>Apply Discount</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleBulkAction("changePaymentTerms")}
-                    className="flex items-center"
-                  >
-                    <ClockIcon className="mr-2 h-4 w-4" />
-                    <span>Change Payment Terms</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
                   {canDeleteBulk && (
                     <DropdownMenuItem
                       onClick={() => handleBulkAction("delete")}
@@ -1463,7 +1434,40 @@ const InvoiceList: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {getSortedAndPaginatedData().length === 0 ? (
+              {loading ? (
+                // Loading skeleton rows
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={`loading-${index}`}>
+                    <TableCell>
+                      <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-5 w-16 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-16 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-8 w-8 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : getSortedAndPaginatedData().length === 0 ? (
                 <EmptyState />
               ) : (
                 getSortedAndPaginatedData().map(
