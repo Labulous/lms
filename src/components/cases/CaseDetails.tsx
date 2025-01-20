@@ -479,10 +479,8 @@ const CaseDetails: React.FC = () => {
               name,
               color
             ),
-            pan:working_tags!working_pan__id (
-              name,
-              color
-            ),
+            pans:working_pans!working_pan_id (
+            name,color),
             rx_number,
             received_date,
             invoice_notes,
