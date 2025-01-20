@@ -72,6 +72,21 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
   </div>
 );
 
+const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
+  return (
+    <div className="rbc-date-cell">
+      <div className="custom-date-cell">
+        <span className="date-number">{format(date, 'd')}</span>
+        {events.length > 0 && (
+          <div className="badge-container">
+            <span className="count-badge">{events.length}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
   height = 500,
@@ -136,6 +151,17 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
         label={format(props.date, "MMMM yyyy")}
       />
     ),
+    dateCellWrapper: (props: any) => {
+      const eventsForDate = events.filter(event => {
+        const eventDate = new Date(event.start);
+        return (
+          eventDate.getDate() === props.value.getDate() &&
+          eventDate.getMonth() === props.value.getMonth() &&
+          eventDate.getFullYear() === props.value.getFullYear()
+        );
+      });
+      return <CustomDateCell date={props.value} events={eventsForDate} />;
+    },
   };
 
   const eventStyleGetter = (event: any) => {

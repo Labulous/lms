@@ -40,13 +40,18 @@
   border-bottom: 1px solid #e5e7eb;
   position: relative;
   z-index: 2;
+  height: 40px;
+  min-height: 40px;
+  flex: 0 0 40px;
 }
 
 .rbc-header {
-  @apply text-xs font-medium text-gray-500 py-2 border-b border-gray-200;
+  @apply text-xs font-medium text-gray-500 border-b border-gray-200;
   flex: 1 1 0%;
   min-width: 0;
-  padding: 0.75rem;
+  padding: 0;
+  height: 40px;
+  line-height: 40px;
   font-weight: 600;
   text-align: center;
   text-transform: uppercase;
@@ -68,7 +73,7 @@
   @apply border-border;
   display: flex;
   flex: 1 1 0%;
-  min-height: 100px;
+  min-height: 65px;
   border-bottom: none;
 }
 
@@ -79,8 +84,19 @@
 .rbc-row-content {
   flex: 1;
   display: flex;
+  flex-direction: column;
   position: relative;
   margin-left: -1px;
+}
+
+.rbc-row-content .rbc-row:nth-child(2) {
+  min-height: 40px;
+  height: 40px;
+}
+
+.rbc-row-content .rbc-row:first-child {
+  min-height: 25px;
+  height: 25px;
 }
 
 .rbc-row-bg {
@@ -94,11 +110,53 @@
   pointer-events: none;
 }
 
-.rbc-row-content .rbc-row {
+.rbc-row-bg > div {
+  flex: 1 1 0%;
+  pointer-events: none;
+  border-right: 1px solid #e5e7eb;
+}
+
+.rbc-row-bg > div:last-child {
+  border-right: none;
+}
+
+.rbc-row-bg .rbc-date-cell,
+.rbc-row-bg .rbc-row-segment {
+  pointer-events: none;
+  background: none;
+  border: none;
+}
+
+/* Row Segment Styles */
+.rbc-row-segment {
+  @apply flex-1;
+  padding: 0;
+  position: relative;
+  border-right: 1px solid #e5e7eb;
+}
+
+.rbc-row-segment:last-child {
+  border-right: none;
+}
+
+/* Ensure consistent height for all date cells */
+.rbc-row {
   display: flex;
   flex: 1 1 0%;
-  border: none !important;
+  min-height: 100px;
+}
+
+.rbc-row-content .rbc-row {
   min-height: unset;
+}
+
+/* Date Cell Styles */
+.rbc-date-cell {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  position: relative;
 }
 
 /* Date Cells */
