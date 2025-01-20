@@ -976,8 +976,8 @@ const CaseDetails: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
                     <div
-                      className="text-sm font-medium text-primary"
-                      onMouseEnter={() => setIsPreviewModalOpen(true)}
+                      className="text-sm font-medium text-primary cursor-pointer"
+                      onClick={() => setIsPreviewModalOpen(true)}
                     >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
