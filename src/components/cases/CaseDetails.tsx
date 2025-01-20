@@ -426,9 +426,9 @@ const CaseDetails: React.FC = () => {
     }
   };
 
-  const fetchCaseData = async () => {
+  const fetchCaseData = async (refetch?: boolean) => {
     try {
-      setLoading(true);
+      setLoading(refetch ? false : true);
       const lab = await getLabDataByUserId(user?.id as string);
       if (!lab?.id) {
         console.error("Lab ID not found.");
@@ -869,7 +869,7 @@ const CaseDetails: React.FC = () => {
         });
         setStepData((prev) => prev.filter((item) => !item.isNew));
         getWorkStationDetails(caseDetail.created_at);
-
+        fetchCaseData(true);
         setWorkstationLoading(false);
       }
     } catch (error) {
@@ -1596,7 +1596,7 @@ const CaseDetails: React.FC = () => {
                         </TableCell>
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
                           $
-                          {duplicateProductsByTeethNumber(caseDetail.products)
+                          {caseDetail.products
                             ?.reduce((total, product) => {
                               const finalPrice =
                                 product.discounted_price?.final_price ||

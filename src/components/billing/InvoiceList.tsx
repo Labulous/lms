@@ -1626,9 +1626,10 @@ const InvoiceList: React.FC = () => {
                               </>
                             )}
                             <DropdownMenuItem
-                              onClick={() =>
-                                navigate(`/billing/${invoice.id as string}`)
-                              }
+                              onClick={() => {
+                                setSelectedInvoices([invoice?.id as string]);
+                                setIsPreviewModalOpen(true);
+                              }}
                               className="cursor-pointer"
                             >
                               <Eye className="mr-2 h-4 w-4" />

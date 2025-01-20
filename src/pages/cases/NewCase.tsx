@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -67,6 +67,7 @@ const NewCase: React.FC = () => {
     action: null,
     isLoading: false,
   });
+  const mainDivRef = useRef<HTMLDivElement>(null);
   const handleSaveProduct = (product: SavedProduct) => {
     setSelectedProducts((prev) => [...prev, product]);
   };
@@ -192,6 +193,7 @@ const NewCase: React.FC = () => {
 
     getCasesLength();
   }, [user?.id]);
+  console.log(setSelectedProducts, "selected");
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -208,13 +210,18 @@ const NewCase: React.FC = () => {
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
+    if (!formData.isDueDateTBD && !formData.appointmentDate)
+      validationErrors.appointmentDate = "Due date is required";
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
     if (!formData.workingPanName)
       validationErrors.workingPanName = "Working tag is Required";
-    if (!formData.appointmentDate)
-      validationErrors.appointmentDate = "Appointment date is Required";
+    if (
+      (selectedProducts.length === 1 && selectedProducts[0].id === "") ||
+      selectedProducts[0].type === ""
+    )
+      validationErrors.itemsError = "Atleast One Item Required";
 
     if (
       !validationErrors.caseDetails ||
@@ -303,9 +310,13 @@ const NewCase: React.FC = () => {
       toast.error("Unable to Create Case Number");
     }
   };
-  console.log(formData,"formd data")
+  useEffect(() => {
+    if (errors && mainDivRef.current) {
+      mainDivRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [errors]);
   return (
-    <div className="p-6">
+    <div className="p-6" ref={mainDivRef}>
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Create a New Case

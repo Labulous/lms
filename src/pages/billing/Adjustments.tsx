@@ -282,6 +282,7 @@ const Adjustments = () => {
           `Inserted new credit adjustment for client_id ${data.client_id}`
         );
         toast.success("Credit adjustment processed successfully");
+        getAdjustments();
         setIsNewCreditModalOpen(false);
       } catch (error) {
         console.error("Error processing credit adjustment:", error);
@@ -333,6 +334,7 @@ const Adjustments = () => {
       );
       toast.success("Debit adjustment processed successfully");
       setIsNewDebitModalOpen(false);
+      getAdjustments();
     } catch (error) {
       console.error("Error processing debit adjustment:", error);
       toast.error("Failed to process debit adjustment");
@@ -341,52 +343,50 @@ const Adjustments = () => {
     }
   };
 
-  useEffect(() => {
-    const getAdjustments = async () => {
-      setLoading(true);
+  const getAdjustments = async () => {
+    setLoading(true);
 
-      try {
-        const lab = await getLabIdByUserId(user?.id as string);
+    try {
+      const lab = await getLabIdByUserId(user?.id as string);
 
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-
-        // Fetch adjustments for the selected client
-        const { data: adjustmentsData, error: adjustmentsError } =
-          await supabase
-            .from("adjustments")
-            .select(
-              `
-              id,
-              created_at,
-              client:clients!client_id (client_name),
-              lab_id,
-              credit_amount,
-              debit_amount,
-              description,
-              payment_date
-            `
-            )
-            .eq("lab_id", lab.labId)
-            .order("created_at", { ascending: true });
-
-        if (adjustmentsError) {
-          console.error("Error fetching adjustments:", adjustmentsError);
-          return;
-        }
-        const data: any = adjustmentsData;
-        console.log(adjustmentsData, "filteredAdjustments");
-        // Update the state with the filtered adjustments
-        setAdjustments(data); // Assuming `setInvoices` is being reused for adjustments
-      } catch (error) {
-        console.error("Error fetching adjustments:", error);
-      } finally {
-        setLoading(false);
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
       }
-    };
 
+      // Fetch adjustments for the selected client
+      const { data: adjustmentsData, error: adjustmentsError } = await supabase
+        .from("adjustments")
+        .select(
+          `
+            id,
+            created_at,
+            client:clients!client_id (client_name),
+            lab_id,
+            credit_amount,
+            debit_amount,
+            description,
+            payment_date
+          `
+        )
+        .eq("lab_id", lab.labId)
+        .order("created_at", { ascending: true });
+
+      if (adjustmentsError) {
+        console.error("Error fetching adjustments:", adjustmentsError);
+        return;
+      }
+      const data: any = adjustmentsData;
+      console.log(adjustmentsData, "filteredAdjustments");
+      // Update the state with the filtered adjustments
+      setAdjustments(data); // Assuming `setInvoices` is being reused for adjustments
+    } catch (error) {
+      console.error("Error fetching adjustments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
     getAdjustments();
   }, []);
 

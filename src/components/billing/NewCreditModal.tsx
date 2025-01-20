@@ -35,6 +35,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { BalanceTrackingItem } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
+import { formatDate } from "@/lib/formatedDate";
 
 interface NewCreditModalProps {
   onClose: () => void;
@@ -587,7 +588,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                   <TableBody>
                     {invoices.map((invoice) => (
                       <TableRow key={invoice.id}>
-                        <TableCell>{invoice.created_at}</TableCell>
+                        <TableCell>{formatDate(invoice.created_at)}</TableCell>
                         <TableCell>{invoice.case_number}</TableCell>
                         <TableCell>{invoice.patient_name}</TableCell>
                         <TableCell className="text-right">

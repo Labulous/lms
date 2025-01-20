@@ -821,6 +821,7 @@ export interface FormData {
     instructionNotes?: string;
     invoiceNotes?: string;
   };
+  itemsError?: string;
 }
 
 /**
