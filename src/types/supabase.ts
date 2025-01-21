@@ -225,6 +225,7 @@ export interface PaymentListItem {
   over_payment: number;
   remaining_payment: number;
   clients: { client_name: string };
+  client_name?: string;
 }
 
 export interface BalanceTrackingItem {
