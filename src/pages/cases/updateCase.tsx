@@ -501,7 +501,11 @@ const UpdateCase: React.FC = () => {
                 custom_occlusal_shade,
                 custom_body_shade,
                 custom_gingival_shade,
-                custom_stump_shade
+                custom_stump_shade,
+                   manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade
               `
               )
               .eq("case_product_id", caseProductId)
@@ -604,6 +608,10 @@ const UpdateCase: React.FC = () => {
               custom_occlusal: item.teethProduct?.custom_occlusal_shade || null,
               custom_gingival: item.teethProduct?.custom_gingival_shade || null,
               custom_stump: item.teethProduct?.custom_stump_shade || null,
+              manual_body: item.teethProduct?.manual_body_shade || null,
+              manual_occlusal: item.teethProduct?.manual_occlusal_shade || null,
+              manual_gingival: item.teethProduct?.manual_gingival_shade || null,
+              manual_stump: item.teethProduct?.manual_stump_shade || null,
             },
             discount: item?.discounted_price?.discount || 0,
             notes: item?.teethProduct?.notes || "",

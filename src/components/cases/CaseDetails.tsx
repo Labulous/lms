@@ -661,6 +661,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   custom_occlusal_shade,
                   custom_gingival_shade,
                   custom_stump_shade,
+                  manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
                   type,
                   id
                 `
@@ -1473,7 +1477,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           />
                         </TableHead>
                         <TableHead className="text-xs py-0.5 pl-4 pr-0">
-                          Shade
+                          Shade --Custom
                         </TableHead>
                         <TableHead className="w-[1px] p-0">
                           <Separator
@@ -1539,11 +1543,18 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">Body:</span>
-                                    <span>
-                                      {product?.teethProduct
-                                        ?.custom_body_shade ||
-                                        product?.teethProduct?.body_shade?.name}
-                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_body_shade ||
+                                          product?.teethProduct?.body_shade
+                                            ?.name}
+                                      </p> --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_body_shade || ""}
+                                      </p>
+                                    </div>
                                   </div>
                                 </p>
                               ) : null}
@@ -1556,17 +1567,23 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Gingival:
                                     </span>
-                                    <span>
-                                      {product?.teethProduct
-                                        ?.custom_gingival_shade ||
-                                        product?.teethProduct?.gingival_shade
-                                          ?.name}
-                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                          product?.teethProduct?.gingival_shade
+                                            ?.name}
+                                      </p>
+                                      --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_gingival_shade || ""}
+                                      </p>
+                                    </div>
                                   </div>
                                 </p>
                               ) : null}
 
-                              {/* Occlusal shade */}
                               {product?.teethProduct?.occlusal_shade?.name ||
                               product?.teethProduct?.custom_occlusal_shade ? (
                                 <p>
@@ -1574,12 +1591,19 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Occlusal:
                                     </span>
-                                    <span>
-                                      {product?.teethProduct
-                                        ?.custom_occlusal_shade ||
-                                        product?.teethProduct?.occlusal_shade
-                                          ?.name}
-                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_occlusal_shade ||
+                                          product?.teethProduct?.occlusal_shade
+                                            ?.name}
+                                      </p>{" "}
+                                      --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_occlusal_shade || ""}
+                                      </p>
+                                    </div>
                                   </div>
                                 </p>
                               ) : null}
@@ -1592,12 +1616,19 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Stump:
                                     </span>
-                                    <span>
-                                      {product?.teethProduct
-                                        ?.custom_stump_shade ||
-                                        product?.teethProduct?.stump_shade_id
-                                          ?.name}
-                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_stump_shade ||
+                                          product?.teethProduct?.stump_shade_id
+                                            ?.name}
+                                      </p>{" "}
+                                      --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_stump_shade || ""}
+                                      </p>
+                                    </div>
                                   </div>
                                 </p>
                               ) : null}
