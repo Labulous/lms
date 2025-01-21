@@ -168,7 +168,7 @@ const saveCaseProduct = async (
           : product.shades.stump_shade || null,
       custom_body_shade: product?.shades.custom_body || null,
       custom_occlusal_shade: product?.shades.custom_occlusal || null,
-      custom_gingival_shade: product?.shades.custon_gingival || null,
+      custom_gingival_shade: product?.shades.custom_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
       notes: product.notes || "",
       case_id: savedCaseId,
@@ -279,20 +279,6 @@ const saveCases = async (
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
-      const updateDueDate = () => {
-        const currentDate = new Date(); // Get the current date
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth(); // 0-indexed (0 = January, 11 = December)
-
-        // Create a new date object for the 28th of the current month and year
-        const dueDate = new Date(currentYear, currentMonth, 28);
-
-        // Format the date as "YYYY-MM-DD HH:mm:ss+00"
-        const formattedDate =
-          dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
-
-        return formattedDate;
-      };
 
       // Step 3: Save case products
       try {
@@ -326,7 +312,7 @@ const saveCases = async (
         amount: totalAmount,
         due_amount: totalAmount,
         status: "unpaid",
-        due_date: updateDueDate(),
+        due_date: null,
       };
 
       const { data: invoiceData, error: invoiceError } = await supabase

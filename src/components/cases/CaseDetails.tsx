@@ -834,6 +834,21 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       return;
     }
 
+    const updateDueDate = () => {
+      const currentDate = new Date(); // Get the current date
+
+      const nextMonthDate = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        currentDate.getDate()
+      );
+
+      const formattedDate =
+        nextMonthDate.toISOString().replace("T", " ").split(".")[0] + "+00";
+
+      return formattedDate;
+    };
+
     // Create the dataToFeed object
     const dataToFeed = {
       case_id: workstationForm.case_id,
@@ -871,6 +886,16 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           .eq("id", activeCaseId);
 
         if (updateError) {
+          toast.error(
+            "Workstation has been created but failed to update the case"
+          );
+        }
+        const { error: updateInvoiceError } = await supabase
+          .from("invoices")
+          .update({ due_date: updateDueDate() })
+          .eq("case_id", caseDetail.id);
+
+        if (updateInvoiceError) {
           toast.error(
             "Workstation has been created but failed to update the case"
           );
