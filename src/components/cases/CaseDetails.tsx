@@ -1564,9 +1564,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 {discount > 0 ? (
                                   <span className="text-green-600">
-                                    {product.discounted_price.discount.toFixed(
-                                      2
-                                    )}
+                                    {product?.discounted_price?.discount}
                                     %
                                   </span>
                                 ) : (
@@ -1581,9 +1579,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
                                 $
-                                {product?.discounted_price?.final_price.toFixed(
-                                  2
-                                )}
+                                {product?.discounted_price?.final_price}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator

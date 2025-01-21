@@ -538,31 +538,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (selectedProducts.length > 0) {
       const shades = selectedProducts.map((item) => {
         const obj = {
-          body_shade: item.shades.body_shade
-            ? item.shades.body_shade
-            : item.shades.custom_body
+          body_shade: item.shades?.body_shade
+            ? item.shades?.body_shade
+            : item.shades?.custom_body
             ? "custom"
             : "",
-          gingival_shade: item.shades.gingival_shade
-            ? item.shades.gingival_shade
-            : item.shades.custom_gingival
+          gingival_shade: item.shades?.gingival_shade
+            ? item.shades?.gingival_shade
+            : item.shades?.custom_gingival
             ? "custom"
             : "",
-          occlusal_shade: item.shades.occlusal_shade
-            ? item.shades.occlusal_shade
-            : item.shades.custom_occlusal
+          occlusal_shade: item.shades?.occlusal_shade
+            ? item.shades?.occlusal_shade
+            : item.shades?.custom_occlusal
             ? "custom"
             : "",
-          stump_shade: item.shades.stump_shade
-            ? item.shades.stump_shade
-            : item.shades.custom_stump
+          stump_shade: item.shades?.stump_shade
+            ? item.shades?.stump_shade
+            : item.shades?.custom_stump
             ? "custom"
             : "",
           id: item.id,
-          custom_body: item.shades.custom_body,
-          custom_gingival: item.shades.custom_gingival,
-          custom_occlusal: item.shades.custom_occlusal,
-          custom_stump: item.shades.custom_stump,
+          custom_body: item.shades?.custom_body,
+          custom_gingival: item.shades?.custom_gingival,
+          custom_occlusal: item.shades?.custom_occlusal,
+          custom_stump: item.shades?.custom_stump,
         };
 
         return obj;
@@ -621,7 +621,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedProducts.map((row, index) => (
+              {selectedProducts?.map((row, index) => (
                 <TableRow key={row.id} className="border">
                   <TableCell className="border-b">
                     <Popover
@@ -747,49 +747,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             variant="outline"
                             size="sm"
                             className={`h-7 text-sm ${
-                              row.shades.body_shade ||
-                              row.shades.gingival_shade ||
-                              row.shades.occlusal_shade ||
-                              row.shades.stump_shade
+                              row.shades?.body_shade ||
+                              row.shades?.gingival_shade ||
+                              row.shades?.occlusal_shade ||
+                              row.shades?.stump_shade
                                 ? "text-blue-600"
                                 : ""
                             }`}
                             disabled={row.teeth.length === 0}
                             onClick={() => toggleShadePopover(index)}
                           >
-                            {row.shades.body_shade ||
-                            row.shades.gingival_shade ||
-                            row.shades.occlusal_shade ||
-                            row.shades.stump_shade ? (
+                            {row.shades?.body_shade ||
+                            row.shades?.gingival_shade ||
+                            row.shades?.occlusal_shade ||
+                            row.shades?.stump_shade ? (
                               <div>
-                                {shadeData[index].occlusal_shade === "custom"
-                                  ? shadeData[index].custom_occlusal
+                                {shadeData[index]?.occlusal_shade === "custom"
+                                  ? shadeData[index]?.custom_occlusal
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id ===
-                                        shadeData[index].occlusal_shade
+                                        shadeData[index]?.occlusal_shade
                                     )[0]?.name || "--"}
                                 /
-                                {shadeData[index].body_shade === "custom"
-                                  ? shadeData[index].custom_body
+                                {shadeData[index]?.body_shade === "custom"
+                                  ? shadeData[index]?.custom_body
                                   : shadesItems.filter(
                                       (item) =>
-                                        item.id === shadeData[index].body_shade
+                                        item.id === shadeData[index]?.body_shade
                                     )[0]?.name || "--"}
                                 /
-                                {shadeData[index].gingival_shade === "custom"
-                                  ? shadeData[index].custom_gingival
+                                {shadeData[index]?.gingival_shade === "custom"
+                                  ? shadeData[index]?.custom_gingival
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id ===
-                                        shadeData[index].gingival_shade
+                                        shadeData[index]?.gingival_shade
                                     )[0]?.name || "--"}
                                 /
-                                {shadeData[index].stump_shade === "custom"
-                                  ? shadeData[index].custom_stump
+                                {shadeData[index]?.stump_shade === "custom"
+                                  ? shadeData[index]?.custom_stump
                                   : shadesItems.filter(
                                       (item) =>
-                                        item.id === shadeData[index].stump_shade
+                                        item.id === shadeData[index]?.stump_shade
                                     )[0]?.name || "--"}
                               </div>
                             ) : (
