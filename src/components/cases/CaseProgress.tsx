@@ -39,7 +39,7 @@ export interface CaseStep {
   workstation_type_name?: string;
   dentist?: string;
   technician?: { name: string; id: string };
-  status: "in_progress" | "completed" | "issue_reported";
+  status: "in_progress" | "completed" | "issue_reported" | "on_hold";
   notes?: string;
   custom_workstation_type?: string;
   isNew?: boolean;
@@ -233,11 +233,11 @@ id
       completed_at:
         editWorkstationForm.status === "completed"
           ? new Date().toISOString()
-          : null, // Valid timestamp
+          : null,
       issue_reported_at:
         editWorkstationForm.status === "issue_reported"
           ? new Date().toISOString()
-          : null, // Valid timestamp
+          : null,
       workstation_type_id:
         editWorkstationForm.workstation_type_id === "custom-id"
           ? null
@@ -367,6 +367,11 @@ id
                                     {step.status === "in_progress" && (
                                       <span className="text-sm font-medium text-blue-500">
                                         In Progress
+                                      </span>
+                                    )}
+                                    {step.status === "on_hold" && (
+                                      <span className="text-sm font-medium text-yellow-600">
+                                        On Hold
                                       </span>
                                     )}
                                   </div>
@@ -607,6 +612,11 @@ id
                                     {step.status === "in_progress" && (
                                       <span className="text-sm font-medium text-blue-500">
                                         In Progress
+                                      </span>
+                                    )}
+                                    {step.status === "on_hold" && (
+                                      <span className="text-sm font-medium text-yellow-600">
+                                        On Hold
                                       </span>
                                     )}
                                   </div>
@@ -1011,8 +1021,10 @@ id
                               {!step.isEditOn && (
                                 <div className="flex flex-col gap-4 space-y-2">
                                   <div className="text-sm text-gray-500 text-start flex">
-                                    Attachements: {" "}
-                                    <p className="font-bold">{(step.files && step.files.length) || 0}</p>
+                                    Attachements:{" "}
+                                    <p className="font-bold">
+                                      {(step.files && step.files.length) || 0}
+                                    </p>
                                   </div>
                                   <div className="grid grid-cols-4 gap-2">
                                     {step.files &&

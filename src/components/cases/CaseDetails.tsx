@@ -230,6 +230,7 @@ export interface ExtendedCase {
     stump_shade_id?: { name: string };
   }[];
   labDetail?: labDetail;
+  isDueDateTBD?: boolean;
 }
 
 interface CaseDetailsProps {
@@ -902,6 +903,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
 
   const handleUpdateCaseStatus = async (status: string) => {
+    if (status === "on_hold" && !onHoldReason) {
+      toast.error("Please Provide the Reason For Holding a case");
+      return;
+    }
     try {
       // Update the case status in the database
       const updateData = {
@@ -911,6 +916,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         status: status,
         onhold_notes: onHoldReason,
       };
+
       const { error: updateError } = await supabase
         .from("cases")
         .update(status === "on_hold" ? updateDataWithNotes : updateData)
@@ -922,8 +928,48 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         return;
       }
 
-      // Fetch updated case data after updating
-      setOnHoldModal(false);
+      if (status === "on_hold") {
+        const workstationsToOnHold = stepsData.filter(
+          (item) =>
+            item.technician?.name !== "System" && item.status !== "completed"
+        );
+
+        try {
+          const updatePromises = workstationsToOnHold.map(async (item) => {
+            const { error: updateError } = await supabase
+              .from("workstation_log")
+              .update({ status: "on_hold" })
+              .eq("id", item.id);
+
+            if (updateError) {
+              console.error(
+                `Error updating workstation log for ID ${item.id}:`,
+                updateError
+              );
+            }
+          });
+
+          await Promise.all(updatePromises);
+
+          const { error: updateCaseError } = await supabase
+            .from("cases")
+            .update({ isDueDateTBD: true })
+            .eq("id", caseDetail.id);
+
+          if (updateCaseError) {
+            console.error(
+              `Error updating case  isDueDateTBD:`,
+              updateCaseError
+            );
+          }
+
+          setOnHoldModal(false);
+        } catch (err) {
+          console.error("Error updating workstations to on_hold:", err);
+          toast.error("Failed to update workstations to on hold");
+        }
+      }
+
       fetchCaseData();
       toast.success("Case Updated Successfully.");
     } catch (err) {
@@ -933,43 +979,34 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
 
   const handleCaseComplete = () => {
-    // Step 1: Check if all steps are completed
     const isWorkstationCompleted = stepsData.every((item) => {
-      // Check if the step has technician.name === "System" and isNew === true, ignore this step
       if (item?.technician?.name === "System" && item.isNew === true) {
         return true;
       }
-      // If the technician is "System" but is not new, treat it as completed
       if (item?.technician?.name === "System") {
-        return item.status === "completed"; // only consider status if not new
+        return item.status === "completed";
       }
-      // For all other steps, they must be completed
       return item.status === "completed";
     });
 
-    // Log the result to check if everything is as expected
     console.log("isWorkstationCompleted:", isWorkstationCompleted);
-
-    // Step 2: Return false if there is only one item with technician.name === "System"
 
     if (stepsData && stepsData.length === 1) {
       console.log("System step count is 1, returning false");
       return toast.error("Workstation steps have not been created yet.");
     }
 
-    // If workstation is completed, proceed to update the case status
     if (isWorkstationCompleted) {
       console.log("Workstation is completed. Proceeding with status update.");
 
       handleUpdateCaseStatus("completed");
     } else {
-      // If workstation is not completed, show error
       toast.error("Please Complete the Workstations First.");
     }
   };
 
   const handleBackClick = () => {
-    safeNavigate('/cases');
+    safeNavigate("/cases");
   };
 
   const handleEditClick = () => {
@@ -977,7 +1014,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
 
   return (
-    <div className={`flex flex-col ${drawerMode ? 'h-full' : 'min-h-screen'}`}>
+    <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
         <div className="w-full px-16 py-6">
           <div className="flex justify-between items-start">
@@ -1114,16 +1151,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={handleEditClick}
-                    >
+                    <DropdownMenuItem onClick={handleEditClick}>
                       Edit Case
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
-                        if (caseDetail.status === "in_queue") {
-                          toast.error("Working on Case is not started yet.");
-                        } else if (caseDetail.status === "completed") {
+                        if (caseDetail.status === "completed") {
                           toast.error("Case is Already Completed.");
                         } else {
                           setOnHoldModal(true);
@@ -1160,7 +1193,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Due Date</span>
                   <span className="text-xs font-medium">
-                    {formatDate(caseDetail.due_date)}
+                    {caseDetail.isDueDateTBD
+                      ? "TBD"
+                      : formatDate(caseDetail.due_date)}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -1176,7 +1211,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Appointment</span>
                   <span className="text-xs font-medium">
-                    {formatDateWithTime(caseDetail.appointment_date)}
+                    {caseDetail.isDueDateTBD
+                      ? "TBD"
+                      : formatDateWithTime(caseDetail.appointment_date)}
                   </span>
                 </div>
               </div>
@@ -1564,8 +1601,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 {discount > 0 ? (
                                   <span className="text-green-600">
-                                    {product?.discounted_price?.discount}
-                                    %
+                                    {product?.discounted_price?.discount}%
                                   </span>
                                 ) : (
                                   <span className="text-gray-400">-</span>
@@ -1578,8 +1614,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                $
-                                {product?.discounted_price?.final_price}
+                                ${product?.discounted_price?.final_price}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2037,7 +2072,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           onClose={() => setOnHoldModal(false)}
           onHoldReason={onHoldReason}
           setOnHoldReason={setOnHoldReason}
-          handleUpdateCaseStatus={handleUpdateCaseStatus}
+          handleUpdateCaseStatus={() => handleUpdateCaseStatus("on_hold")}
         />
       )}
       {isScheduleModal && (
