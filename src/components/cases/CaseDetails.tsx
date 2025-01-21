@@ -78,10 +78,7 @@ import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
 import OnHoldModal from "./wizard/modals/OnHoldModal";
 import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
-import {
-  duplicateProductsByTeeth,
-  duplicateProductsByTeethNumber,
-} from "@/lib/dulicateProductsByTeeth";
+
 
 interface CaseFile {
   id: string;
@@ -1476,9 +1473,27 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <FileText className="mr-2" size={20} /> Invoice
-                </CardTitle>
+                <div className="flex justify-center items-center w-full">
+                  <div className="flex flex-col w-full">
+                    <CardTitle className=" text-xl flex items-center">
+                      <FileText className="mr-2" size={20} /> Invoice
+                    </CardTitle>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-gray-500">INV #:</span>
+                      <div
+                        className="text-sm font-medium text-primary cursor-pointer"
+                        onClick={() => setIsPreviewModalOpen(true)}
+                      >
+                        {caseDetail?.invoice.length > 0
+                          ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                          : "N/A"}
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Button variant={"default"}>Edit</Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="py-2 px-3">
                 <div className="border rounded-lg bg-white">
