@@ -203,8 +203,6 @@ const UpdateCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.workingPanName)
-      validationErrors.workingPanName = "Working tag is Required";
     if (!formData.appointmentDate)
       validationErrors.appointmentDate = "Appointment date is Required";
 
@@ -551,8 +549,8 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.pans?.id || "",
-          workingTagName: caseDataApi.tags?.id || "",
+          workingPanName: caseDataApi.pans?.id || null,
+          workingTagName: caseDataApi.tags?.id || null,
           workingPanColor: caseDataApi.pans?.color || "",
 
           enclosedItems: {
@@ -630,7 +628,7 @@ const UpdateCase: React.FC = () => {
   }, [caseId, lab]);
 
   console.log(caseDetail, "Case details");
-  console.log(selectedProducts, "selected files");
+  console.log(errors, "errors");
   return (
     <div className="p-6">
       <div className="space-y-4">

@@ -33,7 +33,9 @@ interface SortConfig {
 export function PaymentsList() {
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
   const [paymentsList, setPaymentList] = useState<PaymentListItem[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<PaymentListItem[]>([]);
+  const [filteredPayments, setFilteredPayments] = useState<PaymentListItem[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
@@ -98,19 +100,19 @@ export function PaymentsList() {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    
+
     const filtered = paymentsList.filter((payment) => {
       const searchableFields = [
         payment.clients?.client_name,
         payment.payment_method,
         payment.amount.toString(),
       ];
-      
-      return searchableFields.some(field => 
+
+      return searchableFields.some((field) =>
         field?.toString().toLowerCase().includes(term)
       );
     });
-    
+
     setFilteredPayments(filtered);
   };
 
@@ -127,10 +129,12 @@ export function PaymentsList() {
   const getSortIcon = (key: keyof PaymentListItem) => {
     if (sortConfig.key === key) {
       return (
-        <ArrowUpDown className={cn(
-          "ml-2 h-4 w-4",
-          sortConfig.direction === "asc" ? "transform rotate-180" : ""
-        )} />
+        <ArrowUpDown
+          className={cn(
+            "ml-2 h-4 w-4",
+            sortConfig.direction === "asc" ? "transform rotate-180" : ""
+          )}
+        />
       );
     }
     return <ArrowUpDown className="ml-2 h-4 w-4 text-gray-400" />;
@@ -144,12 +148,12 @@ export function PaymentsList() {
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
       if (sortConfig.key === "amount") {
-        return sortConfig.direction === "asc" 
-          ? a.amount - b.amount 
+        return sortConfig.direction === "asc"
+          ? a.amount - b.amount
           : b.amount - a.amount;
       }
-      const aValue = a[sortConfig.key];
-      const bValue = b[sortConfig.key];
+      const aValue = a[sortConfig.key] ?? ""; // Fallback to an empty string
+      const bValue = b[sortConfig.key] ?? ""; // Fallback to an empty string
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
@@ -182,6 +186,84 @@ export function PaymentsList() {
   useEffect(() => {
     getPaymentList();
   }, []);
+
+  const handleNewPayment = async (paymentData: any) => {
+    console.log("New payment data:", paymentData);
+
+    try {
+      const {
+        updatedInvoices,
+        client,
+        date,
+        paymentMethod,
+        paymentAmount,
+        overpaymentAmount,
+        remainingBalance,
+      } = paymentData;
+
+      if (!updatedInvoices || !client) {
+        console.error("Missing updatedInvoices or client information.");
+        return;
+      }
+
+      // Step 1: Update invoices
+      for (const invoice of updatedInvoices) {
+        const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
+        const { id } = invoice.invoicesData[0];
+        const status = dueAmount === 0 ? "paid" : "partially_paid";
+
+        const invoiceUpdate = {
+          status,
+          due_amount: dueAmount,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error: updateError } = await supabase
+          .from("invoices")
+          .update(invoiceUpdate)
+          .eq("id", id)
+          .eq("lab_id", labData?.labId);
+
+        if (updateError) {
+          throw new Error(
+            `Failed to update invoice with ID ${id}: ${updateError.message}`
+          );
+        }
+      }
+
+      console.log("All invoices updated successfully.");
+
+      // Step 2: Insert payment data
+      const paymentDataToInsert = {
+        client_id: client,
+        payment_date: date,
+        amount: paymentAmount,
+        payment_method: paymentMethod,
+        status: "completed",
+        over_payment: overpaymentAmount || 0,
+        remaining_payment: remainingBalance || 0,
+        lab_id: labData?.labId,
+      };
+
+      const { data: insertedPayment, error: paymentError } = await supabase
+        .from("payments")
+        .insert(paymentDataToInsert)
+        .select("*");
+
+      if (paymentError) {
+        throw new Error(`Failed to insert payment: ${paymentError.message}`);
+      }
+
+      console.log("Payment inserted successfully.", insertedPayment);
+      await updateBalanceTracking();
+    } catch (err) {
+      console.error("Error handling new payment:", err);
+      toast.error("Failed to add payment or update balance tracking.");
+    } finally {
+      toast.success("New payment added successfully.");
+      setShowNewPaymentModal(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -278,63 +360,66 @@ export function PaymentsList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={`loading-${index}`}>
-                    <TableCell>
-                      <div className="h-4 w-4 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                getSortedData().map((payment) => (
-                  <TableRow key={payment.id} className="hover:bg-muted/50 transition-colors">
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedPayments.includes(payment.id)}
-                        onCheckedChange={(checked) => handleSelectPayment(payment.id, checked as boolean)}
-                        aria-label={`Select payment ${payment.id}`}
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(payment.payment_date)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {payment.clients?.client_name}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      ${payment.amount.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {payment.payment_method}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${payment.over_payment.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${payment.remaining_payment.toFixed(2)}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              {loading
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={`loading-${index}`}>
+                      <TableCell>
+                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : getSortedData().map((payment) => (
+                    <TableRow
+                      key={payment.id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPayments.includes(payment.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectPayment(payment.id, checked as boolean)
+                          }
+                          aria-label={`Select payment ${payment.id}`}
+                        />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(payment.payment_date)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {payment.clients?.client_name}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        ${payment.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {payment.payment_method}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${payment.over_payment.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${payment.remaining_payment.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </div>

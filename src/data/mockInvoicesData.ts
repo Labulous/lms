@@ -52,9 +52,11 @@ type Product = {
     final_price: number;
     price: number;
     quantity: number;
+    id?: string;
   };
-  teethProducts: {
+  teethProduct: {
     tooth_number: number[];
+    id?: string;
   };
 };
 
@@ -81,7 +83,7 @@ export interface Invoice {
   dueDate?: string;
   case?: Case;
   invoice_notes?: string;
-  items: InvoiceItem[];
+  items?: InvoiceItem[];
   subTotal?: number;
   discount?: {
     type: "percentage" | "fixed";
@@ -95,15 +97,7 @@ export interface Invoice {
   totalAmount?: number;
   amount?: number;
   balance?: number;
-  status?:
-    | "draft"
-    | "unpaid"
-    | "pending"
-    | "approved"
-    | "paid"
-    | "overdue"
-    | "partially_paid"
-    | "cancelled";
+  status: string;
   paymentTerms?: string;
   notes?: {
     instructionNotes?: string;
@@ -113,7 +107,7 @@ export interface Invoice {
   createdAt?: string;
   updatedAt?: string;
   // new types
-  received_date?: string;
+  received_date?: string | null;
   case_number?: string;
   products?: ProductArray;
   due_date?: string;

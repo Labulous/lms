@@ -61,9 +61,7 @@ export function EditInvoiceModal({
   console.log(invoice, "invoice?.products");
   useEffect(() => {
     if (invoice) {
-      const transformedItems = duplicateInvoiceProductsByTeeth(
-        invoice?.products as any
-      ).map((item) => ({
+      const transformedItems = invoice?.products?.map((item) => ({
         unitPrice: item?.discounted_price?.price ?? 0,
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,
@@ -73,7 +71,7 @@ export function EditInvoiceModal({
         description: item.name,
         id: item.id,
       }));
-      setItems(transformedItems);
+      setItems(transformedItems as any);
       setNotes({
         labNotes: invoice.lab_notes as string,
         invoiceNotes: invoice.invoice_notes as string,
@@ -122,7 +120,7 @@ export function EditInvoiceModal({
     try {
       setIsSubmitting(true);
 
-      const updatedInvoice: Invoice = {
+      const updatedInvoice: any = {
         items: items.map((item) => ({
           id: item.id,
           description: item.description,
@@ -233,7 +231,7 @@ export function EditInvoiceModal({
       >
         <DialogHeader>
           <DialogTitle>
-            {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #
+            Edit Invoice #
             {(() => {
               if (invoice?.case_number) {
                 const parts = invoice.case_number.split("-");

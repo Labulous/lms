@@ -168,7 +168,7 @@ const saveCaseProduct = async (
           : product.shades.stump_shade || null,
       custom_body_shade: product?.shades.custom_body || null,
       custom_occlusal_shade: product?.shades.custom_occlusal || null,
-      custom_gingival_shade: product?.shades.custon_gingival || null,
+      custom_gingival_shade: product?.shades.custom_gingival || null,
       custom_stump_shade: product?.shades.custom_stump || null,
       notes: product.notes || "",
       case_id: savedCaseId,
@@ -279,20 +279,6 @@ const saveCases = async (
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
-      const updateDueDate = () => {
-        const currentDate = new Date(); // Get the current date
-        const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth(); // 0-indexed (0 = January, 11 = December)
-
-        // Create a new date object for the 28th of the current month and year
-        const dueDate = new Date(currentYear, currentMonth, 28);
-
-        // Format the date as "YYYY-MM-DD HH:mm:ss+00"
-        const formattedDate =
-          dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
-
-        return formattedDate;
-      };
 
       // Step 3: Save case products
       try {
@@ -326,7 +312,7 @@ const saveCases = async (
         amount: totalAmount,
         due_amount: totalAmount,
         status: "unpaid",
-        due_date: updateDueDate(),
+        due_date: null,
       };
 
       const { data: invoiceData, error: invoiceError } = await supabase
@@ -540,12 +526,14 @@ const updateCases = async (
         .from("case_product_teeth")
         .select("*")
         .eq("product_id", row.product_id)
+        .eq("case_id", caseId)
         .eq("case_product_id", row.case_product_id); // Check for the combination of case_product_id and product_id
 
       if (fetchError) {
         console.error("Error fetching case_product_teeth rows:", fetchError);
         return; // Exit if there is an error
       }
+      console.log(existingTeethRows, "existingTeethRows");
 
       if (existingTeethRows.length === 0) {
         // No existing row found for this product_id, so insert a new row
@@ -559,11 +547,17 @@ const updateCases = async (
             insertError,
             console.log(row, "row")
           );
+
           return; // Exit if there is an error
         } else {
           console.log(
             `New case_product_teeth row created for product_id: ${row.product_id}`
           );
+
+          toast.success("Case updated successfully");
+          if (navigate && caseId) {
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+          }
         }
       } else {
         // Existing row found, update the row if needed
@@ -578,33 +572,39 @@ const updateCases = async (
             "Error updating existing case_product_teeth row:",
             updateError
           );
+
           return; // Exit if there is an error
         } else {
           console.log(
             `Existing case_product_teeth row updated for product_id: ${row.product_id}`
           );
+
+          toast.success("Case updated successfully");
+          if (navigate && caseId) {
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+          }
         }
       }
     }
     // Upsert case_product_teeth rows
-    const { error: caseProductTeethError } = await supabase
-      .from("case_product_teeth")
-      .upsert(caseProductTeethRows)
-      .select("");
+    // const { error: caseProductTeethError } = await supabase
+    //   .from("case_product_teeth")
+    //   .upsert(caseProductTeethRows)
+    //   .select("");
 
-    if (caseProductTeethError) {
-      console.error(
-        "Error updating case_product_teeth rows:",
-        caseProductTeethError
-      );
-      return; // Exit if there is an error
-    } else {
-      console.log("Case product teeth rows updated successfully!");
-      toast.success("Case updated successfully");
-      if (navigate && caseId) {
-        navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-      }
-    }
+    // if (caseProductTeethError) {
+    //   console.error(
+    //     "Error updating case_product_teeth rows:",
+    //     caseProductTeethError
+    //   );
+    //   return; // Exit if there is an error
+    // } else {
+    //   console.log("Case product teeth rows updated successfully!");
+    //   toast.success("Case updated successfully");
+    //   if (navigate && caseId) {
+    //     navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+    //   }
+    // }
 
     // Step 5: Update invoice for the case
     // const updateDueDate = () => {

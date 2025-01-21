@@ -34,6 +34,7 @@ export interface CalendarEvents {
   title: string;
   start: Date;
   end: Date;
+  onHold?: boolean;
   resource: any;
   formattedCases: {
     case_id: string;
@@ -126,7 +127,7 @@ const Dashboard: React.FC = () => {
                 `
           )
           .eq("lab_id", lab.labId)
-          .in("status", ["in_queue", "in_progress"]) // Filter for both statuses
+          .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
           .order("created_at", { ascending: true });
 
         if (casesError) {
@@ -169,8 +170,6 @@ const Dashboard: React.FC = () => {
           })
         );
 
-        console.log(enhancedCases, "enhancedCases");
-
         setCasesList(enhancedCases as any); // Set the enhanced cases list
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
@@ -190,10 +189,18 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         const today = new Date();
+        const todayDate = new Date().toISOString().split("T")[0];
+
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const tomorrowDate = new Date(
+          new Date().setUTCDate(new Date().getUTCDate() + 1)
+        )
+          .toISOString()
+          .split("T")[0];
 
         // Fetch all cases for calendar
         const { data: casesData, error: casesError } = await supabase
@@ -223,7 +230,9 @@ const Dashboard: React.FC = () => {
         );
         const groupedCases = casesList.reduce(
           (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
-            if (["in_queue", "in_progress"].includes(caseItem.status)) {
+            if (
+              ["in_queue", "in_progress", "on_hold"].includes(caseItem.status)
+            ) {
               const dueDate = new Date(caseItem.due_date)
                 .toISOString()
                 .split("T")[0];
@@ -234,19 +243,45 @@ const Dashboard: React.FC = () => {
           },
           {}
         );
+        const pastDue = casesList.filter(
+          (caseItem: CasesDues) => new Date(caseItem.due_date) < today
+        ).length;
 
-        const events: CalendarEvents[] = Object.entries(groupedCases).map(
-          ([date, cases]) => {
+        const dueToday = casesList.filter(
+          (caseItem: CasesDues) =>
+            new Date(caseItem.due_date).toISOString().split("T")[0] ===
+            todayDate
+        ).length;
+
+        const dueTomorrow = casesList.filter(
+          (caseItem: CasesDues) =>
+            new Date(caseItem.due_date).toISOString().split("T")[0] ===
+            tomorrowDate
+        ).length;
+        const onHold = casesList.filter(
+          (caseItem: CasesDues) => caseItem.status === "on_hold"
+        ).length;
+        const events: CalendarEvents[] = Object.entries(groupedCases)
+          .map(([date, cases]) => {
             const eventDate = new Date(date);
             const year = eventDate.getUTCFullYear();
             const month = eventDate.getUTCMonth();
             const day = eventDate.getUTCDate();
-            const start = new Date(Date.UTC(year, month, day, 9, 0));
-            const end = new Date(Date.UTC(year, month, day, 17, 0));
+            const start = new Date(Date.UTC(year, month, day, 9, 0)); // Start at 9 AM
+            const end = new Date(Date.UTC(year, month, day, 17, 0)); // End at 5 PM
             const today = new Date();
             const isPastDue = eventDate < today;
 
-            const formattedCases = cases.map((caseItem) => ({
+            // Separate cases into "on_hold" and active cases
+            const onHoldCases = cases.filter(
+              (caseItem) => caseItem.status === "on_hold"
+            );
+            const activeCases = cases.filter(
+              (caseItem) => caseItem.status !== "on_hold"
+            );
+
+            // Format active cases
+            const formattedActiveCases = activeCases.map((caseItem) => ({
               case_id: caseItem.id,
               case_number: caseItem.case_number,
               client_name: caseItem.client_name.client_name,
@@ -258,53 +293,46 @@ const Dashboard: React.FC = () => {
               })),
               invoicesData: caseItem.invoicesData,
             }));
-            // Map the grouped cases to calendar events
 
-            return {
-              title: `${cases.length}`, // Example: "3 cases"
+            // Format "on_hold" cases
+            const formattedOnHoldCases = onHoldCases.map((caseItem) => ({
+              case_id: caseItem.id,
+              case_number: caseItem.case_number,
+              client_name: caseItem.client_name.client_name,
+              doctor: caseItem.doctor,
+              status: caseItem.status,
+              case_products: caseItem.products.map((product) => ({
+                name: product.name,
+                product_type: product.product_type,
+              })),
+              invoicesData: caseItem.invoicesData,
+            }));
+
+            // Create the event for active cases
+            const activeEvent = {
+              title: `${activeCases.length}`, // Example: "3 active cases"
               start,
               end,
-              resource: { count: cases.length, isPastDue: isPastDue },
-              formattedCases,
+              resource: { count: activeCases.length, isPastDue: isPastDue },
+              formattedCases: formattedActiveCases,
             };
-          }
-        );
+
+            // Create the event for "on_hold" cases
+            const onHoldEvent = {
+              title: `${onHoldCases.length > 0 ? onHoldCases.length : ""}`, // Example: "2 on hold"
+              start,
+              end,
+              onHold: true,
+              resource: { count: onHoldCases.length, isPastDue: isPastDue },
+              formattedCases: formattedOnHoldCases,
+            };
+
+            // Return both events (active and on hold)
+            return [activeEvent, onHoldEvent];
+          })
+          .flat(); // Flatten the array because we have two events per date (active and on hold)
+
         setCalendarEvents(events || []);
-
-        // Fetch past due cases
-        const { count: pastDue } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .lt("due_date", today.toISOString())
-          .neq("status", "completed");
-
-        // Fetch cases due today
-        const { count: dueToday } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .gte("due_date", today.toISOString())
-          .lt("due_date", tomorrow.toISOString())
-          .neq("status", "completed");
-
-        // Fetch cases due tomorrow
-        const nextDay = new Date(tomorrow);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const { count: dueTomorrow } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .gte("due_date", tomorrow.toISOString())
-          .lt("due_date", nextDay.toISOString())
-          .neq("status", "completed");
-
-        // Fetch on hold cases
-        const { count: onHold } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .eq("status", "on_hold");
 
         // Fetch workstation issues
         const { data: workstationData } = await supabase

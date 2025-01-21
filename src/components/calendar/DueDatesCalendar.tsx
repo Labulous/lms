@@ -93,7 +93,12 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
         <span className="date-number">{format(date, "d")}</span>
         {events.length > 0 && (
           <div className="badge-container">
-            <span className="count-badge">{events.length}</span>
+            <span
+              className="count-badge "
+              style={{ backgroundColor: "green !important" }}
+            >
+              {events.length}
+            </span>
           </div>
         )}
       </div>
@@ -180,8 +185,25 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     event: ({ event }: { event: CalendarEvents }) => (
       <HoverCard>
         <HoverCardTrigger asChild>
-          <div onMouseEnter={() => handleEventHover(event)} title="">
-            {event.title}
+          <div
+            onMouseEnter={() => handleEventHover(event)}
+            title=""
+            className="w--full grid"
+          >
+            {event.onHold && event.title && (
+              <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                {event.title}
+              </div>
+            )}
+            {!event.onHold && (
+              <div
+                className={` ${
+                  event.resource.isPastDue ? "bg-red-500" : "bg-blue-500"
+                }  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+              >
+                {event.title}
+              </div>
+            )}
           </div>
         </HoverCardTrigger>
         <HoverCardContent
@@ -396,7 +418,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
-  console.log(events, "nextSibling");
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div

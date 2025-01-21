@@ -86,30 +86,6 @@ const NewCase: React.FC = () => {
       caseDetails: details,
     }));
   };
-
-  function duplicateProductsByTeeth(products: SavedProduct[]): SavedProduct[] {
-    const duplicatedProducts: SavedProduct[] = [];
-
-    // Filter products with id and type
-    const validProducts = products.filter((item) => item.id && item.type);
-
-    validProducts.forEach((product) => {
-      if (product.teeth && product.teeth.length > 0) {
-        product.teeth.forEach((tooth) => {
-          duplicatedProducts.push({
-            ...product,
-            teeth: [tooth], // Create a new product with a single tooth
-          });
-        });
-      } else {
-        // If no teeth, push the original product
-        duplicatedProducts.push(product);
-      }
-    });
-
-    return duplicatedProducts;
-  }
-
   const handleFormChange = (field: keyof FormData, value: any) => {
     setFormData((prevData) => {
       if (prevData[field] === value) {
@@ -193,7 +169,7 @@ const NewCase: React.FC = () => {
 
     getCasesLength();
   }, [user?.id]);
-  console.log(setSelectedProducts, "selected");
+  console.log(errors,"Errors")
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -292,7 +268,7 @@ const NewCase: React.FC = () => {
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
           },
-          products: duplicateProductsByTeeth(selectedProducts),
+          products: selectedProducts,
 
           enclosedItems: transformedData.enclosedItems,
         };

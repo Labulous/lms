@@ -133,6 +133,7 @@
   padding: 0;
   position: relative;
   border-right: 1px solid #e5e7eb;
+  width: 100%;
 }
 
 .rbc-row-segment:last-child {
@@ -217,7 +218,7 @@
   width: 24px;
   height: 24px;
   flex: 0 0 24px;
-  padding: 2px 10px;
+  padding: 2px 2px;
   margin: 0;
   font-size: 12px;
   font-weight: 500;
@@ -270,7 +271,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  padding: 2px 10px;
+  padding: 2px 8px;
   min-height: 28px;
   border-right: 1px solid #e5e7eb;
 }
@@ -389,16 +390,22 @@
   position: relative; /* Make sure the day cell is positioned relative */
 }
 .calendar-container .rbc-event {
-  cursor: pointer !important; /* Make sure the day cell is positioned relative */
+  cursor: pointer !important;
+
+
+  background-color: transparent !important;
 }
 .calendar-container .due-by-tommorow-cell {
-  background-color: #41de80 !important ;/* Circle color */
+  background-color: #41de80 !important ; /* Circle color */
   color: white;
   font: bold;
+  position: relative;
+  height: 60px !important;
 }
 .calendar-container .rbc-now {
   background-color: #3b82fa !important; /* Circle color */
   color: white;
+  height: 60px !important;
 }
 
 /* Toolbar */

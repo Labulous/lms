@@ -27,7 +27,7 @@ export interface WorkstationForm {
   created_by: string;
   technician_id: string;
   custom_workstation_type: string;
-  status: "in_progress" | "completed" | "issue_reported";
+  status: "in_progress" | "completed" | "issue_reported" | "on_hold";
   started_notes: string;
   started_at: string;
   completed_at: string;
@@ -225,6 +225,7 @@ export interface PaymentListItem {
   over_payment: number;
   remaining_payment: number;
   clients: { client_name: string };
+  client_name?: string;
 }
 
 export interface BalanceTrackingItem {
