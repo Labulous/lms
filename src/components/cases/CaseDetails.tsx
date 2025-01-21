@@ -768,6 +768,30 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     window.open(previewUrl, "_blank");
   };
 
+  const handleDownloadFile = async (fileUrl: string) => {
+    try {
+      // If it's already a full URL, fetch it directly
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // Extract filename from path
+      const filename = fileUrl.split('/').pop()?.split('?')[0] || 'download';
+      // Decode the filename to handle special characters
+      a.download = decodeURIComponent(filename);
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      toast.error('Error downloading file');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -2242,17 +2266,46 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       <p className="text-sm text-gray-500">Files and photos</p>
 
                       <div className="flex flex-col gap-2">
-                        {caseDetail?.attachements?.map((item) => {
+                        {caseDetail?.attachements?.map((file, index) => {
+                          const fileName = decodeURIComponent(file.split('/').pop()?.split('?')[0] || '');
+                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                          
                           return (
-                            <img
-                              src={item}
-                              height={200}
-                              width={200}
-                              alt="attachement"
-                              className="p-2 border rounded-md"
-                            />
+                            <div
+                              key={index}
+                              className="border rounded-lg p-4 space-y-2"
+                            >
+                              {isImage ? (
+                                <div className="relative aspect-video w-full overflow-hidden rounded-md">
+                                  <img
+                                    src={file}
+                                    alt={fileName}
+                                    className="object-contain w-full h-full"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <FileText className="h-8 w-8" />
+                                  <span className="text-sm">{fileName}</span>
+                                </div>
+                              )}
+                              
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadFile(file)}
+                                  className="gap-2"
+                                >
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
                           );
                         })}
+                        {(!caseDetail?.attachements || caseDetail.attachements.length === 0) && (
+                          <p className="text-sm text-gray-500">No attachments found</p>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
