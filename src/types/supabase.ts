@@ -179,15 +179,19 @@ export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
  * Shade data structure for dental products
  */
 export interface ShadeData {
-  occlusal_shade?: string; // UUID reference to shade_options
-  body_shade?: string; // UUID reference to shade_options
-  gingival_shade?: string; // UUID reference to shade_options
-  stump_shade?: string; // UUID reference to shade_options
+  occlusal_shade?: string;
+  body_shade?: string;
+  gingival_shade?: string;
+  stump_shade?: string;
   id?: string;
   custom_occlusal?: string;
   custom_gingival?: string;
   custom_stump?: string;
   custom_body?: string;
+  manual_occlusal?: string;
+  manual_gingival?: string;
+  manual_stump?: string;
+  manual_body?: string;
 }
 
 export interface OfficeAddress {
