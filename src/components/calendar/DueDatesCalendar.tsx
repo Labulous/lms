@@ -418,7 +418,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
-  console.log(events, "nextSibling");
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div

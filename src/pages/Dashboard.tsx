@@ -170,8 +170,6 @@ const Dashboard: React.FC = () => {
           })
         );
 
-        console.log(enhancedCases, "enhancedCases");
-
         setCasesList(enhancedCases as any); // Set the enhanced cases list
       } catch (error) {
         console.error("Error fetching completed invoices:", error);
@@ -191,10 +189,18 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         const today = new Date();
+        const todayDate = new Date().toISOString().split("T")[0];
+
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const tomorrowDate = new Date(
+          new Date().setUTCDate(new Date().getUTCDate() + 1)
+        )
+          .toISOString()
+          .split("T")[0];
 
         // Fetch all cases for calendar
         const { data: casesData, error: casesError } = await supabase
@@ -237,7 +243,24 @@ const Dashboard: React.FC = () => {
           },
           {}
         );
+        const pastDue = casesList.filter(
+          (caseItem: CasesDues) => new Date(caseItem.due_date) < today
+        ).length;
 
+        const dueToday = casesList.filter(
+          (caseItem: CasesDues) =>
+            new Date(caseItem.due_date).toISOString().split("T")[0] ===
+            todayDate
+        ).length;
+
+        const dueTomorrow = casesList.filter(
+          (caseItem: CasesDues) =>
+            new Date(caseItem.due_date).toISOString().split("T")[0] ===
+            tomorrowDate
+        ).length;
+        const onHold = casesList.filter(
+          (caseItem: CasesDues) => caseItem.status === "on_hold"
+        ).length;
         const events: CalendarEvents[] = Object.entries(groupedCases)
           .map(([date, cases]) => {
             const eventDate = new Date(date);
@@ -310,41 +333,6 @@ const Dashboard: React.FC = () => {
           .flat(); // Flatten the array because we have two events per date (active and on hold)
 
         setCalendarEvents(events || []);
-
-        // Fetch past due cases
-        const { count: pastDue } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .lt("due_date", today.toISOString())
-          .neq("status", "completed");
-
-        // Fetch cases due today
-        const { count: dueToday } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .gte("due_date", today.toISOString())
-          .lt("due_date", tomorrow.toISOString())
-          .neq("status", "completed");
-
-        // Fetch cases due tomorrow
-        const nextDay = new Date(tomorrow);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const { count: dueTomorrow } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .gte("due_date", tomorrow.toISOString())
-          .lt("due_date", nextDay.toISOString())
-          .neq("status", "completed");
-
-        // Fetch on hold cases
-        const { count: onHold } = await supabase
-          .from("cases")
-          .select("*", { count: "exact" })
-          .eq("lab_id", labData.labId)
-          .eq("status", "on_hold");
 
         // Fetch workstation issues
         const { data: workstationData } = await supabase
