@@ -298,9 +298,11 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const tag = row.getValue("pans") as { name: string; color: string };
-        const color = tag?.color || "#f3f4f6"; // Light gray default color
-        const name = tag?.name || ""; // Empty string if no name
-        const initials = name ? name.slice(0, 2).toUpperCase() : ""; // Get first two letters
+        if (!tag?.name) return null;
+        
+        const color = tag.color || "#f3f4f6";
+        const name = tag.name;
+        const initials = name.slice(0, 2).toUpperCase();
 
         return (
           <div className="font-medium">
@@ -319,7 +321,7 @@ const CaseList: React.FC = () => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{name || "No pan defined"}</p>
+                  <p>{name}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -428,9 +430,11 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const tag = row.getValue("tags") as { name: string; color: string };
-        const color = tag?.color || "#f3f4f6"; // Light gray default color
-        const name = tag?.name || ""; // Empty string if no name
-        const initials = name ? name.slice(0, 2).toUpperCase() : ""; // Get first two letters
+        if (!tag?.name) return null;
+        
+        const color = tag.color || "#f3f4f6";
+        const name = tag.name;
+        const initials = name.slice(0, 2).toUpperCase();
 
         return (
           <div className="font-medium">
@@ -449,7 +453,7 @@ const CaseList: React.FC = () => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{name || "No tag defined"}</p>
+                  <p>{name}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

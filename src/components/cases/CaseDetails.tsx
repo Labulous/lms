@@ -232,6 +232,12 @@ export interface ExtendedCase {
   labDetail?: labDetail;
 }
 
+interface CaseDetailsProps {
+  drawerMode?: boolean;
+  caseId?: string;
+  onNavigate?: (path: string) => void;
+}
+
 const TYPE_COLORS = {
   Crown: "rgb(59 130 246)", // blue-500
   Bridge: "rgb(168 85 247)", // purple-500
@@ -265,13 +271,28 @@ const formatTeethRange = (teeth: number[]): string => {
   return ranges.join(", ");
 };
 
-const CaseDetails: React.FC = () => {
-  const { caseId } = useParams<{ caseId: string }>();
+const CaseDetails: React.FC<CaseDetailsProps> = ({
+  drawerMode,
+  caseId: propCaseId,
+  onNavigate,
+}) => {
+  const params = useParams<{ caseId: string }>();
+  const routeCaseId = params.caseId;
+  const activeCaseId = propCaseId || routeCaseId;
+
+  const navigate = useNavigate();
+  const safeNavigate = (path: string) => {
+    if (drawerMode && onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(path);
+    }
+  };
+
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
-  const navigate = useNavigate();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
@@ -300,9 +321,9 @@ const CaseDetails: React.FC = () => {
     completed_at: "",
     issue_reported_at: "",
     workstation_type_id: "",
-    case_id: caseId as string,
+    case_id: activeCaseId as string,
   });
-  console.log(workstationLoading, "loading");
+
   const getWorkStationDetails = async (case_ceated_at: string) => {
     try {
       const lab = await getLabDataByUserId(user?.id as string);
@@ -336,7 +357,7 @@ const CaseDetails: React.FC = () => {
          )
         `
         )
-        .eq("case_id", caseId);
+        .eq("case_id", activeCaseId);
       const { data: worksationTypes, error: worksationTypesErrors } =
         await supabase
           .from("workstation_types")
@@ -434,6 +455,7 @@ const CaseDetails: React.FC = () => {
         console.error("Lab ID not found.");
         return;
       }
+
       setLab(lab);
 
       const { data: caseData, error } = await supabase
@@ -518,7 +540,7 @@ const CaseDetails: React.FC = () => {
             )
           `
         )
-        .eq("id", caseId)
+        .eq("id", activeCaseId)
         .single();
 
       if (error) {
@@ -595,7 +617,7 @@ const CaseDetails: React.FC = () => {
               `
               )
               .in("product_id", productsIdArray)
-              .eq("case_id", caseId);
+              .eq("case_id", activeCaseId);
 
           if (discountedPriceError) {
             console.error(
@@ -698,17 +720,18 @@ const CaseDetails: React.FC = () => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
-    if (!caseId) {
+    if (!activeCaseId) {
       setError("No case ID provided");
       setLoading(false);
       return;
     }
 
-    if (caseId) {
+    if (activeCaseId) {
       fetchCaseData();
     }
-  }, [caseId]);
+  }, [activeCaseId]);
 
   const handleCompleteStage = async (stageName: string) => {
     console.log(`Completing stage: ${stageName}`);
@@ -847,7 +870,7 @@ const CaseDetails: React.FC = () => {
         const { error: updateError } = await supabase
           .from("cases")
           .update({ status: "in_progress" })
-          .eq("id", caseId);
+          .eq("id", activeCaseId);
 
         if (updateError) {
           toast.error(
@@ -865,7 +888,7 @@ const CaseDetails: React.FC = () => {
           completed_at: "",
           issue_reported_at: "",
           workstation_type_id: "",
-          case_id: caseId as string,
+          case_id: activeCaseId as string,
         });
         setStepData((prev) => prev.filter((item) => !item.isNew));
         getWorkStationDetails(caseDetail.created_at);
@@ -877,7 +900,6 @@ const CaseDetails: React.FC = () => {
       setWorkstationLoading(false);
     }
   };
-  console.log(caseDetail, "caseDetail");
 
   const handleUpdateCaseStatus = async (status: string) => {
     try {
@@ -892,7 +914,7 @@ const CaseDetails: React.FC = () => {
       const { error: updateError } = await supabase
         .from("cases")
         .update(status === "on_hold" ? updateDataWithNotes : updateData)
-        .eq("id", caseId);
+        .eq("id", activeCaseId);
 
       if (updateError) {
         console.error("Error updating case status:", updateError);
@@ -909,6 +931,7 @@ const CaseDetails: React.FC = () => {
       toast.error("Failed to Update the case Status");
     }
   };
+
   const handleCaseComplete = () => {
     // Step 1: Check if all steps are completed
     const isWorkstationCompleted = stepsData.every((item) => {
@@ -945,8 +968,16 @@ const CaseDetails: React.FC = () => {
     }
   };
 
+  const handleBackClick = () => {
+    safeNavigate('/cases');
+  };
+
+  const handleEditClick = () => {
+    safeNavigate(`/cases/update?caseId=${activeCaseId}`);
+  };
+
   return (
-    <div className="w-full">
+    <div className={`flex flex-col ${drawerMode ? 'h-full' : 'min-h-screen'}`}>
       <div className="w-full bg-white border-b border-gray-200">
         <div className="w-full px-16 py-6">
           <div className="flex justify-between items-start">
@@ -1084,9 +1115,7 @@ const CaseDetails: React.FC = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() =>
-                        navigate(`/cases/update?caseId=${caseDetail.id}`)
-                      }
+                      onClick={handleEditClick}
                     >
                       Edit Case
                     </DropdownMenuItem>
@@ -1179,7 +1208,7 @@ const CaseDetails: React.FC = () => {
                     isLoading={workstationLoading}
                     setLoading={setWorkstationLoading}
                     getWorkStationDetails={getWorkStationDetails}
-                    caseId={caseId as string}
+                    caseId={activeCaseId as string}
                     caseCreatedAt={caseDetail.created_at}
                     selectedFiles={selectedFiles}
                     setSelectedFiles={setSelectedFiles}

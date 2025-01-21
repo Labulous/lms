@@ -163,7 +163,7 @@ const WorkingPansSettings = () => {
               }}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add New Pan
+              Add New
             </Button>
           </DialogTrigger>
           <DialogContent>

@@ -558,7 +558,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Add New Pan
+                        Add New
                       </button>
                     }
                   />
@@ -569,7 +569,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onValueChange={(value) => onChange("workingPanName", value)}
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select working pan" />
+                      <SelectValue placeholder="Select Pan" className="text-gray-500" />
                     </SelectTrigger>
                     <SelectContent>
                       {pans && pans.length > 0 ? (
@@ -616,7 +616,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Add New Tag
+                        Add New
                       </button>
                     }
                   />
@@ -627,7 +627,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onValueChange={(value) => onChange("workingTagName", value)}
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select working Tag" />
+                      <SelectValue placeholder="Select Tag" className="text-gray-500" />
                     </SelectTrigger>
                     <SelectContent>
                       {tags && tags.length > 0 ? (

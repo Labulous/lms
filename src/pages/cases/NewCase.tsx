@@ -215,8 +215,6 @@ const NewCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.workingPanName)
-      validationErrors.workingPanName = "Working tag is Required";
     if (
       (selectedProducts.length === 1 && selectedProducts[0].id === "") ||
       selectedProducts[0].type === ""
@@ -291,8 +289,6 @@ const NewCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
-            working_tag_id: formData.workingTagName,
-            working_pan_id: formData.workingPanName,
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
           },

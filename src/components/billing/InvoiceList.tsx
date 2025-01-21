@@ -78,6 +78,15 @@ import jsPDF from "jspdf";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { NewPaymentModal } from "./NewPaymentModal";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
+import CaseDetailsDrawer from "@/components/cases/CaseDetailsDrawer";
+
 // import { generatePDF } from "@/lib/generatePdf";
 
 type SortConfig = {
@@ -153,6 +162,8 @@ const InvoiceList: React.FC = () => {
   const [reFreshData, setRefreshData] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState<any>(null);
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [isCaseDrawerOpen, setIsCaseDrawerOpen] = useState(false);
 
   const { user } = useAuth();
 
@@ -588,6 +599,19 @@ const InvoiceList: React.FC = () => {
       setRefreshData(true);
     }
   };
+
+  const handleCaseClick = (invoice: any) => {
+    console.log('Invoice clicked:', invoice);
+    // The invoice IS the case since we're querying the cases table
+    const caseId = invoice?.id;
+    if (caseId) {
+      setSelectedCase(caseId);
+      setIsCaseDrawerOpen(true);
+    } else {
+      console.error('No case ID found in invoice:', invoice);
+    }
+  };
+
   // Cleanup function for modal state
   useEffect(() => {
     return () => {
@@ -641,9 +665,25 @@ const InvoiceList: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
+    
+    // Filter invoices based on search term
+    const filtered = invoicesData.filter((invoice: any) => {
+      const searchableFields = [
+        invoice.case_number,
+        invoice?.doctor?.client?.client_name,
+        invoice?.patient_name,
+        invoice?.invoice?.[0]?.status,
+      ];
+      
+      return searchableFields.some(field => 
+        field?.toString().toLowerCase().includes(term)
+      );
+    });
+    
+    setFilteredInvoices(filtered);
+    setCurrentPage(1); // Reset to first page when searching
   };
-  console.log(invoices, "invoices");
-  /* eslint-disable no-unused-vars */
+
   const getStatusBadgeVariant = (
     status: Invoice["status"],
     /* eslint-disable no-unused-vars */
@@ -894,6 +934,7 @@ const InvoiceList: React.FC = () => {
       }, 2000);
     }
   };
+
   const filterByDates = (invoices: Invoice[]) => {
     return invoices.filter((invoice) => {
       const matchesDate =
@@ -949,11 +990,31 @@ const InvoiceList: React.FC = () => {
 
     return filtered;
   };
+
   const getSortedAndPaginatedData = () => {
-    const sortedData = sortData(invoicesData);
+    const data = searchTerm ? filteredInvoices : invoicesData;
+    
+    // Apply status filter if any
+    const statusFiltered = statusFilter.length > 0
+      ? data.filter((invoice: any) => 
+          statusFilter.includes(invoice?.invoice?.[0]?.status)
+        )
+      : data;
+
+    // Apply sorting
+    const sorted = [...statusFiltered].sort((a: any, b: any) => {
+      if (sortConfig.key === "date") {
+        const dateA = new Date(a.received_date || 0).getTime();
+        const dateB = new Date(b.received_date || 0).getTime();
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+      return 0;
+    });
+
+    // Get paginated data
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, sortedData.length);
-    return sortedData.slice(startIndex, endIndex);
+    const endIndex = startIndex + itemsPerPage;
+    return sorted.slice(startIndex, endIndex);
   };
 
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -984,14 +1045,15 @@ const InvoiceList: React.FC = () => {
       </TableCell>
     </TableRow>
   );
-  /* eslint-disable no-unused-vars */
+
   const handleDownload = (_id: string) => {
     console.log("download clciked");
   };
-  /* eslint-disable no-unused-vars */
+
   const handleDelete = (_id: string) => {
     console.log("download clciked");
   };
+
   const handleApprove = (id: string) => {
     updateInvoice(id, { status: "approved" });
   };
@@ -1014,7 +1076,6 @@ const InvoiceList: React.FC = () => {
       const invoice = invoices.find((inv) => inv.id === id);
       return ["draft", "overdue"].includes(invoice?.status || "");
     });
-  console.log(invoicesData, "invoicesData");
 
   const invoiceData = {
     invoiceNumber: "4507",
@@ -1048,7 +1109,6 @@ const InvoiceList: React.FC = () => {
   const handlePrintInvoice = () => {
     // generatePDF("elementId", "MyDocument.pdf");
   };
-  console.log(selectedInvoices, "selectedInvoices");
 
   const handleNewPayment = async (paymentData: any) => {
     console.log("New payment data:", paymentData);
@@ -1135,12 +1195,34 @@ const InvoiceList: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="relative">
+      {isCaseDrawerOpen && selectedCase && (
+        <Drawer 
+          open={isCaseDrawerOpen} 
+          onOpenChange={setIsCaseDrawerOpen}
+          direction="right"
+        >
+          <DrawerContent direction="right" className="w-[90%] max-w-5xl">
+            <DrawerHeader className="border-b border-gray-200">
+              <DrawerTitle>Case Details</DrawerTitle>
+              <DrawerClose onClick={() => setIsCaseDrawerOpen(false)} />
+            </DrawerHeader>
+            <div className="flex-1 overflow-y-auto">
+              <CaseDetailsDrawer 
+                caseId={selectedCase} 
+                onClose={() => setIsCaseDrawerOpen(false)} 
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+
       <InvoicePreviewModal
         isOpen={isPreviewModalOpen}
         onClose={() => setIsPreviewModalOpen(false)}
         caseDetails={selectedInvoiceForPreview ? [selectedInvoiceForPreview] : []}
       />
+
       <div className="space-y-4" id="elementId">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
@@ -1251,8 +1333,9 @@ const InvoiceList: React.FC = () => {
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search invoices..."
+              value={searchTerm}
               className="pl-8"
-              onChange={(e) => handleSearch(e)}
+              onChange={handleSearch}
             />
           </div>
         </div>
@@ -1297,7 +1380,8 @@ const InvoiceList: React.FC = () => {
                     className="cursor-pointer whitespace-nowrap"
                   >
                     <div className="flex items-center">
-                      Invoice #{getSortIcon("invoiceNumber")}
+                      Invoice #
+                      {getSortIcon("invoiceNumber")}
                     </div>
                   </TableHead>
                   <TableHead
@@ -1419,11 +1503,10 @@ const InvoiceList: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead
-                    onClick={() => handleSort("id")}
-                    className="cursor-pointer whitespace-nowrap"
+                    className="whitespace-nowrap"
                   >
                     <div className="flex items-center">
-                      Case #{getSortIcon("id")}
+                      Case #
                     </div>
                   </TableHead>
                   <TableHead
@@ -1524,10 +1607,16 @@ const InvoiceList: React.FC = () => {
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <button
-                            className="text-primary hover:underline"
-                            onClick={() => handleInvoiceClick(invoice)}
+                            type="button"
+                            className="text-blue-600 hover:underline"
+                            onClick={() => {
+                              setSelectedInvoices([invoice?.id as string]);
+                              setIsPreviewModalOpen(true);
+                            }}
                           >
-                            {invoice?.case_number}
+                            {invoice.case_number 
+                              ? `INV-${invoice.case_number.split('-').slice(1).join('-')}` 
+                              : 'No Invoice #'}
                           </button>
                         </TableCell>
                         <TableCell>
@@ -1557,7 +1646,8 @@ const InvoiceList: React.FC = () => {
                                     | "Removable"
                                     | "Implant"
                                     | "Coping"
-                                    | "Appliance")
+                                    | "Appliance"
+                                )
                                 : "Bridge"
                             }
                           >
@@ -1573,7 +1663,15 @@ const InvoiceList: React.FC = () => {
                           {invoice?.client?.client_name || "Unknown Client"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {invoice.case_number}
+                          <button
+                            className="text-blue-600 hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCaseClick(invoice);
+                            }}
+                          >
+                            {invoice.case_number}
+                          </button>
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
                           $
@@ -1880,7 +1978,7 @@ const InvoiceList: React.FC = () => {
           />
         )}
       </div>
-    </>
+    </div>
   );
 };
 
