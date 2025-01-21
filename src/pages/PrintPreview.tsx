@@ -12,14 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { ExtendedCase } from "@/components/cases/CaseDetails";
 
-interface PrintPreviewState {
-  type:
-    | "qr-code"
-    | "lab-slip"
-    | "address-label"
-    | "patient-label"
-    | "invoice_slip";
-  paperSize: keyof typeof PAPER_SIZES;
+interface PrintTemplateProps {
   caseData: {
     id: string;
     patient_name: string;
@@ -37,7 +30,74 @@ interface PrintPreviewState {
     tag?: {
       name: string;
     };
-  };
+  } | {
+    id: string;
+    patient_name: string;
+    case_number: string;
+    qr_code?: string;
+    client?: {
+      client_name: string;
+      phone: string;
+    };
+    doctor?: {
+      name: string;
+    };
+    created_at: string;
+    due_date?: string;
+    tag?: {
+      name: string;
+    };
+  }[];
+  caseDetails?: ExtendedCase[];
+  paperSize: keyof typeof PAPER_SIZES;
+  ref?: any;
+}
+
+interface PrintPreviewState {
+  type:
+    | "qr-code"
+    | "lab-slip"
+    | "address-label"
+    | "patient-label"
+    | "invoice_slip";
+  paperSize: keyof typeof PAPER_SIZES;
+  caseData:
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
 }
 
@@ -73,6 +133,38 @@ const PrintPreview = () => {
   };
 
   const renderTemplate = () => {
+    // If caseData is an array, we're doing batch printing
+    if (Array.isArray(caseData)) {
+      return caseData.map((singleCaseData, index) => {
+        const singleProps = {
+          caseData: singleCaseData,
+          paperSize,
+          caseDetails,
+        };
+
+        switch (type) {
+          case "qr-code":
+            return <QRCodeTemplate key={index} {...singleProps} />;
+          case "lab-slip":
+            return <LabSlipTemplate key={index} {...singleProps} />;
+          case "address-label":
+            return <AddressLabelTemplate key={index} {...singleProps} />;
+          case "patient-label":
+            return <PatientLabelTemplate key={index} {...singleProps} />;
+          case "invoice_slip":
+            return (
+              <InvoiceTemplate
+                key={index}
+                {...singleProps}
+              />
+            );
+          default:
+            return <div key={index}>Invalid template type</div>;
+        }
+      });
+    }
+
+    // Single case printing
     const props = {
       caseData,
       paperSize,
@@ -91,9 +183,7 @@ const PrintPreview = () => {
       case "invoice_slip":
         return (
           <InvoiceTemplate
-            caseData={caseData}
-            paperSize={paperSize}
-            caseDetails={caseDetails}
+            {...props}
           />
         );
       default:
@@ -123,18 +213,14 @@ const PrintPreview = () => {
 
         <div className="bg-white shadow-lg rounded-lg overflow-auto">
           <div className="print-content">
-            {type === "invoice_slip" && Array.isArray(caseDetails) ? (
-              caseDetails.map((invoice, index) => (
+            {Array.isArray(caseData) ? (
+              caseData.map((_, index) => (
                 <div
                   key={index}
                   style={containerStyle}
                   className="print-container mb-8"
                 >
-                  <InvoiceTemplate
-                    caseData={caseData}
-                    paperSize={paperSize}
-                    caseDetails={[invoice]}
-                  />
+                  {(renderTemplate() as React.ReactElement[])[index]}
                 </div>
               ))
             ) : (

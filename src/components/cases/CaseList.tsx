@@ -1028,22 +1028,29 @@ const CaseList: React.FC = () => {
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
-    console.log(`Printing ${option} for cases:`, selectedCases);
 
-    switch (option) {
-      case "workTicket":
-        // Handle work ticket printing for selected cases
-        break;
-      case "invoice":
-        // Handle invoice printing for selected cases
-        break;
-      case "qrCode":
-        // Handle QR code printing for selected cases
-        break;
-      case "shippingLabel":
-        // Handle shipping label printing for selected cases
-        break;
-    }
+    if (selectedCases.length === 0) return;
+
+    // Create the preview URL with state encoded in base64
+    const previewState = {
+      type: option,
+      paperSize: "LETTER", // Default to letter size
+      caseData: selectedCases.map(caseItem => ({
+        id: caseItem.id,
+        patient_name: caseItem.patient_name,
+        case_number: caseItem.case_number,
+        qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+        client: caseItem.client,
+        doctor: caseItem.doctor,
+        created_at: caseItem.created_at,
+        due_date: caseItem.due_date,
+        tag: caseItem.tags,
+      })),
+    };
+
+    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
+    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    window.open(previewUrl, "_blank");
   };
 
   if (loading) {
@@ -1086,28 +1093,28 @@ const CaseList: React.FC = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("workTicket")}
+                      onClick={() => handlePrintOptionSelect("lab-slip")}
                     >
                       <Printer className="h-4 w-4 mr-2" />
-                      Print Work Tickets
+                      Lab Slip
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("invoice")}
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Print Invoices
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("qrCode")}
+                      onClick={() => handlePrintOptionSelect("address-label")}
                     >
                       <FileText className="h-4 w-4 mr-2" />
-                      Print QR Codes
+                      Address Label
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("shippingLabel")}
+                      onClick={() => handlePrintOptionSelect("qr-code")}
                     >
                       <FileText className="h-4 w-4 mr-2" />
-                      Print Shipping Labels
+                      QR Code Label
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("patient-label")}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Patient Label
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
