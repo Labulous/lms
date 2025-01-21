@@ -339,9 +339,11 @@ const UpdateCase: React.FC = () => {
               tags:working_tags!working_tag_id (
               id,
               color,name),
-              pans:working_tags!working_pan_id (
-              id,
-              color,name),
+             pans:working_pans!working_pan_id (
+             id,
+                name,
+                color
+              ),
               rx_number,
               received_date,
               isDueDateTBD,
@@ -549,9 +551,9 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.pans.id || "",
-          workingTagName: caseDataApi.tags.id || "",
-          workingPanColor: caseDataApi.pans.color || "",
+          workingPanName: caseDataApi.pans?.id || "",
+          workingTagName: caseDataApi.tags?.id || "",
+          workingPanColor: caseDataApi.pans?.color || "",
 
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
