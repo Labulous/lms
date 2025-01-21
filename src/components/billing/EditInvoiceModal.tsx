@@ -233,7 +233,7 @@ export function EditInvoiceModal({
       >
         <DialogHeader>
           <DialogTitle>
-            {mode === "edit" ? "Edit" : "Record Payment"} - Invoice #
+            Edit Invoice #
             {(() => {
               if (invoice?.case_number) {
                 const parts = invoice.case_number.split("-");

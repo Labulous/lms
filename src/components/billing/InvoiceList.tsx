@@ -1946,7 +1946,7 @@ const InvoiceList: React.FC = () => {
         {editingInvoice && (
           <EditInvoiceModal
             invoice={editingInvoice}
-            mode={editMode}
+            mode={"edit"}
             onClose={handleCloseEditModal}
             onSave={handleSaveInvoice}
           />
