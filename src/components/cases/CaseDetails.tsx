@@ -78,7 +78,10 @@ import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
 import OnHoldModal from "./wizard/modals/OnHoldModal";
 import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
-
+import { EditInvoiceModal } from "../billing/EditInvoiceModal";
+import { Invoice } from "@/data/mockInvoicesData";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
+import { LoadingState } from "@/pages/cases/NewCase";
 
 interface CaseFile {
   id: string;
@@ -131,23 +134,10 @@ export interface DiscountedPrice {
   price: number;
 }
 
-interface Invoice {
-  id: string;
-  case_id: string;
-  amount: number;
-  status: string;
-  due_date: string;
-  items?: any[];
-  discount?: number;
-  discount_type?: string;
-  tax?: number;
-  notes?: string;
-}
-
 export interface ExtendedCase {
   id: string;
   created_at: string;
-  received_date: string | null;
+  received_date?: string | null;
   ship_date: string | null;
   status: CaseStatus;
   patient_name: string;
@@ -219,7 +209,7 @@ export interface ExtendedCase {
     items?: any;
     discount_type?: string;
   }[];
-  teethProducts?: {
+  teethProduct?: {
     tooth_number: number[];
     body_shade?: { name: string };
     gingival_shade?: { name: string };
@@ -291,6 +281,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
+  const [editingInvoice, setEditingInvoice] = useState<ExtendedCase | null>(
+    null
+  );
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
@@ -309,6 +302,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     WorkingStationTypes[] | []
   >([]);
   const { user } = useAuth();
+
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    action: null,
+    isLoading: false,
+  });
   const [workstationForm, setWorkStationForm] = useState<WorkstationForm>({
     created_by: user?.id as string,
     technician_id: user?.role === "technician" ? user.id : "",
@@ -607,6 +605,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               .from("discounted_price")
               .select(
                 `
+                id,
                 product_id,
                 discount,
                 final_price,
@@ -662,7 +661,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   custom_occlusal_shade,
                   custom_gingival_shade,
                   custom_stump_shade,
-                  type
+                  type,
+                  id
                 `
                 )
                 .eq("case_product_id", caseProductId)
@@ -1009,7 +1009,165 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const handleEditClick = () => {
     safeNavigate(`/cases/update?caseId=${activeCaseId}`);
   };
+  const handleCloseEditModal = () => {
+    setTimeout(() => {
+      setEditingInvoice(null);
+    }, 0);
+  };
 
+  const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
+    console.log(updatedInvoice, "updated Invoices");
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+
+      const { data: updatedCaseProducts, error: updateCaseProductsError } =
+        await supabase
+          .from("case_products")
+          .update({ products_id: updatedProductIds })
+          .eq("case_id", updatedInvoice.id)
+          .select();
+
+      if (updateCaseProductsError) {
+        throw new Error(updateCaseProductsError.message);
+      }
+      console.log(updatedCaseProducts, "updatedCaseProducts");
+      for (const item of updatedInvoice?.items || []) {
+        try {
+          // Calculate the final price based on the quantity, unit price, and discount
+          const finalPrice =
+            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+
+          if (item.discountId && item.caseProductTeethId) {
+            // Update the discounted_price table
+            const { data: updatedDiscount, error: updateDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .update({
+                  discount: item.discount,
+                  quantity: item.quantity || 1,
+                  price: item.unitPrice,
+                  final_price: finalPrice,
+                })
+                .eq("id", item.discountId)
+                .select();
+
+            if (updateDiscountError) {
+              throw new Error(updateDiscountError.message);
+            }
+
+            // Update the case_product_teeth table
+            const { data: updateTeeth, error: updateTeethError } =
+              await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [item.toothNumber],
+                })
+                .eq("id", item.caseProductTeethId)
+                .select("*");
+
+            console.log("Updated discount row:", updatedDiscount);
+            console.log("Updated teeth row:", updateTeeth);
+          } else {
+            // Create a new discounted_price row
+            const { data: newDiscount, error: newDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .insert([
+                  {
+                    discount: item.discount,
+                    quantity: item.quantity,
+                    price: item.unitPrice,
+                    final_price: finalPrice,
+                    product_id: item.id,
+                    case_id: updatedInvoice.id,
+                    user_id: user?.id,
+                  },
+                ])
+                .select();
+
+            if (newDiscountError) {
+              throw new Error(newDiscountError.message);
+            }
+
+            console.log("Created new discount row:", newDiscount);
+
+            // Create a new case_product_teeth row
+            const { data: newTeeth, error: newTeethError } = await supabase
+              .from("case_product_teeth")
+              .insert([
+                {
+                  tooth_number: [Number(item.toothNumber)],
+                  product_id: item.id, // Ensure to include the product_id
+                  case_id: updatedInvoice.id,
+                  lab_id: lab?.id,
+                  case_product_id: updatedCaseProducts[0].id,
+                },
+              ])
+              .select("*");
+
+            if (newTeethError) {
+              throw new Error(newTeethError.message);
+            }
+
+            console.log("Created new teeth row:", newTeeth);
+          }
+
+          await updateBalanceTracking();
+        } catch (error) {
+          console.error(
+            `Error processing item with productId ${item.id}:`,
+            error
+          );
+          // Optionally, continue with the next item instead of throwing
+        }
+      }
+
+      const { error: updateCasesError } = await supabase
+        .from("cases")
+        .update({
+          invoice_notes: updatedInvoice?.notes?.invoiceNotes,
+          lab_notes: updatedInvoice?.notes?.labNotes,
+        })
+        .eq("id", updatedInvoice.id);
+
+      if (updateCasesError) {
+        throw new Error(updateCasesError.message);
+      }
+
+      const { error: updateInvoicesError } = await supabase
+        .from("invoices")
+        .update({
+          amount: updatedInvoice.totalAmount,
+          due_amount: updatedInvoice.totalAmount,
+        })
+        .eq("case_id", updatedInvoice.id);
+
+      if (updateInvoicesError) {
+        throw new Error(updateInvoicesError.message);
+      }
+
+      toast.success("Invoice and related data updated successfully");
+
+      handleCloseEditModal();
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      toast.error("Failed to update invoice");
+    } finally {
+      setLoadingState({ isLoading: false, action: null });
+      fetchCaseData(true);
+    }
+  };
+  const handleOpenEditModal = (
+    invoice: ExtendedCase,
+    mode: "edit" | "payment" = "edit"
+  ) => {
+    setTimeout(() => {
+      setEditingInvoice(invoice);
+    }, 0);
+  };
+
+  console.log(caseDetail, "CaseDetails");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1491,7 +1649,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     </div>
                   </div>
                   <div>
-                    <Button variant={"default"}>Edit</Button>
+                    <Button
+                      variant={"default"}
+                      onClick={() => handleOpenEditModal(caseDetail, "edit")}
+                    >
+                      Edit Invoice
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -1741,7 +1904,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   ) : null}
                 </div>
 
-                {caseDetail.teethProducts?.map(
+                {caseDetail.teethProduct?.map(
                   (
                     product: {
                       tooth_number: number[];
@@ -2100,6 +2263,15 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           onClose={() => setInvoicePreviewModalOpen(false)}
         />
       )} */}
+
+      {editingInvoice && (
+        <EditInvoiceModal
+          invoice={editingInvoice as any}
+          mode={"edit"}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveInvoice}
+        />
+      )}
     </div>
   );
 };
