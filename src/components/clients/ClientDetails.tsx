@@ -17,6 +17,7 @@ import { ChevronDown } from "lucide-react";
 import ClientAccountInfo from "./ClientAccountInfo";
 import ClientSalesActivity from "./ClientSalesActivity";
 import { ClientCaseActivity } from "./ClientCaseActivity";
+import { ClientBillingActivity } from "./ClientBillingActivity";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -136,22 +137,54 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
       </div>
 
       {/* Tabs Section */}
-      <Tabs
-        defaultValue="client-information"
-        className="w-full"
-        value={activeTab}
-        onValueChange={setActiveTab}
-      >
-        <TabsList className="w-full">
-          <TabsTrigger value="client-information">
+      <div className="border-b">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab("client-information")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "client-information"
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
             Client Information
-          </TabsTrigger>
-          <TabsTrigger value="case-activity">Case Activity</TabsTrigger>
-          <TabsTrigger value="invoice">Billing</TabsTrigger>
-          <TabsTrigger value="sales-activity">Sales Activity</TabsTrigger>
-        </TabsList>
+          </button>
+          <button
+            onClick={() => setActiveTab("case-activity")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "case-activity"
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Case Activity
+          </button>
+          <button
+            onClick={() => setActiveTab("billing")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "billing"
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Billing
+          </button>
+          <button
+            onClick={() => setActiveTab("sales-activity")}
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "sales-activity"
+                ? "border-primary text-primary"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Sales Activity
+          </button>
+        </nav>
+      </div>
 
-        <TabsContent value="client-information">
+      {/* Tab Content */}
+      <div className="mt-6">
+        {activeTab === "client-information" && (
           <ClientAccountInfo
             client={client}
             onEdit={onEdit}
@@ -161,22 +194,17 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
             editedData={editedData}
             setEditedData={setEditedData}
           />
-        </TabsContent>
-
-        <TabsContent value="case-activity">
+        )}
+        {activeTab === "case-activity" && (
           <ClientCaseActivity clientId={client.id} />
-        </TabsContent>
-
-        <TabsContent value="invoice">
-          <div className="text-center py-8 text-gray-500">
-            Billing information coming soon
-          </div>
-        </TabsContent>
-
-        <TabsContent value="sales-activity">
+        )}
+        {activeTab === "billing" && (
+          <ClientBillingActivity clientId={client.id} />
+        )}
+        {activeTab === "sales-activity" && (
           <ClientSalesActivity clientId={client.id} />
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 };

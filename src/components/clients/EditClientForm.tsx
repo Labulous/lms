@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import DoctorFields from "./DoctorFields";
 import { Client, ClientInput } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
@@ -23,6 +24,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   onCancel,
   loading,
 }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<ClientInput | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,20 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
     const { name, value } = e.target;
     setFormData((prev) => {
       if (!prev) return null;
+
+      // Handle nested address fields
+      if (name.startsWith('address.')) {
+        const field = name.split('.')[1];
+        return {
+          ...prev,
+          address: {
+            ...prev.address,
+            [field]: value
+          }
+        };
+      }
+
+      // Handle regular fields
       return {
         ...prev,
         [name]: value,
@@ -99,6 +115,8 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
       if (!formData) return;
       await onSubmit(formData);
       toast.success("Client updated successfully");
+      // Navigate to client details page
+      navigate(`/clients/${client?.id}`);
     } catch (error) {
       toast.error("Failed to update client");
       console.error("Error updating client:", error);
@@ -154,21 +172,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             </label>
             <input
               type="text"
-              name="client_name"
-              value={formData.account_number}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Contact Name
-            </label>
-            <input
-              type="text"
-              name="contact_name"
+              name="clientName"
               value={formData.clientName}
               onChange={handleInputChange}
               required
@@ -199,91 +203,79 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              required
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Street Address
+              Status
             </label>
             <input
               type="text"
-              name="street_address"
-              value={formData.address.street}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              City
-            </label>
-            <input
-              type="text"
-              name="city"
-              value={formData.address.city}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              State
-            </label>
-            <input
-              type="text"
-              name="state"
-              value={formData.address.state}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              ZIP Code
-            </label>
-            <input
-              type="text"
-              name="zip_code"
-              value={formData.address.zipCode}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Clinic Registration Number
-            </label>
-            <input
-              type="text"
-              name="clinic_registration_number"
-              value={formData.clinicRegistrationNumber}
+              name="status"
+              value={formData.status || ''}
               onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
+        </div>
 
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+        {/* Address Information */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Street
+              </label>
+              <input
+                type="text"
+                name="address.street"
+                value={formData.address?.street || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <input
+                type="text"
+                name="address.city"
+                value={formData.address?.city || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                State
+              </label>
+              <input
+                type="text"
+                name="address.state"
+                value={formData.address?.state || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Zip Code
+              </label>
+              <input
+                type="text"
+                name="address.zipCode"
+                value={formData.address?.zipCode || ''}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
           </div>
         </div>
 

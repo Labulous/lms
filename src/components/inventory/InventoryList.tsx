@@ -2,6 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Edit, Eye, Plus } from 'lucide-react';
 import { InventoryItem, mockInventoryItems } from '../../data/mockInventoryData';
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const InventoryList: React.FC = () => {
   const [items, setItems] = useState<InventoryItem[]>([]);
@@ -28,66 +46,108 @@ const InventoryList: React.FC = () => {
     setFilteredItems(filtered);
   };
 
+  const getQuantityBadgeColor = (quantity: number, safetyLevel: number) => {
+    if (quantity <= safetyLevel) {
+      return 'bg-red-500';
+    }
+    if (quantity <= safetyLevel * 1.5) {
+      return 'bg-yellow-500';
+    }
+    return 'bg-green-500';
+  };
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Inventory Items</h2>
-        <Link
-          to="/inventory/add"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
+      <div className="mb-6">
+        <PageHeader
+          heading="Inventory Management"
+          description="Manage and track your inventory items"
         >
-          <Plus className="mr-2" size={20} />
-          Add New Item
-        </Link>
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link to="/inventory/add">
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Item
+              </Link>
+            </Button>
+          </div>
+        </PageHeader>
       </div>
 
-      <div className="mb-4">
-        <div className="relative">
-          <input
-            type="text"
+      <div className="mb-6">
+        <div className="relative w-[300px]">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
             placeholder="Search inventory..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg"
             value={searchTerm}
             onChange={handleSearch}
+            className="pl-10"
           />
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Safety Level</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Safety Level</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredItems.map((item) => (
-              <tr key={item.id}>
-                <td className="px-6 py-4 whitespace-nowrap">{item.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.category}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.currentQuantity}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.safetyLevel}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{item.lastUpdated}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link to={`/inventory/${item.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">
-                    <Eye size={18} />
-                  </Link>
-                  <Link to={`/inventory/edit/${item.id}`} className="text-green-600 hover:text-green-900">
-                    <Edit size={18} />
-                  </Link>
-                </td>
-              </tr>
+              <TableRow key={item.id}>
+                <TableCell>{item.id}</TableCell>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{item.category}</TableCell>
+                <TableCell>
+                  <Badge 
+                    variant="secondary" 
+                    className={getQuantityBadgeColor(item.currentQuantity, item.safetyLevel)}
+                  >
+                    {item.currentQuantity}
+                  </Badge>
+                </TableCell>
+                <TableCell>{item.safetyLevel}</TableCell>
+                <TableCell>{item.lastUpdated}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/inventory/${item.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Details</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" asChild>
+                            <Link to={`/inventory/edit/${item.id}`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit Item</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

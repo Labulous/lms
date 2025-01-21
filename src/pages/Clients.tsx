@@ -153,6 +153,65 @@ const Clients: React.FC = () => {
     );
   };
 
+  const EditClientFormWrapper: React.FC = () => {
+    const { clientId } = useParams<{ clientId: string }>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [client, setClient] = useState<Client | null>(null);
+
+    useEffect(() => {
+      const fetchClientData = async () => {
+        if (!clientId) {
+          setLoading(false);
+          return;
+        }
+
+        try {
+          logger.debug("Fetching client details for ID:", clientId);
+          setLoading(true);
+          setError(null);
+
+          const clientData = await clientsService.getClientById(clientId);
+          logger.debug("Client data fetched:", clientData);
+
+          if (clientData) {
+            setClient(clientData);
+          } else {
+            setError("Client not found");
+          }
+        } catch (err: any) {
+          logger.error("Error fetching client:", err);
+          setError(err.message || "Failed to load client details");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchClientData();
+    }, [clientId]);
+
+    if (loading) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    if (error) {
+      return <div className="text-red-500">{error}</div>;
+    }
+
+    return (
+      <EditClientForm
+        client={client}
+        onSubmit={(data) => handleUpdateClient(clientId!, data)}
+        onCancel={() => navigate(`/clients/${clientId}`)}
+        loading={loading}
+      />
+    );
+  };
+
   return (
     <ErrorBoundary>
       <div className="container mx-auto px-4 py-8">
@@ -177,16 +236,7 @@ const Clients: React.FC = () => {
             }
           />
           <Route path=":clientId" element={<ClientDetailsWrapper />} />
-          <Route
-            path=":clientId/edit"
-            element={
-              <EditClientForm
-                onSubmit={(data) => handleUpdateClient(clientId!, data)}
-                onCancel={() => navigate(`/clients/${clientId}`)}
-                client={null}
-              />
-            }
-          />
+          <Route path=":clientId/edit" element={<EditClientFormWrapper />} />
         </Routes>
       </div>
     </ErrorBoundary>
