@@ -243,12 +243,12 @@ const InvoiceList: React.FC = () => {
               user_id
             ),
             invoice:invoices!case_id (
-            id,
-            case_id,
-            amount,
-            status,
-            due_amount,
-            due_date
+              id,
+              case_id,
+              amount,
+              status,
+              due_amount,
+              due_date
             ),
             product_ids:case_products!id (
               products_id,
@@ -257,11 +257,10 @@ const InvoiceList: React.FC = () => {
           `
           )
           .eq("lab_id", lab.id)
-          .eq("status", "completed")
           .order("created_at", { ascending: false });
 
         if (casesError) {
-          console.error("Error fetching completed invoices:", casesError);
+          console.error("Error fetching invoices:", casesError);
           return;
         }
 
@@ -420,7 +419,7 @@ const InvoiceList: React.FC = () => {
 
         setInvoicesData(enhancedCases);
       } catch (error) {
-        console.error("Error fetching completed invoices:", error);
+        console.error("Error fetching invoices:", error);
       } finally {
         setLoading(false);
         setRefreshData(false);

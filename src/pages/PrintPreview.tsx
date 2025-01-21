@@ -121,9 +121,27 @@ const PrintPreview = () => {
           </Button>
         </div>
 
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div style={containerStyle} className="print-container">
-            {renderTemplate()}
+        <div className="bg-white shadow-lg rounded-lg overflow-auto">
+          <div className="print-content">
+            {type === "invoice_slip" && Array.isArray(caseDetails) ? (
+              caseDetails.map((invoice, index) => (
+                <div
+                  key={index}
+                  style={containerStyle}
+                  className="print-container mb-8"
+                >
+                  <InvoiceTemplate
+                    caseData={caseData}
+                    paperSize={paperSize}
+                    caseDetails={[invoice]}
+                  />
+                </div>
+              ))
+            ) : (
+              <div style={containerStyle} className="print-container">
+                {renderTemplate()}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -134,26 +152,45 @@ const PrintPreview = () => {
           @media print {
             @page {
               size: ${paperSize.toLowerCase()};
-              margin: 0mm;  
+              margin: 0mm;
             }
             body {
               margin: 0;
               padding: 0;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
 
             body * {
               visibility: hidden;
             }
 
-            .print-container, .print-container * {
+            .print-content, .print-content * {
               visibility: visible;
             }
 
             .print-container {
               position: relative;
+              margin: 0;
+              padding: 0;
+              break-inside: avoid;
+              page-break-inside: avoid;
               page-break-after: always;
-              width: ${dimensions.width / 72}in;
-              height: ${dimensions.height / 72}in;
+              page-break-before: always;
+            }
+
+            .print-container:last-child {
+              page-break-after: avoid;
+            }
+
+            /* Hide scrollbars during print */
+            .overflow-auto {
+              overflow: visible !important;
+            }
+
+            /* Reset margin for print */
+            .mb-8 {
+              margin: 0 !important;
             }
           }
         `}
