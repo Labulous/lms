@@ -146,7 +146,7 @@ const PrintPreview = () => {
           case "qr-code":
             return <QRCodeTemplate key={index} {...singleProps} />;
           case "lab-slip":
-            return <LabSlipTemplate key={index} {...singleProps} />;
+            return <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={caseDetails}/>;
           case "address-label":
             return <AddressLabelTemplate key={index} {...singleProps} />;
           case "patient-label":

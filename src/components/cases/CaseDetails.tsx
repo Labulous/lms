@@ -763,6 +763,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         due_date: caseDetail.due_date,
         tag: caseDetail.tag,
       },
+      caseDetails: [caseDetail],
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
@@ -1572,6 +1573,29 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
+                              {product?.teethProduct?.occlusal_shade?.name ||
+                              product?.teethProduct?.custom_occlusal_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_occlusal_shade ||
+                                          product?.teethProduct?.occlusal_shade
+                                            ?.name}
+                                      </p>{" "}
+                                      --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_occlusal_shade || ""}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
                               {/* Body shade */}
                               {product?.teethProduct?.body_shade?.name ||
                               product?.teethProduct?.custom_body_shade ? (
@@ -1614,30 +1638,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       <p>
                                         {product?.teethProduct
                                           ?.custom_gingival_shade || ""}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-
-                              {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">
-                                      Occlusal:
-                                    </span>
-                                    <div className="flex">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_occlusal_shade ||
-                                          product?.teethProduct?.occlusal_shade
-                                            ?.name}
-                                      </p>{" "}
-                                      --
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.custom_occlusal_shade || ""}
                                       </p>
                                     </div>
                                   </div>

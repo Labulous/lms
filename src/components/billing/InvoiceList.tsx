@@ -214,10 +214,8 @@ const InvoiceList: React.FC = () => {
                 name,
                 color
               ),
-            pans:working_pans!working_pan_id (
-                name,
-                color
-              ),
+          working_pan_name,
+          working_pan_color,
             rx_number,
             isDueDateTBD,
             appointment_date,
