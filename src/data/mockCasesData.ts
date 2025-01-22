@@ -605,54 +605,54 @@ const updateCases = async (
       }
     }
     // Upsert case_product_teeth rows
-    const { error: caseProductTeethError } = await supabase
-      .from("case_product_teeth")
-      .upsert(caseProductTeethRows)
-      .select("");
+    // const { error: caseProductTeethError } = await supabase
+    //   .from("case_product_teeth")
+    //   .upsert(caseProductTeethRows)
+    //   .select("");
 
-    if (caseProductTeethError) {
-      console.error(
-        "Error updating case_product_teeth rows:",
-        caseProductTeethError
-      );
-      return; // Exit if there is an error
-    } else {
-      console.log("Case product teeth rows updated successfully!");
-      toast.success("Case updated successfully");
-      if (navigate && caseId) {
-        navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-      }
-    }
+    // if (caseProductTeethError) {
+    //   console.error(
+    //     "Error updating case_product_teeth rows:",
+    //     caseProductTeethError
+    //   );
+    //   return; // Exit if there is an error
+    // } else {
+    //   console.log("Case product teeth rows updated successfully!");
+    //   toast.success("Case updated successfully");
+    //   if (navigate && caseId) {
+    //     navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+    //   }
+    // }
 
     // Step 5: Update invoice for the case
-    const updateDueDate = () => {
-      const currentDate = new Date();
-      const dueDate = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        28
-      );
-      return dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
-    };
+    // const updateDueDate = () => {
+    //   const currentDate = new Date();
+    //   const dueDate = new Date(
+    //     currentDate.getFullYear(),
+    //     currentDate.getMonth(),
+    //     28
+    //   );
+    //   return dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
+    // };
 
-    const updatedInvoice = {
-      client_id: cases.overview.client_id,
-      lab_id: cases.overview.lab_id,
-      status: cases.overview.status,
-      due_date: null,
-    };
+    // const updatedInvoice = {
+    //   client_id: cases.overview.client_id,
+    //   lab_id: cases.overview.lab_id,
+    //   status: cases.overview.status,
+    //   due_date: null,
+    // };
 
-    const { data: invoiceData, error: invoiceError } = await supabase
-      .from("invoices")
-      .upsert(updatedInvoice)
-      .eq("case_id", caseId)
-      .select("*");
+    // const { data: invoiceData, error: invoiceError } = await supabase
+    //   .from("invoices")
+    //   .upsert(updatedInvoice)
+    //   .eq("case_id", caseId)
+    //   .select("*");
 
-    if (invoiceError) {
-      console.error("Error updating invoice:", invoiceError);
-    } else {
-      console.log("Invoice updated successfully:", invoiceData);
-    }
+    // if (invoiceError) {
+    //   console.error("Error updating invoice:", invoiceError);
+    // } else {
+    //   console.log("Invoice updated successfully:", invoiceData);
+    // }
 
     // Step 6: Save the updated overview to localStorage and navigate
     localStorage.setItem("cases", JSON.stringify(cases));
