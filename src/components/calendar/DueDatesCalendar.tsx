@@ -197,9 +197,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             )}
             {!event.onHold && (
               <div
-                className={` ${
-                  event.resource.isPastDue ? "bg-red-500" : "bg-blue-500"
-                }  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
               >
                 {event.title}
               </div>
@@ -400,20 +398,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
     navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
-
-  const rbcNowElement = document.querySelector(".rbc-now");
-  useEffect(() => {
-    if (rbcNowElement) {
-      const nextSibling = rbcNowElement.nextElementSibling;
-      if (nextSibling && nextSibling instanceof HTMLElement) {
-        nextSibling.classList.add("due-by-tommorow-cell");
-      } else {
-        console.log("Next sibling not found or not an HTMLElement");
-      }
-    } else {
-      console.log("rbc-now element not found");
-    }
-  }, [rbcNowElement]);
 
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);

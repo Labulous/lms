@@ -268,7 +268,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     return result;
   };
-
   // Helper function to get teeth in visual order for lower arch (always right to left)
   const getLowerArchTeeth = (fromTooth: number, toTooth: number): number[] => {
     const result: number[] = [];

@@ -5,7 +5,10 @@ import { Invoice } from "../../data/mockInvoiceData";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { InvoiceTemplate } from "../cases/print/PrintTemplates";
+import {
+  InvoiceTemplate,
+  LabSlipTemplate,
+} from "../cases/print/PrintTemplates";
 import { ExtendedCase } from "../cases/CaseDetails";
 import { PAPER_SIZES } from "../cases/print/PrintHandler";
 import { name } from "ejs";
@@ -212,7 +215,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           {/* Content */}
           <div ref={invoiceRef}>
             <InvoiceTemplate
-              caseData={caseDetails[0]}
               paperSize={selectedPaperSize}
               caseDetails={caseDetails}
               ref={invoiceRef}

@@ -82,6 +82,7 @@ import { EditInvoiceModal } from "../billing/EditInvoiceModal";
 import { Invoice } from "@/data/mockInvoicesData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { LoadingState } from "@/pages/cases/NewCase";
+import OnCancelModal from "./wizard/modals/onCancelModal";
 
 interface CaseFile {
   id: string;
@@ -289,6 +290,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
   const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
+  const [onCancelModal, setOnCancelModal] = useState<boolean>(false);
   const [onHoldReason, setOnHoldReason] = useState<string>("");
   const [invoicePreviewModalOpen, setInvoicePreviewModalOpen] =
     useState<boolean>(false);
@@ -497,8 +499,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               name,
               color
             ),
-            pans:working_pans!working_pan_id (
-            name,color),
+            working_pan_name,
+            working_pan_color,
             rx_number,
             received_date,
             invoice_notes,
@@ -761,6 +763,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         due_date: caseDetail.due_date,
         tag: caseDetail.tag,
       },
+      caseDetails: [caseDetail],
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
@@ -772,14 +775,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     try {
       // If it's already a full URL, fetch it directly
       const response = await fetch(fileUrl);
-      if (!response.ok) throw new Error('Failed to fetch file');
-      
+      if (!response.ok) throw new Error("Failed to fetch file");
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       // Extract filename from path
-      const filename = fileUrl.split('/').pop()?.split('?')[0] || 'download';
+      const filename = fileUrl.split("/").pop()?.split("?")[0] || "download";
       // Decode the filename to handle special characters
       a.download = decodeURIComponent(filename);
       document.body.appendChild(a);
@@ -787,8 +789,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error('Error downloading file:', error);
-      toast.error('Error downloading file');
+      console.error("Error downloading file:", error);
+      toast.error("Error downloading file");
     }
   };
 
@@ -1373,7 +1375,17 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     >
                       On Hold
                     </DropdownMenuItem>
-                    <DropdownMenuItem>Cancel Case</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (caseDetail.status === "completed") {
+                          toast.error("Case is Already Completed.");
+                        } else {
+                          setOnCancelModal(true);
+                        }
+                      }}
+                    >
+                      Cancel Case
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button
@@ -1561,6 +1573,29 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
+                              {product?.teethProduct?.occlusal_shade?.name ||
+                              product?.teethProduct?.custom_occlusal_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <div className="flex">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_occlusal_shade ||
+                                          product?.teethProduct?.occlusal_shade
+                                            ?.name}
+                                      </p>{" "}
+                                      --
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.custom_occlusal_shade || ""}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
                               {/* Body shade */}
                               {product?.teethProduct?.body_shade?.name ||
                               product?.teethProduct?.custom_body_shade ? (
@@ -1573,7 +1608,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                           ?.manual_body_shade ||
                                           product?.teethProduct?.body_shade
                                             ?.name}
-                                      </p> --
+                                      </p>{" "}
+                                      --
                                       <p>
                                         {product?.teethProduct
                                           ?.custom_body_shade || ""}
@@ -1602,30 +1638,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       <p>
                                         {product?.teethProduct
                                           ?.custom_gingival_shade || ""}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-
-                              {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">
-                                      Occlusal:
-                                    </span>
-                                    <div className="flex">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_occlusal_shade ||
-                                          product?.teethProduct?.occlusal_shade
-                                            ?.name}
-                                      </p>{" "}
-                                      --
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.custom_occlusal_shade || ""}
                                       </p>
                                     </div>
                                   </div>
@@ -2267,9 +2279,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                       <div className="flex flex-col gap-2">
                         {caseDetail?.attachements?.map((file, index) => {
-                          const fileName = decodeURIComponent(file.split('/').pop()?.split('?')[0] || '');
-                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
-                          
+                          const fileName = decodeURIComponent(
+                            file.split("/").pop()?.split("?")[0] || ""
+                          );
+                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                            fileName
+                          );
+
                           return (
                             <div
                               key={index}
@@ -2289,7 +2305,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   <span className="text-sm">{fileName}</span>
                                 </div>
                               )}
-                              
+
                               <div className="flex justify-end">
                                 <Button
                                   variant="outline"
@@ -2303,8 +2319,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             </div>
                           );
                         })}
-                        {(!caseDetail?.attachements || caseDetail.attachements.length === 0) && (
-                          <p className="text-sm text-gray-500">No attachments found</p>
+                        {(!caseDetail?.attachements ||
+                          caseDetail.attachements.length === 0) && (
+                          <p className="text-sm text-gray-500">
+                            No attachments found
+                          </p>
                         )}
                       </div>
                     </AccordionContent>
@@ -2360,6 +2379,14 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           onHoldReason={onHoldReason}
           setOnHoldReason={setOnHoldReason}
           handleUpdateCaseStatus={() => handleUpdateCaseStatus("on_hold")}
+        />
+      )}
+      {onCancelModal && (
+        <OnCancelModal
+          onClose={() => setOnCancelModal(false)}
+          caseId={caseDetail.id}
+          workstations={stepsData}
+          fetchCaseData={fetchCaseData}
         />
       )}
       {isScheduleModal && (

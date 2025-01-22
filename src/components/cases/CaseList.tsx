@@ -73,6 +73,7 @@ import { shortMonths } from "@/lib/months";
 const logger = createLogger({ module: "CaseList" });
 
 type Case = {
+  working_pan_name: string;
   id: string;
   created_at: string;
   received_date: string | null;
@@ -203,7 +204,7 @@ const CaseList: React.FC = () => {
       enableHiding: false,
     },
     {
-      accessorKey: "pans",
+      accessorKey: "working_pan_color",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
@@ -297,12 +298,10 @@ const CaseList: React.FC = () => {
         </Popover>
       ),
       cell: ({ row }) => {
-        const tag = row.getValue("pans") as { name: string; color: string };
-        if (!tag?.name) return null;
-        
-        const color = tag.color || "#f3f4f6";
-        const name = tag.name;
-        const initials = name.slice(0, 2).toUpperCase();
+        const color = row.getValue("working_pan_color") as string | null;
+        const name = row.original.working_pan_name;
+        if (!color) return;
+        const initials = name ? name.slice(0, 2).toUpperCase() : "";
 
         return (
           <div className="font-medium">
@@ -431,7 +430,7 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => {
         const tag = row.getValue("tags") as { name: string; color: string };
         if (!tag?.name) return null;
-        
+
         const color = tag.color || "#f3f4f6";
         const name = tag.name;
         const initials = name.slice(0, 2).toUpperCase();
@@ -830,7 +829,7 @@ const CaseList: React.FC = () => {
     }
   }, [statusFilter]);
 
-  console.log(dueDateFilter,"dueDateFilter")
+  console.log(dueDateFilter, "dueDateFilter");
   useEffect(() => {
     if (dueDateFilter) {
       table.getColumn("due_date")?.setFilterValue(dueDateFilter);
@@ -914,8 +913,8 @@ const CaseList: React.FC = () => {
             ),
             tags:working_tags!working_tag_id (
             name,color),
-            pans:working_pans!working_pan_id (
-            name,color),
+          working_pan_name,
+          working_pan_color,
 
             rx_number,
             isDueDateTBD,
@@ -991,7 +990,7 @@ const CaseList: React.FC = () => {
 
       const filteredCases = cases.filter((caseItem) => {
         const dueDate = new Date(caseItem.due_date);
-        
+
         const dueDateUTC = Date.UTC(
           dueDate.getUTCFullYear(),
           dueDate.getUTCMonth(),
@@ -1035,7 +1034,7 @@ const CaseList: React.FC = () => {
     const previewState = {
       type: option,
       paperSize: "LETTER", // Default to letter size
-      caseData: selectedCases.map(caseItem => ({
+      caseData: selectedCases.map((caseItem) => ({
         id: caseItem.id,
         patient_name: caseItem.patient_name,
         case_number: caseItem.case_number,

@@ -169,7 +169,7 @@ const NewCase: React.FC = () => {
 
     getCasesLength();
   }, [user?.id]);
-  console.log(errors,"Errors")
+  console.log(errors, "Errors");
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -267,6 +267,8 @@ const NewCase: React.FC = () => {
             lab_id: lab?.labId,
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
+            working_pan_name: transformedData.workingPanName,
+            working_pan_color: transformedData.workingPanColor,
           },
           products: selectedProducts,
 
