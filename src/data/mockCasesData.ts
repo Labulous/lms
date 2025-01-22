@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import toast from "react-hot-toast";
 import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
-import { CaseStatus } from "@/types/supabase";
 import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import {
@@ -51,6 +50,8 @@ export const CASE_STATUSES: CaseStatus[] = [
   "completed",
   "cancelled",
 ];
+
+export type CaseStatus = typeof CASE_STATUSES[number];
 
 export const CASE_STATUS_COLORS = {
   in_queue: "bg-blue-100 text-blue-800",

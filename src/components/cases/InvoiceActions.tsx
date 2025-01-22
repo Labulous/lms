@@ -9,14 +9,14 @@ import {
 import { CaseStatus } from "@/types/supabase";
 
 interface InvoiceActionsProps {
-  caseStatus: CaseStatus;
+  status: CaseStatus;
   invoiceStatus: string | null;
   onEditInvoice: () => void;
   onApproveInvoice: () => void;
 }
 
 const InvoiceActions: React.FC<InvoiceActionsProps> = ({
-  caseStatus,
+  status,
   invoiceStatus,
   onEditInvoice,
   onApproveInvoice,
@@ -42,7 +42,7 @@ const InvoiceActions: React.FC<InvoiceActionsProps> = ({
 
     // Draft invoice states
     if (invoiceStatus === "draft") {
-      if (caseStatus === "completed") {
+      if (status === "completed") {
         return {
           canEdit: true,
           canApprove: true,

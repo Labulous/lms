@@ -16,7 +16,7 @@ interface OldCase {
   doctorId?: string;
   patientName: string;
   startDate: string;
-  caseStatus: string;
+  status: string;
   deliveryMethod: string;
   dueDate?: string;
   isDueDateTBD?: boolean;
@@ -57,7 +57,7 @@ interface TransformedCase {
   patient_first_name: string;
   patient_last_name: string;
   order_date: string;
-  case_status: string;
+  status: string;
   delivery_method: string;
   due_date?: string;
   is_due_date_tbd: boolean;
@@ -108,7 +108,7 @@ async function transformCase(oldCase: OldCase): Promise<TransformedCase> {
     patient_first_name: firstName,
     patient_last_name: lastName,
     order_date: oldCase.startDate,
-    case_status: oldCase.caseStatus,
+    status: oldCase.status,
     delivery_method: oldCase.deliveryMethod,
     due_date: oldCase.dueDate,
     is_due_date_tbd: oldCase.isDueDateTBD || false,
@@ -142,7 +142,17 @@ async function migrateCase(oldCase: OldCase): Promise<void> {
     // Insert the main case
     const { data: insertedCase, error: caseError } = await supabase
       .from('cases')
-      .insert(transformedCase)
+      .insert({
+        id: oldCase.caseId,
+        patient_name: oldCase.patientName,
+        case_number: oldCase.caseId,
+        created_at: oldCase.startDate,
+        updated_at: oldCase.startDate,
+        status: oldCase.status,
+        client_id: oldCase.clientId,
+        doctor_id: oldCase.doctorId,
+        qr_code: oldCase.doctorId,
+      })
       .select('id')
       .single();
 

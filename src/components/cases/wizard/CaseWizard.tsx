@@ -6,7 +6,6 @@ import OrderDetailsStep from "./steps/OrderDetailsStep";
 import ProductsServicesStep from "./steps/ProductsServicesStep";
 import FilesStep from "./steps/FilesStep";
 import NotesStep from "./steps/NotesStep";
-import { CaseStatus } from "@/types/supabase";
 import { Client, clientsService } from "../../../services/clientsService";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -15,6 +14,7 @@ import { createLogger } from "../../../utils/logger";
 import { SavedProduct } from "./modals/AddProductModal";
 import { getLabIdByUserId } from "@/services/authService";
 import { DeliveryMethod } from "@/data/mockCasesData";
+import { CASE_STATUSES } from "@/data/mockCasesData";
 
 const logger = createLogger({ module: "CaseWizard" });
 
@@ -35,7 +35,7 @@ export interface FormData {
   workingPanColor?: string;
   patientLastName: string;
   orderDate: string;
-  status: CaseStatus;
+  status: typeof CASE_STATUSES[number];
   statusError?: string;
   deliveryMethod: "Pickup" | "Local Delivery" | "Shipping";
   dueDate?: string;
@@ -91,7 +91,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     patientLastName: "",
     assignedTechnicians: [],
     orderDate: format(new Date(), "yyyy-MM-dd"),
-    status: "In Queue" as CaseStatus,
+    status: "in_queue" as typeof CASE_STATUSES[number],
     deliveryMethod: "Pickup" as DeliveryMethod,
     enclosedItems: defaultEnclosedItems,
     otherItems: "",

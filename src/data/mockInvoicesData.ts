@@ -182,7 +182,7 @@ const createDefaultInvoices = (): Invoice[] => {
         clientId: client.id,
         clientName: client.clientName,
         caseType: "Crown",
-        status: "completed",
+        status: "completed" as Case["status"],
         startDate: format(
           addDays(today, -Math.floor(Math.random() * 30)),
           "yyyy-MM-dd"
