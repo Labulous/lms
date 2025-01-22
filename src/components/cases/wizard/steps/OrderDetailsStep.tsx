@@ -35,8 +35,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HexColorPicker } from "react-colorful";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 interface OrderDetailsStepProps {
@@ -538,7 +539,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs">Working Pan</Label>
-                  <ColorPicker
+                  {/* <ColorPicker
                     mode="create"
                     selectedColor="#000000"
                     tags={[]}
@@ -561,36 +562,42 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         Add New
                       </button>
                     }
-                  />
+                  /> */}
                 </div>
-                <div className="flex gap-2">
-                  <Select
-                    value={formData.workingPanName}
-                    onValueChange={(value) => onChange("workingPanName", value)}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select Pan" className="text-gray-500" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pans && pans.length > 0 ? (
-                        pans.map((pan) => (
-                          <SelectItem key={pan.id} value={pan.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: pan.color }}
-                              />
-                              {pan.name || "Unnamed pan"}
-                            </div>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="_no_tags" disabled>
-                          No tags available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                <div className="relative">
+                  <div className="flex gap-2 relative">
+                    <Input
+                      name="text"
+                      placeholder="Enter the Pan"
+                      onChange={(e) =>
+                        onChange(
+                          "workingPanName",
+                          e.target.value || ("" as string)
+                        )
+                      }
+                    />
+                    <div
+                      className="flex h-10 w-12 bg-gray-300 rounded-md cursor-pointer"
+                      style={{
+                        backgroundColor: formData.workingPanColor,
+                      }}
+                      onClick={() => setIsAddingPan(!isAddingPan)}
+                    ></div>
+                  </div>
+                  {isAddingPan && (
+                    <div className="w-72 absolute top-10 bg-white p-2">
+                      <div className="flex justify-end py-2">
+                        <button onClick={() => setIsAddingPan(false)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <HexColorPicker
+                        color={formData.workingPanColor || "#fffff"}
+                        onChange={(color) => onChange("workingPanColor", color)}
+                        style={{ width: "100% !important" }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col gap-2">
@@ -627,7 +634,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onValueChange={(value) => onChange("workingTagName", value)}
                   >
                     <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="Select Tag" className="text-gray-500" />
+                      <SelectValue
+                        placeholder="Select Tag"
+                        className="text-gray-500"
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {tags && tags.length > 0 ? (

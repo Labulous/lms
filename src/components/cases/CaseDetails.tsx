@@ -497,8 +497,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               name,
               color
             ),
-            pans:working_pans!working_pan_id (
-            name,color),
+            working_pan_name,
+            working_pan_color,
             rx_number,
             received_date,
             invoice_notes,

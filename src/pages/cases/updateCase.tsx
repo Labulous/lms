@@ -267,7 +267,8 @@ const UpdateCase: React.FC = () => {
             custom_pontic_details: transformedData.caseDetails?.customPontic,
             lab_id: lab?.labId,
             working_tag_id: formData.workingTagName,
-            working_pan_id: formData.workingPanName,
+            working_pan_name: formData.workingPanName,
+            working_pan_color: formData.workingPanColor,
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
             attachements: selectedFiles.map((item) => item.url),
@@ -276,6 +277,7 @@ const UpdateCase: React.FC = () => {
           enclosedItems: transformedData.enclosedItems,
           files: selectedFiles,
         };
+        console.log(newCase, "newCase");
         await updateCase(newCase, navigate, setLoadingState, caseId as string);
       } catch (error) {
         console.error("Error creating case:", error);
@@ -337,11 +339,8 @@ const UpdateCase: React.FC = () => {
               tags:working_tags!working_tag_id (
               id,
               color,name),
-             pans:working_pans!working_pan_id (
-             id,
-                name,
-                color
-              ),
+             working_pan_name,
+             working_pan_color,
               rx_number,
               received_date,
               isDueDateTBD,
@@ -553,9 +552,9 @@ const UpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.pans?.id || null,
+          workingPanName: caseDataApi.working_pan_name || "",
           workingTagName: caseDataApi.tags?.id || null,
-          workingPanColor: caseDataApi.pans?.color || "",
+          workingPanColor: caseDataApi.working_pan_color || "",
 
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
