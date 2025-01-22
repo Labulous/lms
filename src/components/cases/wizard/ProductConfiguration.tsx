@@ -771,7 +771,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             row.shades?.stump_shade ? (
                               <div>
                                 {shadeData[index]?.occlusal_shade === "manual"
-                                  ? shadeData[index]?.custom_occlusal
+                                  ? shadeData[index]?.manual_occlusal
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id ===
@@ -779,14 +779,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     )[0]?.name || "--"}
                                 /
                                 {shadeData[index]?.body_shade === "manual"
-                                  ? shadeData[index]?.custom_body
+                                  ? shadeData[index]?.manual_body
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id === shadeData[index]?.body_shade
                                     )[0]?.name || "--"}
                                 /
                                 {shadeData[index]?.gingival_shade === "manual"
-                                  ? shadeData[index]?.custom_gingival
+                                  ? shadeData[index]?.manual_gingival
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id ===
@@ -794,7 +794,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     )[0]?.name || "--"}
                                 /
                                 {shadeData[index]?.stump_shade === "manual"
-                                  ? shadeData[index]?.custom_stump
+                                  ? shadeData[index]?.manual_stump
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id ===
@@ -909,7 +909,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_occlusal: e.target.value,
+                                        custom_occlusal: e.target.value.toUpperCase(),
                                         id: row.id,
                                         manual_occlusal: "",
                                       };
@@ -987,7 +987,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_body: e.target.value,
+                                        custom_body: e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -1064,7 +1064,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_gingival: e.target.value,
+                                        custom_gingival: e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
 
@@ -1142,7 +1142,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_stump: e.target.value,
+                                        custom_stump: e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
 
