@@ -73,6 +73,7 @@ import { shortMonths } from "@/lib/months";
 const logger = createLogger({ module: "CaseList" });
 
 type Case = {
+  working_pan_name: string;
   id: string;
   created_at: string;
   received_date: string | null;
