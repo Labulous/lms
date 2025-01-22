@@ -457,7 +457,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     );
   };
 
-  const TeetDetail = ({ teeth, teethDetail }: any) => {
+  const TeetDetail = ({ teeth, teethDetail, itemsLength }: any) => {
     const TYPE_FILL_CLASSES = {
       [DefaultProductType.Crown]: "fill-blue-500",
       [DefaultProductType.Bridge]: "fill-purple-500",
@@ -484,7 +484,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     const addedTeethMap = new Map();
     console.log(teeth, "teeth detail");
     return (
-      <div className="grid grid-cols-2 gap-5 text-sm">
+      <div
+        className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-2 text-sm`}
+      >
         <div className="space-y-1">
           <div className="flex">
             <span>Tooth #: </span>
@@ -494,13 +496,15 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
           </div>
           <div className="flex">
             <span>Material: </span>
-            <div className="font-bold ml-1">{teeth?.material.name}</div>
+            <div className="font-bold ml-1">
+              {teeth?.material?.name || "N/A"}
+            </div>
           </div>
           <div className="flex">
             <span>Item: </span>
             <div className="font-bold ml-1">{teeth?.name}</div>
           </div>
-          <div className="pt-8">
+          <div className="pt-4">
             <div className="flex">
               <span>Details: </span>
             </div>
@@ -527,7 +531,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                 </div>
               </div>
             </div>
-            <div className="space-y-1 ml-5 mt-8">
+            <div className="space-y-1 ml-5 mt-2">
               <div className="flex">
                 <span>Margin Design: </span>
                 <div className="font-bold ml-1">
@@ -551,7 +555,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               </div>
             </div>
 
-            <div className="flex mt-8">
+            <div className="flex mt-2">
               <span>Note: </span>
               <div className="font-bold ml-1">
                 {teeth?.teethProduct?.notes || ""}
@@ -769,22 +773,37 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div className="border border-gray-800">
               <div className="p-5">
                 <Header caseDetail={item} />
-                <div className="border-2" />
+                <div className="border-2 my-2" />
 
-                <div
-                  className={`grid grid-cols-${cases.length} gap-5 space-y-5 my-5`}
-                >
+                <div className={`grid grid-cols-${item.products.length} gap-0`}>
                   {item.products.map((teeth, index) => {
                     return (
-                      <TeetDetail
-                        key={index}
-                        teeth={teeth}
-                        teethDetail={item}
-                      />
+                      <div key={index}>
+                        <table className="border border-collapse w-full">
+                          <thead>
+                            <tr>
+                              <th className="border px-4 py-2 text-left">
+                                Item # {index + 1}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="border px-4 py-2">
+                                <TeetDetail
+                                  teeth={teeth}
+                                  teethDetail={item}
+                                  itemsLength={item.products.length}
+                                />
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     );
                   })}
                 </div>
-                <div className="border-2" />
+                <div className="border-2 mt-2" />
 
                 <div className="flex mt-6">
                   <span>Lab Notes: </span>
