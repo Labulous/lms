@@ -206,7 +206,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             height: "277mm", // Fixed height to match LETTER page size
           }}
         >
-          <div className="border border-gray-800">
+          <div className="border border-gray-800 mt-10">
             <div className="p-5">
               <div className="p-0">
                 {/* Header Section */}
