@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, CalendarDays } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -50,7 +50,13 @@ const SalesDashboard: React.FC = () => {
   const [patientsFilter, setPatientsFilter] = useState(timeFilterOptions[0]);
   const [productsFilter, setProductsFilter] = useState(timeFilterOptions[0]);
   const [stockFilter, setStockFilter] = useState(timeFilterOptions[0]);
-  const [topClientsFilter, setTopClientsFilter] = useState(timeFilterOptions[0]);
+  const topClientsTimeFilterOptions = [
+    { label: "This week", days: 7 },
+    { label: "Last 30 days", days: 30 },
+    { label: "Last 60 days", days: 60 },
+    { label: "Last 90 days", days: 90 },
+  ];
+  const [topClientsFilter, setTopClientsFilter] = useState(topClientsTimeFilterOptions[1]); // Default to "Last 30 days"
   const [topClients, setTopClients] = useState<TopClient[]>([]);
   const [revenueData, setRevenueData] = useState<RevenueData>({
     revenue: 0,
@@ -548,7 +554,26 @@ const SalesDashboard: React.FC = () => {
       <Card className="col-span-3">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
-          <TimeFilter selectedFilter={topClientsFilter} onFilterChange={setTopClientsFilter} />
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {topClientsFilter.label}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {topClientsTimeFilterOptions.map((filter) => (
+                  <DropdownMenuItem
+                    key={filter.days}
+                    onClick={() => setTopClientsFilter(filter)}
+                  >
+                    {filter.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
