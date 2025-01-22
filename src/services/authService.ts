@@ -161,6 +161,7 @@ export const getCurrentUser = async () => {
   }
 };
 
+//owner of app . who will be super here.
 export const signUp = async (
   email: string,
   password: string,
