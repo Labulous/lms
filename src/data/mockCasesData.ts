@@ -15,6 +15,18 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const CASE_STATUSES = [
+  "in_queue",
+  "in_progress",
+  "on_hold",
+  "completed",
+  "cancelled",
+] as const;
+
+export type CaseStatus = (typeof CASE_STATUSES)[number];
+
+export type DeliveryMethod = "Pickup" | "Local Delivery" | "Shipping";
+
 export interface Case {
   id: string;
   caseId: string;
@@ -41,17 +53,11 @@ export interface CaseStage {
   status: "pending" | "in_progress" | "completed";
 }
 
-export type DeliveryMethod = "Pickup" | "Local Delivery" | "Shipping";
-
-export const CASE_STATUSES: CaseStatus[] = [
-  "in_queue",
-  "in_progress",
-  "on_hold",
-  "completed",
-  "cancelled",
+export const DELIVERY_METHODS: DeliveryMethod[] = [
+  "Pickup",
+  "Local Delivery",
+  "Shipping",
 ];
-
-export type CaseStatus = typeof CASE_STATUSES[number];
 
 export const CASE_STATUS_COLORS = {
   in_queue: "bg-blue-100 text-blue-800",
@@ -60,12 +66,6 @@ export const CASE_STATUS_COLORS = {
   completed: "bg-green-100 text-green-800",
   cancelled: "bg-gray-100 text-gray-800",
 };
-
-export const DELIVERY_METHODS: DeliveryMethod[] = [
-  "Pickup",
-  "Local Delivery",
-  "Shipping",
-];
 
 export const mockTechnicians = [
   { id: "1", name: "John Doe" },

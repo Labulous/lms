@@ -42,15 +42,38 @@ interface RevenueData {
   }[];
 }
 
+interface SimpleTimeFilter {
+  label: string;
+  days: number;
+}
+
 const SalesDashboard: React.FC = () => {
   // Individual time filters for each card
   const [revenueFilter, setRevenueFilter] = useState(timeFilterOptions.find(filter => filter.value === 'this_month') || timeFilterOptions[0]);
   const [expensesFilter, setExpensesFilter] = useState(timeFilterOptions[0]);
-  const [incomeExpenseFilter, setIncomeExpenseFilter] = useState(timeFilterOptions[0]);
+  const incomeExpenseTimeFilterOptions: SimpleTimeFilter[] = [
+    { 
+      label: "This week", 
+      days: 7,
+    },
+    { 
+      label: "Last 30 days", 
+      days: 30,
+    },
+    { 
+      label: "Last 60 days", 
+      days: 60,
+    },
+    { 
+      label: "Last 90 days", 
+      days: 90,
+    }
+  ];
+  const [incomeExpenseFilter, setIncomeExpenseFilter] = useState(incomeExpenseTimeFilterOptions[1]); // Default to "Last 30 days"
   const [patientsFilter, setPatientsFilter] = useState(timeFilterOptions[0]);
   const [productsFilter, setProductsFilter] = useState(timeFilterOptions[0]);
   const [stockFilter, setStockFilter] = useState(timeFilterOptions[0]);
-  const topClientsTimeFilterOptions = [
+  const topClientsTimeFilterOptions: SimpleTimeFilter[] = [
     { label: "This week", days: 7 },
     { label: "Last 30 days", days: 30 },
     { label: "Last 60 days", days: 60 },
@@ -232,6 +255,34 @@ const SalesDashboard: React.FC = () => {
     }
   };
 
+  const getIncomeExpenseDateRange = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - days);
+    return { start, end };
+  };
+
+  const fetchIncomeExpenseData = async () => {
+    try {
+      const { start, end } = getIncomeExpenseDateRange(incomeExpenseFilter.days);
+      
+      const { data: incomeData, error: incomeError } = await supabase
+        .from('invoices')
+        .select('amount, created_at')
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+
+      if (incomeError) {
+        console.error('Error fetching income expense data:', incomeError);
+        return;
+      }
+
+      // Rest of the function remains the same
+    } catch (error) {
+      console.error('Error in fetchIncomeExpenseData:', error);
+    }
+  };
+
   const generateMonthlyData = (invoices: any[]) => {
     const monthlyMap = new Map<string, number>();
     const today = new Date();
@@ -327,8 +378,8 @@ const SalesDashboard: React.FC = () => {
     };
   };
 
-  const expensesData = generateData(expensesFilter.days);
-  const incomeExpenseData = generateData(incomeExpenseFilter.days);
+  const expensesData = generateData(expensesFilter?.days || 30);
+  const incomeExpenseData = generateData(incomeExpenseFilter?.days || 30);
 
   const {
     cashflow,
@@ -468,11 +519,27 @@ const SalesDashboard: React.FC = () => {
       {/* Income & Expense Section */}
       <Card className="col-span-6">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Income & Expense</CardTitle>
-          <TimeFilter 
-            selectedFilter={incomeExpenseFilter} 
-            onFilterChange={setIncomeExpenseFilter} 
-          />
+          <CardTitle className="text-sm font-medium">Income and Expense</CardTitle>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {incomeExpenseFilter.label}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {incomeExpenseTimeFilterOptions.map((filter) => (
+                  <DropdownMenuItem
+                    key={filter.days}
+                    onClick={() => setIncomeExpenseFilter(filter)}
+                  >
+                    {filter.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
