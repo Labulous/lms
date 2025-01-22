@@ -24,6 +24,7 @@ import { TimeFilter, TimeFilterOption, timeFilterOptions } from "../../component
 import { mockDashboardData } from "../../data/mockSalesData";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
+import { format } from 'date-fns';
 
 interface TopClient {
   id: string;
@@ -32,9 +33,18 @@ interface TopClient {
   total_outstanding: number;
 }
 
+interface RevenueData {
+  revenue: number;
+  growth: number;
+  monthlyData: {
+    month: string;
+    income: number;
+  }[];
+}
+
 const SalesDashboard: React.FC = () => {
   // Individual time filters for each card
-  const [revenueFilter, setRevenueFilter] = useState(timeFilterOptions[0]);
+  const [revenueFilter, setRevenueFilter] = useState(timeFilterOptions.find(filter => filter.value === 'this_month') || timeFilterOptions[0]);
   const [expensesFilter, setExpensesFilter] = useState(timeFilterOptions[0]);
   const [incomeExpenseFilter, setIncomeExpenseFilter] = useState(timeFilterOptions[0]);
   const [patientsFilter, setPatientsFilter] = useState(timeFilterOptions[0]);
@@ -42,13 +52,19 @@ const SalesDashboard: React.FC = () => {
   const [stockFilter, setStockFilter] = useState(timeFilterOptions[0]);
   const [topClientsFilter, setTopClientsFilter] = useState(timeFilterOptions[0]);
   const [topClients, setTopClients] = useState<TopClient[]>([]);
+  const [revenueData, setRevenueData] = useState<RevenueData>({
+    revenue: 0,
+    growth: 0,
+    monthlyData: []
+  });
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
       fetchTopClients();
+      fetchRevenueData();
     }
-  }, [topClientsFilter, user]);
+  }, [topClientsFilter, revenueFilter, user]);
 
   const fetchTopClients = async () => {
     try {
@@ -57,20 +73,33 @@ const SalesDashboard: React.FC = () => {
         return;
       }
 
-      // Get cases for the current user's lab
+      // Calculate date range based on selected filter
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - topClientsFilter.days);
+      
+      // Format dates for Supabase query
+      const formattedStartDate = startDate.toISOString();
+      const formattedEndDate = today.toISOString();
+
+      // Get cases for the current user's lab within the selected time period
       const { data: casesData, error } = await supabase
         .from('cases')
         .select(`
           client_id,
+          created_at,
           clients!client_id (
             id,
             client_name
           ),
           invoices (
             amount,
-            due_amount
+            due_amount,
+            created_at
           )
-        `);
+        `)
+        .gte('created_at', formattedStartDate)
+        .lte('created_at', formattedEndDate);
 
       if (error) {
         console.error('Error fetching top clients:', error);
@@ -89,7 +118,16 @@ const SalesDashboard: React.FC = () => {
           };
         }
         acc[clientId].total_cases++;
-        acc[clientId].total_outstanding += curr.invoices?.reduce((sum: number, inv: any) => sum + (inv.due_amount || 0), 0) || 0;
+        
+        // Only count outstanding amounts from invoices within the selected time period
+        const relevantInvoices = curr.invoices?.filter((inv: any) => {
+          const invoiceDate = new Date(inv.created_at);
+          return invoiceDate >= startDate && invoiceDate <= today;
+        }) || [];
+        
+        acc[clientId].total_outstanding += relevantInvoices.reduce((sum: number, inv: any) => 
+          sum + (inv.due_amount || 0), 0);
+        
         return acc;
       }, {});
 
@@ -104,7 +142,168 @@ const SalesDashboard: React.FC = () => {
     }
   };
 
-  // Generate data based on selected time periods
+  const fetchRevenueData = async () => {
+    try {
+      if (!user?.id) {
+        console.error("User not found");
+        return;
+      }
+
+      let currentStartDate: Date;
+      let previousStartDate: Date;
+      const today = new Date();
+
+      // Calculate date ranges based on filter type
+      if (revenueFilter.type === 'fixed' && revenueFilter.getDateRange) {
+        const { start, end } = revenueFilter.getDateRange();
+        currentStartDate = start;
+        
+        // For fixed periods, calculate previous period
+        const periodLength = end.getTime() - start.getTime();
+        previousStartDate = new Date(start.getTime() - periodLength);
+      } else if (revenueFilter.days) {
+        // Rolling periods
+        currentStartDate = new Date(today);
+        currentStartDate.setDate(today.getDate() - revenueFilter.days);
+        
+        previousStartDate = new Date(currentStartDate);
+        previousStartDate.setDate(previousStartDate.getDate() - revenueFilter.days);
+      } else {
+        // Default to last 7 days if no valid filter
+        currentStartDate = new Date(today);
+        currentStartDate.setDate(today.getDate() - 7);
+        
+        previousStartDate = new Date(currentStartDate);
+        previousStartDate.setDate(previousStartDate.getDate() - 7);
+      }
+
+      // Format dates for Supabase query
+      const formattedCurrentStartDate = currentStartDate.toISOString();
+      const formattedPreviousStartDate = previousStartDate.toISOString();
+      const formattedEndDate = today.toISOString();
+
+      // Fetch current period revenue
+      const { data: currentData, error: currentError } = await supabase
+        .from('invoices')
+        .select('amount, created_at')
+        .gte('created_at', formattedCurrentStartDate)
+        .lte('created_at', formattedEndDate)
+        .eq('status', 'paid');
+
+      // Fetch previous period revenue for growth calculation
+      const { data: previousData, error: previousError } = await supabase
+        .from('invoices')
+        .select('amount')
+        .gte('created_at', formattedPreviousStartDate)
+        .lt('created_at', formattedCurrentStartDate)
+        .eq('status', 'paid');
+
+      if (currentError || previousError) {
+        console.error('Error fetching revenue data:', currentError || previousError);
+        return;
+      }
+
+      // Calculate total revenue for current period
+      const currentRevenue = currentData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+      const previousRevenue = previousData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+
+      // Calculate growth percentage
+      const growth = previousRevenue === 0 
+        ? 100 
+        : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
+
+      // Generate monthly data for the chart
+      const monthlyData = generateMonthlyData(currentData || []);
+
+      setRevenueData({
+        revenue: currentRevenue,
+        growth: Number(growth.toFixed(1)),
+        monthlyData
+      });
+
+    } catch (error) {
+      console.error('Error in fetchRevenueData:', error);
+    }
+  };
+
+  const generateMonthlyData = (invoices: any[]) => {
+    const monthlyMap = new Map<string, number>();
+    const today = new Date();
+    let startDate: Date;
+    let endDate = today;
+    let dateFormat: string;
+
+    // Determine date range and format based on filter type
+    if (revenueFilter.type === 'fixed' && revenueFilter.getDateRange) {
+      const range = revenueFilter.getDateRange();
+      startDate = range.start;
+      endDate = range.end;
+
+      // Choose format based on period length
+      const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff <= 1) {
+        dateFormat = 'h:mm a'; // Hourly for Today
+      } else if (daysDiff <= 31) {
+        dateFormat = 'MMM d'; // Daily for This Month
+      } else {
+        dateFormat = 'MMM yyyy'; // Monthly for This Year
+      }
+    } else {
+      // Rolling periods
+      startDate = new Date(today);
+      startDate.setDate(today.getDate() - (revenueFilter.days || 7));
+      dateFormat = revenueFilter.days && revenueFilter.days <= 1 ? 'h:mm a' : 'MMM d';
+    }
+
+    // Initialize all intervals in the period
+    const interval = getIntervalForPeriod(startDate, endDate);
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const key = format(currentDate, dateFormat);
+      monthlyMap.set(key, 0);
+      currentDate = addInterval(currentDate, interval);
+    }
+
+    // Aggregate invoice amounts
+    invoices.forEach(invoice => {
+      const date = new Date(invoice.created_at);
+      if (date >= startDate && date <= endDate) {
+        const key = format(date, dateFormat);
+        monthlyMap.set(key, (monthlyMap.get(key) || 0) + (invoice.amount || 0));
+      }
+    });
+
+    // Convert to array and sort chronologically
+    return Array.from(monthlyMap.entries())
+      .map(([month, income]) => ({ month, income }));
+  };
+
+  // Helper function to determine appropriate interval
+  const getIntervalForPeriod = (start: Date, end: Date): 'hour' | 'day' | 'month' => {
+    const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff <= 1) return 'hour';
+    if (daysDiff <= 31) return 'day';
+    return 'month';
+  };
+
+  // Helper function to add interval to date
+  const addInterval = (date: Date, interval: 'hour' | 'day' | 'month'): Date => {
+    const newDate = new Date(date);
+    switch (interval) {
+      case 'hour':
+        newDate.setHours(date.getHours() + 1);
+        break;
+      case 'day':
+        newDate.setDate(date.getDate() + 1);
+        break;
+      case 'month':
+        newDate.setMonth(date.getMonth() + 1);
+        break;
+    }
+    return newDate;
+  };
+
   const generateData = (days: number) => {
     const baseRevenue = 25000;
     const scaleFactor = days / 7;
@@ -122,7 +321,6 @@ const SalesDashboard: React.FC = () => {
     };
   };
 
-  const revenueData = generateData(revenueFilter.days);
   const expensesData = generateData(expensesFilter.days);
   const incomeExpenseData = generateData(incomeExpenseFilter.days);
 
@@ -166,9 +364,13 @@ const SalesDashboard: React.FC = () => {
               <p className="text-sm text-gray-500">Total Revenue</p>
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold">${revenueData.revenue.toLocaleString()}</h2>
-                <span className="text-sm text-green-500 flex items-center">
-                  <ArrowUpIcon className="w-4 h-4" />
-                  {revenueData.growth}%
+                <span className={`text-sm flex items-center ${revenueData.growth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {revenueData.growth >= 0 ? (
+                    <ArrowUpIcon className="w-4 h-4" />
+                  ) : (
+                    <ArrowDownIcon className="w-4 h-4" />
+                  )}
+                  {Math.abs(revenueData.growth)}%
                 </span>
               </div>
             </div>
