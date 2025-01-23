@@ -336,7 +336,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (shadeOptions) {
         console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
-        const customShade = { name: "Custom", id: "manual" }; // Example custom value
+        const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
       } else {
         console.log("Failed to fetch shade options.");
@@ -592,24 +592,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : item.shades?.custom_body
-            ? "manual"
-            : "",
+            : "manual",
+
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : item.shades?.custom_gingival
-            ? "manual"
-            : "",
+            : "manual",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : item.shades?.custom_occlusal
-            ? "manual"
-            : "",
+            : "manual",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : item.shades?.custom_stump
-            ? "manual"
-            : "",
+            : "manual",
           id: item.id,
           custom_body: item.shades?.custom_body,
           custom_gingival: item.shades?.custom_gingival,
@@ -1644,7 +1637,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           </div>
           <div className="border rounded-lg bg-white">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-              <h3 className="text-sm font-medium text-transparent">Case Details</h3>
+              <h3 className="text-sm font-medium text-transparent">
+                Case Details
+              </h3>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-3 gap-6">

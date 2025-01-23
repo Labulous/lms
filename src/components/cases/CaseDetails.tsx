@@ -144,6 +144,8 @@ export interface ExtendedCase {
   patient_name: string;
   due_date: string;
   case_number: string;
+  working_pan_name?: string;
+  working_pan_color?: string;
   client: {
     id: string;
     client_name: string;
@@ -167,7 +169,6 @@ export interface ExtendedCase {
     id: string;
     products_id: string[];
   }[];
-  lab_notes: string;
   otherItems: string;
   custom_contact_details: string;
   custom_occulusal_details: string;
@@ -514,7 +515,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             appointment_date,
             instruction_notes,
             otherItems,
-            lab_notes,
             occlusal_type,
             contact_type,
             pontic_type,
@@ -1188,7 +1188,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         .from("cases")
         .update({
           invoice_notes: updatedInvoice?.notes?.invoiceNotes,
-          lab_notes: updatedInvoice?.notes?.labNotes,
         })
         .eq("id", updatedInvoice.id);
 
@@ -1519,7 +1518,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           />
                         </TableHead>
                         <TableHead className="text-xs py-0.5 pl-4 pr-0">
-                          Shade --Custom
+                          Shade
                         </TableHead>
                         <TableHead className="w-[1px] p-0">
                           <Separator
@@ -1586,17 +1585,26 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Occlusal:
                                     </span>
-                                    <div className="flex">
+                                    <div className="flex gap-2">
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_occlusal_shade ||
                                           product?.teethProduct?.occlusal_shade
                                             ?.name}
                                       </p>{" "}
-                                      --
-                                      <p>
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
                                         {product?.teethProduct
-                                          ?.custom_occlusal_shade || ""}
+                                          ?.custom_occlusal_shade || ""}{" "}
+                                        {"(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1608,17 +1616,26 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">Body:</span>
-                                    <div className="flex">
+                                    <div className="flex gap-2">
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_body_shade ||
                                           product?.teethProduct?.body_shade
                                             ?.name}
                                       </p>{" "}
-                                      --
-                                      <p>
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
                                         {product?.teethProduct
-                                          ?.custom_body_shade || ""}
+                                          ?.custom_body_shade || ""}{" "}
+                                        {"(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1633,17 +1650,26 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Gingival:
                                     </span>
-                                    <div className="flex">
+                                    <div className="flex gap-2">
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_gingival_shade ||
                                           product?.teethProduct?.gingival_shade
                                             ?.name}
                                       </p>
-                                      --
-                                      <p>
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
                                         {product?.teethProduct
-                                          ?.custom_gingival_shade || ""}
+                                          ?.custom_gingival_shade || ""}{" "}
+                                        {"custom"}
                                       </p>
                                     </div>
                                   </div>
@@ -1658,17 +1684,26 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     <span className="text-gray-500">
                                       Stump:
                                     </span>
-                                    <div className="flex">
+                                    <div className="flex gap-2">
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_stump_shade ||
                                           product?.teethProduct?.stump_shade_id
                                             ?.name}
                                       </p>{" "}
-                                      --
-                                      <p>
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
                                         {product?.teethProduct
-                                          ?.custom_stump_shade || ""}
+                                          ?.custom_stump_shade || ""}{" "}
+                                        {"(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1974,12 +2009,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       </p>
                     </div>
                   ) : null}
-                  <div className="mb-4">
-                    <p className="text-gray-600">Lab Notes</p>
-                    <p className="font-medium">
-                      {caseDetail.lab_notes || "No notes"}
-                    </p>
-                  </div>
+
                   <div className="mb-4">
                     <p className="text-gray-600">Invoice Notes</p>
                     <p className="font-medium">
@@ -2169,9 +2199,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <AccordionContent className="pt-4">
                       <div className="space-y-4">
                         <div>
-                          <p className="text-sm text-gray-500">Lab Notes</p>
+                          <p className="text-sm text-gray-500">
+                            Instruction Notes
+                          </p>
                           <p className="font-medium">
-                            {caseDetail.lab_notes || "No lab notes"}
+                            {caseDetail.instruction_notes ||
+                              "No Instruction notes"}
                           </p>
                         </div>
                         <div>

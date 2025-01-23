@@ -102,7 +102,6 @@ type Case = {
   isDueDateTBD: boolean;
   appointment_date: string | null;
   otherItems: string | null;
-  lab_notes: string | null;
   occlusal_type: string | null;
   contact_type: string | null;
   pontic_type: string | null;

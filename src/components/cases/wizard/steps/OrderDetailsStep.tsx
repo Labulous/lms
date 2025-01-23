@@ -569,6 +569,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     <Input
                       name="text"
                       placeholder="Enter the Pan"
+                      value={formData.workingPanName}
                       onChange={(e) =>
                         onChange(
                           "workingPanName",

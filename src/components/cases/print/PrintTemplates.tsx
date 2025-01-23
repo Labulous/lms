@@ -4,7 +4,7 @@ import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
 import { PAPER_SIZES } from "./PrintHandler";
 import staticLabLogo from "@/assets/staticLabLogo.png";
 import CaseDetails, { ExtendedCase } from "../CaseDetails";
-import ToothSelector from "../wizard/modals/ToothSelector";
+import ToothSelector, { TYPE_COLORS } from "../wizard/modals/ToothSelector";
 import { cn } from "@/lib/utils";
 import { DefaultProductType } from "@/types/supabase";
 
@@ -401,44 +401,64 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
           <div className="py-2">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <img src={staticLabLogo} alt="Lab Logo" className="h-10 mb-2" />
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                  <div>
-                    <span className="font-semibold">Clinic: </span>
-                    {caseDetail?.client.client_name}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Received: </span>
-                    {caseDetail.isDueDateTBD
-                      ? "TBD"
-                      : formatDate(caseDetail?.received_date as string)}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Doctor: </span>
-                    {caseDetail?.doctor?.name || "N/A"}
-                  </div>
-                  <div>
-                    <span className="font-semibold">Due Date: </span>
-                    {caseDetail.isDueDateTBD
-                      ? "TBD"
-                      : formatDate(caseDetail?.due_date as string)}
+                <div className="grid grid-cols-2">
+                  <img
+                    src={staticLabLogo}
+                    alt="Lab Logo"
+                    className="h-10 mb-2"
+                  />
+                  <div
+                    className="flex"
+                    style={{
+                      color: caseDetail?.working_pan_color,
+                    }}
+                  >
+                    <span>Pan #: </span>
+                    <div className="font-bold ml-1">
+                      {caseDetail?.working_pan_name || "N/A"}
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm mt-4">
-                  <div>
-                    <span className="font-semibold">Patient: </span>
-                    {caseDetail?.patient_name || "N/A"}
+                <div>
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                    <div>
+                      <span className="font-semibold">Clinic: </span>
+                      {caseDetail?.client.client_name}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Received: </span>
+                      {caseDetail.isDueDateTBD
+                        ? "TBD"
+                        : formatDate(caseDetail?.received_date as string)}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Doctor: </span>
+                      {caseDetail?.doctor?.name || "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Due Date: </span>
+                      {caseDetail.isDueDateTBD
+                        ? "TBD"
+                        : formatDate(caseDetail?.due_date as string)}
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-semibold">Appt Date: </span>
-                    {caseDetail.isDueDateTBD
-                      ? "TBD"
-                      : formatDateWithTime(
-                          caseDetail?.appointment_date as string
-                        )}
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm mt-4">
+                    <div>
+                      <span className="font-semibold">Patient: </span>
+                      {caseDetail?.patient_name || "N/A"}
+                    </div>
+                    <div>
+                      <span className="font-semibold">Appt Date: </span>
+                      {caseDetail.isDueDateTBD
+                        ? "TBD"
+                        : formatDateWithTime(
+                            caseDetail?.appointment_date as string
+                          )}
+                    </div>
                   </div>
                 </div>
               </div>
+
               <div className="flex-shrink-0">
                 <QRCodeSVG
                   value={
@@ -574,39 +594,103 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               {/* Selected Teeth Text */}
               <foreignObject x="65" y="60" width="136" height="180">
                 <div
-                  className="w-full h-full flex flex-col items-center justify-center gap-2"
+                  className="w-full h-full flex flex-col items-center justify-center gap-2 text-xs"
                   style={{ transform: "scale(0.75)" }}
                 >
                   <div className="flex">
                     <span>Occlusal: </span>
-                    <div className="font-bold ml-1">
-                      {teeth.teethProduct?.manual_occlusal_shade
-                        ? teeth.teethProduct?.manual_occlusal_shade
-                        : teeth.teethProduct?.occlusal_shade?.name || "N/A"}
+                    <div className="font-bold ml-1 flex gap-x-2">
+                      <p>
+                        {" "}
+                        {teeth.teethProduct?.manual_occlusal_shade
+                          ? teeth.teethProduct?.manual_occlusal_shade
+                          : teeth.teethProduct?.occlusal_shade?.name || "N/A"}
+                      </p>
+
+                      <p
+                        className="font-semibold "
+                        style={{
+                          color:
+                            TYPE_COLORS[
+                              teeth?.product_type
+                                ?.name as keyof typeof TYPE_COLORS
+                            ] || TYPE_COLORS.Other,
+                        }}
+                      >
+                        {teeth?.teethProduct?.custom_occlusal_shade || ""}{" "}
+                        {"(cus)"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
                     <span>Body: </span>
-                    <div className="font-bold ml-1">
-                      {teeth.teethProduct?.manual_body_shade
-                        ? teeth.teethProduct?.manual_body_shade
-                        : teeth.teethProduct?.body_shade?.name || "N/A"}
+                    <div className="font-bold ml-1 flex gap-x-2">
+                      <p>
+                        {teeth.teethProduct?.manual_body_shade
+                          ? teeth.teethProduct?.manual_body_shade
+                          : teeth.teethProduct?.body_shade?.name || "N/A"}
+                      </p>
+
+                      <p
+                        className="font-semibold"
+                        style={{
+                          color:
+                            TYPE_COLORS[
+                              teeth?.product_type
+                                ?.name as keyof typeof TYPE_COLORS
+                            ] || TYPE_COLORS.Other,
+                        }}
+                      >
+                        {teeth?.teethProduct?.custom_body_shade || ""} {"(cus)"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
                     <span>Gingival: </span>
-                    <div className="font-bold ml-1">
-                      {teeth.teethProduct?.manual_gingival_shade
-                        ? teeth.teethProduct?.manual_gingival_shade
-                        : teeth.teethProduct?.gingival_shade?.name || "N/A"}
+                    <div className="font-bold ml-1 flex gap-x-2">
+                      <p>
+                        {teeth.teethProduct?.manual_gingival_shade
+                          ? teeth.teethProduct?.manual_gingival_shade
+                          : teeth.teethProduct?.gingival_shade?.name || "N/A"}
+                      </p>
+
+                      <p
+                        className="font-semibold"
+                        style={{
+                          color:
+                            TYPE_COLORS[
+                              teeth?.product_type
+                                ?.name as keyof typeof TYPE_COLORS
+                            ] || TYPE_COLORS.Other,
+                        }}
+                      >
+                        {teeth?.teethProduct?.custom_gingival_shade || ""}{" "}
+                        {"cus"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex">
                     <span>Stump: </span>
-                    <div className="font-bold ml-1">
-                      {teeth.teethProduct?.manual_gingival_shade
-                        ? teeth.teethProduct?.manual_gingival_shade
-                        : teeth.teethProduct?.gingival_shade?.name || "N/A"}
+                    <div className="font-bold ml-1 flex gap-x-2">
+                      <p>
+                        {teeth.teethProduct?.manual_gingival_shade
+                          ? teeth.teethProduct?.manual_gingival_shade
+                          : teeth.teethProduct?.gingival_shade?.name || "N/A"}
+                      </p>
+
+                      <p
+                        className="font-semibold"
+                        style={{
+                          color:
+                            TYPE_COLORS[
+                              teeth?.product_type
+                                ?.name as keyof typeof TYPE_COLORS
+                            ] || TYPE_COLORS.Other,
+                        }}
+                      >
+                        {teeth?.teethProduct?.custom_stump_shade || ""}{" "}
+                        {"(cus)"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -806,8 +890,10 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                 <div className="border-2 mt-2" />
 
                 <div className="flex mt-6">
-                  <span>Lab Notes: </span>
-                  <div className="font-bold ml-1">{item?.lab_notes || ""}</div>
+                  <span>Instruction Notes: </span>
+                  <div className="font-bold ml-1">
+                    {item?.instruction_notes || ""}
+                  </div>
                 </div>
               </div>
             </div>

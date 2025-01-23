@@ -354,7 +354,6 @@ const UpdateCase: React.FC = () => {
               isDueDateTBD,
               appointment_date,
               otherItems,
-              lab_notes,
               invoice_notes,
               instruction_notes,
               occlusal_type,
