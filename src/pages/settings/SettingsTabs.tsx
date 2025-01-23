@@ -10,6 +10,7 @@ const tabs = [
   { id: 'case-workflow', label: 'Case Workflow', href: '/settings/case-workflow' },
   { id: 'working-tags', label: 'Working Tags', href: '/settings/working-tags' },
   { id: 'working-Pans', label: 'Working Pans', href: '/settings/working-pans' },
+  { id: 'user-management', label: 'User Management', href: '/settings/user-management' },
 ] as const;
 
 export const SettingsTabs: React.FC = () => {

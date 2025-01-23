@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { UserCircle, Bell, Menu, Search, LogOut, Settings } from "lucide-react";
 import { getCurrentUser, logout } from "../../services/authService";
 import SettingsMenu from "./SettingsMenu";
+import UserInfo from "../UserInfo";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -22,7 +23,9 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
 
     fetchCurrentUser();
   }, []); // Empty dependency array ensures this runs only once after the initial render
-
+  interface User {
+    name?: string; // Optional since you're using optional chaining
+  }
   const getPageTitle = () => {
     const path = location.pathname;
     if (path === "/") return "Dashboard";
@@ -79,17 +82,20 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               </button>
             </SettingsMenu>
             <div className="flex items-center">
-              <div className="flex items-center space-x-2 text-gray-500">
-                <UserCircle className="h-5 w-5" />
-                <span className="text-sm font-medium">{currentUser?.name}</span>
-              </div>
+              <UserInfo data={currentUser}>
+                <div className="flex items-center space-x-2 text-gray-500">
+                  <UserCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">{currentUser?.name}</span>
+                </div>
+              </UserInfo>
+
             </div>
-            <button
+            {/* <button
               onClick={handleLogout}
               className="text-gray-500 hover:text-gray-600"
             >
               <LogOut className="h-5 w-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

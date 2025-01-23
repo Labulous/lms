@@ -11,7 +11,7 @@ export interface CustomUser {
   email: string;
   role: "admin" | "technician" | "client" | "super_admin";
   name: string;
-  
+
 }
 type User = Database["public"]["Tables"]["users"]["Row"];
 
@@ -47,10 +47,10 @@ export const login = async (email: string, password: string): Promise<void> => {
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
@@ -165,7 +165,8 @@ export const signUp = async (
   email: string,
   password: string,
   name: string,
-  role: "super_admin"
+  // role: "super_admin"
+  role: string,
 ): Promise<void> => {
   try {
     logger.info("Starting user signup", { email, role });
@@ -242,10 +243,10 @@ export const signUp = async (
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
@@ -253,7 +254,8 @@ export const signUp = async (
 };
 export const createUserByAdmins = async (
   labId: string,
-  role: "admin" | "technician" | "client",
+  // role: "admin" | "technician" | "client",
+  role: string,
   name: string,
   email: string,
   password: string,
@@ -272,8 +274,14 @@ export const createUserByAdmins = async (
 ): Promise<void> => {
   try {
     // 1. Check if the email already exists in Auth and Users table
+    // const { data: authData, error: authError } = await supabase
+    //   .from("auth.users")
+    //   .select("id")
+    //   .eq("email", email);
+
+    debugger;
     const { data: authData, error: authError } = await supabase
-      .from("auth.users")
+      .from("users")
       .select("id")
       .eq("email", email);
 
@@ -376,8 +384,8 @@ export const createUserByAdmins = async (
       role === "admin"
         ? "admin_ids"
         : role === "technician"
-        ? "technician_ids"
-        : "client_ids"; // Add to client_ids for clients
+          ? "technician_ids"
+          : "client_ids"; // Add to client_ids for clients
 
     // Fetch the current IDs/emails for the specified field
     const { data: labData, error: fetchError } = await supabase
@@ -409,8 +417,7 @@ export const createUserByAdmins = async (
     }
 
     console.log(
-      `${
-        role.charAt(0).toUpperCase() + role.slice(1)
+      `${role.charAt(0).toUpperCase() + role.slice(1)
       } created and lab updated successfully!`
     );
   } catch (error) {
