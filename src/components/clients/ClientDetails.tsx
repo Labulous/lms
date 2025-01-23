@@ -141,41 +141,37 @@ const ClientDetails: React.FC<ClientDetailsProps> = ({
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab("client-information")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "client-information"
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "client-information"
                 ? "border-primary text-primary"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Client Information
           </button>
           <button
             onClick={() => setActiveTab("case-activity")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "case-activity"
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "case-activity"
                 ? "border-primary text-primary"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Case Activity
           </button>
           <button
             onClick={() => setActiveTab("billing")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "billing"
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "billing"
                 ? "border-primary text-primary"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Billing
           </button>
           <button
             onClick={() => setActiveTab("sales-activity")}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
-              activeTab === "sales-activity"
+            className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "sales-activity"
                 ? "border-primary text-primary"
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-            }`}
+              }`}
           >
             Sales Activity
           </button>

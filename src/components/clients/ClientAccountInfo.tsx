@@ -33,6 +33,8 @@ import {
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { Toast } from "react-hot-toast";
 
 interface ClientAccountInfoProps {
   client: Client;
@@ -53,6 +55,13 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   onDelete,
   setIsEditing,
 }) => {
+  const { user } = useAuth();
+
+  if (!user) {
+    toast.error("User role not found");
+    return;
+  }
+
   const handleEditClick = () => {
     // Initialize editedData with all current client data
     setEditedData({
@@ -176,20 +185,22 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
             <CardTitle className="text-xl font-semibold">
               Account Details
             </CardTitle>
-            <div className="flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge variant="outline">
-                      Last Updated: {client.updated_at ? format(new Date(client.updated_at), "PPp") : "N/A"}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Created: {client.created_at ? format(new Date(client.created_at), "PPp") : "N/A"}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+            {user.role != "client" && (
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="outline">
+                        Last Updated: {client.updated_at ? format(new Date(client.updated_at), "PPp") : "N/A"}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Created: {client.created_at ? format(new Date(client.created_at), "PPp") : "N/A"}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
           </div>
           <div className="space-x-2">
             {!isEditing ? (
@@ -202,14 +213,16 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
+                {user.role !== "client" && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
               </>
             ) : (
               <>

@@ -26,6 +26,7 @@ import WorkingTagsSettings from "./pages/settings/working-tags-page";
 import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
+import ClientProfile from "./components/clients/ClientProfile";
 
 const App: React.FC = () => {
   return (
@@ -197,6 +198,16 @@ const App: React.FC = () => {
               <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <Adjustments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client-profile"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientProfile />
                 </Layout>
               </ProtectedRoute>
             }
