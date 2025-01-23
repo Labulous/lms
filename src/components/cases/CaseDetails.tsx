@@ -201,6 +201,7 @@ export interface ExtendedCase {
   };
   products: any[];
   tag: {
+    color: string;
     name: string;
     id: string;
   };

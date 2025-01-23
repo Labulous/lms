@@ -269,6 +269,7 @@ const NewCase: React.FC = () => {
             attachements: selectedFiles.map((item) => item.url),
             working_pan_name: transformedData.workingPanName,
             working_pan_color: transformedData.workingPanColor,
+            working_tag_id: transformedData.workingTagName,
             margin_design_type: transformedData.caseDetails?.marginDesign,
             occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
             alloy_type: transformedData.caseDetails?.alloyType,
