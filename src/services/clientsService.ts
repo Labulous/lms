@@ -47,6 +47,7 @@ export interface ClientInput
   > {
   accountNumber?: string;
   account_number?: string;
+  lab_id?: string;
 
   doctors?: Omit<Doctor, "id">[];
 }
@@ -127,6 +128,7 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
       account_number: client.accountNumber, // Keep the account number when updating
+      lab_id: client.lab_id
     };
   }
 
@@ -348,10 +350,10 @@ class ClientsService {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
             (doctor) =>
-              ({
-                ...this.transformDoctorToDB(doctor),
-                client_id: clients.id,
-              } as any)
+            ({
+              ...this.transformDoctorToDB(doctor),
+              client_id: clients.id,
+            } as any)
           )
         );
 
@@ -397,14 +399,14 @@ class ClientsService {
         );
 
         // Only update if there are actual changes
-        if (currentDoctors.length !== clientData.doctors.length || 
-            ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
-          
+        if (currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
+
           // First try to update existing doctors instead of deleting
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
             const currentDoctor = currentDoctors[i];
-            
+
             if (currentDoctor) {
               // Update existing doctor
               const { error: updateError } = await supabase
