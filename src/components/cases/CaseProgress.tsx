@@ -32,6 +32,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
 import FileUploads from "./wizard/steps/FileUploads";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
+import FilePreview from "./wizard/modals/FilePreview";
 export interface CaseStep {
   id?: string;
   date?: string;
@@ -107,7 +108,8 @@ const CaseProgress: React.FC<CaseProgressProps> = ({
   const [technicians, setTechnicians] = useState<
     { name: string; id: string }[] | null
   >([]);
-
+  const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
+  const [files, setFiles] = useState<string[]>([]);
   const [editWorkstationForm, setEditWorkStationForm] = useState<CaseStep>({
     custom_workstation_type: "",
     status: "in_progress" as "in_progress" | "completed" | "issue_reported",
@@ -1026,11 +1028,22 @@ id
                                       {(step.files && step.files.length) || 0}
                                     </p>
                                   </div>
-                                  <div className="grid grid-cols-4 gap-2">
+                                  <div className="grid grid-cols-4 gap-2 cursor-pointer">
                                     {step.files &&
                                       step.files.map((item, index) => {
                                         return (
-                                          <div key={index}>
+                                          <div
+                                            key={index}
+                                            onClick={() => {
+                                              setIsFilePreview(true);
+                                              setFiles([
+                                                item,
+                                                ...step?.files?.filter(
+                                                  (f) => f !== item
+                                                ) || [],
+                                              ]);
+                                            }}
+                                          >
                                             <img
                                               src={item}
                                               height={100}
@@ -1061,6 +1074,10 @@ id
           </Button>
         </div>
       </div>
+
+      {isFilePreview && (
+        <FilePreview files={files} onClose={() => setIsFilePreview(false)} />
+      )}
     </div>
   );
 };

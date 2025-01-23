@@ -83,6 +83,7 @@ import { Invoice } from "@/data/mockInvoicesData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { LoadingState } from "@/pages/cases/NewCase";
 import OnCancelModal from "./wizard/modals/onCancelModal";
+import FilePreview from "./wizard/modals/FilePreview";
 
 interface CaseFile {
   id: string;
@@ -308,6 +309,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [lab, setLab] = useState<labDetail | null>(null);
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
   const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
+  const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
+  const [files, setFiles] = useState<string[]>([]);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -568,7 +571,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       let caseDataApi: any = caseData;
       setCaseDetail(caseDataApi);
       getWorkStationDetails(caseData?.created_at);
-
+      setFiles(caseData.attachements);
       if (caseData.product_ids?.[0]?.products_id) {
         const productsIdArray = caseData.product_ids[0].products_id;
         const caseProductId = caseData.product_ids[0].id;
@@ -2386,7 +2389,19 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               className="border rounded-lg p-4 space-y-2"
                             >
                               {isImage ? (
-                                <div className="relative aspect-video w-full overflow-hidden rounded-md">
+                                <div
+                                  className="relative aspect-video w-full overflow-hidden rounded-md"
+                                  onClick={() => {
+                                    setIsFilePreview(true);
+                                    setFiles((files) => {
+                                      const filteredFiles = files.filter(
+                                        (f) => f !== file
+                                      );
+
+                                      return [file, ...filteredFiles];
+                                    });
+                                  }}
+                                >
                                   <img
                                     src={file}
                                     alt={fileName}
@@ -2501,6 +2516,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           onClose={handleCloseEditModal}
           onSave={handleSaveInvoice}
         />
+      )}
+      {isFilePreview && (
+        <FilePreview files={files} onClose={() => setIsFilePreview(false)} />
       )}
     </div>
   );
