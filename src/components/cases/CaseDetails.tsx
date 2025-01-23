@@ -2009,19 +2009,19 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       </p>
                     </div>
                   ) : null}
-
-                  <div className="mb-4">
-                    <p className="text-gray-600">Invoice Notes</p>
-                    <p className="font-medium">
-                      {caseDetail?.invoice_notes || "No Invoice notes"}
-                    </p>
-                  </div>
                   <div className="mb-4">
                     <p className="text-gray-600">Instruction Notes</p>
                     <p className="font-medium">
                       {caseDetail?.instruction_notes || "No Instruction notes"}
                     </p>
                   </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Invoice Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.invoice_notes || "No Invoice notes"}
+                    </p>
+                  </div>
+
                   {caseDetail.custom_pontic_details ? (
                     <div>
                       <p className="text-gray-600">Contact Type</p>
