@@ -837,3 +837,20 @@ export interface CaseFilters {
   status: string;
   searchTerm: string;
 }
+
+/**
+ * User management interfaces
+ */
+export interface Users {
+  id: string;
+  role:string;
+  name : string,
+  email: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  created_at: string;
+  updated_at: string;
+}

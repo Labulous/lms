@@ -254,7 +254,8 @@ export const signUp = async (
 };
 export const createUserByAdmins = async (
   labId: string,
-  role: "admin" | "technician" | "client",
+  // role: "admin" | "technician" | "client",
+  role: string,
   name: string,
   email: string,
   password: string,
@@ -273,8 +274,13 @@ export const createUserByAdmins = async (
 ): Promise<void> => {
   try {
     // 1. Check if the email already exists in Auth and Users table
+    // const { data: authData, error: authError } = await supabase
+    //   .from("auth.users")
+    //   .select("id")
+    //   .eq("email", email);
+
     const { data: authData, error: authError } = await supabase
-      .from("auth.users")
+      .from("users")
       .select("id")
       .eq("email", email);
 
