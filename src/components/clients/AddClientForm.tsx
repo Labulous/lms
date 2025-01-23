@@ -43,6 +43,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    //Test
     const fetchNextAccountNumber = async () => {
       try {
         console.log("Fetching next account number...");
