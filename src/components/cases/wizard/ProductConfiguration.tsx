@@ -67,6 +67,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { FormData as CaseFormData } from "./CaseWizard";
+import { spawn } from "child_process";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -592,17 +593,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : "manual",
+            : item.shades?.body_shade === "manual"
+            ? "manual"
+            : "",
 
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : "manual",
+            : item.shades?.gingival_shade === "manual"
+            ? "manual"
+            : "",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : "manual",
+            : item.shades?.occlusal_shade === "manual"
+            ? "manual"
+            : "",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : "manual",
+            : item.shades?.stump_shade === "manual"
+            ? "manual"
+            : "",
           id: item.id,
           custom_body: item.shades?.custom_body,
           custom_gingival: item.shades?.custom_gingival,
@@ -817,14 +826,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.occlusal_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_occlusal ||
+                                          "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.body_shade === "manual"
                                   ? shadeData[index]?.manual_body
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id === shadeData[index]?.body_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_body || "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.gingival_shade === "manual"
                                   ? shadeData[index]?.manual_gingival
@@ -832,7 +856,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.gingival_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_gingival ||
+                                          "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.stump_shade === "manual"
                                   ? shadeData[index]?.manual_stump
@@ -840,7 +872,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.stump_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_stump || "--"}
+                                      </span>
+                                    )}
                               </div>
                             ) : (
                               " Add Shade"
@@ -927,6 +966,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_occlusal: e.target.value,
                                           id: row.id,
                                           occlusal_shade: "manual",
+                                          custom_occlusal: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -954,6 +994,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           e.target.value.toUpperCase(),
                                         id: row.id,
                                         manual_occlusal: "",
+                                        occlusal_shade: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1007,6 +1048,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_body: e.target.value,
                                           id: row.id,
                                           body_shade: "manual",
+                                          custom_body: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -1032,6 +1074,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         custom_body:
                                           e.target.value.toUpperCase(),
                                         id: row.id,
+                                        body_shade: "",
+                                        manual_body: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1085,6 +1129,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_gingival: e.target.value,
                                           id: row.id,
                                           gingival_shade: "manual",
+                                          custom_gingival: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -1110,6 +1155,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         custom_gingival:
                                           e.target.value.toUpperCase(),
                                         id: row.id,
+                                        gingival_shade: "",
+                                        manual_gingival: "",
                                       };
 
                                       return updatedShadeData;
@@ -1164,6 +1211,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_stump: e.target.value,
                                           id: row.id,
                                           stump_shade: "manual",
+                                          custom_stump: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -1189,6 +1237,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         custom_stump:
                                           e.target.value.toUpperCase(),
                                         id: row.id,
+                                        stump_shade: "",
+                                        manual_stump: "",
                                       };
 
                                       return updatedShadeData;
