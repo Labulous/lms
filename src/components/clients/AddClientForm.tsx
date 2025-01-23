@@ -3,6 +3,8 @@ import DoctorFields from "./DoctorFields";
 import { ClientInput } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { getLabIdByUserId } from "@/services/authService";
 
 interface Doctor {
   name: string;
@@ -24,6 +26,29 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
   loading,
   onSuccess,
 }) => {
+
+  //Get UserID 
+  const { user } = useAuth();
+  const [labId, setLabId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        // Get LabID
+        const labData = await getLabIdByUserId(user?.id as string);
+        if (!labData) {
+          toast.error("Unable to get Lab Id");
+          return;
+        }
+        setLabId(labData.labId);  // Set the lab ID here
+      } catch (error) {
+        console.error("Error loading clients:", error);
+        toast.error("Failed to load clients list");
+      }
+    };
+    loadClients();
+  }, [user]);
+
   const [nextAccountNumber, setNextAccountNumber] = useState<string>("");
   const [formData, setFormData] = useState<ClientInput>({
     clientName: "",
@@ -134,9 +159,57 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     }));
   };
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setIsSubmitting(true);
+
+  //   try {
+  //     const { data: accountNumber, error: numberError } = await supabase.rpc(
+  //       "get_next_account_number"
+  //     );
+  //     if (numberError) throw numberError;
+
+  //     const result = await onSubmit({
+  //       ...formData,
+  //       account_number: accountNumber as string,
+  //     });
+
+  //     if (result !== undefined) {
+  //       toast.success("Client added successfully!");
+  //       setFormData({
+  //         clientName: "",
+  //         contactName: "",
+  //         phone: "",
+  //         email: "",
+  //         address: {
+  //           street: "",
+  //           city: "",
+  //           state: "",
+  //           zipCode: "",
+  //         },
+  //         clinicRegistrationNumber: "",
+  //         notes: "",
+  //         doctors: [{ name: "", phone: "", email: "", notes: "" }],
+  //       });
+  //       onSuccess?.();
+  //     }
+  //   } catch (error) {
+  //     console.error("Error adding client:", error);
+  //     toast.error("Failed to add client. Please try again.");
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (!labId) {
+      toast.error("Lab ID is required.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const { data: accountNumber, error: numberError } = await supabase.rpc(
@@ -147,6 +220,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       const result = await onSubmit({
         ...formData,
         account_number: accountNumber as string,
+        lab_id: labId // labId should now always be defined here
       });
 
       if (result !== undefined) {

@@ -153,7 +153,19 @@ const UpdateCase: React.FC = () => {
         const clients = await clientsService.getClients(labData.labId);
 
         if (Array.isArray(clients)) {
-          setClients(clients);
+          if (user?.role === "client") {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                setFormData((prevData) => ({
+                  ...prevData,
+                  clientId: client.id,
+                }))
+              }
+            })
+            setClients(clients.filter((client) => client.email === user?.email));
+          } else {
+            setClients(clients);
+          }
         }
         const number = await fetchCaseCount(labData.labId); // Fetch current case count
 
@@ -664,6 +676,7 @@ const UpdateCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
+              isClient={user?.role === "client" ? true : false}
             />
           </div>
         </div>

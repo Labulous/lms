@@ -104,7 +104,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       icon: Briefcase,
       label: "Cases",
       href: "/cases",
-      roles: ["admin", "super_admin", "technician"],
+      roles: ["admin", "super_admin", "technician", "client"],
     },
     {
       icon: Truck,

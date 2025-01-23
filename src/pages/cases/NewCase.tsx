@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { format } from "date-fns";
+import { format, set } from "date-fns";
 import { toast } from "react-hot-toast";
 import OrderDetailsStep from "../../components/cases/wizard/steps/OrderDetailsStep";
 import ProductConfiguration from "../../components/cases/wizard/ProductConfiguration";
@@ -134,9 +134,22 @@ const NewCase: React.FC = () => {
           toast.error("Unable to get Lab Id");
           return null;
         }
+        
         const clients = await clientsService.getClients(labData?.labId ?? "");
         if (Array.isArray(clients)) {
-          setClients(clients);
+          if (user?.role === "client") {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                setFormData((prevData) => ({
+                  ...prevData,
+                  clientId: client.id,
+                }))
+              }
+            })
+            setClients(clients.filter((client) => client.email === user?.email));
+          } else {
+            setClients(clients);
+          }
         }
 
         setLab(labData);
@@ -169,7 +182,7 @@ const NewCase: React.FC = () => {
 
     getCasesLength();
   }, [user?.id]);
-  console.log(errors, "Errors");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -307,6 +320,7 @@ const NewCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
+              isClient={user?.role === "client" ? true : false}
             />
           </div>
         </div>

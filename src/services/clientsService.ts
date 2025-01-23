@@ -47,6 +47,7 @@ export interface ClientInput
   > {
   accountNumber?: string;
   account_number?: string;
+  lab_id?: string;
 
   doctors?: Omit<Doctor, "id">[];
 }
@@ -127,6 +128,7 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
       account_number: client.accountNumber, // Keep the account number when updating
+      lab_id: client.lab_id
     };
   }
 
@@ -152,7 +154,6 @@ class ClientsService {
         logger.error("Error getting authenticated user", { authError });
         throw authError;
       }
-      console.log(authUser, "authUser");
 
       if (!authUser) {
         logger.debug("No authenticated user found");
@@ -172,7 +173,6 @@ class ClientsService {
         throw userRoleError;
       }
       const uthenicated: any = userRoleData;
-      console.log(uthenicated.role, "uthenicated role");
       if (!userRoleData || !uthenicated.role) {
         logger.error("User role not found in the database", {
           userId: authUser.id,
@@ -182,13 +182,13 @@ class ClientsService {
 
       const userRole: any = userRoleData;
 
-      if (!["admin", "technician", "super_admin"].includes(userRole.role)) {
+      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
         throw new Error("Insufficient permissions to view clients");
       }
-
+      
       logger.debug("Fetching all clients...");
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
@@ -205,7 +205,7 @@ class ClientsService {
         });
         throw new Error(`Failed to fetch clients: ${clientsError.message}`);
       }
-
+      
       if (!clients) {
         logger.warn("No clients found in database");
         return [];
@@ -216,7 +216,7 @@ class ClientsService {
         clients,
         clientsError,
       });
-
+      
       const clientsWithDoctors = await Promise.all(
         clients.map(async (client: any) => {
           try {
@@ -270,9 +270,7 @@ class ClientsService {
         .select("*")
         .eq("id", id)
         .single();
-
-      console.log("DEBUG: Raw client query result:", { client, error });
-
+      
       if (error) {
         logger.error("Error fetching client from database", { id, error });
         throw new Error(`Error fetching client: ${error.message}`);
@@ -299,11 +297,6 @@ class ClientsService {
         .select("*")
         .eq("client_id", id);
 
-      console.log("DEBUG: Raw doctors query result:", {
-        doctors,
-        doctorsError,
-      });
-
       if (doctorsError) {
         logger.error("Error fetching doctors for client", {
           clientId: id,
@@ -316,7 +309,6 @@ class ClientsService {
         typedClient,
         doctors || []
       );
-      console.log("DEBUG: Transformed client:", transformedClient);
 
       return transformedClient;
     } catch (error) {
@@ -348,10 +340,10 @@ class ClientsService {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
             (doctor) =>
-              ({
-                ...this.transformDoctorToDB(doctor),
-                client_id: clients.id,
-              } as any)
+            ({
+              ...this.transformDoctorToDB(doctor),
+              client_id: clients.id,
+            } as any)
           )
         );
 
@@ -397,14 +389,14 @@ class ClientsService {
         );
 
         // Only update if there are actual changes
-        if (currentDoctors.length !== clientData.doctors.length || 
-            ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
-          
+        if (currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
+
           // First try to update existing doctors instead of deleting
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
             const currentDoctor = currentDoctors[i];
-            
+
             if (currentDoctor) {
               // Update existing doctor
               const { error: updateError } = await supabase

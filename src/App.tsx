@@ -26,7 +26,6 @@ import WorkingTagsSettings from "./pages/settings/working-tags-page";
 import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
-import { UserManagement } from "./pages/settings/UserManagement";
 
 const App: React.FC = () => {
   return (
@@ -50,7 +49,7 @@ const App: React.FC = () => {
             path="/cases/*"
             element={
               <ProtectedRoute
-                requiredRole={["admin", "technician", "super_admin"]}
+                requiredRole={["admin", "technician", "super_admin", "client"]}
               >
                 <Layout>
                   <Cases />
@@ -115,10 +114,6 @@ const App: React.FC = () => {
                   <Route
                     path="products-services"
                     element={<ProductsServices />}
-                  />
-                    <Route
-                    path="user-management"
-                    element={<UserManagement />}
                   />
                   <Route path="*" element={<Settings />} />
                 </Routes>
