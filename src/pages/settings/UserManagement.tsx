@@ -368,7 +368,7 @@ export const UserManagement: React.FC = () => {
                 <div className="flex-1 p-6">
                     <div className="p-6 space-y-6">
                         <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-bold">User Management</h2>
+                            <h2 className="text-2xl font-bold">User Management </h2>
                             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                                 <DialogTrigger asChild>
                                     <Button
