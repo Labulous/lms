@@ -173,6 +173,12 @@ export interface ExtendedCase {
   custom_occulusal_details: string;
   custom_pontic_details: string;
   custom_occlusal_details: string;
+  margin_design_type: string;
+  occlusion_design_type: string;
+  alloy_type: string;
+  custom_margin_design_type: string;
+  custom_occlusion_design_type: string;
+  custon_alloy_type: string;
   occlusal_type: string;
   pontic_type: string;
   attachements: string[];

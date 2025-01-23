@@ -269,6 +269,14 @@ const NewCase: React.FC = () => {
             attachements: selectedFiles.map((item) => item.url),
             working_pan_name: transformedData.workingPanName,
             working_pan_color: transformedData.workingPanColor,
+            margin_design_type: transformedData.caseDetails?.marginDesign,
+            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+            alloy_type: transformedData.caseDetails?.alloyType,
+            custom_margin_design_type:
+              transformedData.caseDetails?.customMargin,
+            custom_occlusion_design_type:
+              transformedData.caseDetails?.customOcclusalDesign,
+            custon_alloy_type: transformedData.caseDetails?.customAlloy,
           },
           products: selectedProducts,
 
@@ -289,6 +297,8 @@ const NewCase: React.FC = () => {
       mainDivRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [errors]);
+
+  console.log(formData, "formData");
   return (
     <div className="p-6" ref={mainDivRef}>
       <div className="space-y-4">

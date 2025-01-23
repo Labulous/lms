@@ -21,6 +21,9 @@ import {
   ShadeOption,
   ProductWithShade,
   Database,
+  MarginDesign,
+  OcclusalDesign,
+  AlloylDesign,
 } from "@/types/supabase";
 import { productsService, ProductTypes } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
@@ -117,6 +120,36 @@ const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" "),
 }));
+const MARGIN_OPTIONS = Object.values(MarginDesign).map((value) => ({
+  value,
+  label:
+    value === MarginDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
+const OCCLUSION_OPTIONS = Object.values(OcclusalDesign).map((value) => ({
+  value,
+  label:
+    value === OcclusalDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
+const ALLOY_OPTIONS = Object.values(AlloylDesign).map((value) => ({
+  value,
+  label:
+    value === AlloylDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
 
 interface ProductConfigurationProps {
   selectedMaterial: SavedProduct | null;
@@ -128,17 +161,29 @@ interface ProductConfigurationProps {
     occlusalType?: string;
     customOcclusal?: string;
     contactType?: string;
-    customContact?: string;
     ponticType?: string;
     customPontic?: string;
+    customContact?: string;
+    marginDesign?: string;
+    customMargin?: string;
+    occlusalDesign?: string;
+    customOcclusalDesign?: string;
+    alloyType?: string;
+    customAlloy?: string;
   }) => void;
   initialCaseDetails?: {
     occlusalType?: string;
     customOcclusal?: string;
     contactType?: string;
-    customContact?: string;
     ponticType?: string;
     customPontic?: string;
+    customContact?: string;
+    marginDesign?: string;
+    customMargin?: string;
+    occlusalDesign?: string;
+    customOcclusalDesign?: string;
+    alloyType?: string;
+    customAlloy?: string;
   };
   setselectedProducts: any;
   formData?: FormData;
@@ -180,6 +225,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         occlusalType: OcclusalType.NotApplicable,
         contactType: ContactType.NotApplicable,
         ponticType: PonticType.NotApplicable,
+        marginDesign: MarginDesign.NotApplicable,
+        occlusalDesign: OcclusalDesign.NotApplicable,
+        alloyType: AlloylDesign.NotApplicable,
       });
     }
   }, [initialCaseDetails, onCaseDetailsChange]);
@@ -909,7 +957,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_occlusal: e.target.value.toUpperCase(),
+                                        custom_occlusal:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
                                         manual_occlusal: "",
                                       };
@@ -987,7 +1036,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_body: e.target.value.toUpperCase(),
+                                        custom_body:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
                                       return updatedShadeData;
@@ -1064,7 +1114,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_gingival: e.target.value.toUpperCase(),
+                                        custom_gingival:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
 
@@ -1142,7 +1193,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_stump: e.target.value.toUpperCase(),
+                                        custom_stump:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
                                       };
 
@@ -1436,155 +1488,304 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         </div>
 
         {/* Case Details Section */}
-        <div className="border rounded-lg bg-white">
-          <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-            <h3 className="text-sm font-medium text-white">Case Details</h3>
+        <div className="grid grid-cols-2 gap-5">
+          <div className="border rounded-lg bg-white">
+            <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h3 className="text-sm font-medium text-white">Case Details</h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                {/* Occlusal Type */}
+                <div>
+                  <Label className="text-xs">Occlusal Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.occlusalType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        occlusalType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {OCCLUSAL_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`occlusal-${option.value}`}
+                        />
+                        <Label htmlFor={`occlusal-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+
+                    {formErrors?.caseDetails?.occlusalType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.occlusalType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.occlusalType === OcclusalType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customOcclusal || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customOcclusal: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom occlusal type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                {/* Contact Type */}
+                <div>
+                  <Label className="text-xs">Contact Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.contactType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        contactType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {CONTACT_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`contact-${option.value}`}
+                        />
+                        <Label htmlFor={`contact-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.contactType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.contactType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.contactType === ContactType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customContact || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customContact: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom contact type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                {/* Pontic Type */}
+                <div>
+                  <Label className="text-xs">Pontic Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.ponticType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        ponticType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {PONTIC_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`pontic-${option.value}`}
+                        />
+                        <Label htmlFor={`pontic-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.ponticType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.ponticType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === PonticType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customPontic || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customPontic: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-3 gap-6">
-              {/* Occlusal Type */}
-              <div>
-                <Label className="text-xs">Occlusal Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.occlusalType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      occlusalType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {OCCLUSAL_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`occlusal-${option.value}`}
-                      />
-                      <Label htmlFor={`occlusal-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-
-                  {formErrors?.caseDetails?.occlusalType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.occlusalType}
-                    </p>
-                  )}
-                </RadioGroup>
-                {initialCaseDetails?.occlusalType === OcclusalType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customOcclusal || ""}
-                    onChange={(e) =>
+          <div className="border rounded-lg bg-white">
+            <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h3 className="text-sm font-medium text-transparent">Case Details</h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <Label className="text-xs">Margin Design:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.marginDesign || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customOcclusal: e.target.value,
+                        marginDesign: value,
                       })
                     }
-                    placeholder="Enter custom occlusal type"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-
-              {/* Contact Type */}
-              <div>
-                <Label className="text-xs">Contact Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.contactType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      contactType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {CONTACT_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`contact-${option.value}`}
-                      />
-                      <Label htmlFor={`contact-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                  {formErrors?.caseDetails?.contactType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.contactType}
-                    </p>
+                    className="mt-2 space-y-1"
+                  >
+                    {MARGIN_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`margin-${option.value}`}
+                        />
+                        <Label htmlFor={`margin-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.marginDesign && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.marginDesign}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.marginDesign === MarginDesign.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customMargin || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customMargin: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom Margin Design"
+                      className="mt-2"
+                    />
                   )}
-                </RadioGroup>
-                {initialCaseDetails?.contactType === ContactType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customContact || ""}
-                    onChange={(e) =>
+                </div>
+                <div>
+                  <Label className="text-xs">Occlusion Design:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.occlusalDesign || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customContact: e.target.value,
+                        occlusalDesign: value,
                       })
                     }
-                    placeholder="Enter custom contact type"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-
-              {/* Pontic Type */}
-              <div>
-                <Label className="text-xs">Pontic Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.ponticType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      ponticType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {PONTIC_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`pontic-${option.value}`}
-                      />
-                      <Label htmlFor={`pontic-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                  {formErrors?.caseDetails?.ponticType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.ponticType}
-                    </p>
+                    className="mt-2 space-y-1"
+                  >
+                    {OCCLUSION_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`occlusion-${option.value}`}
+                        />
+                        <Label htmlFor={`occlusion-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.occlusalDesign && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.occlusalDesign}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === OcclusalDesign.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customOcclusalDesign || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customOcclusalDesign: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
                   )}
-                </RadioGroup>
-                {initialCaseDetails?.ponticType === PonticType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customPontic || ""}
-                    onChange={(e) =>
+                </div>
+                <div>
+                  <Label className="text-xs">Alloy:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.alloyType || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customPontic: e.target.value,
+                        alloyType: value,
                       })
                     }
-                    placeholder="Enter custom pontic type"
-                    className="mt-2"
-                  />
-                )}
+                    className="mt-2 space-y-1"
+                  >
+                    {ALLOY_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`alloy-${option.value}`}
+                        />
+                        <Label htmlFor={`alloy-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.alloyType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.alloyType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === PonticType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customAlloy || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customAlloy: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
