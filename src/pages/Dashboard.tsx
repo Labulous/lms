@@ -189,18 +189,10 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         const today = new Date();
-        const todayDate = new Date().toISOString().split("T")[0];
-
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-
-        const tomorrowDate = new Date(
-          new Date().setUTCDate(new Date().getUTCDate() + 1)
-        )
-          .toISOString()
-          .split("T")[0];
 
         // Fetch all cases for calendar
         const { data: casesData, error: casesError } = await supabase
@@ -228,6 +220,7 @@ const Dashboard: React.FC = () => {
           },
           {}
         );
+
         const groupedCases = casesList.reduce(
           (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
             if (
@@ -243,24 +236,34 @@ const Dashboard: React.FC = () => {
           },
           {}
         );
-        const pastDue = casesList.filter(
-          (caseItem: CasesDues) => new Date(caseItem.due_date) < today
-        ).length;
 
-        const dueToday = casesList.filter(
-          (caseItem: CasesDues) =>
-            new Date(caseItem.due_date).toISOString().split("T")[0] ===
-            todayDate
-        ).length;
+        // Filter cases with consistent date boundaries
+        const pastDueCases = casesList.filter((caseItem: CasesDues) => {
+          if (!caseItem.due_date || caseItem.status === "on_hold") return false;
+          const dueDate = new Date(caseItem.due_date);
+          return dueDate < today && ["in_queue", "in_progress"].includes(caseItem.status);
+        });
 
-        const dueTomorrow = casesList.filter(
-          (caseItem: CasesDues) =>
-            new Date(caseItem.due_date).toISOString().split("T")[0] ===
-            tomorrowDate
-        ).length;
+        const dueTodayCases = casesList.filter((caseItem: CasesDues) => {
+          if (!caseItem.due_date || caseItem.status === "on_hold") return false;
+          const dueDate = new Date(caseItem.due_date);
+          return dueDate >= today && dueDate < tomorrow && ["in_queue", "in_progress"].includes(caseItem.status);
+        });
+
+        const pastDue = pastDueCases.length;
+        const dueToday = dueTodayCases.length;
+
+        const dueTomorrow = casesList.filter((caseItem: CasesDues) => {
+          const dueDate = new Date(caseItem.due_date);
+          const dayAfterTomorrow = new Date(tomorrow);
+          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+          return dueDate >= tomorrow && dueDate < dayAfterTomorrow && ["in_queue", "in_progress"].includes(caseItem.status);
+        }).length;
+
         const onHold = casesList.filter(
           (caseItem: CasesDues) => caseItem.status === "on_hold"
         ).length;
+
         const events: CalendarEvents[] = Object.entries(groupedCases)
           .map(([date, cases]) => {
             const eventDate = new Date(date);

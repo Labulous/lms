@@ -164,17 +164,17 @@ const CaseList: React.FC = () => {
     const panParam = searchParams.get("pans");
     return panParam ? panParam.split(",") : [];
   });
-  const [{ pageIndex, pageSize }, setPagination] = useState<PaginationState>({
+  const [paginationState, setPaginationState] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
   });
 
   const pagination = useMemo(
     () => ({
-      pageIndex,
-      pageSize,
+      pageIndex: paginationState.pageIndex,
+      pageSize: paginationState.pageSize,
     }),
-    [pageIndex, pageSize]
+    [paginationState]
   );
   console.log(filteredCases, "filteredCases");
   const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
@@ -804,14 +804,14 @@ const CaseList: React.FC = () => {
     data: filteredCases,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onPaginationChange: setPaginationState,
+    onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: setPagination,
     enableRowSelection: true,
     state: {
       sorting,
@@ -852,103 +852,101 @@ const CaseList: React.FC = () => {
 
   useEffect(() => {
     const fetchCases = async () => {
-      setLoading(true);
-      setError(null);
-
       try {
-        if (!user) {
-          logger.debug("No user found in auth context");
-          setLoading(false);
-          return;
-        }
-
-        if (!user.id || !user.role) {
-          logger.error("User missing required fields", {
-            hasId: !!user.id,
-            hasRole: !!user.role,
-          });
-          throw new Error("User is missing required fields");
-        }
-
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          logger.error("Session error:", sessionError);
-          throw sessionError;
-        }
-
-        if (!session) {
-          logger.error("No active session");
+        setLoading(true);
+        if (!user?.id) {
           throw new Error("No active session");
         }
 
-        const { data: casesData, error: casesError } = await supabase
+        // Build query with filters
+        let query = supabase
           .from("cases")
-          .select(
-            `
-            id,
-            created_at,
-            received_date,
-            ship_date,
-            status,
-            patient_name,
-            due_date,
-            case_number,
-            client:clients (
-              id,
-              client_name,
-              phone
-            ),
-            doctor:doctors (
-              id,
-              name,
-              client:clients (
-                id,
-                client_name,
-                phone
-              )
-            ),
-            tags:working_tags!working_tag_id (
-            name,color),
-          working_pan_name,
-          working_pan_color,
-
-            rx_number,
-            isDueDateTBD,
-            appointment_date,
-            otherItems,
-            lab_notes,
-            occlusal_type,
-            contact_type,
-            pontic_type,
-            custom_contact_details,
-            custom_occulusal_details,
-            custom_pontic_details,
-            enclosed_items:enclosed_case (
-              impression,
-              biteRegistration,
-              photos,
-              jig,
-              opposingModel,
-              articulator,
-              returnArticulator,
-              cadcamFiles,
-              consultRequested,
-              user_id
-            ),
-            product_ids:case_products (
-              products_id,
-              id
-            )
-            `
-          )
+          .select(`
+            *,
+            client:clients!client_id (*),
+            doctor:doctors!doctor_id (*),
+            working_tag:working_tags (*),
+            enclosed_items:enclosed_case (*)
+          `)
           .eq("lab_id", labId)
           .order("created_at", { ascending: false });
 
+        // Handle status filter from URL
+        const statusParam = searchParams.get("status");
+        if (statusParam) {
+          const statuses = statusParam.split(",");
+          query = query.in("status", statuses);
+        }
+
+        // Handle filter parameter from URL (for past_due, due_today, etc.)
+        const filter = searchParams.get("filter");
+        if (filter) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          switch (filter) {
+            case "past_due":
+              query = query
+                .in("status", ["in_progress", "in_queue"])
+                .lt("due_date", today.toISOString());
+              break;
+            case "due_today":
+              query = query
+                .in("status", ["in_progress", "in_queue"])
+                .gte("due_date", today.toISOString())
+                .lt("due_date", tomorrow.toISOString());
+              break;
+            case "due_tomorrow":
+              const dayAfterTomorrow = new Date(tomorrow);
+              dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+              query = query
+                .in("status", ["in_progress", "in_queue"])
+                .gte("due_date", tomorrow.toISOString())
+                .lt("due_date", dayAfterTomorrow.toISOString());
+              break;
+            case "on_hold":
+              query = query.eq("status", "on_hold");
+              break;
+          }
+        } else {
+          // Handle other date filters only if filter param is not present
+          const dueDateParam = searchParams.get("due_date");
+          if (dueDateParam) {
+            const filterDate = new Date(dueDateParam);
+            const nextDay = new Date(filterDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            query = query.gte("due_date", filterDate.toISOString())
+                        .lt("due_date", nextDay.toISOString());
+          }
+
+          const createdAtParam = searchParams.get("created_at");
+          if (createdAtParam) {
+            const filterDate = new Date(createdAtParam);
+            const nextDay = new Date(filterDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            query = query.gte("created_at", filterDate.toISOString())
+                        .lt("created_at", nextDay.toISOString());
+          }
+
+          const updatedAtParam = searchParams.get("updated_at");
+          if (updatedAtParam) {
+            const filterDate = new Date(updatedAtParam);
+            const nextDay = new Date(filterDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            
+            query = query.gte("updated_at", filterDate.toISOString())
+                        .lt("updated_at", nextDay.toISOString());
+          }
+        }
+
+        const { data: casesData, error: casesError } = await query;
+
         if (casesError) {
+          console.error("Supabase error:", casesError);
           throw casesError;
         }
 
@@ -958,9 +956,52 @@ const CaseList: React.FC = () => {
           return;
         }
 
-        setCases(casesData as unknown as Case[]);
-        setFilteredCases(casesData as unknown as Case[]);
+        const transformedCases = casesData.map(item => {
+          // Handle client data
+          const clientData = Array.isArray(item.client) ? item.client[0] : item.client;
+          
+          // Handle doctor data
+          const doctorData = Array.isArray(item.doctor) ? item.doctor[0] : item.doctor;
+          const doctorClient = doctorData?.client && Array.isArray(doctorData.client) 
+            ? doctorData.client[0] 
+            : doctorData?.client;
+
+          // Handle tag data
+          const tagData = Array.isArray(item.working_tag) ? item.working_tag[0] : item.working_tag;
+          
+          // Handle enclosed items
+          const enclosedItemsData = Array.isArray(item.enclosed_items) 
+            ? item.enclosed_items[0] 
+            : item.enclosed_items;
+
+          return {
+            ...item,
+            client: clientData ? {
+              id: clientData.id,
+              client_name: clientData.client_name,
+              phone: clientData.phone
+            } : null,
+            doctor: doctorData ? {
+              id: doctorData.id,
+              name: doctorData.name,
+              client: doctorClient ? {
+                id: doctorClient.id,
+                client_name: doctorClient.client_name,
+                phone: doctorClient.phone
+              } : null
+            } : null,
+            tags: tagData,
+            pans: item.working_pan || null,
+            enclosed_items: enclosedItemsData,
+            pan_tag: item.working_pan_name || null,
+            pan_color: item.working_pan_color || null,
+          } as Case;
+        });
+
+        setCases(transformedCases);
+        setFilteredCases(transformedCases);
       } catch (err) {
+        console.error("Error details:", err);
         logger.error("Error fetching cases:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch cases");
       } finally {
@@ -971,7 +1012,7 @@ const CaseList: React.FC = () => {
     if (!authLoading && user && labId) {
       fetchCases();
     }
-  }, [user, authLoading, labId]);
+  }, [user, authLoading, labId, searchParams]);
 
   useEffect(() => {
     const filter = searchParams.get("filter");
