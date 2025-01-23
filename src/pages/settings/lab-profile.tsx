@@ -96,6 +96,7 @@ export const LABProfile: React.FC = () => {
     };
 
     const handleSave = async (e: React.FormEvent) => {
+        debugger;
         if (!formData) return;
         console.log(formData);
 
@@ -117,7 +118,7 @@ export const LABProfile: React.FC = () => {
                         .from("office_address")
                         .update({
                             address_1: formData.office_address?.address_1,
-                            address_2: formData.office_address?.address_2,
+                            address_2:  formData.office_address?.address_2 || null,
                             city: formData.office_address?.city,
                             state_province: formData.office_address?.state_province,
                             zip_postal: formData.office_address.zip_postal,
