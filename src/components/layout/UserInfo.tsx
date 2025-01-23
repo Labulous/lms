@@ -54,7 +54,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ data }) => {
                             />
                             <div>
                                 <p className="text-sm font-medium text-gray-800">{data?.name}</p>
-                                <p className="text-xs text-gray-500 pb-2 mb-1 block">{data?.email}</p>
+                                <p className="text-xs text-gray-500   block">{data?.email}</p>
+                                <p className="text-m text-black-500  mb-1 block">{data?.role}</p>
                             </div>
                         </div>
                     </div>

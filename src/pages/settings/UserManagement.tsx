@@ -101,14 +101,13 @@ export const UserManagement: React.FC = () => {
 
     const roles = {
         super_admin: [
-            // { label: "Super Admin", role: "super_admin" },
             { label: "admin", role: "Admin" },
             { label: "Client", role: "client" },
             { label: "Technician", role: "technician" },
         ],
         admin: [
 
-            { label: "Client", role: "client" },
+            { label: "admin", role: "Admin" },
             { label: "Technician", role: "technician" },
 
         ]
