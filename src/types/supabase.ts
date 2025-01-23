@@ -140,6 +140,28 @@ export enum PonticType {
   Ovate = "ovate",
   Custom = "custom",
 }
+export enum MarginDesign {
+  NotApplicable = "not_applicable",
+  porcelainMargin = "porcelain_margin",
+  porcelainToMargin = "porcelain_to_margin",
+  fineMetalCollar = "fine_metalCollar",
+  ModifiedRidgeLap = "modified_ridge_lap",
+  Custom = "custom",
+}
+export enum OcclusalDesign {
+  NotApplicable = "not_applicable",
+  porcelainOcclusal = "porcelain_occlusal",
+  metalOcculusal = "metal_occlusal",
+  metalOcculusal2_3 = "2/3_metal_occlusal",
+  Custom = "custom",
+}
+export enum AlloylDesign {
+  NotApplicable = "not_applicable",
+  nonPrecious = "non-precious",
+  semiPrecious = "semi-precious",
+  precious = "precious",
+  Custom = "custom",
+}
 
 export enum OcclusalType {
   NotApplicable = "not_applicable",
@@ -504,6 +526,7 @@ export interface Database {
           contact_type: ContactType;
           custom_contact_details: string | null;
           pontic_type: PonticType;
+          margin_design: MarginDesign;
           custom_pontic_details: string | null;
           created_at: string;
           updated_at: string;
@@ -519,6 +542,7 @@ export interface Database {
           contact_type?: ContactType;
           custom_contact_details?: string | null;
           pontic_type?: PonticType;
+          margin_design: MarginDesign;
           custom_pontic_details?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -534,6 +558,7 @@ export interface Database {
           contact_type?: ContactType;
           custom_contact_details?: string | null;
           pontic_type?: PonticType;
+          margin_design: MarginDesign;
           custom_pontic_details?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -821,6 +846,12 @@ export interface FormData {
     ponticType?: string;
     customPontic?: string;
     customContact?: string;
+    marginDesign?: string;
+    customMargin?: string;
+    occlusalDesign?: string;
+    customOcclusalDesign?: string;
+    alloyType?: string;
+    customAlloy?: string;
   };
   notes: {
     instructionNotes?: string;

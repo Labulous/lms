@@ -13,41 +13,43 @@ import { Printer } from "lucide-react";
 import { ExtendedCase } from "@/components/cases/CaseDetails";
 
 interface PrintTemplateProps {
-  caseData: {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  } | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }[];
+  caseData:
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
@@ -131,7 +133,7 @@ const PrintPreview = () => {
   const handlePrint = () => {
     window.print();
   };
-
+  console.log(caseDetails, "caseDetails");
   const renderTemplate = () => {
     // If caseData is an array, we're doing batch printing
     if (Array.isArray(caseData)) {
@@ -146,18 +148,19 @@ const PrintPreview = () => {
           case "qr-code":
             return <QRCodeTemplate key={index} {...singleProps} />;
           case "lab-slip":
-            return <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={caseDetails}/>;
+            return (
+              <LabSlipTemplate
+                paperSize="LETTER"
+                key={index}
+                caseDetails={caseDetails}
+              />
+            );
           case "address-label":
             return <AddressLabelTemplate key={index} {...singleProps} />;
           case "patient-label":
             return <PatientLabelTemplate key={index} {...singleProps} />;
           case "invoice_slip":
-            return (
-              <InvoiceTemplate
-                key={index}
-                {...singleProps}
-              />
-            );
+            return <InvoiceTemplate key={index} {...singleProps} />;
           default:
             return <div key={index}>Invalid template type</div>;
         }
@@ -181,11 +184,7 @@ const PrintPreview = () => {
       case "patient-label":
         return <PatientLabelTemplate {...props} />;
       case "invoice_slip":
-        return (
-          <InvoiceTemplate
-            {...props}
-          />
-        );
+        return <InvoiceTemplate {...props} />;
       default:
         return <div>Invalid template type</div>;
     }

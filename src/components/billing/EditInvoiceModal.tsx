@@ -73,7 +73,7 @@ export function EditInvoiceModal({
       }));
       setItems(transformedItems as any);
       setNotes({
-        labNotes: invoice.lab_notes as string,
+        labNotes: "" as string,
         invoiceNotes: invoice.invoice_notes as string,
       });
       setDiscount(invoice.discount?.value || 0);
@@ -488,7 +488,7 @@ export function EditInvoiceModal({
                 className="w-full h-32 p-2 border rounded-md"
               />
             </div>
-            <div className="w-1/2">
+            {/* <div className="w-1/2">
               <h3 className="text-lg font-medium mb-2">Lab Notes</h3>
               <textarea
                 value={notes?.labNotes}
@@ -507,7 +507,7 @@ export function EditInvoiceModal({
                 }
                 className="w-full h-32 p-2 border rounded-md"
               />
-            </div>
+            </div> */}
 
             <div className="w-1/3 space-y-4 h-[150px] flex justify-end items-end">
               <div className="flex border-t-2 border-b-2 py-5 font-bold">
