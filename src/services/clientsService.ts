@@ -47,7 +47,6 @@ export interface ClientInput
   > {
   accountNumber?: string;
   account_number?: string;
-  lab_id?: string;
 
   doctors?: Omit<Doctor, "id">[];
 }
@@ -128,7 +127,6 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
       account_number: client.accountNumber, // Keep the account number when updating
-      lab_id: client.lab_id
     };
   }
 
@@ -184,7 +182,7 @@ class ClientsService {
 
       const userRole: any = userRoleData;
 
-      if (!["admin", "technician", "super_admin"].includes(userRole.role)) {
+      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
@@ -472,6 +470,189 @@ class ClientsService {
       throw error;
     }
   }
+
+  async getClientIdByUserEmail(email: string): Promise<string | null> {
+    try {
+      logger.debug("Starting getClient request");
+
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        logger.error("Error getting authenticated user", { authError });
+        throw authError;
+      }
+
+      if (!authUser) {
+        logger.debug("No authenticated user found");
+        return null;
+      }
+
+      logger.debug("Authenticated user found", { userId: authUser.id });
+
+      const { data: userRoleData, error: userRoleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", authUser.id)
+        .single();
+
+      if (userRoleError) {
+        logger.error("Error fetching user role", { userRoleError });
+        throw userRoleError;
+      }
+
+      if (!userRoleData || !userRoleData.role) {
+        logger.error("User role not found in the database", {
+          userId: authUser.id,
+        });
+        throw new Error("User role not found");
+      }
+
+      const userRole: any = userRoleData;
+
+      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
+        logger.error("User does not have required role", {
+          role: userRole.role,
+        });
+        throw new Error("Insufficient permissions to view clients");
+      }
+
+      logger.debug("Fetching client...");
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("id")  // Only select `id`
+        .eq("email", email)
+        .single();
+
+      if (clientError) {
+        logger.error("Error fetching client", {
+          error: clientError,
+          message: clientError.message,
+          hint: clientError.hint,
+          details: clientError.details,
+        });
+        throw new Error(`Failed to fetch client: ${clientError.message}`);
+      }
+
+      if (!client) {
+        logger.warn("Client not found in database");
+        return null;
+      }
+
+      logger.debug("Client found", { clientId: client.id });
+
+      return client.id;  // Return only the client `id`
+    } catch (error) {
+      logger.error("Unexpected error in getClient", {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      });
+      throw error;
+    }
+  }
+
+  async getClient(clientId: string): Promise<Client | null> {
+    try {
+      logger.debug("Starting getClient request");
+
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        logger.error("Error getting authenticated user", { authError });
+        throw authError;
+      }
+
+      if (!authUser) {
+        logger.debug("No authenticated user found");
+        return null;
+      }
+
+      logger.debug("Authenticated user found", { userId: authUser.id });
+
+      const { data: userRoleData, error: userRoleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", authUser.id)
+        .single();
+
+      if (userRoleError) {
+        logger.error("Error fetching user role", { userRoleError });
+        throw userRoleError;
+      }
+
+      if (!userRoleData || !userRoleData.role) {
+        logger.error("User role not found in the database", {
+          userId: authUser.id,
+        });
+        throw new Error("User role not found");
+      }
+
+      const userRole: any = userRoleData;
+
+      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
+        logger.error("User does not have required role", {
+          role: userRole.role,
+        });
+        throw new Error("Insufficient permissions to view clients");
+      }
+
+      logger.debug("Fetching client...");
+      const { data: client, error: clientError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("id", clientId)
+        .single();
+
+      if (clientError) {
+        logger.error("Error fetching client", {
+          error: clientError,
+          message: clientError.message,
+          hint: clientError.hint,
+          details: clientError.details,
+        });
+        throw new Error(`Failed to fetch client: ${clientError.message}`);
+      }
+
+      if (!client) {
+        logger.warn("Client not found in database");
+        return null;
+      }
+
+      logger.debug("Fetching doctors for client...");
+      const { data: doctors, error: doctorsError } = await supabase
+        .from("doctors")
+        .select("*")
+        .eq("client_id", client.id);
+
+      if (doctorsError) {
+        logger.error("Error fetching doctors for client", {
+          clientId: client.id,
+          error: doctorsError,
+        });
+        return this.transformClientFromDB(client, []);
+      }
+
+      logger.info("Successfully fetched client and doctors", { clientId: client.id });
+
+      return this.transformClientFromDB(client, doctors || []);
+    } catch (error) {
+      logger.error("Unexpected error in getClient", {
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : error,
+      });
+      throw error;
+    }
+  }
+
 }
 
 export const clientsService = new ClientsService();
