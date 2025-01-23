@@ -542,7 +542,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             product_ids:case_products!id (
               products_id,
               id
-            )
+            ),
+             margin_design_type,
+            occlusion_design_type,
+            alloy_type,
+            custom_margin_design_type,
+            custom_occlusion_design_type,
+            custon_alloy_type
           `
         )
         .eq("id", activeCaseId)
@@ -2161,24 +2167,72 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-4">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Occlusal Type</p>
-                          <p className="font-medium">
-                            {caseDetail.occlusal_type || "Not specified"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Contact Type</p>
-                          <p className="font-medium">
-                            {caseDetail.contact_type || "Not specified"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Pontic Type</p>
-                          <p className="font-medium">
-                            {caseDetail.pontic_type || "Not specified"}
-                          </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Occlusal Type
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.occlusal_type
+                                ? caseDetail?.occlusal_type
+                                : caseDetail.custom_occulusal_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Contact Type
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.contact_type
+                                ? caseDetail?.contact_type
+                                : caseDetail?.custom_contact_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Pontic Type</p>
+                            <p className="font-medium">
+                              {caseDetail?.pontic_type
+                                ? caseDetail?.pontic_type
+                                : caseDetail?.custom_pontic_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                        </div>{" "}
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Margin Design
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.margin_design_type
+                                ? caseDetail?.margin_design_type
+                                : caseDetail?.custom_margin_design_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Occlusal Design
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.occlusion_design_type
+                                ? caseDetail?.occlusion_design_type
+                                : caseDetail?.custom_occlusion_design_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Alloy</p>
+                            <p className="font-medium">
+                              {caseDetail?.alloy_type
+                                ? caseDetail?.alloy_type
+                                : caseDetail?.custon_alloy_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </AccordionContent>
