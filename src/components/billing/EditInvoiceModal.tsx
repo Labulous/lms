@@ -65,7 +65,6 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
-  console.log(invoice, "invoice?.products");
   useEffect(() => {
     if (invoice) {
       const transformedItems = invoice?.products?.map((item) => ({
@@ -193,7 +192,6 @@ export function EditInvoiceModal({
   const clients = [{ id: "1", clientName: "zahid" }];
 
   const handleSelectedProduct = async (product: any) => {
-    console.log(product, "product here");
     try {
       // Fetch discounted_price from Supabase
       const { data, error } = await supabase
@@ -253,7 +251,6 @@ export function EditInvoiceModal({
       console.error("An unexpected error occurred:", err);
     }
   };
-  console.log(items, "items");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
