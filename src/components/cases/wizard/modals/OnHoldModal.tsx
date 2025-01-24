@@ -33,12 +33,7 @@ const OnHoldModal = ({
   };
 
   return (
-    <Dialog
-      open
-      onOpenChange={() => {
-        handleClose();
-      }}
-    >
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Case on Hold</DialogTitle>
