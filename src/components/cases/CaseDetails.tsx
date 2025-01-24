@@ -754,6 +754,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     if (activeCaseId) {
       fetchCaseData();
     }
+    return () => {
+      document.body.style.pointerEvents = "auto";
+    };
   }, [activeCaseId]);
 
   const handleCompleteStage = async (stageName: string) => {
@@ -1387,7 +1390,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         if (caseDetail.status === "completed") {
                           toast.error("Case is Already Completed.");
                         } else {
-                          setOnHoldModal(true);
+                          setTimeout(() => setOnHoldModal(true), 50);
                         }
                       }}
                     >
@@ -2491,21 +2494,20 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           onComplete={() => setActivePrintType(null)}
         />
       )}
-
-      {onHoldModal ? (
+      {onHoldModal && (
         <OnHoldModal
           onClose={() => {
             setTimeout(() => {
               setOnHoldModal(false);
               document.body.style.pointerEvents = "auto !important"; // Reset pointer-events
-            }, 0);
+            }, 50);
           }}
           onHoldReason={onHoldReason}
           setOnHoldReason={setOnHoldReason}
           isOpen={onHoldModal}
           handleUpdateCaseStatus={() => handleUpdateCaseStatus("on_hold")}
         />
-      ) : null}
+      )}
       {onCancelModal && (
         <OnCancelModal
           onClose={() => setOnCancelModal(false)}
