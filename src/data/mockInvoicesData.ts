@@ -68,7 +68,6 @@ export interface Invoice {
   clientId?: string;
   clientName?: string;
   patient?: string;
-  lab_notes?: string;
   client?: {
     client_name?: string;
     id?: string;

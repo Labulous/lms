@@ -221,7 +221,6 @@ const InvoiceList: React.FC = () => {
             appointment_date,
             case_number,
             otherItems,
-            lab_notes,
             invoice_notes,
             occlusal_type,
             contact_type,
@@ -565,7 +564,6 @@ const InvoiceList: React.FC = () => {
         .from("cases")
         .update({
           invoice_notes: updatedInvoice?.notes?.invoiceNotes,
-          lab_notes: updatedInvoice?.notes?.labNotes,
         })
         .eq("id", updatedInvoice.id);
 

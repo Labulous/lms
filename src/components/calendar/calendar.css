@@ -403,9 +403,10 @@
   height: 60px !important;
 }
 .calendar-container .rbc-now {
-  background-color: #3b82fa !important; /* Circle color */
-  color: white;
+  background-color: #e1ecff !important; /* Circle color */
+  color: #1f2937;
   height: 60px !important;
+  font-weight: 800;
 }
 
 /* Toolbar */
