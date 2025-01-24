@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseServiceRole } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
 import { Database, labDetail } from "@/types/supabase";
 
@@ -427,24 +427,7 @@ export const createClientByAdmin = async (
   role: "admin" | "technician" | "client"
 ): Promise<void> => {
   try {
-    console.log(labId, name, email, password, role);
-
-    // 1. Check if the email already exists in Auth
-    // const { data: authData, error: authError } = await supabase
-    //   .from("auth.users")
-    //   .select("id")
-    //   .eq("email", email);
-
-    // if (authError) {
-    //   console.error("Error checking auth for existing email:", authError);
-    //   throw new Error("Error checking for existing email in auth.");
-    // }
-
-    // if (authData.length > 0) {
-    //   throw new Error("User already exists in Supabase Auth.");
-    // }
-
-    // 2. Check if the email already exists in the users table
+    // 1. Check if the email already exists in the users table
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("id")
@@ -459,23 +442,31 @@ export const createClientByAdmin = async (
       throw new Error("User already exists in users table.");
     }
 
-    // 3. Sign up the new user in Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
+    // 2. Create the new user using the Admin API
+    const { data: newUser, error: createUserError } = await supabaseServiceRole.auth.admin.createUser({
       email: email,
       password: password,
+      user_metadata: {
+        name: name,
+        role: role,
+        lab_id: labId,
+        email_verified: true
+      },
+      email_confirm: true,
     });
 
-    if (error) {
-      console.error("Signup failed:", error);
-      throw new Error("Signup failed for the new user.");
+    if (createUserError) {
+      console.error("User  creation failed:", createUserError);
+      throw new Error("User  creation failed.");
     }
 
-    const newUserId = data.user?.id;
+    const newUserId = newUser.user?.id;
+    console.log(newUserId);
     if (!newUserId) {
       throw new Error("No user ID returned after signup.");
     }
 
-    // 4. Insert the new user into the 'users' table with the specified role
+    // 3. Insert the new user into the 'users' table with the specified role
     const { error: insertError } = await supabase.from("users").insert([
       {
         id: newUserId,
@@ -492,6 +483,37 @@ export const createClientByAdmin = async (
     }
 
     console.log("User created successfully!");
+
+    // 4. Update the labs table to append the new user ID to client_ids
+    const { data: labData, error: labFetchError } = await supabase
+      .from("labs")
+      .select("client_ids")
+      .eq("id", labId)
+      .single();
+
+    if (labFetchError) {
+      console.error("Error fetching labs table data:", labFetchError);
+      throw labFetchError;
+    }
+
+    const currentClientIds = labData?.client_ids || [];
+
+    // 5. Add the new user ID to the client_ids array
+    const updatedClientIds = [...currentClientIds, newUserId];
+
+    // 6. Update the labs table with the new client_ids array
+    const { error: updateLabError } = await supabase
+      .from("labs")
+      .update({ client_ids: updatedClientIds })
+      .eq("id", labId);
+
+    if (updateLabError) {
+      console.error("Error updating labs table:", updateLabError);
+      throw updateLabError;
+    }
+
+    console.log("User created and labs table updated successfully!");
+
   } catch (error) {
     console.error("Error in createClientByAdmin function:", error);
     throw error;

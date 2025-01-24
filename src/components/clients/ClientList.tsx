@@ -146,46 +146,6 @@ const ClientList: React.FC<ClientListProps> = ({
     setClients(initialClients);
   }, [initialClients]);
 
-  // const handleCreateLogin = async () => {
-  //   setIsSubmitting(true);
-
-  //   if (password !== confirmPassword) {
-  //     toast.error("Passwords do not match!");
-  //     return;
-  //   }
-
-  //   if (password.length < 8) {
-  //     toast.error("Password should be at least 8 characters long.");
-  //     return;
-  //   }
-
-  //   // Additional password validation here (uppercase, number, etc.)
-
-  //   try {
-  //     const client = clients.find(client => client.id === selectedClientId);
-  //     if (!labId) {
-  //       toast.error("Lab ID is required.");
-  //       setIsSubmitting(false);
-  //       return;
-  //     }
-
-  //     if (client) {
-  //       await createClientByAdmin(
-  //         labId,
-  //         client.clientName,
-  //         email,
-  //         password,
-  //         "client"
-  //       );
-  //     }
-  //     closeCreateLoginModal();
-  //   } catch (error) {
-  //     console.error("Error creating user:", error);
-  //     toast.error("Error creating login.");
-  //   }
-  // };
-
-
   const handleCreateLogin = async () => {
     setIsSubmitting(true);
 
@@ -200,8 +160,6 @@ const ClientList: React.FC<ClientListProps> = ({
       setIsSubmitting(false); // Reset submission state
       return;
     }
-
-    // Additional password validation here (uppercase, number, etc.)
 
     try {
       const client = clients.find(client => client.id === selectedClientId);
@@ -227,6 +185,12 @@ const ClientList: React.FC<ClientListProps> = ({
 
           handleCreateLogin.called = false; // Reset the flag after successful call
         }
+        toast(
+          <div>
+            <h4>🎉 Client Created Successfully</h4>
+            <p>{client.clientName} has been added as a user.</p>
+          </div>
+        );
       }
       closeCreateLoginModal();
     } catch (error) {
