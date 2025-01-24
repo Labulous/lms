@@ -62,6 +62,8 @@ const NewCase: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
+
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
@@ -301,7 +303,16 @@ const NewCase: React.FC = () => {
 
   console.log(formData, "formData");
   return (
-    <div className="p-6" ref={mainDivRef}>
+    <div
+      className="p-6"
+      ref={mainDivRef}
+      onClick={(e) => {
+        e.preventDefault();
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Create a New Case
@@ -318,6 +329,8 @@ const NewCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>

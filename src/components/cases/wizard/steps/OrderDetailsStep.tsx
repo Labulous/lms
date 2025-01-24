@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  SetStateAction,
+} from "react";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
 import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
@@ -40,6 +46,29 @@ import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
+const colors = [
+  "#FF5733", // Vibrant Red-Orange
+  "#33FF57", // Bright Green
+  "#3357FF", // Bold Blue
+  "#FF33A8", // Hot Pink
+  "#FFD133", // Bright Yellow
+  "#33FFF5", // Aqua Blue
+  "#8D33FF", // Deep Purple
+  "#FF8633", // Soft Orange
+  "#33FF99", // Mint Green
+  "#FF3333", // Bright Red
+  "#4CAF50", // Forest Green
+  "#FFC107", // Amber
+  "#9C27B0", // Amethyst Purple
+  "#2196F3", // Sky Blue
+  "#FF9800", // Vivid Orange
+  "#E91E63", // Raspberry Pink
+  "#607D8B", // Cool Gray
+  "#673AB7", // Royal Purple
+  "#00BCD4", // Cerulean Blue
+  "#FFEB3B", // Lemon Yellow
+];
+
 interface OrderDetailsStepProps {
   formData: CaseFormData;
   onChange: (
@@ -49,6 +78,8 @@ interface OrderDetailsStepProps {
   errors?: Partial<CaseFormData>;
   clients: Client[];
   loading?: boolean;
+  isAddingPan: boolean;
+  setIsAddingPan: React.Dispatch<SetStateAction<boolean>>;
 }
 
 const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
@@ -57,13 +88,15 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   errors = {},
   clients = [],
   loading = false,
+  isAddingPan,
+  setIsAddingPan,
 }) => {
   // Debug log for initial render and props
   const [tags, setTags] = useState<WorkingTag[]>([]);
   const [pans, setPans] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
-  const [isAddingPan, setIsAddingPan] = useState(false);
+  const [isCustomColor, setIsCustomColor] = useState(false);
   const addTagTriggerRef = useRef<HTMLButtonElement>(null);
   const [newTagData, setNewTagData] = useState({ name: "", color: "#000000" });
   const { user } = useAuth();
@@ -586,17 +619,72 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     ></div>
                   </div>
                   {isAddingPan && (
-                    <div className="w-72 absolute top-10 bg-white p-2">
+                    <div
+                      className="w-72 absolute top-12 bg-white p-2 z-50 border rounded-md"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                    >
                       <div className="flex justify-end py-2">
                         <button onClick={() => setIsAddingPan(false)}>
                           <X className="h-4 w-4" />
                         </button>
                       </div>
-                      <HexColorPicker
-                        color={formData.workingPanColor || "#fffff"}
-                        onChange={(color) => onChange("workingPanColor", color)}
-                        style={{ width: "100% !important" }}
-                      />
+                      <div className=" space-y-5 bg-white">
+                        <div className="flex w-full gap-4">
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(false)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "secondary" : "destructive"
+                            }
+                          >
+                            Select Colors
+                          </Button>
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(true)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "destructive" : "secondary"
+                            }
+                          >
+                            Select Custom Color
+                          </Button>
+                        </div>
+                        {!isCustomColor ? (
+                          <div className="grid grid-cols-5 gap-2 bg-white z-50">
+                            {colors.map((item, key) => {
+                              return (
+                                <div
+                                  key={key}
+                                  className={`h-12 w-12 rounded-md cursor-pointer ${
+                                    formData.workingPanColor === item
+                                      ? "border-2 border-black"
+                                      : ""
+                                  }`}
+                                  style={{
+                                    backgroundColor: item,
+                                  }}
+                                  onClick={() =>
+                                    onChange("workingPanColor", item)
+                                  }
+                                ></div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <HexColorPicker
+                            color={formData.workingPanColor || "#fffff"}
+                            onChange={(color) =>
+                              onChange("workingPanColor", color)
+                            }
+                            style={{ width: "100% !important" }}
+                          />
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

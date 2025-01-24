@@ -564,22 +564,25 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               <div className="flex">
                 <span>Margin Design: </span>
                 <div className="font-bold ml-1">
-                  {/* {teeth?.teethProduct.tooth_number.join(", ")} */}
-                  N/A
+                  {teethDetail?.custom_margin_design_type ||
+                    teethDetail?.margin_design_type ||
+                    " N/A"}
                 </div>
               </div>
               <div className="flex">
                 <span>Occlusal Design: </span>
                 <div className="font-bold ml-1">
-                  {/* {teeth?.teethProduct.tooth_number.join(", ")} */}
-                  N/A
+                  {teethDetail?.custom_occlusion_design_type ||
+                    teethDetail?.occlusion_design_type ||
+                    "N/A"}
                 </div>
               </div>
               <div className="flex">
                 <span>Alloy: </span>
                 <div className="font-bold ml-1">
-                  {/* {teeth?.teethProduct.tooth_number.join(", ")} */}
-                  N/A
+                  {teethDetail?.custon_alloy_type ||
+                    teethDetail?.alloy_type ||
+                    "N/A"}
                 </div>
               </div>
             </div>
@@ -613,21 +616,23 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         {" "}
                         {teeth.teethProduct?.manual_occlusal_shade
                           ? teeth.teethProduct?.manual_occlusal_shade
-                          : teeth.teethProduct?.occlusal_shade?.name || "N/A"}
-                      </p>
-
-                      <p
-                        className="font-semibold "
-                        style={{
-                          color:
-                            TYPE_COLORS[
-                              teeth?.product_type
-                                ?.name as keyof typeof TYPE_COLORS
-                            ] || TYPE_COLORS.Other,
-                        }}
-                      >
-                        {teeth?.teethProduct?.custom_occlusal_shade || ""}{" "}
-                        {teeth?.teethProduct?.custom_occlusal_shade && "(cus)"}
+                          : teeth.teethProduct?.occlusal_shade?.name || (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_occlusal_shade ||
+                                  ""}{" "}
+                                {teeth?.teethProduct?.custom_occlusal_shade &&
+                                  "(cus)"}
+                              </p>
+                            )}
                       </p>
                     </div>
                   </div>
@@ -637,20 +642,23 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                       <p>
                         {teeth.teethProduct?.manual_body_shade
                           ? teeth.teethProduct?.manual_body_shade
-                          : teeth.teethProduct?.body_shade?.name || "N/A"}
-                      </p>
-
-                      <p
-                        className="font-semibold"
-                        style={{
-                          color:
-                            TYPE_COLORS[
-                              teeth?.product_type
-                                ?.name as keyof typeof TYPE_COLORS
-                            ] || TYPE_COLORS.Other,
-                        }}
-                      >
-                        {teeth?.teethProduct?.custom_body_shade || ""} {teeth?.teethProduct?.custom_body_shade && "(cus)"}
+                          : teeth.teethProduct?.body_shade?.name || (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_body_shade || ""}{" "}
+                                {teeth?.teethProduct?.custom_body_shade &&
+                                  "(cus)"}
+                              </p>
+                            ) ||
+                            "N/A"}
                       </p>
                     </div>
                   </div>
@@ -660,21 +668,24 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                       <p>
                         {teeth.teethProduct?.manual_gingival_shade
                           ? teeth.teethProduct?.manual_gingival_shade
-                          : teeth.teethProduct?.gingival_shade?.name || "N/A"}
-                      </p>
-
-                      <p
-                        className="font-semibold"
-                        style={{
-                          color:
-                            TYPE_COLORS[
-                              teeth?.product_type
-                                ?.name as keyof typeof TYPE_COLORS
-                            ] || TYPE_COLORS.Other,
-                        }}
-                      >
-                        {teeth?.teethProduct?.custom_gingival_shade || ""}{" "}
-                        {teeth?.teethProduct?.custom_gingival_shade &&"cus"}
+                          : teeth.teethProduct?.gingival_shade?.name || (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_gingival_shade ||
+                                  ""}{" "}
+                                {teeth?.teethProduct?.custom_gingival_shade &&
+                                  "cus"}
+                              </p>
+                            ) ||
+                            "N/A"}
                       </p>
                     </div>
                   </div>
@@ -682,23 +693,25 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                     <span>Stump: </span>
                     <div className="font-bold ml-1 flex gap-x-2">
                       <p>
-                        {teeth.teethProduct?.manual_gingival_shade
-                          ? teeth.teethProduct?.manual_gingival_shade
-                          : teeth.teethProduct?.gingival_shade?.name || "N/A"}
-                      </p>
-
-                      <p
-                        className="font-semibold"
-                        style={{
-                          color:
-                            TYPE_COLORS[
-                              teeth?.product_type
-                                ?.name as keyof typeof TYPE_COLORS
-                            ] || TYPE_COLORS.Other,
-                        }}
-                      >
-                        {teeth?.teethProduct?.custom_stump_shade || ""}{" "}
-                        {teeth?.teethProduct?.custom_stump_shade  &&"(cus)"}
+                        {teeth.teethProduct?.manual_stump_shade
+                          ? teeth.teethProduct?.manual_stump_shade
+                          : teeth.teethProduct?.stump_shade?.name || (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_stump_shade || ""}{" "}
+                                {teeth?.teethProduct?.custom_stump_shade &&
+                                  "(cus)"}
+                              </p>
+                            ) ||
+                            "N/A"}
                       </p>
                     </div>
                   </div>
@@ -855,8 +868,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
   return (
     <div>
       {cases?.map((item, index) => {
-
-        console.log(item,"item")
+        console.log(item, "item");
         return (
           <div
             key={index}
@@ -909,43 +921,30 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                 <div className="flex flex-wrap gap-x-5 mt-2">
                   {[
                     { key: "impression", label: "Impression" },
-                    {
-                      key: "biteRegistration",
-                      label: "Bite Registration",
-                    },
+                    { key: "biteRegistration", label: "Bite Registration" },
                     { key: "photos", label: "Photos" },
                     { key: "jig", label: "Jig" },
                     { key: "opposingModel", label: "Opposing Model" },
                     { key: "articulator", label: "Articulator" },
-                    {
-                      key: "returnArticulator",
-                      label: "Return Articulator",
-                    },
+                    { key: "returnArticulator", label: "Return Articulator" },
                     { key: "cadcamFiles", label: "CAD/CAM Files" },
-                    {
-                      key: "consultRequested",
-                      label: "Consult Requested",
-                    },
-                  ].map((enclosed) => (
-                    <div
-                      key={enclosed.key}
-                      className="flex items-center gap-2"
-                    >
-                      {item?.enclosed_items?.[
-                        enclosed.key as keyof typeof item.enclosed_items
-                      ] ? (
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <X className="h-4 w-4 text-red-500" />
-                      )}
-                      <span className="text-sm">
-                        {enclosed.label}:{" "}
-                        {item?.enclosed_items?.[
+                    { key: "consultRequested", label: "Consult Requested" },
+                  ]
+                    .filter(
+                      (enclosed) =>
+                        item?.enclosed_items?.[
                           enclosed.key as keyof typeof item.enclosed_items
-                        ] || "Not Provided"}
-                      </span>
-                    </div>
-                  ))}
+                        ]
+                    )
+                    .map((enclosed) => (
+                      <div
+                        key={enclosed.key}
+                        className="flex items-center gap-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">{enclosed.label}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>

@@ -818,6 +818,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {row.shades?.body_shade ||
                             row.shades?.gingival_shade ||
                             row.shades?.occlusal_shade ||
+                            row.shades?.custom_body ||
+                            row.shades?.custom_gingival ||
+                            row.shades?.custom_occlusal ||
+                            row.shades?.custom_stump ||
                             row.shades?.stump_shade ? (
                               <div>
                                 {shadeData[index]?.occlusal_shade === "manual"
@@ -934,6 +938,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         occlusal_shade: value,
                                         manual_occlusal: "",
                                         id: row.id,
+                                        custom_occlusal: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1016,6 +1021,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         body_shade: value,
                                         id: row.id,
                                         manual_body: "",
+                                        custom_body: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1097,6 +1103,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         gingival_shade: value,
                                         manual_gingival: "",
                                         id: row.id,
+                                        custom_gingival: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1179,6 +1186,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         stump_shade: value,
                                         id: row.id,
                                         manual_stump: "",
+                                        custom_stump: "",
                                       };
                                       return updatedShadeData;
                                     });
