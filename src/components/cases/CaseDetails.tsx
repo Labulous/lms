@@ -1138,7 +1138,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               await supabase
                 .from("case_product_teeth")
                 .update({
-                  tooth_number: [item.toothNumber],
+                  tooth_number: item.toothNumber
+                    .split(",")
+                    .map((num) => num.trim()), // Split string into an array and trim whitespace
                 })
                 .eq("id", item.caseProductTeethId)
                 .select("*");
@@ -1174,7 +1176,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               .from("case_product_teeth")
               .insert([
                 {
-                  tooth_number: [Number(item.toothNumber)],
+                  tooth_number: item.toothNumber
+                    .split(",")
+                    .map((num) => num.trim()),
                   product_id: item.id, // Ensure to include the product_id
                   case_id: updatedInvoice.id,
                   lab_id: lab?.id,
@@ -1215,7 +1219,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         .from("invoices")
         .update({
           amount: updatedInvoice.totalAmount,
-          due_amount: updatedInvoice.totalAmount,
         })
         .eq("case_id", updatedInvoice.id);
 
@@ -1963,42 +1966,21 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           );
                         })}
                       <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
-
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
                         <TableCell
                           colSpan={9}
                           className="text-xs py-2 pl-4 pr-0 text-right"
                         >
-                          Total:
+                          Due Amount:
                         </TableCell>
+                        <TableCell
+                          colSpan={3}
+                          className="text-xs py-2 pl-4 pr-0 font-medium"
+                        >
+                          ${caseDetail.invoice[0].due_amount}
+                        </TableCell>
+
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
-                          $
-                          {caseDetail.products
-                            ?.reduce((total, product) => {
-                              const finalPrice =
-                                product.discounted_price?.final_price ||
-                                product.price ||
-                                0;
-                              return total + finalPrice;
-                            }, 0)
-                            .toFixed(2)}
+                          Total: ${caseDetail.invoice[0].amount}
                         </TableCell>
                       </TableRow>
                     </TableBody>
