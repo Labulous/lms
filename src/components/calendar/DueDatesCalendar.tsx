@@ -162,7 +162,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     }
     return {};
   };
-
+  console.log(events, "events");
   const components = {
     toolbar: (props: any) => (
       <CustomToolbar

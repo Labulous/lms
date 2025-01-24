@@ -188,7 +188,9 @@ const Dashboard: React.FC = () => {
         if (!labData?.labId) return;
 
         // Fetch case metrics and calendar events
-        const today = new Date();
+        const todayDate = new Date();
+        const today = new Date(Date.UTC(todayDate.getUTCFullYear(), todayDate.getUTCMonth(), todayDate.getUTCDate()));
+
         today.setHours(0, 0, 0, 0);
 
         const tomorrow = new Date(today);
@@ -239,15 +241,22 @@ const Dashboard: React.FC = () => {
 
         // Filter cases with consistent date boundaries
         const pastDueCases = casesList.filter((caseItem: CasesDues) => {
-          if (!caseItem.due_date || caseItem.status === "on_hold") return false;
+          if (!caseItem.due_date) return false;
           const dueDate = new Date(caseItem.due_date);
-          return dueDate < today && ["in_queue", "in_progress"].includes(caseItem.status);
+          return (
+            dueDate < today &&
+            ["in_queue", "in_progress"].includes(caseItem.status)
+          );
         });
 
         const dueTodayCases = casesList.filter((caseItem: CasesDues) => {
-          if (!caseItem.due_date || caseItem.status === "on_hold") return false;
+          if (!caseItem.due_date ) return false;
           const dueDate = new Date(caseItem.due_date);
-          return dueDate >= today && dueDate < tomorrow && ["in_queue", "in_progress"].includes(caseItem.status);
+          return (
+            dueDate >= today &&
+            dueDate < tomorrow &&
+            ["in_queue", "in_progress"].includes(caseItem.status)
+          );
         });
 
         const pastDue = pastDueCases.length;
@@ -257,7 +266,11 @@ const Dashboard: React.FC = () => {
           const dueDate = new Date(caseItem.due_date);
           const dayAfterTomorrow = new Date(tomorrow);
           dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-          return dueDate >= tomorrow && dueDate < dayAfterTomorrow && ["in_queue", "in_progress"].includes(caseItem.status);
+          return (
+            dueDate >= tomorrow &&
+            dueDate < dayAfterTomorrow &&
+            ["in_queue", "in_progress"].includes(caseItem.status)
+          );
         }).length;
 
         const onHold = casesList.filter(
@@ -270,8 +283,8 @@ const Dashboard: React.FC = () => {
             const year = eventDate.getUTCFullYear();
             const month = eventDate.getUTCMonth();
             const day = eventDate.getUTCDate();
-            const start = new Date(Date.UTC(year, month, day, 9, 0)); // Start at 9 AM
-            const end = new Date(Date.UTC(year, month, day, 17, 0)); // End at 5 PM
+            const start = new Date(year, month, day, 8, 0); // Start at 9 AM
+            const end = new Date(year, month, day, 17, 0); // End at 5 PM
             const today = new Date();
             const isPastDue = eventDate < today;
 
