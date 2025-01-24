@@ -255,7 +255,7 @@ const NewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.instructionNotes,
+            instruction_notes: transformedData.notes?.instructionNotes,
             invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,

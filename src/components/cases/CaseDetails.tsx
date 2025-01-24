@@ -1682,7 +1682,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         {product?.teethProduct
                                           ?.custom_gingival_shade || ""}{" "}
                                         {product?.teethProduct
-                                          ?.custom_gingival_shade && "custom"}
+                                          ?.custom_gingival_shade && "(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1716,7 +1716,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       >
                                         {product?.teethProduct
                                           ?.custom_stump_shade || ""}{" "}
-                                        {"(custom)"}
+                                        { product?.teethProduct
+                                          ?.custom_stump_shade && "(custom)"}
                                       </p>
                                     </div>
                                   </div>

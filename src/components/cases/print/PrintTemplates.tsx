@@ -682,7 +682,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                 {teeth?.teethProduct?.custom_gingival_shade ||
                                   "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_gingival_shade &&
-                                  "cus"}
+                                  "(cus)"}
                               </p>
                             )}
                       </p>

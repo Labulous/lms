@@ -652,8 +652,8 @@ const UpdateCase: React.FC = () => {
     };
   }, [caseId, lab]);
 
-  console.log(caseDetail, "Case details");
-  console.log(errors, "errors");
+  console.log(formData, "form");
+  console.log(selectedProducts, "selected");
   return (
     <div
       className="p-6"
