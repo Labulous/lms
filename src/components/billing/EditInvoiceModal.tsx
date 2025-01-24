@@ -29,7 +29,6 @@ import { supabase } from "@/lib/supabase";
 import { ProductType } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;

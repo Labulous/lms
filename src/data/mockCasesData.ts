@@ -5,10 +5,7 @@ import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
-import {
-  duplicateInvoiceProductsByTeeth,
-  duplicateProductsByTeeth,
-} from "@/lib/dulicateProductsByTeeth";
+import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -406,9 +403,7 @@ const updateCases = async (
     console.log("Cases updated successfully:", caseOverviewData);
 
     // Step 3: Update case products (instead of saving, we'll update)
-    const productIds = duplicateProductsByTeeth(cases.products).map(
-      (item: any) => item.id
-    );
+    const productIds = cases.products.map((item: any) => item.id);
     const caseProduct = {
       user_id: cases.overview.created_by,
       case_id: caseId,
@@ -416,7 +411,7 @@ const updateCases = async (
     };
 
     // Calculate discounted prices for products
-    for (const product of duplicateProductsByTeeth(cases.products)) {
+    for (const product of cases.products) {
       // Prepare the data row
       const discountedPriceRow = {
         product_id: product.id,
@@ -499,45 +494,43 @@ const updateCases = async (
     }
     // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
     // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
-    const caseProductTeethRows = duplicateProductsByTeeth(cases.products).map(
-      (product: any) => ({
-        case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
-        is_range: cases.products.length > 0,
-        product_id: product.id,
-        type: product.type || "",
-        lab_id: cases.overview.lab_id || "",
-        quantity: product.quantity || 1,
-        notes: product.notes || "",
-        tooth_number: product.teeth || "",
-        occlusal_shade_id:
-          product.shades.occlusal_shade === "manual"
-            ? null
-            : product.shades.occlusal_shade || null,
-        body_shade_id:
-          product.shades.body_shade === "manual"
-            ? null
-            : product.shades.body_shade || null,
-        gingival_shade_id:
-          product.shades.gingival_shade === "manual"
-            ? null
-            : product.shades.gingival_shade || null,
-        stump_shade_id:
-          product.shades.stump_shade === "manual"
-            ? null
-            : product.shades.stump_shade || null,
+    const caseProductTeethRows = cases.products.map((product: any) => ({
+      case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
+      is_range: cases.products.length > 0,
+      product_id: product.id,
+      type: product.type || "",
+      lab_id: cases.overview.lab_id || "",
+      quantity: product.quantity || 1,
+      notes: product.notes || "",
+      tooth_number: product.teeth || "",
+      occlusal_shade_id:
+        product.shades.occlusal_shade === "manual"
+          ? null
+          : product.shades.occlusal_shade || null,
+      body_shade_id:
+        product.shades.body_shade === "manual"
+          ? null
+          : product.shades.body_shade || null,
+      gingival_shade_id:
+        product.shades.gingival_shade === "manual"
+          ? null
+          : product.shades.gingival_shade || null,
+      stump_shade_id:
+        product.shades.stump_shade === "manual"
+          ? null
+          : product.shades.stump_shade || null,
 
-        manual_body_shade: product?.shades.manual_body || null,
-        manual_occlusal_shade: product?.shades.manual_occlusal || null,
-        manual_gingival_shade: product?.shades.manual_gingival || null,
-        manual_stump_shade: product?.shades.manual_stump || null,
-        custom_body_shade: product?.shades.custom_body || null,
-        custom_occlusal_shade: product?.shades.custom_occlusal || null,
-        custom_gingival_shade: product?.shades.custom_gingival || null,
-        custom_stump_shade: product?.shades.custom_stump || null,
+      manual_body_shade: product?.shades.manual_body || null,
+      manual_occlusal_shade: product?.shades.manual_occlusal || null,
+      manual_gingival_shade: product?.shades.manual_gingival || null,
+      manual_stump_shade: product?.shades.manual_stump || null,
+      custom_body_shade: product?.shades.custom_body || null,
+      custom_occlusal_shade: product?.shades.custom_occlusal || null,
+      custom_gingival_shade: product?.shades.custom_gingival || null,
+      custom_stump_shade: product?.shades.custom_stump || null,
 
-        case_id: caseId,
-      })
-    );
+      case_id: caseId,
+    }));
 
     // Step to check if rows exist for product_id before inserting
     for (const row of caseProductTeethRows) {
