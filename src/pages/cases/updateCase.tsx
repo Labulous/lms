@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -70,6 +70,7 @@ const UpdateCase: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -203,8 +204,6 @@ const UpdateCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.appointmentDate)
-      validationErrors.appointmentDate = "Appointment date is Required";
 
     if (
       !formData.caseDetails?.contactType ||
@@ -653,10 +652,18 @@ const UpdateCase: React.FC = () => {
     };
   }, [caseId, lab]);
 
-  console.log(caseDetail, "Case details");
-  console.log(errors, "errors");
+  console.log(formData, "form");
+  console.log(selectedProducts, "selected");
   return (
-    <div className="p-6">
+    <div
+      className="p-6"
+      onClick={(e) => {
+        e.preventDefault();
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Update a Case{" "}
@@ -683,6 +690,8 @@ const UpdateCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>

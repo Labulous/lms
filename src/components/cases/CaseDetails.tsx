@@ -1614,7 +1614,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       >
                                         {product?.teethProduct
                                           ?.custom_occlusal_shade || ""}{" "}
-                                        {"(custom)"}
+                                        {product?.teethProduct
+                                          ?.custom_occlusal_shade  && "(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1622,7 +1623,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               ) : null}
                               {/* Body shade */}
                               {product?.teethProduct?.body_shade?.name ||
-                              product?.teethProduct?.custom_body_shade ? (
+                              product?.teethProduct?.custom_body_shade ||product?.teethProduct?.manual_body_shade  ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">Body:</span>
@@ -1645,7 +1646,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       >
                                         {product?.teethProduct
                                           ?.custom_body_shade || ""}{" "}
-                                        {"(custom)"}
+                                        {product?.teethProduct
+                                          ?.custom_body_shade && "(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1654,7 +1656,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Gingival shade */}
                               {product?.teethProduct?.gingival_shade?.name ||
-                              product?.teethProduct?.custom_gingival_shade ? (
+                              product?.teethProduct?.custom_gingival_shade || product?.teethProduct?.manual_gingival_shade  ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -1679,7 +1681,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       >
                                         {product?.teethProduct
                                           ?.custom_gingival_shade || ""}{" "}
-                                        {"custom"}
+                                        {product?.teethProduct
+                                          ?.custom_gingival_shade && "(custom)"}
                                       </p>
                                     </div>
                                   </div>
@@ -1688,7 +1691,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Stump shade */}
                               {product?.teethProduct?.custom_stump_shade ||
-                              product?.teethProduct?.stump_shade_id ? (
+                              product?.teethProduct?.stump_shade_id ||  product?.teethProduct?.manual_stump_shade  ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -1713,7 +1716,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       >
                                         {product?.teethProduct
                                           ?.custom_stump_shade || ""}{" "}
-                                        {"(custom)"}
+                                        { product?.teethProduct
+                                          ?.custom_stump_shade && "(custom)"}
                                       </p>
                                     </div>
                                   </div>

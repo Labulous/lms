@@ -62,6 +62,8 @@ const NewCase: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
+
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
@@ -186,8 +188,6 @@ const NewCase: React.FC = () => {
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
-    if (!formData.isDueDateTBD && !formData.appointmentDate)
-      validationErrors.appointmentDate = "Due date is required";
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
@@ -255,7 +255,7 @@ const NewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.instructionNotes,
+            instruction_notes: transformedData.notes?.instructionNotes,
             invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
@@ -301,7 +301,16 @@ const NewCase: React.FC = () => {
 
   console.log(formData, "formData");
   return (
-    <div className="p-6" ref={mainDivRef}>
+    <div
+      className="p-6"
+      ref={mainDivRef}
+      onClick={(e) => {
+        e.preventDefault();
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Create a New Case
@@ -318,6 +327,8 @@ const NewCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>

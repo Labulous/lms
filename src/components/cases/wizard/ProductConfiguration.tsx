@@ -593,23 +593,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : item.shades?.body_shade === "manual"
-            ? "manual"
+            : item.shades?.manual_body && !item.shades.custom_body && !item.shades?.body_shade
+             ? "manual"
             : "",
 
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : item.shades?.gingival_shade === "manual"
+            : item.shades?.manual_gingival  && !item.shades.custom_body && !item.shades?.gingival_shade
             ? "manual"
             : "",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : item.shades?.occlusal_shade === "manual"
+            : item.shades?.manual_occlusal && !item.shades.custom_occlusal && !item.shades?.occlusal_shade
             ? "manual"
             : "",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : item.shades?.stump_shade === "manual"
+            : item.shades?.manual_stump && !item.shades.custom_stump && !item.shades?.stump_shade
             ? "manual"
             : "",
           id: item.id,
@@ -818,6 +818,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {row.shades?.body_shade ||
                             row.shades?.gingival_shade ||
                             row.shades?.occlusal_shade ||
+                            row.shades?.custom_body ||
+                            row.shades?.custom_gingival ||
+                            row.shades?.custom_occlusal ||
+                            row.shades?.custom_stump ||
                             row.shades?.stump_shade ? (
                               <div>
                                 {shadeData[index]?.occlusal_shade === "manual"
@@ -934,6 +938,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         occlusal_shade: value,
                                         manual_occlusal: "",
                                         id: row.id,
+                                        custom_occlusal: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1016,6 +1021,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         body_shade: value,
                                         id: row.id,
                                         manual_body: "",
+                                        custom_body: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1097,6 +1103,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         gingival_shade: value,
                                         manual_gingival: "",
                                         id: row.id,
+                                        custom_gingival: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1179,6 +1186,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         stump_shade: value,
                                         id: row.id,
                                         manual_stump: "",
+                                        custom_stump: "",
                                       };
                                       return updatedShadeData;
                                     });
