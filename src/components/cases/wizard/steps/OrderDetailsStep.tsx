@@ -201,7 +201,22 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   };
 
-  console.log(formData, "formd ata");
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsAddingPan(false);
+      }
+    };
+
+    // Attach the event listener
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup the event listener
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -622,8 +637,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     <div
                       className="w-72 absolute top-12 bg-white p-2 z-50 border rounded-md"
                       onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
+                        e.preventDefault();
+                        e.stopPropagation();
                       }}
                     >
                       <div className="flex justify-end py-2">
