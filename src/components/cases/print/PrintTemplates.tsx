@@ -628,7 +628,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                 }}
                               >
                                 {teeth?.teethProduct?.custom_occlusal_shade ||
-                                  ""}{" "}
+                                  "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_occlusal_shade &&
                                   "(cus)"}
                               </p>
@@ -653,12 +653,12 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_body_shade || ""}{" "}
+                                {teeth?.teethProduct?.custom_body_shade ||
+                                  "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_body_shade &&
                                   "(cus)"}
                               </p>
-                            ) ||
-                            "N/A"}
+                            )}
                       </p>
                     </div>
                   </div>
@@ -680,12 +680,11 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                 }}
                               >
                                 {teeth?.teethProduct?.custom_gingival_shade ||
-                                  ""}{" "}
+                                  "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_gingival_shade &&
                                   "cus"}
                               </p>
-                            ) ||
-                            "N/A"}
+                            )}
                       </p>
                     </div>
                   </div>
@@ -706,12 +705,11 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_stump_shade || ""}{" "}
+                                {teeth?.teethProduct?.custom_stump_shade || "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_stump_shade &&
                                   "(cus)"}
                               </p>
-                            ) ||
-                            "N/A"}
+                            ) }
                       </p>
                     </div>
                   </div>
