@@ -754,6 +754,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     if (activeCaseId) {
       fetchCaseData();
     }
+    return () => {
+      document.body.style.pointerEvents = "auto";
+    };
   }, [activeCaseId]);
 
   const handleCompleteStage = async (stageName: string) => {
