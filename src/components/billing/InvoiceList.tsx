@@ -1954,17 +1954,15 @@ const InvoiceList: React.FC = () => {
           />
         )}
 
-        {isPreviewModalOpen && (
-          <InvoicePreviewModal
-            isOpen={isPreviewModalOpen}
-            onClose={() => {
-              setIsPreviewModalOpen(false);
-            }}
-            caseDetails={invoicesData.filter((invoice: any) =>
-              selectedInvoices.includes(invoice.id)
-            )} // Filter selected invoices based on their IDs
-          />
-        )}
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+          }}
+          caseDetails={invoicesData.filter((invoice: any) =>
+            selectedInvoices.includes(invoice.id)
+          )} // Filter selected invoices based on their IDs
+        />
 
         {showNewPaymentModal && (
           <NewPaymentModal
