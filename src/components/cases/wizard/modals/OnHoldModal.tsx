@@ -15,6 +15,42 @@ interface OnHoldModalProps {
   handleUpdateCaseStatus: (type: string) => void;
 }
 
+// const OnHoldModal = ({
+//   isOpen,
+//   onHoldReason,
+//   setOnHoldReason,
+//   onClose,
+//   handleUpdateCaseStatus,
+// }: OnHoldModalProps) => {
+//   const handleClose = () => {
+//     // Reset pointer-events on the body
+//     document.body.style.pointerEvents = "auto";
+//     setOnHoldReason(null); // Clear the reason
+//     onClose(); // Call the provided onClose function
+//   };
+
+//   useEffect(() => {
+//     // Ensure pointer-events are reset when the component unmounts
+//     return () => {
+//       document.body.style.pointerEvents = "auto";
+//     };
+//   }, []);
+//   return (
+//     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+//       <DialogContent
+//         className="max-w-4xl"
+//         aria-describedby="dialog-onhold-description"
+//       >
+//         <DialogHeader>
+//           <DialogTitle id="dialog-onhold">Case on Hold</DialogTitle>
+//         </DialogHeader>
+//       </DialogContent>
+//     </Dialog>
+//   );
+// };
+
+// export default OnHoldModal;
+
 const OnHoldModal = ({
   isOpen,
   onHoldReason,
@@ -22,35 +58,21 @@ const OnHoldModal = ({
   onClose,
   handleUpdateCaseStatus,
 }: OnHoldModalProps) => {
-  const handleClose = () => {
-    // Reset pointer-events on the body
-    document.body.style.pointerEvents = "auto";
-    setOnHoldReason(null); // Clear the reason
-    onClose(); // Call the provided onClose function
-  };
-
-  useEffect(() => {
-    // Ensure pointer-events are reset when the component unmounts
-    return () => {
-      document.body.style.pointerEvents = "auto";
-    };
-  }, []);
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-4xl"
-        aria-describedby="dialog-onhold-description"
+        className="min-w-[800px] w-[90vw] max-w-[1200px] max-h-[85vh] overflow-y-auto"
+        aria-describedby="dialog-onhold"
       >
         <DialogHeader>
           <DialogTitle id="dialog-onhold">Case on Hold</DialogTitle>
         </DialogHeader>
 
-        {/* Add a hidden description for accessibility */}
         <p id="dialog-onhold-description" className="sr-only">
           Provide reasons for putting the case on hold in the text area below.
         </p>
 
-        <div className="space-y-6">
+        <div className="space-y-6" id="dialog-onhold">
           <div className="space-y-4">
             <h3 className="text-lg font-medium">
               Reasons for putting the case on hold?
@@ -65,7 +87,7 @@ const OnHoldModal = ({
               className="border p-1 w-full rounded-md mt-2"
             ></textarea>
             <div className="flex justify-end gap-2 mt-6">
-              <Button variant="outline" onClick={handleClose}>
+              <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button onClick={() => handleUpdateCaseStatus("on_hold")}>
