@@ -8,36 +8,47 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface OnHoldModalProps {
-  onHoldReason: string;
-  setOnHoldReason: React.Dispatch<SetStateAction<string>>;
+  isOpen: boolean;
+  onHoldReason: string | null;
+  setOnHoldReason: React.Dispatch<SetStateAction<string | null>>;
   onClose: () => void;
   handleUpdateCaseStatus: (type: string) => void;
 }
 
 const OnHoldModal = ({
+  isOpen,
   onHoldReason,
   setOnHoldReason,
   onClose,
   handleUpdateCaseStatus,
 }: OnHoldModalProps) => {
+  const handleClose = () => {
+    // Reset pointer-events on the body
+    document.body.style.pointerEvents = "auto";
+    setOnHoldReason(null); // Clear the reason
+    onClose(); // Call the provided onClose function
+  };
+
   useEffect(() => {
     // Ensure pointer-events are reset when the component unmounts
     return () => {
       document.body.style.pointerEvents = "auto";
     };
   }, []);
-
-  const handleClose = () => {
-    document.body.style.pointerEvents = "auto"; // Reset pointer-events
-    onClose();
-  };
-
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent
+        className="max-w-4xl"
+        aria-describedby="dialog-onhold-description"
+      >
         <DialogHeader>
-          <DialogTitle>Case on Hold</DialogTitle>
+          <DialogTitle id="dialog-onhold">Case on Hold</DialogTitle>
         </DialogHeader>
+
+        {/* Add a hidden description for accessibility */}
+        <p id="dialog-onhold-description" className="sr-only">
+          Provide reasons for putting the case on hold in the text area below.
+        </p>
 
         <div className="space-y-6">
           <div className="space-y-4">
@@ -47,7 +58,7 @@ const OnHoldModal = ({
 
             <textarea
               name="reasonNote"
-              value={onHoldReason}
+              value={onHoldReason || ""}
               onChange={(e) => setOnHoldReason(e.target.value)}
               id="reasonNote"
               rows={3}

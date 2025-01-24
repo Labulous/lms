@@ -248,7 +248,7 @@ export function EditInvoiceModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6" id="dialog-onhold">
           {/* Client Info */}
           <div className="flex justify-between items-start">
             <div>
