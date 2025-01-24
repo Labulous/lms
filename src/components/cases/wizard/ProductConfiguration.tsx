@@ -21,6 +21,9 @@ import {
   ShadeOption,
   ProductWithShade,
   Database,
+  MarginDesign,
+  OcclusalDesign,
+  AlloylDesign,
 } from "@/types/supabase";
 import { productsService, ProductTypes } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
@@ -64,6 +67,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { FormData as CaseFormData } from "./CaseWizard";
+import { spawn } from "child_process";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -117,6 +121,36 @@ const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" "),
 }));
+const MARGIN_OPTIONS = Object.values(MarginDesign).map((value) => ({
+  value,
+  label:
+    value === MarginDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
+const OCCLUSION_OPTIONS = Object.values(OcclusalDesign).map((value) => ({
+  value,
+  label:
+    value === OcclusalDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
+const ALLOY_OPTIONS = Object.values(AlloylDesign).map((value) => ({
+  value,
+  label:
+    value === AlloylDesign.NotApplicable
+      ? "N/A"
+      : value
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" "),
+}));
 
 interface ProductConfigurationProps {
   selectedMaterial: SavedProduct | null;
@@ -128,17 +162,29 @@ interface ProductConfigurationProps {
     occlusalType?: string;
     customOcclusal?: string;
     contactType?: string;
-    customContact?: string;
     ponticType?: string;
     customPontic?: string;
+    customContact?: string;
+    marginDesign?: string;
+    customMargin?: string;
+    occlusalDesign?: string;
+    customOcclusalDesign?: string;
+    alloyType?: string;
+    customAlloy?: string;
   }) => void;
   initialCaseDetails?: {
     occlusalType?: string;
     customOcclusal?: string;
     contactType?: string;
-    customContact?: string;
     ponticType?: string;
     customPontic?: string;
+    customContact?: string;
+    marginDesign?: string;
+    customMargin?: string;
+    occlusalDesign?: string;
+    customOcclusalDesign?: string;
+    alloyType?: string;
+    customAlloy?: string;
   };
   setselectedProducts: any;
   formData?: FormData;
@@ -180,6 +226,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         occlusalType: OcclusalType.NotApplicable,
         contactType: ContactType.NotApplicable,
         ponticType: PonticType.NotApplicable,
+        marginDesign: MarginDesign.NotApplicable,
+        occlusalDesign: OcclusalDesign.NotApplicable,
+        alloyType: AlloylDesign.NotApplicable,
       });
     }
   }, [initialCaseDetails, onCaseDetailsChange]);
@@ -288,7 +337,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (shadeOptions) {
         console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
-        const customShade = { name: "Custom", id: "manual" }; // Example custom value
+        const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
       } else {
         console.log("Failed to fetch shade options.");
@@ -544,22 +593,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : item.shades?.custom_body
+            : item.shades?.body_shade === "manual"
             ? "manual"
             : "",
+
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : item.shades?.custom_gingival
+            : item.shades?.gingival_shade === "manual"
             ? "manual"
             : "",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : item.shades?.custom_occlusal
+            : item.shades?.occlusal_shade === "manual"
             ? "manual"
             : "",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : item.shades?.custom_stump
+            : item.shades?.stump_shade === "manual"
             ? "manual"
             : "",
           id: item.id,
@@ -776,14 +826,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.occlusal_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_occlusal ||
+                                          "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.body_shade === "manual"
                                   ? shadeData[index]?.manual_body
                                   : shadesItems.filter(
                                       (item) =>
                                         item.id === shadeData[index]?.body_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_body || "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.gingival_shade === "manual"
                                   ? shadeData[index]?.manual_gingival
@@ -791,7 +856,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.gingival_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_gingival ||
+                                          "--"}
+                                      </span>
+                                    )}
                                 /
                                 {shadeData[index]?.stump_shade === "manual"
                                   ? shadeData[index]?.manual_stump
@@ -799,7 +872,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       (item) =>
                                         item.id ===
                                         shadeData[index]?.stump_shade
-                                    )[0]?.name || "--"}
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_stump || "--"}
+                                      </span>
+                                    )}
                               </div>
                             ) : (
                               " Add Shade"
@@ -886,6 +966,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_occlusal: e.target.value,
                                           id: row.id,
                                           occlusal_shade: "manual",
+                                          custom_occlusal: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -909,9 +990,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_occlusal: e.target.value.toUpperCase(),
+                                        custom_occlusal:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
                                         manual_occlusal: "",
+                                        occlusal_shade: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -965,6 +1048,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_body: e.target.value,
                                           id: row.id,
                                           body_shade: "manual",
+                                          custom_body: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -987,8 +1071,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_body: e.target.value.toUpperCase(),
+                                        custom_body:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
+                                        body_shade: "",
+                                        manual_body: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1042,6 +1129,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_gingival: e.target.value,
                                           id: row.id,
                                           gingival_shade: "manual",
+                                          custom_gingival: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -1064,8 +1152,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_gingival: e.target.value.toUpperCase(),
+                                        custom_gingival:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
+                                        gingival_shade: "",
+                                        manual_gingival: "",
                                       };
 
                                       return updatedShadeData;
@@ -1120,6 +1211,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           manual_stump: e.target.value,
                                           id: row.id,
                                           stump_shade: "manual",
+                                          custom_stump: "",
                                         };
                                       } else {
                                         updatedShadeData[index] = {
@@ -1142,8 +1234,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       const updatedShadeData = [...prev];
                                       updatedShadeData[index] = {
                                         ...updatedShadeData[index],
-                                        custom_stump: e.target.value.toUpperCase(),
+                                        custom_stump:
+                                          e.target.value.toUpperCase(),
                                         id: row.id,
+                                        stump_shade: "",
+                                        manual_stump: "",
                                       };
 
                                       return updatedShadeData;
@@ -1436,155 +1531,306 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         </div>
 
         {/* Case Details Section */}
-        <div className="border rounded-lg bg-white">
-          <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-            <h3 className="text-sm font-medium text-white">Case Details</h3>
+        <div className="grid grid-cols-2 gap-5">
+          <div className="border rounded-lg bg-white">
+            <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h3 className="text-sm font-medium text-white">Case Details</h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                {/* Occlusal Type */}
+                <div>
+                  <Label className="text-xs">Occlusal Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.occlusalType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        occlusalType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {OCCLUSAL_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`occlusal-${option.value}`}
+                        />
+                        <Label htmlFor={`occlusal-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+
+                    {formErrors?.caseDetails?.occlusalType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.occlusalType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.occlusalType === OcclusalType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customOcclusal || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customOcclusal: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom occlusal type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                {/* Contact Type */}
+                <div>
+                  <Label className="text-xs">Contact Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.contactType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        contactType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {CONTACT_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`contact-${option.value}`}
+                        />
+                        <Label htmlFor={`contact-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.contactType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.contactType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.contactType === ContactType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customContact || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customContact: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom contact type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+
+                {/* Pontic Type */}
+                <div>
+                  <Label className="text-xs">Pontic Type:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.ponticType || ""}
+                    onValueChange={(value) =>
+                      onCaseDetailsChange({
+                        ...initialCaseDetails,
+                        ponticType: value,
+                      })
+                    }
+                    className="mt-2 space-y-1"
+                  >
+                    {PONTIC_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`pontic-${option.value}`}
+                        />
+                        <Label htmlFor={`pontic-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.ponticType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.ponticType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === PonticType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customPontic || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customPontic: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="p-6">
-            <div className="grid grid-cols-3 gap-6">
-              {/* Occlusal Type */}
-              <div>
-                <Label className="text-xs">Occlusal Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.occlusalType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      occlusalType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {OCCLUSAL_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`occlusal-${option.value}`}
-                      />
-                      <Label htmlFor={`occlusal-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-
-                  {formErrors?.caseDetails?.occlusalType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.occlusalType}
-                    </p>
-                  )}
-                </RadioGroup>
-                {initialCaseDetails?.occlusalType === OcclusalType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customOcclusal || ""}
-                    onChange={(e) =>
+          <div className="border rounded-lg bg-white">
+            <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
+              <h3 className="text-sm font-medium text-transparent">
+                Case Details
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <Label className="text-xs">Margin Design:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.marginDesign || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customOcclusal: e.target.value,
+                        marginDesign: value,
                       })
                     }
-                    placeholder="Enter custom occlusal type"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-
-              {/* Contact Type */}
-              <div>
-                <Label className="text-xs">Contact Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.contactType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      contactType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {CONTACT_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`contact-${option.value}`}
-                      />
-                      <Label htmlFor={`contact-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                  {formErrors?.caseDetails?.contactType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.contactType}
-                    </p>
+                    className="mt-2 space-y-1"
+                  >
+                    {MARGIN_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`margin-${option.value}`}
+                        />
+                        <Label htmlFor={`margin-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.marginDesign && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.marginDesign}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.marginDesign === MarginDesign.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customMargin || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customMargin: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom Margin Design"
+                      className="mt-2"
+                    />
                   )}
-                </RadioGroup>
-                {initialCaseDetails?.contactType === ContactType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customContact || ""}
-                    onChange={(e) =>
+                </div>
+                <div>
+                  <Label className="text-xs">Occlusion Design:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.occlusalDesign || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customContact: e.target.value,
+                        occlusalDesign: value,
                       })
                     }
-                    placeholder="Enter custom contact type"
-                    className="mt-2"
-                  />
-                )}
-              </div>
-
-              {/* Pontic Type */}
-              <div>
-                <Label className="text-xs">Pontic Type:</Label>
-                <RadioGroup
-                  value={initialCaseDetails?.ponticType || ""}
-                  onValueChange={(value) =>
-                    onCaseDetailsChange({
-                      ...initialCaseDetails,
-                      ponticType: value,
-                    })
-                  }
-                  className="mt-2 space-y-1"
-                >
-                  {PONTIC_OPTIONS.map((option) => (
-                    <div
-                      key={option.value}
-                      className="flex items-center space-x-2"
-                    >
-                      <RadioGroupItem
-                        value={option.value}
-                        id={`pontic-${option.value}`}
-                      />
-                      <Label htmlFor={`pontic-${option.value}`}>
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                  {formErrors?.caseDetails?.ponticType && (
-                    <p className="mt-2 text-sm text-red-500">
-                      {formErrors?.caseDetails?.ponticType}
-                    </p>
+                    className="mt-2 space-y-1"
+                  >
+                    {OCCLUSION_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`occlusion-${option.value}`}
+                        />
+                        <Label htmlFor={`occlusion-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.occlusalDesign && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.occlusalDesign}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === OcclusalDesign.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customOcclusalDesign || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customOcclusalDesign: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
                   )}
-                </RadioGroup>
-                {initialCaseDetails?.ponticType === PonticType.Custom && (
-                  <Input
-                    value={initialCaseDetails?.customPontic || ""}
-                    onChange={(e) =>
+                </div>
+                <div>
+                  <Label className="text-xs">Alloy:</Label>
+                  <RadioGroup
+                    value={initialCaseDetails?.alloyType || ""}
+                    onValueChange={(value) =>
                       onCaseDetailsChange({
                         ...initialCaseDetails,
-                        customPontic: e.target.value,
+                        alloyType: value,
                       })
                     }
-                    placeholder="Enter custom pontic type"
-                    className="mt-2"
-                  />
-                )}
+                    className="mt-2 space-y-1"
+                  >
+                    {ALLOY_OPTIONS.map((option) => (
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`alloy-${option.value}`}
+                        />
+                        <Label htmlFor={`alloy-${option.value}`}>
+                          {option.label}
+                        </Label>
+                      </div>
+                    ))}
+                    {formErrors?.caseDetails?.alloyType && (
+                      <p className="mt-2 text-sm text-red-500">
+                        {formErrors?.caseDetails?.alloyType}
+                      </p>
+                    )}
+                  </RadioGroup>
+                  {initialCaseDetails?.ponticType === PonticType.Custom && (
+                    <Input
+                      value={initialCaseDetails?.customAlloy || ""}
+                      onChange={(e) =>
+                        onCaseDetailsChange({
+                          ...initialCaseDetails,
+                          customAlloy: e.target.value,
+                        })
+                      }
+                      placeholder="Enter custom pontic type"
+                      className="mt-2"
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
