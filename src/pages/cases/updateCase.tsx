@@ -203,8 +203,6 @@ const UpdateCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.appointmentDate)
-      validationErrors.appointmentDate = "Appointment date is Required";
 
     if (
       !formData.caseDetails?.contactType ||

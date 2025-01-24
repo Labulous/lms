@@ -188,8 +188,6 @@ const NewCase: React.FC = () => {
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
-    if (!formData.isDueDateTBD && !formData.appointmentDate)
-      validationErrors.appointmentDate = "Due date is required";
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
