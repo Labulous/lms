@@ -673,6 +673,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     is_active
                   ),
                   tooth_number,
+                  pontic_teeth,
                   notes,
                   product_id,
                   custom_body_shade,

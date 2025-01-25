@@ -148,6 +148,7 @@ const saveCaseProduct = async (
       case_product_id: caseProductId,
       is_range: cases.products.length > 0,
       tooth_number: product.teeth || "",
+      pontic_teeth: product.pontic_teeth || [],
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
@@ -581,7 +582,8 @@ const updateCases = async (
       lab_id: cases.overview.lab_id || "",
       quantity: product.quantity || 1,
       notes: product.notes || "",
-      tooth_number: product.teeth || "",
+      tooth_number: product.teeth || [],
+      pontic_teeth: product.pontic_teeth || [],
       occlusal_shade_id:
         product.shades.occlusal_shade === "manual"
           ? null

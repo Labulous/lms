@@ -499,11 +499,28 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     const getToothColor = (toothNumber: number): string => {
       const type = teeth.product_type?.name;
 
+      // Highlight selected teeth
+      if (teeth?.teethProduct?.pontic_teeth.length > 0) {
+        if (
+          selectedTeeth.includes(toothNumber) &&
+          !teeth?.teethProduct.pontic_teeth.includes(toothNumber)
+        ) {
+          if (type && type in TYPE_FILL_CLASSES) {
+            return "fill-purple-300";
+          }
+          return "fill-gray-300"; // gray-300 fallback for selected teeth
+        }
+
+        // Highlight pontic teeth with red
+        if (teeth?.teethProduct.pontic_teeth.includes(toothNumber)) {
+          return "fill-purple-600"; // red for pontic teeth
+        }
+      }
       if (selectedTeeth.includes(toothNumber)) {
         if (type && type in TYPE_FILL_CLASSES) {
           return TYPE_FILL_CLASSES[type as DefaultProductType];
         }
-        return "fill-gray-300"; // gray-300 fallback
+        return "fill-gray-300"; // gray-300 fallback for selected teeth
       }
 
       // Default unselected color
@@ -523,6 +540,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               {teeth?.teethProduct.tooth_number.join(", ")}
             </div>
           </div>
+          {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
+            <div className="flex ml-2">
+              <span>Pontic Teeth #: </span>
+              <div className="font-bold ml-1">
+                {teeth?.teethProduct.pontic_teeth.join(", ")}
+              </div>
+            </div>
+          )}
           <div className="flex">
             <span>Material: </span>
             <div className="font-bold ml-1">
@@ -705,11 +730,12 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_stump_shade || "N/A"}{" "}
+                                {teeth?.teethProduct?.custom_stump_shade ||
+                                  "N/A"}{" "}
                                 {teeth?.teethProduct?.custom_stump_shade &&
                                   "(cus)"}
                               </p>
-                            ) }
+                            )}
                       </p>
                     </div>
                   </div>

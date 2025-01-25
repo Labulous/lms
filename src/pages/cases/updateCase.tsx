@@ -507,6 +507,7 @@ const UpdateCase: React.FC = () => {
                 gingival_shade_id,
                 stump_shade_id,
                 tooth_number,
+                pontic_teeth,
                 notes,
                 product_id,
                 custom_occlusal_shade,
@@ -545,7 +546,7 @@ const UpdateCase: React.FC = () => {
             teethProduct: productTeeth,
           };
         });
-
+console.log(productsWithDiscounts,"productsWithDiscounts")
         const caseDataApi: any = caseData;
         setFormData((prevData) => ({
           ...prevData,
@@ -616,6 +617,7 @@ const UpdateCase: React.FC = () => {
             type: item?.product_type?.name || "",
             teeth: item?.teethProduct?.tooth_number || [],
             price: item?.discounted_price?.price,
+            pontic_teeth: item.teethProduct.pontic_teeth || [],
             shades: {
               body_shade: item.teethProduct?.body_shade_id || "",
               gingival_shade: item?.teethProduct?.gingival_shade_id || "",

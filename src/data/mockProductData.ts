@@ -21,6 +21,7 @@ export interface SavedProduct {
   discount: number;
   notes: string;
   quantity?: number;
+  pontic_teeth?: number[];
 }
 
 export interface Product {

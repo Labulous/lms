@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  SetStateAction,
+} from "react";
 import { cn } from "@/lib/utils";
 import { BillingType } from "../../../../data/mockProductData";
 import { Button } from "@/components/ui/button";
@@ -8,13 +14,17 @@ import { DefaultProductType } from "@/types/supabase";
 interface ToothSelectorProps {
   billingType: string;
   selectedTeeth: number[];
-  onSelectionChange: (teeth: number[]) => void;
+  onSelectionChange: (teeth: number[], pontic?: number[]) => void;
   addedTeethMap: Map<number, boolean> | null;
   disabled: boolean;
   selectedProduct: {
     type: string[] | [];
+    selectedPontic: number[];
   };
   onAddToShadeTable: () => void;
+  ponticTeeth: Set<number>;
+  setPonticTeeth: React.Dispatch<SetStateAction<Set<number>>>;
+  groupSelectedTeethState: number[][];
 }
 
 const teethData = [
@@ -144,6 +154,9 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   disabled,
   selectedProduct,
   onAddToShadeTable,
+  ponticTeeth,
+  setPonticTeeth,
+  groupSelectedTeethState,
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
@@ -155,7 +168,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   );
   const [showTooltip, setShowTooltip] = useState(false);
   const [ponticMode, setPonticMode] = useState(false);
-  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [abutmentMode, setAbutmentMode] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -168,6 +180,14 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     setRangeSelections(new Set());
   };
 
+  useEffect(() => {
+    if (selectedProduct?.selectedPontic?.length > 0) {
+      setPonticTeeth(new Set(selectedProduct?.selectedPontic));
+    } else {
+      setPonticTeeth(new Set());
+    }
+  }, [selectedProduct?.selectedPontic]);
+
   // Effect to reset pontic mode when selected teeth change
   useEffect(() => {
     if (selectedTeeth.length < 2) {
@@ -176,6 +196,14 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
   }, [selectedTeeth]);
 
+  useEffect(() => {
+    if (Array.from(ponticTeeth).length > 0) {
+      setPonticMode(true);
+    } else {
+      setPonticMode(false);
+    }
+  }, [ponticTeeth]);
+
   // Effect to reset pontic mode when product type changes
   useEffect(() => {
     if (!selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge")) {
@@ -183,7 +211,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       setPonticTeeth(new Set());
     }
   }, [selectedProduct?.type]);
-
+  console.log(selectedTeeth, "selected tooth");
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
     // Upper right quadrant (18-11)
@@ -459,8 +487,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   // Effect to handle pontic mode
   useEffect(() => {
     if (selectedTeeth.length < 2 || !isTeethRangeContinuous(selectedTeeth)) {
-      setPonticMode(false);
-      setPonticTeeth(new Set());
+      // setPonticMode(false);
+      // setPonticTeeth(new Set());
     }
   }, [selectedTeeth, isTeethRangeContinuous]);
 
@@ -477,8 +505,11 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     const type = selectedProduct?.type?.[0];
 
     // If tooth is in ponticTeeth, use Bridge color
-    if (ponticTeeth.has(toothNumber)) {
-      return TYPE_FILL_CLASSES[DefaultProductType.Bridge];
+    if (ponticTeeth.has(toothNumber) && ponticMode) {
+      return "fill-purple-600";
+    }
+    if (selectedTeeth.includes(toothNumber) && ponticMode) {
+      return "fill-purple-300";
     }
 
     // If tooth is already added to a product
@@ -491,6 +522,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     // }
 
     // If in bridge mode
+
     if (type === DefaultProductType.Bridge) {
       if (ponticMode) {
         return "fill-gray-300"; // gray-300 for pontic selection mode
@@ -513,16 +545,34 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return "fill-gray-200";
   };
 
+  const isPonticSelectable = (toothNumber: number): boolean => {
+    // Sort selectedTeeth in ascending order
+    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+
+    // Check if the toothNumber is in selectedTeeth
+    if (!sortedTeeth.includes(toothNumber)) return false; // If not in selectedTeeth, it's not selectable
+
+    // If the tooth is already a pontic, allow deselecting it
+    if (ponticTeeth.has(toothNumber)) return true;
+
+    // Ensure the toothNumber is valid for selection as pontic
+    const isValidPontic =
+      selectedTeeth.includes(toothNumber) && !ponticTeeth.has(toothNumber);
+
+    return isValidPontic;
+  };
+
   const handlePonticSelect = (toothNumber: number) => {
-    // if (!isPonticSelectable(toothNumber)) return;   //isPointicSelectable fun is missing
+    if (!isPonticSelectable(toothNumber)) return;
 
     const newPonticTeeth = new Set(ponticTeeth);
     if (newPonticTeeth.has(toothNumber)) {
-      newPonticTeeth.delete(toothNumber);
+      newPonticTeeth.delete(toothNumber); // Deselect pontic
     } else {
-      newPonticTeeth.add(toothNumber);
+      newPonticTeeth.add(toothNumber); // Select pontic
     }
     setPonticTeeth(newPonticTeeth);
+    onSelectionChange(selectedTeeth, Array.from(newPonticTeeth));
   };
 
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
@@ -530,7 +580,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     if (ponticMode) {
       handlePonticSelect(toothNumber);
-      onSelectionChange(selectedTeeth);
       return;
     }
 
@@ -632,7 +681,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSelectionChange]);
-
+  console.log(ponticTeeth, "ponticTeeth");
   return (
     <div
       ref={containerRef}
@@ -695,20 +744,44 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Selected Teeth Text */}
-          <foreignObject x="65" y="60" width="136" height="180">
+          <foreignObject x="65" y="60" width="136" height="210">
             <div
-              className="w-full h-full flex flex-col items-center justify-center gap-2"
+              className="w-full h-full flex flex-col items-center justify-center gap-1 max-h-92"
               style={{ transform: "scale(0.75)" }}
             >
-              <div className="text-gray-400 text-xs text-center">
+              <div className="text-gray-400 text-sm text-center">
                 Selected Teeth
               </div>
-              <div className="text-gray-600 text-xs font-semibold text-center break-words max-w-[272px]">
-                {billingType === "perArch"
-                  ? getArchSelectionText()
-                  : selectedTeeth.length === 0
-                  ? "None"
-                  : selectedTeeth.join(", ")}
+              <div className="text-gray-600 text-xs font-bold text-center break-words max-w-[270px]">
+                {groupSelectedTeethState.map((item, i) => {
+                  return (
+                    <div key={i} className="flex flex-wrap justify-center">
+                      {item.join(",")}
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-gray-400 text-sm text-center">
+                Pontic Teeth
+              </div>
+              <div className="text-purple-600 text-xs font-bold text-center break-words max-w-[270px]">
+                {groupSelectedTeethState.map((item, groupIndex) => {
+                  // Filter items based on selectedPontic
+                  const filteredTeeth = item.filter((tooth) =>
+                    selectedProduct.selectedPontic.includes(tooth)
+                  );
+
+                  return (
+                    <div
+                      key={groupIndex}
+                      className="flex flex-wrap justify-center"
+                    >
+                      {filteredTeeth.length > 0
+                        ? filteredTeeth.join(",") // Join filtered teeth with commas
+                        : "---"}{" "}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Display Abutment teeth */}
@@ -892,14 +965,40 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
         </svg>
       </div>
 
-      <Button
+      {/* <Button
         variant="ghost"
         size="sm"
         className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
         onClick={handleAddToShadeTable}
       >
         Add to Shade Table
-      </Button>
+      </Button> */}
+
+      {selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge") && (
+        <div className="flex ">
+          <h2 className="text-gray-700">Pontic Mode</h2>
+          <div className="flex items-center space-x-3 ml-2">
+            <button
+              onClick={() => {
+                setPonticMode(!ponticMode);
+                if (ponticMode) {
+                  setPonticTeeth(new Set());
+                  onSelectionChange(selectedTeeth, []);
+                }
+              }}
+              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                ponticMode ? " bg-[#a855f7] p-0.5" : "bg-gray-400"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                  ponticMode ? "translate-x-6" : "translate-x-0"
+                }`}
+              ></div>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
