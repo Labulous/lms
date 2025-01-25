@@ -25,6 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getLabIdByUserId } from "@/services/authService";
 import { WorkingTag } from "@/types/supabase";
 import { formatDate } from "@/lib/formatedDate";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 interface TagFormData {
   name: string;
@@ -33,6 +34,7 @@ interface TagFormData {
 
 const WorkingTagsSettings = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [tags, setTags] = useState<WorkingTag[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
@@ -70,6 +72,19 @@ const WorkingTagsSettings = () => {
   useEffect(() => {
     fetchTags();
   }, [user?.id]);
+
+  useEffect(() => {
+    const action = searchParams.get('action');
+    const tagId = searchParams.get('tagId');
+    
+    if (action === 'edit' && tagId) {
+      const tagToEdit = tags.find(tag => tag.id === tagId);
+      if (tagToEdit) {
+        handleEdit(tagToEdit);
+      }
+    }
+  }, [searchParams, tags]);
+
   console.log(user, "tags");
   const handleSubmit = async (e: React.FormEvent) => {
     setLoading(true);
@@ -255,6 +270,8 @@ const WorkingTagsSettings = () => {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleEdit(tag)}
+                      data-tag-id={tag.id}
+                      className="edit-button"
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
