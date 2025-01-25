@@ -5,6 +5,7 @@ import React, {
   useRef,
   SetStateAction,
 } from "react";
+import { createPortal } from "react-dom";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
 import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
@@ -44,6 +45,8 @@ import {
 import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
+import { useNavigate } from "react-router-dom";
+
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 const colors = [
@@ -92,6 +95,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   setIsAddingPan,
 }) => {
   // Debug log for initial render and props
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [tags, setTags] = useState<WorkingTag[]>([]);
   const [pans, setPans] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
@@ -99,7 +105,53 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const [isCustomColor, setIsCustomColor] = useState(false);
   const addTagTriggerRef = useRef<HTMLButtonElement>(null);
   const [newTagData, setNewTagData] = useState({ name: "", color: "#000000" });
-  const { user } = useAuth();
+  const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
+  const [isEditingTag, setIsEditingTag] = useState(false);
+
+  const handleEditTag = async (tagId: string) => {
+    const tag = tags.find(t => t.id === tagId);
+    if (tag) {
+      setEditingTag(tag);
+      setIsEditingTag(true);
+    }
+  };
+
+  const handleUpdateTag = async () => {
+    if (!editingTag || !user) return;
+
+    try {
+      setLoading(true);
+      const labId = await getLabIdByUserId(user.id);
+      if (!labId) {
+        throw new Error("No lab found for user");
+      }
+
+      const { error } = await supabase
+        .from("working_tags")
+        .update({
+          name: editingTag.name,
+          color: editingTag.color,
+        })
+        .eq("id", editingTag.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setTags(tags.map(tag => 
+        tag.id === editingTag.id ? editingTag : tag
+      ));
+
+      setIsEditingTag(false);
+      setEditingTag(null);
+      toast.success("Tag updated successfully");
+    } catch (error) {
+      console.error("Error updating tag:", error);
+      toast.error("Failed to update tag");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -216,6 +268,74 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  const WorkingTagSelect = ({
+    value,
+    onValueChange,
+    tags,
+    onEdit,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    tags: WorkingTag[];
+    onEdit: (id: string) => void;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <Select 
+        value={value} 
+        onValueChange={onValueChange}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        <SelectTrigger className="bg-white">
+          <SelectValue placeholder="Select Tag" className="text-gray-500">
+            {value && tags.find(t => t.id === value) && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: tags.find(t => t.id === value)?.color }}
+                />
+                <span>{tags.find(t => t.id === value)?.name || "Unnamed tag"}</span>
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
+          {tags && tags.length > 0 ? (
+            tags.map((tag) => (
+              <SelectItem key={tag.id} value={tag.id} className="pr-16">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span>{tag.name || "Unnamed tag"}</span>
+                </div>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit(tag.id);
+                    setIsOpen(false);
+                  }}
+                >
+                  Edit
+                </button>
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="_no_tags" disabled>
+              No tags available
+            </SelectItem>
+          )}
+        </SelectContent>
+      </Select>
+    );
+  };
 
   return (
     <div>
@@ -727,48 +847,96 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        Add New
+                        + New
                       </button>
                     }
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Select
-                    value={formData.workingTagName}
+                  <WorkingTagSelect
+                    value={formData.workingTagName || ""}
                     onValueChange={(value) => onChange("workingTagName", value)}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue
-                        placeholder="Select Tag"
-                        className="text-gray-500"
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tags && tags.length > 0 ? (
-                        tags.map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: tag.color }}
-                              />
-                              {tag.name || "Unnamed tag"}
-                            </div>
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="_no_tags" disabled>
-                          No tags available
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                    tags={tags}
+                    onEdit={handleEditTag}
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      {/* Edit Tag Dialog */}
+      <Dialog open={isEditingTag} onOpenChange={setIsEditingTag}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Tag</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={editingTag?.name || ""}
+                onChange={(e) =>
+                  setEditingTag(prev => prev ? { ...prev, name: e.target.value } : null)
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Color</Label>
+              <div className="flex flex-wrap gap-2">
+                {colors.map((color) => (
+                  <div
+                    key={color}
+                    className={cn(
+                      "w-6 h-6 rounded-full cursor-pointer border-2",
+                      editingTag?.color === color
+                        ? "border-black"
+                        : "border-transparent"
+                    )}
+                    style={{ backgroundColor: color }}
+                    onClick={() => {
+                      setEditingTag(prev => prev ? { ...prev, color } : null);
+                      setIsCustomColor(false);
+                    }}
+                  />
+                ))}
+                <div
+                  className={cn(
+                    "w-6 h-6 rounded-full cursor-pointer border-2 flex items-center justify-center",
+                    isCustomColor ? "border-black" : "border-transparent"
+                  )}
+                  onClick={() => setIsCustomColor(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </div>
+              </div>
+              {isCustomColor && (
+                <div className="mt-2">
+                  <HexColorPicker
+                    className="w-full max-w-[200px]"
+                    color={editingTag?.color || "#000000"}
+                    onChange={(color) =>
+                      setEditingTag(prev => prev ? { ...prev, color } : null)
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditingTag(false);
+              setIsCustomColor(false);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateTag} disabled={isLoading}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
