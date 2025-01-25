@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, SetStateAction } from "react";
 import { cn } from "@/lib/utils";
 import { BillingType } from "../../../../data/mockProductData";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ interface ToothSelectorProps {
     type: string[] | [];
   };
   onAddToShadeTable: () => void;
+  ponticTeeth:Set<number>,
+  setPonticTeeth: React.Dispatch<SetStateAction<Set<number>>>
 }
 
 const teethData = [
@@ -144,6 +146,9 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   disabled,
   selectedProduct,
   onAddToShadeTable,
+  ponticTeeth,
+  setPonticTeeth
+  
 }) => {
   const [hoveredTooth, setHoveredTooth] = useState<number | null>(null);
   const [rangeStartTooth, setRangeStartTooth] = useState<number | null>(null);
@@ -155,7 +160,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   );
   const [showTooltip, setShowTooltip] = useState(false);
   const [ponticMode, setPonticMode] = useState(false);
-  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [abutmentMode, setAbutmentMode] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -183,7 +187,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       setPonticTeeth(new Set());
     }
   }, [selectedProduct?.type]);
-
+  console.log(selectedTeeth, "selected tooth");
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
     // Upper right quadrant (18-11)
@@ -459,8 +463,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   // Effect to handle pontic mode
   useEffect(() => {
     if (selectedTeeth.length < 2 || !isTeethRangeContinuous(selectedTeeth)) {
-      setPonticMode(false);
-      setPonticTeeth(new Set());
+      // setPonticMode(false);
+      // setPonticTeeth(new Set());
     }
   }, [selectedTeeth, isTeethRangeContinuous]);
 
@@ -477,8 +481,11 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     const type = selectedProduct?.type?.[0];
 
     // If tooth is in ponticTeeth, use Bridge color
-    if (ponticTeeth.has(toothNumber)) {
-      return TYPE_FILL_CLASSES[DefaultProductType.Bridge];
+    if (ponticTeeth.has(toothNumber) && ponticMode) {
+      return "fill-purple-600";
+    }
+    if (selectedTeeth.includes(toothNumber) && ponticMode) {
+      return "fill-purple-300";
     }
 
     // If tooth is already added to a product
@@ -491,6 +498,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     // }
 
     // If in bridge mode
+
     if (type === DefaultProductType.Bridge) {
       if (ponticMode) {
         return "fill-gray-300"; // gray-300 for pontic selection mode
@@ -513,14 +521,42 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     return "fill-gray-200";
   };
 
+  const isPonticSelectable = (toothNumber: number): boolean => {
+    // Sort selectedTeeth in ascending order
+    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+
+    // Find the index of the toothNumber in the sorted array
+    const foundIndex = sortedTeeth.indexOf(toothNumber);
+    if (foundIndex === -1) return false; // If the toothNumber is not in selectedTeeth, it's not selectable
+
+    // Check if the previous tooth exists and its value is adjusted properly
+    const hasPrevious =
+      foundIndex > 0 &&
+      toothNumber - sortedTeeth[foundIndex - 1] === 1 && // Ensure it's exactly one less
+      !ponticTeeth.has(sortedTeeth[foundIndex - 1]); // Ensure it's not already a pontic
+
+    if (!hasPrevious) return false; // If no valid previous tooth, it's not selectable
+
+    // Check if the next tooth exists and its value is adjusted properly
+    const hasNext =
+      foundIndex < sortedTeeth.length - 1 &&
+      sortedTeeth[foundIndex + 1] - toothNumber === 1 && // Ensure it's exactly one more
+      !ponticTeeth.has(sortedTeeth[foundIndex + 1]); // Ensure it's not already a pontic
+
+    if (!hasNext) return false; // If no valid next tooth, it's not selectable
+
+    // If both previous and next teeth exist, the toothNumber is selectable
+    return true;
+  };
+
   const handlePonticSelect = (toothNumber: number) => {
-    // if (!isPonticSelectable(toothNumber)) return;   //isPointicSelectable fun is missing
+    if (!isPonticSelectable(toothNumber)) return;
 
     const newPonticTeeth = new Set(ponticTeeth);
     if (newPonticTeeth.has(toothNumber)) {
-      newPonticTeeth.delete(toothNumber);
+      newPonticTeeth.delete(toothNumber); // Deselect pontic
     } else {
-      newPonticTeeth.add(toothNumber);
+      newPonticTeeth.add(toothNumber); // Select pontic
     }
     setPonticTeeth(newPonticTeeth);
   };
@@ -632,7 +668,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSelectionChange]);
-
+  console.log(ponticTeeth, "ponticTeeth");
   return (
     <div
       ref={containerRef}
@@ -892,14 +928,39 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
         </svg>
       </div>
 
-      <Button
+      {/* <Button
         variant="ghost"
         size="sm"
         className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
         onClick={handleAddToShadeTable}
       >
         Add to Shade Table
-      </Button>
+      </Button> */}
+
+      {
+        <div className="flex ">
+          <h2 className="text-gray-700">Pontic Mode</h2>
+          <div className="flex items-center space-x-3 ml-2">
+            <button
+              onClick={() => {
+                setPonticMode(!ponticMode);
+                if (ponticMode) {
+                  setPonticTeeth(new Set());
+                }
+              }}
+              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
+                ponticMode ? " bg-[#a855f7] p-0.5" : "bg-gray-400"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
+                  ponticMode ? "translate-x-6" : "translate-x-0"
+                }`}
+              ></div>
+            </button>
+          </div>
+        </div>
+      }
     </div>
   );
 };

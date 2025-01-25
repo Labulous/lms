@@ -245,6 +245,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
+  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
 
   const [notePopoverOpen, setNotePopoverOpen] = useState<Map<number, boolean>>(
     new Map()
@@ -593,23 +594,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : item.shades?.manual_body && !item.shades.custom_body && !item.shades?.body_shade
-             ? "manual"
+            : item.shades?.manual_body &&
+              !item.shades.custom_body &&
+              !item.shades?.body_shade
+            ? "manual"
             : "",
 
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : item.shades?.manual_gingival  && !item.shades.custom_body && !item.shades?.gingival_shade
+            : item.shades?.manual_gingival &&
+              !item.shades.custom_body &&
+              !item.shades?.gingival_shade
             ? "manual"
             : "",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : item.shades?.manual_occlusal && !item.shades.custom_occlusal && !item.shades?.occlusal_shade
+            : item.shades?.manual_occlusal &&
+              !item.shades.custom_occlusal &&
+              !item.shades?.occlusal_shade
             ? "manual"
             : "",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : item.shades?.manual_stump && !item.shades.custom_stump && !item.shades?.stump_shade
+            : item.shades?.manual_stump &&
+              !item.shades.custom_stump &&
+              !item.shades?.stump_shade
             ? "manual"
             : "",
           id: item.id,
@@ -773,6 +782,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           }}
                           addedTeethMap={new Map()}
                           onAddToShadeTable={() => {}}
+                          ponticTeeth={ponticTeeth}
+                          setPonticTeeth={setPonticTeeth}
                         />
                       </PopoverContent>
                     </Popover>
