@@ -42,7 +42,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
 import { useNavigate } from "react-router-dom";
@@ -274,11 +274,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     onValueChange,
     tags,
     onEdit,
+    onDelete,
   }: {
     value: string;
     onValueChange: (value: string) => void;
     tags: WorkingTag[];
     onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
   }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -302,10 +304,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent onCloseAutoFocus={(e) => e.preventDefault()}>
+        <SelectContent onCloseAutoFocus={(e) => e.preventDefault()} className="max-h-[200px] overflow-y-auto">
           {tags && tags.length > 0 ? (
             tags.map((tag) => (
-              <SelectItem key={tag.id} value={tag.id} className="pr-16">
+              <SelectItem key={tag.id} value={tag.id} className="pr-24">
                 <div className="flex items-center gap-2">
                   <div
                     className="w-3 h-3 rounded-full"
@@ -313,18 +315,32 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   />
                   <span>{tag.name || "Unnamed tag"}</span>
                 </div>
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onEdit(tag.id);
-                    setIsOpen(false);
-                  }}
-                >
-                  Edit
-                </button>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <button
+                    type="button"
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdit(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </SelectItem>
             ))
           ) : (
@@ -858,6 +874,21 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onValueChange={(value) => onChange("workingTagName", value)}
                     tags={tags}
                     onEdit={handleEditTag}
+                    onDelete={(id) => {
+                      const tagToDelete = tags.find(t => t.id === id);
+                      if (tagToDelete) {
+                        const confirmed = window.confirm(`Are you sure you want to delete the tag "${tagToDelete.name}"?`);
+                        if (confirmed) {
+                          // If the deleted tag is currently selected, clear the selection
+                          if (formData.workingTagName === id) {
+                            onChange("workingTagName", "");
+                          }
+                          // Remove the tag from the tags array
+                          setTags(tags.filter(t => t.id !== id));
+                          toast.success("Tag deleted successfully");
+                        }
+                      }
+                    }}
                   />
                 </div>
               </div>
