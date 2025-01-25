@@ -200,6 +200,14 @@ interface ProductRow {
   isComplete: boolean;
 }
 
+const teethArray = [
+  // Upper right to upper left
+  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+
+  // Lower left to lower right
+  38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+];
+
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   selectedProducts,
   onCaseDetailsChange,
@@ -246,6 +254,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
+  const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
+    number[][]
+  >([]);
 
   const [notePopoverOpen, setNotePopoverOpen] = useState<Map<number, boolean>>(
     new Map()
@@ -459,14 +470,51 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   console.log(selectedProducts, "selectedProducts");
 
-  const handleTeethSelectionChange = (teeth: any[], index: number) => {
+  const groupSelectedTeeth = (selectedTeeth: number[]) => {
+    // Sort selectedTeeth based on their order in teethArray
+    const sortedTeeth = selectedTeeth.sort(
+      (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+    );
+
+    const groups = [];
+    let currentGroup = [sortedTeeth[0]];
+
+    for (let i = 1; i < sortedTeeth.length; i++) {
+      const prevIndex = teethArray.indexOf(sortedTeeth[i - 1]);
+      const currentIndex = teethArray.indexOf(sortedTeeth[i]);
+
+      // Check if the current tooth is contiguous with the previous one
+      if (currentIndex === prevIndex + 1) {
+        currentGroup.push(sortedTeeth[i]);
+      } else {
+        // If not contiguous, push the current group to groups and start a new group
+        groups.push(currentGroup);
+        currentGroup = [sortedTeeth[i]];
+      }
+    }
+
+    // Push the final group
+    if (currentGroup.length) {
+      groups.push(currentGroup);
+    }
+
+    // Update the state with the grouped teeth
+    setGroupSelectedTeethState(groups);
+
+    return groups; // Optional, for debugging or testing
+  };
+  const handleTeethSelectionChange = (
+    teeth: any[],
+    pontic_teeth: number[],
+    index: number
+  ) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
-        const updatedProducts = [...prevSelectedProducts];
-
+        let updatedProducts = [...prevSelectedProducts];
         updatedProducts[index] = {
           ...updatedProducts[index],
           teeth,
+          pontic_teeth,
         };
 
         return updatedProducts;
@@ -474,8 +522,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         return prevSelectedProducts;
       }
     });
+    groupSelectedTeeth(teeth);
   };
-  console.log(shadeData, "shadeDate");
+
+  console.log(groupSelectedTeethState, "groupSelectedTeethState");
   const handleSaveShades = (index: number) => {
     const updatedShades = {
       occlusal_shade: shadeData[index]?.occlusal_shade || "",
@@ -665,6 +715,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -773,17 +824,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             selectedProduct?.billing_type?.name || "perTooth"
                           }
                           selectedTeeth={row.teeth}
-                          onSelectionChange={(teeth) => {
-                            handleTeethSelectionChange(teeth, index);
+                          onSelectionChange={(teeth, pontic_teeth) => {
+                            handleTeethSelectionChange(
+                              teeth,
+                              pontic_teeth
+                                ? (pontic_teeth as number[] | [])
+                                : [],
+                              index
+                            );
                           }}
                           disabled={!row.type}
                           selectedProduct={{
                             type: row.type ? [row.type] : [],
+                            selectedPontic: row.pontic_teeth as number[],
                           }}
                           addedTeethMap={new Map()}
                           onAddToShadeTable={() => {}}
                           ponticTeeth={ponticTeeth}
                           setPonticTeeth={setPonticTeeth}
+                          groupSelectedTeethState={groupSelectedTeethState}
                         />
                       </PopoverContent>
                     </Popover>
