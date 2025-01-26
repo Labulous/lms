@@ -152,7 +152,7 @@ interface PrintTemplateProps {
     contact_type?: string;
     instruction_notes?: string;
   };
-  caseDetails?: ExtendedCase[];
+  caseDetails?: ExtendedCase[] | any[];
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
 }
@@ -291,7 +291,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     <h2 className="font-bold text-right">Final Amount</h2>
                   </div>
 
-                  {invoice?.products.map((item, index) => {
+                  {invoice?.products.map((item: any, index: number) => {
                     return (
                       <div className="grid grid-cols-5 text-sm">
                         <div key={index} className="space-y-4 font-medium">
@@ -989,7 +989,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     }
 
     const consolidatedProducts = Object.values(
-      caseItem.products.reduce((acc, product) => {
+      caseItem.products.reduce((acc: any, product: any) => {
         const productId = product.id;
 
         // Check if the product ID and teethProduct exist
@@ -1037,7 +1037,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                 <div className="border-2 my-2" />
 
                 <div className={`grid grid-cols-${item.products.length} gap-0`}>
-                  {item.products.map((teeth, index) => {
+                  {item.products.map((teeth: any, index: number) => {
                     return (
                       <div key={index}>
                         <table className="border border-collapse w-full">

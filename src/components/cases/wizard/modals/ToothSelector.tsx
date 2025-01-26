@@ -810,19 +810,24 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="w-full h-full flex flex-col items-center justify-center gap-1 max-h-92"
               style={{ transform: "scale(0.75)" }}
             >
-              {selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge") && selectedTeeth.length > 0 && (
-                <Button
-                  variant={ponticMode ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    "mb-2",
-                    ponticMode ? "bg-purple-500 hover:bg-purple-600" : "hover:bg-purple-50"
-                  )}
-                  onClick={() => setPonticMode(!ponticMode)}
-                >
-                  {ponticMode ? "Exit Pontic Mode" : "Select Pontic"}
-                </Button>
-              )}
+              {selectedProduct?.type?.some(
+                (t) => t.toLowerCase() === "bridge"
+              ) &&
+                selectedTeeth.length > 0 && (
+                  <Button
+                    variant={ponticMode ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "mb-2",
+                      ponticMode
+                        ? "bg-purple-500 hover:bg-purple-600"
+                        : "hover:bg-purple-50"
+                    )}
+                    onClick={() => setPonticMode(!ponticMode)}
+                  >
+                    {ponticMode ? "Exit Pontic Mode" : "Select Pontic"}
+                  </Button>
+                )}
               <div className="text-gray-400 text-sm text-center">
                 Selected Teeth
               </div>

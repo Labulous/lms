@@ -8,7 +8,7 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+// import enUS from "date-fns/locale/en-US";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CalendarEvents } from "@/pages/Home";
@@ -29,7 +29,7 @@ import {
 import { Button } from "../ui/button";
 
 const locales = {
-  "en-US": enUS,
+  "en-US": "en",
 };
 
 const localizer = dateFnsLocalizer({
