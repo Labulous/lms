@@ -185,12 +185,6 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(date);
-  const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(() => {
-    if (!selectedDate) return -1;
-    const currentTime = format(selectedDate, "HH:mm");
-    return times.findIndex((time) => time === currentTime);
-  });
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const times = React.useMemo(() => {
     const times = [];
@@ -205,6 +199,13 @@ export function DateTimePicker({
     }
     return times;
   }, []);
+
+  const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(() => {
+    if (!selectedDate) return -1;
+    const currentTime = format(selectedDate, "HH:mm");
+    return times.findIndex((time) => time === currentTime);
+  });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside
   useEffect(() => {

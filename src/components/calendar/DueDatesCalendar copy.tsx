@@ -189,17 +189,17 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             onMouseEnter={() => handleEventHover(event)}
             title=""
             className="w--full grid"
-          >
-            {event.onHold && event.title && (
+          >hi
+            {event.onHold && event.title && event.title === "0" &&  (
               <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
                 {event.title}
               </div>
             )}
-            {!event.onHold && (
+            {!event.onHold && event.title === "0" && (
               <div
                 className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
               >
-                {event.title}
+                {"event.title"}
               </div>
             )}
           </div>

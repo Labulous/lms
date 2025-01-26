@@ -189,7 +189,13 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         const todayDate = new Date();
-        const today = new Date(Date.UTC(todayDate.getUTCFullYear(), todayDate.getUTCMonth(), todayDate.getUTCDate()));
+        const today = new Date(
+          Date.UTC(
+            todayDate.getUTCFullYear(),
+            todayDate.getUTCMonth(),
+            todayDate.getUTCDate()
+          )
+        );
 
         today.setHours(0, 0, 0, 0);
 
@@ -250,7 +256,7 @@ const Dashboard: React.FC = () => {
         });
 
         const dueTodayCases = casesList.filter((caseItem: CasesDues) => {
-          if (!caseItem.due_date ) return false;
+          if (!caseItem.due_date) return false;
           const dueDate = new Date(caseItem.due_date);
           return (
             dueDate >= today &&
@@ -342,6 +348,7 @@ const Dashboard: React.FC = () => {
               resource: { count: onHoldCases.length, isPastDue: isPastDue },
               formattedCases: formattedOnHoldCases,
             };
+
 
             // Return both events (active and on hold)
             return [activeEvent, onHoldEvent];
@@ -512,7 +519,7 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-12 gap-4">
               {/* Daily Counts */}
               <div className="col-span-4">
-                <DailyCountsCard />
+                {/* <DailyCountsCard /> */}
               </div>
 
               {/* Calendar Section */}

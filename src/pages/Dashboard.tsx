@@ -189,39 +189,82 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         const todayDate = new Date();
-        const today = new Date(Date.UTC(todayDate.getUTCFullYear(), todayDate.getUTCMonth(), todayDate.getUTCDate()));
-
-        today.setHours(0, 0, 0, 0);
-
+        const today = new Date();
         const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setDate(today.getDate() + 1); // Set tomorrow's date
+
+        // Set the start and end of today to compare full date range
+        const startOfToday = new Date(today.setHours(0, 0, 0, 0)); // 12:00 AM today
+        const endOfToday = new Date(today.setHours(23, 59, 59, 999)); // 11:59 PM today
+
+        // Function to check if a date is due today
+        const isDueToday = (dueDate: string) => {
+          const due = new Date(dueDate);
+          return due >= startOfToday && due <= endOfToday;
+        };
+
+        // Function to check if a date is due tomorrow
+        const isDueTomorrow = (dueDate: string) => {
+          const due = new Date(dueDate);
+          return (
+            due.getDate() === tomorrow.getDate() &&
+            due.getMonth() === tomorrow.getMonth() &&
+            due.getFullYear() === tomorrow.getFullYear()
+          );
+        };
+
+        // Filter cases into metrics categories
+        const pastDue = casesList.filter(
+          (caseItem) =>
+            new Date(caseItem.due_date) < startOfToday &&
+            caseItem.status !== "on_hold"
+        ).length;
+        const dueToday = casesList.filter(
+          (caseItem) =>
+            isDueToday(caseItem.due_date) && caseItem.status !== "on_hold"
+        );
+        const dueTomorrow = casesList.filter(
+          (caseItem) =>
+            isDueTomorrow(caseItem.due_date) && caseItem.status !== "on_hold"
+        );
+        const onHold = casesList.filter(
+          (caseItem) => caseItem.status === "on_hold"
+        );
+        console.log(dueTomorrow, dueToday, onHold, "onHold");
+        // Set the metriccos
+        setMetrics({
+          pastDue: pastDue || 0,
+          dueToday: dueToday.length || 0,
+          dueTomorrow: dueTomorrow.length || 0,
+          onHold: onHold.length || 0,
+        });
 
         // Fetch all cases for calendar
-        const { data: casesData, error: casesError } = await supabase
-          .from("cases")
-          .select("id, due_date, status")
-          .eq("lab_id", labData.labId)
-          .gte(
-            "due_date",
-            new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
-          )
-          .lt(
-            "due_date",
-            new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString()
-          )
-          .neq("status", "completed");
+        // const { data: casesData, error: casesError } = await supabase
+        //   .from("cases")
+        //   .select("id, due_date, status")
+        //   .eq("lab_id", labData.labId)
+        //   .gte(
+        //     "due_date",
+        //     new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
+        //   )
+        //   .lt(
+        //     "due_date",
+        //     new Date(today.getFullYear(), today.getMonth() + 2, 1).toISOString()
+        //   )
+        //   .neq("status", "completed");
 
-        if (casesError) throw casesError;
+        // if (casesError) throw casesError;
 
-        // Group cases by due date for calendar events
-        const eventsByDate = casesData.reduce(
-          (acc: { [key: string]: number }, caseItem: any) => {
-            const date = caseItem.due_date.split("T")[0];
-            acc[date] = (acc[date] || 0) + 1;
-            return acc;
-          },
-          {}
-        );
+        // // Group cases by due date for calendar events
+        // const eventsByDate = casesData.reduce(
+        //   (acc: { [key: string]: number }, caseItem: any) => {
+        //     const date = caseItem.due_date.split("T")[0];
+        //     acc[date] = (acc[date] || 0) + 1;
+        //     return acc;
+        //   },
+        //   {}
+        // );
 
         const groupedCases = casesList.reduce(
           (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
@@ -231,6 +274,7 @@ const Dashboard: React.FC = () => {
               const dueDate = new Date(caseItem.due_date)
                 .toISOString()
                 .split("T")[0];
+              console.log(dueDate, "dueDatedueDate");
               acc[dueDate] = acc[dueDate] || [];
               acc[dueDate].push(caseItem);
             }
@@ -239,52 +283,17 @@ const Dashboard: React.FC = () => {
           {}
         );
 
-        // Filter cases with consistent date boundaries
-        const pastDueCases = casesList.filter((caseItem: CasesDues) => {
-          if (!caseItem.due_date) return false;
-          const dueDate = new Date(caseItem.due_date);
-          return (
-            dueDate < today &&
-            ["in_queue", "in_progress"].includes(caseItem.status)
-          );
-        });
-
-        const dueTodayCases = casesList.filter((caseItem: CasesDues) => {
-          if (!caseItem.due_date ) return false;
-          const dueDate = new Date(caseItem.due_date);
-          return (
-            dueDate >= today &&
-            dueDate < tomorrow &&
-            ["in_queue", "in_progress"].includes(caseItem.status)
-          );
-        });
-
-        const pastDue = pastDueCases.length;
-        const dueToday = dueTodayCases.length;
-
-        const dueTomorrow = casesList.filter((caseItem: CasesDues) => {
-          const dueDate = new Date(caseItem.due_date);
-          const dayAfterTomorrow = new Date(tomorrow);
-          dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-          return (
-            dueDate >= tomorrow &&
-            dueDate < dayAfterTomorrow &&
-            ["in_queue", "in_progress"].includes(caseItem.status)
-          );
-        }).length;
-
-        const onHold = casesList.filter(
-          (caseItem: CasesDues) => caseItem.status === "on_hold"
-        ).length;
-
         const events: CalendarEvents[] = Object.entries(groupedCases)
           .map(([date, cases]) => {
-            const eventDate = new Date(date);
-            const year = eventDate.getUTCFullYear();
-            const month = eventDate.getUTCMonth();
-            const day = eventDate.getUTCDate();
-            const start = new Date(year, month, day, 8, 0); // Start at 9 AM
-            const end = new Date(year, month, day, 17, 0); // End at 5 PM
+            const eventDate = new Date(date); // Assuming this is already in local time
+            const year = eventDate.getFullYear(); // Local year
+            const month = eventDate.getMonth(); // Local month (0-based)
+            const day = eventDate.getDate(); // Local day of the month
+            console.log(new Date("2025-01-28 18:30:00").getDate(), "day");
+            // Set the event start and end times in local time (12:00 AM to 11:59 PM)
+            const start = new Date(year, month, day, 0, 0); // 12:00 AM Local Time
+            const end = new Date(year, month, day, 23, 59, 59, 999); // 11:59 PM Local Time
+
             const today = new Date();
             const isPastDue = eventDate < today;
 
@@ -297,52 +306,147 @@ const Dashboard: React.FC = () => {
             );
 
             // Format active cases
-            const formattedActiveCases = activeCases.map((caseItem) => ({
-              case_id: caseItem.id,
-              case_number: caseItem.case_number,
-              client_name: caseItem.client_name.client_name,
-              doctor: caseItem.doctor,
-              status: caseItem.status,
-              case_products: caseItem.products.map((product) => ({
-                name: product.name,
-                product_type: product.product_type,
-              })),
-              invoicesData: caseItem.invoicesData,
-            }));
+            const formattedActiveCases = activeCases.map((caseItem) => {
+              const caseDueDate = new Date(caseItem.due_date); // Convert case due date to Date object
+              const caseDueDay = caseDueDate.getDate(); // Get local day of the case's due date
+
+              return {
+                case_id: caseItem.id,
+                case_number: caseItem.case_number,
+                client_name: caseItem.client_name.client_name,
+                due_date: caseItem.due_date,
+                doctor: caseItem.doctor,
+                status: caseItem.status,
+                case_products: caseItem.products.map((product) => ({
+                  name: product.name,
+                  product_type: product.product_type,
+                })),
+                invoicesData: caseItem.invoicesData,
+                due_day: caseDueDay, // Store the actual due day to check later
+              };
+            });
 
             // Format "on_hold" cases
-            const formattedOnHoldCases = onHoldCases.map((caseItem) => ({
-              case_id: caseItem.id,
-              case_number: caseItem.case_number,
-              client_name: caseItem.client_name.client_name,
-              doctor: caseItem.doctor,
-              status: caseItem.status,
-              case_products: caseItem.products.map((product) => ({
-                name: product.name,
-                product_type: product.product_type,
-              })),
-              invoicesData: caseItem.invoicesData,
-            }));
+            const formattedOnHoldCases = onHoldCases.map((caseItem) => {
+              const caseDueDate = new Date(caseItem.due_date); // Convert case due date to Date object
+              const caseDueDay = caseDueDate.getDate(); // Get local day of the case's due date
+
+              return {
+                case_id: caseItem.id,
+                case_number: caseItem.case_number,
+                client_name: caseItem.client_name.client_name,
+                doctor: caseItem.doctor,
+                status: caseItem.status,
+                case_products: caseItem.products.map((product) => ({
+                  name: product.name,
+                  product_type: product.product_type,
+                })),
+                invoicesData: caseItem.invoicesData,
+                due_day: caseDueDay, // Store the actual due day to check later
+              };
+            });
+            const formattedDueTommorwCases = dueTomorrow.map((caseItem) => {
+              const caseDueDate = new Date(caseItem.due_date); // Convert case due date to Date object
+              const caseDueDay = caseDueDate.getDate(); // Get local day of the case's due date
+
+              return {
+                case_id: caseItem.id,
+                case_number: caseItem.case_number,
+                client_name: caseItem.client_name.client_name,
+                doctor: caseItem.doctor,
+                status: caseItem.status,
+                case_products: caseItem.products.map((product) => ({
+                  name: product.name,
+                  product_type: product.product_type,
+                })),
+                invoicesData: caseItem.invoicesData,
+                due_day: caseDueDay, // Store the actual due day to check later
+              };
+            });
+            const formattedOnholdCases = onHold.map((caseItem) => {
+              const caseDueDate = new Date(caseItem.due_date); // Convert case due date to Date object
+              const caseDueDay = caseDueDate.getDate(); // Get local day of the case's due date
+
+              return {
+                case_id: caseItem.id,
+                case_number: caseItem.case_number,
+                client_name: caseItem.client_name.client_name,
+                doctor: caseItem.doctor,
+                status: caseItem.status,
+                case_products: caseItem.products.map((product) => ({
+                  name: product.name,
+                  product_type: product.product_type,
+                })),
+                invoicesData: caseItem.invoicesData,
+                due_day: caseDueDay, // Store the actual due day to check later
+              };
+            });
 
             // Create the event for active cases
             const activeEvent = {
-              title: `${activeCases.length}`, // Example: "3 active cases"
+              title: `${
+                formattedActiveCases.filter(
+                  (caseItem) => caseItem.due_day === day
+                ).length
+              }`, // Example: "3 active cases"
               start,
               end,
               resource: { count: activeCases.length, isPastDue: isPastDue },
-              formattedCases: formattedActiveCases,
+              formattedCases: formattedActiveCases.filter(
+                (caseItem) => caseItem.due_day === day
+              ), // Filter cases to only show on the correct day
             };
 
             // Create the event for "on_hold" cases
             const onHoldEvent = {
-              title: `${onHoldCases.length > 0 ? onHoldCases.length : ""}`, // Example: "2 on hold"
+              title: `${
+                formattedOnHoldCases.length > 0
+                  ? formattedOnHoldCases.filter(
+                      (caseItem) => caseItem.due_day === day
+                    ).length
+                  : ""
+              }`, // Example: "2 on hold"
               start,
               end,
               onHold: true,
               resource: { count: onHoldCases.length, isPastDue: isPastDue },
-              formattedCases: formattedOnHoldCases,
+              formattedCases: formattedOnHoldCases.filter(
+                (caseItem) => caseItem.due_day === day
+              ), // Filter cases to only show on the correct day
             };
 
+            //  const pastDueEvent = {
+            //    title: `${
+            //      formattedOnHoldCases.length > 0
+            //        ? formattedActiveCases.filter(
+            //            (caseItem) => caseItem.due_day < day
+            //          ).length
+            //        : ""
+            //    }`, // Example: "2 on hold"
+            //    start: startOfToday,
+            //    end: endOfToday,
+            //    isPastDue: true,
+            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
+            //    formattedCases: formattedActiveCases.filter(
+            //      (caseItem) => caseItem.due_day < day
+            //    ), // Filter cases to only show on the correct day
+            //  };
+            //  const tomorowEvent = {
+            //    title: `${formattedDueTommorwCases.length || ""}`, // Example: "2 on hold"
+            //    start: startOfToday,
+            //    end: endOfToday,
+            //    isTommorow: true,
+            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
+            //    formattedCases: formattedDueTommorwCases,
+            //  };
+            //  const onHoldAllEvent = {
+            //    title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
+            //    start: startOfToday,
+            //    end: endOfToday,
+            //    isAllOnHold: true,
+            //    resource: { count: activeCases.length, isPastDue: isPastDue },
+            //    formattedCases: formattedOnholdCases,
+            //  };
             // Return both events (active and on hold)
             return [activeEvent, onHoldEvent];
           })
@@ -377,12 +481,6 @@ const Dashboard: React.FC = () => {
           .eq("lab_id", labData.labId)
           .eq("is_active", true);
 
-        setMetrics({
-          pastDue: pastDue || 0,
-          dueToday: dueToday || 0,
-          dueTomorrow: dueTomorrow || 0,
-          onHold: onHold || 0,
-        });
         let workstationApi: any = workstationData;
         setWorkstationIssues(
           workstationApi?.filter(
@@ -512,7 +610,10 @@ const Dashboard: React.FC = () => {
             <div className="grid grid-cols-12 gap-4">
               {/* Daily Counts */}
               <div className="col-span-4">
-                <DailyCountsCard />
+                <DailyCountsCard
+                  totalDue={keyMetrics[0].value}
+                  todayDue={keyMetrics[1].value}
+                />
               </div>
 
               {/* Calendar Section */}

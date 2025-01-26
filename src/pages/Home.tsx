@@ -430,7 +430,7 @@ const Home: React.FC = () => {
 
             {/* Daily Counts Section */}
             <div className="col-span-12 lg:col-span-4">
-              <DailyCountsCard />
+              {/* <DailyCountsCard /> */}
             </div>
           </div>
 

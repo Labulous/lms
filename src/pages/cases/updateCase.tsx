@@ -670,19 +670,43 @@ const UpdateCase: React.FC = () => {
       }}
     >
       <div className="space-y-4">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">
-          Update a Case{" "}
-          <span
-            className="text-blue-500 underline cursor-pointer"
-            onClick={() => {
-              caseDetail?.case_number
-                ? navigate(`/cases/${caseDetail.id}`)
-                : null;
-            }}
-          >
-            {caseDetail?.case_number ?? "Loading..."}
-          </span>
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-semibold text-gray-800">
+            Update a Case{" "}
+            <span
+              className="text-blue-500 underline cursor-pointer"
+              onClick={() => {
+                caseDetail?.case_number
+                  ? navigate(`/cases/${caseDetail.id}`)
+                  : null;
+              }}
+            >
+              {caseDetail?.case_number ?? "Loading..."}
+            </span>
+          </h1>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate(-1)}
+              disabled={loadingState.isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={loadingState.isLoading}
+            >
+              {loadingState.isLoading && loadingState.action === "update" ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                "Update Case"
+              )}
+            </Button>
+          </div>
+        </div>
 
         <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
