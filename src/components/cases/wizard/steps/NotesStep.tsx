@@ -35,11 +35,15 @@ const NotesStep: React.FC<NotesStepProps> = ({
       onChange("notes", updatedNotes);
     }
   };
-
   return (
     <div className="bg-slate-50 h-full flex flex-col">
       <div className="flex-1 space-y-2">
         <Label htmlFor="instructionNotes">Instruction Notes</Label>
+        <input
+          type="file"
+          multiple
+          className=""
+        />
         <Textarea
           id="instructionNotes"
           name="instructionNotes"

@@ -86,6 +86,26 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
   </div>
 );
 
+const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
+  return (
+    <div className="rbc-date-cell">
+      <div className="custom-date-cell">
+        <span className="date-number">{format(date, "d")}</span>
+        {events.length > 0 && (
+          <div className="badge-container">
+            <span
+              className="count-badge "
+              style={{ backgroundColor: "green !important" }}
+            >
+              {events.length}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
   height = 500,
@@ -142,7 +162,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     }
     return {};
   };
-
+  console.log(events, "events");
   const components = {
     toolbar: (props: any) => (
       <CustomToolbar
@@ -151,11 +171,37 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
         label={format(props.date, "MMMM yyyy")}
       />
     ),
+    dateCellWrapper: (props: any) => {
+      const eventsForDate = events.filter((event) => {
+        const eventDate = new Date(event.start);
+        return (
+          eventDate.getDate() === props.value.getDate() &&
+          eventDate.getMonth() === props.value.getMonth() &&
+          eventDate.getFullYear() === props.value.getFullYear()
+        );
+      });
+      return <CustomDateCell date={props.value} events={eventsForDate} />;
+    },
     event: ({ event }: { event: CalendarEvents }) => (
       <HoverCard>
         <HoverCardTrigger asChild>
-          <div onMouseEnter={() => handleEventHover(event)} title="">
-            {event.title}
+          <div
+            onMouseEnter={() => handleEventHover(event)}
+            title=""
+            className="w--full grid"
+          >
+            {event.onHold && event.title && (
+              <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                {event.title}
+              </div>
+            )}
+            {!event.onHold && (
+              <div
+                className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+              >
+                {event.title}
+              </div>
+            )}
           </div>
         </HoverCardTrigger>
         <HoverCardContent
@@ -331,23 +377,18 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     ),
   };
 
-  const eventStyleGetter = (
-    event: any,
-    start: Date,
-    end: Date,
-    isSelected: boolean
-  ) => {
+  const eventStyleGetter = (event: any) => {
+    const isPastDue = event.resource?.isPastDue;
     return {
       style: {
-        backgroundColor: isSelected ? "#3174ad" : "#3B82F6", // Highlight selected events
-        borderRadius: "5px",
+        backgroundColor: isPastDue ? "#ef4444" : "#2563eb", // red-500 for past due, blue-600 for normal
         color: "white",
         border: "0px",
-        padding: "2px", // Ensure padding fits within the box
-        whiteSpace: "nowrap", // Prevent text overflow
-        overflow: "hidden", // Hide overflow content
-        textOverflow: "ellipsis", // Add ellipsis for long text
-        display: "block", //
+        padding: "2px",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        display: "block",
       },
     };
   };
@@ -358,24 +399,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
-  const rbcNowElement = document.querySelector(".rbc-now");
-  useEffect(() => {
-    if (rbcNowElement) {
-      const nextSibling = rbcNowElement.nextElementSibling;
-      if (nextSibling && nextSibling instanceof HTMLElement) {
-        nextSibling.classList.add("due-by-tommorow-cell");
-      } else {
-        console.log("Next sibling not found or not an HTMLElement");
-      }
-    } else {
-      console.log("rbc-now element not found");
-    }
-  }, [rbcNowElement]);
-
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
-  console.log(events, "nextSibling");
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div
