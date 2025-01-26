@@ -863,7 +863,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
                       >
                         <Plus className="w-3 h-3" />
-                        + New
+                        Add New
                       </button>
                     }
                   />

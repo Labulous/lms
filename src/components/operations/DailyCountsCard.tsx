@@ -8,6 +8,8 @@ import { useNavigate } from "react-router-dom"
 
 interface DailyCounts {
   casesDue: number;
+  pastDueCases: number;
+  dueTodayCases: number;
   casesCompleted: number;
   casesReceived: number;
   casesShipped: number;
@@ -18,6 +20,8 @@ const DailyCountsCard = () => {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DailyCounts>({
     casesDue: 0,
+    pastDueCases: 0,
+    dueTodayCases: 0,
     casesCompleted: 0,
     casesReceived: 0,
     casesShipped: 0
@@ -88,6 +92,8 @@ const DailyCountsCard = () => {
 
           setMetrics({
             casesDue: pastDueCases.length + dueTodayCases.length,
+            pastDueCases: pastDueCases.length,
+            dueTodayCases: dueTodayCases.length,
             casesCompleted: completedCases?.length || 0,
             casesReceived: receivedCases?.length || 0,
             casesShipped: shippedCases?.length || 0
@@ -123,25 +129,25 @@ const DailyCountsCard = () => {
     {
       label: "Cases Due",
       value: metrics.casesDue,
-      icon: <Clock className="h-5 w-5 text-white" />,
+      icon: <Clock className="h-4 w-4 text-white" />,
       bgColor: "bg-purple-500"
     },
     {
       label: "Cases Completed",
       value: metrics.casesCompleted,
-      icon: <CheckCircle className="h-5 w-5 text-white" />,
+      icon: <CheckCircle className="h-4 w-4 text-white" />,
       bgColor: "bg-emerald-500"
     },
     {
       label: "Cases Received",
       value: metrics.casesReceived,
-      icon: <Package className="h-5 w-5 text-white" />,
+      icon: <Package className="h-4 w-4 text-white" />,
       bgColor: "bg-blue-500"
     },
     {
       label: "Cases Shipped",
       value: metrics.casesShipped,
-      icon: <CalendarDays className="h-5 w-5 text-white" />,
+      icon: <CalendarDays className="h-4 w-4 text-white" />,
       bgColor: "bg-orange-500"
     }
   ];
@@ -199,61 +205,49 @@ const DailyCountsCard = () => {
         <div className="flex-grow" />
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="grid grid-cols-1 gap-4">
-            {/* First Row: Cases Due and Cases Completed */}
-            {metricsDisplay.slice(0, 2).map((metric) => (
-              <button
-                key={metric.label}
-                onClick={() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  switch (metric.label) {
-                    case "Cases Due":
-                      navigate(`/cases?filter=past_due`);
-                      break;
-                    case "Cases Completed":
-                      navigate(`/cases?status=completed&updated_at=${today.toISOString()}`);
-                      break;
-                  }
-                }}
-                className="flex flex-col items-center text-center space-y-2 hover:bg-gray-50 rounded-lg p-4 transition-colors"
-              >
-                <div className={`p-2 rounded-full ${metric.bgColor}`}>
-                  {metric.icon}
+        <div className="grid grid-cols-2 gap-1">
+          {/* Cases Due Card */}
+          <div 
+            className="flex items-start space-x-2 rounded-lg p-2 transition-colors hover:bg-gray-100 cursor-pointer"
+            onClick={() => navigate('/cases')}
+          >
+            <div className={`rounded-lg p-1.5 ${metricsDisplay[0].bgColor}`}>
+              {metricsDisplay[0].icon}
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium leading-none">{metricsDisplay[0].label}</p>
+              <div className="flex flex-col">
+                <p className="text-2xl font-bold">{metrics.casesDue}</p>
+                <div className="flex flex-col text-xs space-y-0.5 mt-0.5">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                    <span className="text-red-600 font-medium">{metrics.pastDueCases} Past Due</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
+                    <span className="text-gray-600 font-medium">{metrics.dueTodayCases} Due Today</span>
+                  </div>
                 </div>
-                <span className="text-2xl font-semibold">{metric.value}</span>
-                <span className="text-sm text-gray-500">{metric.label}</span>
-              </button>
-            ))}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            {/* Second Row: Cases Received and Cases Shipped */}
-            {metricsDisplay.slice(2, 4).map((metric) => (
-              <button
-                key={metric.label}
-                onClick={() => {
-                  const today = new Date();
-                  today.setHours(0, 0, 0, 0);
-                  switch (metric.label) {
-                    case "Cases Received":
-                      navigate(`/cases?created_at=${today.toISOString()}`);
-                      break;
-                    case "Cases Shipped":
-                      navigate(`/cases?status=shipped&updated_at=${today.toISOString()}`);
-                      break;
-                  }
-                }}
-                className="flex flex-col items-center text-center space-y-2 hover:bg-gray-50 rounded-lg p-4 transition-colors"
-              >
-                <div className={`p-2 rounded-full ${metric.bgColor}`}>
-                  {metric.icon}
-                </div>
-                <span className="text-2xl font-semibold">{metric.value}</span>
-                <span className="text-sm text-gray-500">{metric.label}</span>
-              </button>
-            ))}
-          </div>
+
+          {/* Other metric cards */}
+          {metricsDisplay.slice(1).map((metric, index) => (
+            <div
+              key={metric.label}
+              className="flex items-start space-x-2 rounded-lg p-2 transition-colors hover:bg-gray-100 cursor-pointer"
+              onClick={() => navigate('/cases')}
+            >
+              <div className={`rounded-lg p-1.5 ${metric.bgColor}`}>
+                {metric.icon}
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium leading-none">{metric.label}</p>
+                <p className="text-2xl font-bold">{metric.value}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

@@ -86,6 +86,8 @@ import {
   DrawerClose,
 } from "@/components/ui/drawer";
 import CaseDetailsDrawer from "@/components/cases/CaseDetailsDrawer";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
+import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -1301,27 +1303,98 @@ const InvoiceList: React.FC = () => {
                           <span>Change Due Date</span>
                         </DropdownMenuItem>
                       </PopoverTrigger>
-                      <PopoverContent className="p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={dateFilter}
-                          onSelect={(date) => {
-                            setDateFilter(date);
-                            handleBulkAction("changeDueDate");
-                          }}
-                          initialFocus
-                        />
+                      <PopoverContent className="w-[200px] p-2" align="start">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                            <span className="text-sm font-medium">
+                              Filter by Status
+                            </span>
+                            {statusFilter.length > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setStatusFilter([])}
+                                className="h-8 px-2 text-xs"
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                          {[
+                            "unpaid",
+                            "paid",
+                            "partially_paid",
+                            "overdue",
+                            "cancelled",
+                          ].map((status, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center space-x-2"
+                            >
+                              <Checkbox
+                                id={`status-${status}`}
+                                checked={
+                                  statusFilter.includes(
+                                    status as
+                                      | "draft"
+                                      | "unpaid"
+                                      | "pending"
+                                      | "approved"
+                                      | "paid"
+                                      | "overdue"
+                                      | "partially_paid"
+                                      | "cancelled"
+                                  )
+                                    ? true
+                                    : false
+                                }
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setStatusFilter(
+                                      (prev) => [...prev, status] as any
+                                    );
+                                  } else {
+                                    setStatusFilter((prev) =>
+                                      prev.filter((s) => s !== status)
+                                    );
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`status-${status}`}
+                                className="flex items-center text-sm font-medium cursor-pointer"
+                              >
+                                <Badge
+                                  variant={
+                                    getStatusBadgeVariant(
+                                      status as Invoice["status"]
+                                    ) as
+                                      | "filter"
+                                      | "secondary"
+                                      | "success"
+                                      | "destructive"
+                                      | "default"
+                                      | "warning"
+                                      | "outline"
+                                      | "Crown"
+                                      | "Bridge"
+                                      | "Removable"
+                                      | "Implant"
+                                      | "Coping"
+                                      | "Appliance"
+                                  }
+                                >
+                                  {status === "partially_paid"
+                                    ? "Partially Paid"
+                                    : status.charAt(0).toUpperCase() +
+                                      status.slice(1)}
+                                </Badge>
+                              </label>
+                            </div>
+                          ))}
+                        </div>
                       </PopoverContent>
                     </Popover>
-                    {canDeleteBulk && (
-                      <DropdownMenuItem
-                        onClick={() => handleBulkAction("delete")}
-                        className="flex items-center text-red-600 focus:text-red-600 focus:bg-red-50"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        <span>Delete</span>
-                      </DropdownMenuItem>
-                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
@@ -1602,21 +1675,45 @@ const InvoiceList: React.FC = () => {
                             : "No Date"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          <button
-                            type="button"
-                            className="text-blue-600 hover:underline"
-                            onClick={() => {
-                              setSelectedInvoices([invoice?.id as string]);
-                              setIsPreviewModalOpen(true);
-                            }}
-                          >
-                            {invoice.case_number
-                              ? `INV-${invoice.case_number
-                                  .split("-")
-                                  .slice(1)
-                                  .join("-")}`
-                              : "No Invoice #"}
-                          </button>
+                          <HoverCard openDelay={200}>
+                            <HoverCardTrigger asChild>
+                              <button
+                                type="button"
+                                className="text-blue-600 hover:underline"
+                                onClick={() => {
+                                  setSelectedInvoices([invoice?.id as string]);
+                                  setIsPreviewModalOpen(true);
+                                }}
+                              >
+                                {invoice.case_number
+                                  ? `INV-${invoice.case_number
+                                      .split("-")
+                                      .slice(1)
+                                      .join("-")}`
+                                  : "No Invoice #"}
+                              </button>
+                            </HoverCardTrigger>
+                            <HoverCardContent 
+                              className="w-[600px] p-0 overflow-hidden max-h-[800px]" 
+                              side="right"
+                              sideOffset={20}
+                              align="start"
+                            >
+                              <div className="w-full">
+                                <div 
+                                  className="w-full transform scale-[0.85] origin-top-left -mt-4"
+                                  style={{ 
+                                    transform: 'scale(0.85) translateX(20px)'
+                                  }}
+                                >
+                                  <InvoiceTemplate
+                                    paperSize="LETTER"
+                                    caseDetails={[invoice]}
+                                  />
+                                </div>
+                              </div>
+                            </HoverCardContent>
+                          </HoverCard>
                         </TableCell>
                         <TableCell>
                           <Badge
