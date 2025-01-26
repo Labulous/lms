@@ -1431,7 +1431,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-xs font-medium">
-                    {formatDate(caseDetail.created_at)}
+                    {caseDetail?.received_date
+                      ? formatDate(caseDetail?.received_date)
+                      : "TBD"}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -1599,7 +1601,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
                               {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ? (
+                              product?.teethProduct?.custom_occlusal_shade || product?.teethProduct?.manual_occlusal_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">

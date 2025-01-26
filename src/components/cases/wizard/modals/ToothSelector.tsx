@@ -575,6 +575,64 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     onSelectionChange(selectedTeeth, Array.from(newPonticTeeth));
   };
 
+  // const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
+  //   if (disabled) return;
+
+  //   if (ponticMode) {
+  //     handlePonticSelect(toothNumber);
+  //     return;
+  //   }
+
+  //   // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux) key
+  //   if ((event.metaKey || event.ctrlKey) && billingType === "perTooth") {
+  //     const newIndividualSelections = new Set(individualSelections);
+
+  //     if (newIndividualSelections.has(toothNumber)) {
+  //       newIndividualSelections.delete(toothNumber);
+  //     } else {
+  //       newIndividualSelections.add(toothNumber);
+  //     }
+
+  //     setIndividualSelections(newIndividualSelections);
+  //     setPonticMode(false); // Only reset pontic mode
+  //     setPonticTeeth(new Set()); // Only reset pontic teeth
+  //     onSelectionChange(Array.from(newIndividualSelections));
+  //     return;
+  //   }
+
+  //   // Shift click for range selection
+  //   if (event.shiftKey && billingType === "perTooth") {
+  //     if (selectedTeeth.length === 0) {
+  //       setRangeStartTooth(toothNumber);
+  //       setRangeSelections(new Set([toothNumber]));
+  //       // resetSelectionStates();
+  //       onSelectionChange([toothNumber]);
+  //       return;
+  //     }
+
+  //     const lastSelectedTooth = selectedTeeth[selectedTeeth.length - 1];
+  //     const teethInRange = getTeethInVisualRange(
+  //       lastSelectedTooth,
+  //       toothNumber
+  //     );
+
+  //     if (teethInRange.length > 0) {
+  //       const newRangeSelections = new Set(teethInRange);
+  //       setRangeSelections(newRangeSelections);
+  //       resetSelectionStates();
+  //       onSelectionChange(teethInRange);
+  //     }
+  //     return;
+  //   }
+
+  //   // Regular click (no modifier keys)
+  //   if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
+  //     resetSelectionStates();
+  //     setIndividualSelections(new Set([toothNumber]));
+  //     onSelectionChange([toothNumber]);
+  //   }
+  // };
+
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled) return;
 
@@ -583,33 +641,36 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       return;
     }
 
-    // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux) key
+    // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux)
     if ((event.metaKey || event.ctrlKey) && billingType === "perTooth") {
       const newIndividualSelections = new Set(individualSelections);
 
       if (newIndividualSelections.has(toothNumber)) {
-        newIndividualSelections.delete(toothNumber);
+        newIndividualSelections.delete(toothNumber); // Deselect the tooth
       } else {
-        newIndividualSelections.add(toothNumber);
+        newIndividualSelections.add(toothNumber); // Select the tooth
       }
 
       setIndividualSelections(newIndividualSelections);
-      setPonticMode(false); // Only reset pontic mode
-      setPonticTeeth(new Set()); // Only reset pontic teeth
-      onSelectionChange(Array.from(newIndividualSelections));
+      setPonticMode(false); // Reset pontic mode
+      setPonticTeeth(new Set()); // Clear pontic teeth
+      setRangeStartTooth(toothNumber);
+
+      onSelectionChange(Array.from(newIndividualSelections)); // Trigger callback
       return;
     }
 
-    // Shift click for range selection
+    // Shift-click for range selection
     if (event.shiftKey && billingType === "perTooth") {
       if (selectedTeeth.length === 0) {
+        // If no teeth are selected, set the starting tooth
         setRangeStartTooth(toothNumber);
         setRangeSelections(new Set([toothNumber]));
-        resetSelectionStates();
         onSelectionChange([toothNumber]);
         return;
       }
 
+      // Select a range of teeth from the last selected tooth to the clicked tooth
       const lastSelectedTooth = selectedTeeth[selectedTeeth.length - 1];
       const teethInRange = getTeethInVisualRange(
         lastSelectedTooth,
@@ -627,9 +688,9 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     // Regular click (no modifier keys)
     if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
-      resetSelectionStates();
-      setIndividualSelections(new Set([toothNumber]));
-      onSelectionChange([toothNumber]);
+      resetSelectionStates(); // Clear previous selections
+      setIndividualSelections(new Set([toothNumber])); // Select the single tooth
+      onSelectionChange([toothNumber]); // Trigger callback
     }
   };
 
@@ -749,19 +810,24 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="w-full h-full flex flex-col items-center justify-center gap-1 max-h-92"
               style={{ transform: "scale(0.75)" }}
             >
-              {selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge") && selectedTeeth.length > 0 && (
-                <Button
-                  variant={ponticMode ? "default" : "outline"}
-                  size="sm"
-                  className={cn(
-                    "mb-2",
-                    ponticMode ? "bg-purple-500 hover:bg-purple-600" : "hover:bg-purple-50"
-                  )}
-                  onClick={() => setPonticMode(!ponticMode)}
-                >
-                  {ponticMode ? "Exit Pontic Mode" : "Select Pontic"}
-                </Button>
-              )}
+              {selectedProduct?.type?.some(
+                (t) => t.toLowerCase() === "bridge"
+              ) &&
+                selectedTeeth.length > 0 && (
+                  <Button
+                    variant={ponticMode ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "mb-2",
+                      ponticMode
+                        ? "bg-purple-500 hover:bg-purple-600"
+                        : "hover:bg-purple-50"
+                    )}
+                    onClick={() => setPonticMode(!ponticMode)}
+                  >
+                    {ponticMode ? "Exit Pontic Mode" : "Select Pontic"}
+                  </Button>
+                )}
               <div className="text-gray-400 text-sm text-center">
                 Selected Teeth
               </div>

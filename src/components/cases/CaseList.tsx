@@ -68,6 +68,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
 import { ExtendedCase } from "./CaseDetails";
+import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -618,7 +619,7 @@ const CaseList: React.FC = () => {
       },
     },
     {
-      accessorKey: "created_at",
+      accessorKey: "received_date",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -630,8 +631,8 @@ const CaseList: React.FC = () => {
         </Button>
       ),
       cell: ({ row }) => {
-        const date = row.getValue("created_at") as string;
-        return <div>{format(new Date(date), "MM/dd/yyyy")}</div>;
+        const date = row.getValue("received_date") as string;
+        return formatDate(date);
       },
     },
     {
@@ -1208,7 +1209,7 @@ const CaseList: React.FC = () => {
           <Plus className="mr-2 h-4 w-4" /> New Case
         </Button>
       </PageHeader>
-
+      <input type="file" multiple className="" />
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">

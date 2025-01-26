@@ -305,7 +305,6 @@ const NewCase: React.FC = () => {
       className="p-6"
       ref={mainDivRef}
       onClick={(e) => {
-        e.preventDefault();
         if (isAddingPan) {
           setIsAddingPan(false);
         }
@@ -349,6 +348,7 @@ const NewCase: React.FC = () => {
         </div>
 
         {/* Files and Notes Section Grid */}
+
         <div className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
           <div className="bg-white shadow">

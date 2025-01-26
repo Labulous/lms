@@ -247,13 +247,17 @@ const UpdateCase: React.FC = () => {
               " " +
               transformedData.patientLastName,
             rx_number: "",
-            received_date: transformedData.orderDate,
+            received_date: transformedData.isDueDateTBD
+              ? null
+              : transformedData.orderDate,
             status: transformedData.status,
             due_date: transformedData.isDueDateTBD
               ? null
               : transformedData.dueDate,
             isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate || null,
+            appointment_date: transformedData.isDueDateTBD
+              ? null
+              : transformedData.appointmentDate || null,
             otherItems: transformedData.otherItems || "",
             invoice_notes: transformedData.notes?.invoiceNotes,
             instruction_notes: transformedData.notes?.instructionNotes,
@@ -349,7 +353,6 @@ const UpdateCase: React.FC = () => {
              working_pan_name,
              working_pan_color,
               rx_number,
-              received_date,
               isDueDateTBD,
               appointment_date,
               otherItems,
@@ -546,7 +549,7 @@ const UpdateCase: React.FC = () => {
             teethProduct: productTeeth,
           };
         });
-console.log(productsWithDiscounts,"productsWithDiscounts")
+        console.log(productsWithDiscounts, "productsWithDiscounts");
         const caseDataApi: any = caseData;
         setFormData((prevData) => ({
           ...prevData,
@@ -583,7 +586,7 @@ console.log(productsWithDiscounts,"productsWithDiscounts")
             consultRequested: caseDataApi.enclosed_items?.consultRequested || 0,
           },
           otherItems: caseDataApi.otherItems || "",
-          isDueDateTBD: prevData.isDueDateTBD || false,
+          isDueDateTBD: caseDataApi.isDueDateTBD || false,
           notes: {
             ...prevData.notes,
             instructionNotes: caseDataApi.instruction_notes || "",
