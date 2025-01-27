@@ -891,6 +891,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             row.shades?.custom_body ||
                             row.shades?.custom_gingival ||
                             row.shades?.custom_occlusal ||
+                            row.shades?.manual_occlusal ||
+                            row.shades?.manual_gingival ||
+                            row.shades?.manual_body ||
+                            row.shades?.manual_stump ||
                             row.shades?.custom_stump ||
                             row.shades?.stump_shade ? (
                               <div>
