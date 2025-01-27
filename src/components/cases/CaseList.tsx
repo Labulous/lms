@@ -1120,7 +1120,13 @@ const CaseList: React.FC = () => {
 
     if (filter) {
       // Get today's date in UTC at midnight
-      const today = new Date();
+      const today = new Date(
+        Date.UTC(
+          new Date().getUTCFullYear(),
+          new Date().getUTCMonth(),
+          new Date().getUTCDate()
+        )
+      );
       const todayUTC = Date.UTC(
         today.getUTCFullYear(),
         today.getUTCMonth(),
@@ -1129,7 +1135,8 @@ const CaseList: React.FC = () => {
 
       // Calculate tomorrow's date in UTC
       const tomorrowUTC = todayUTC + 24 * 60 * 60 * 1000; // Add one day in milliseconds
-
+      const tomorrow = new Date(today);
+      tomorrow.setUTCDate(today.getUTCDate() + 1);
       const filteredCases = cases.filter((caseItem) => {
         const dueDate = new Date(caseItem.due_date);
 
@@ -1139,14 +1146,38 @@ const CaseList: React.FC = () => {
           dueDate.getUTCDate()
         );
 
+        const isDueTomorrow = (dueDate: string) => {
+          const due = new Date(dueDate);
+          return (
+            due.getDate() === tomorrow.getDate() &&
+            due.getMonth() === tomorrow.getMonth() &&
+            due.getFullYear() === tomorrow.getFullYear()
+          );
+        };
+        // Set the start and end of today to compare full date range
+        const startOfToday = new Date(today);
+        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+
+        // End of today in UTC (11:59:59.999 PM UTC)
+        const endOfToday = new Date(today);
+        endOfToday.setUTCHours(23, 59, 59, 999); //
+
+        const isDueToday = (dueDate: string) => {
+          const due = new Date(dueDate);
+          return due >= startOfToday && due <= endOfToday;
+        };
+
         switch (filter) {
           case "past_due":
             return dueDateUTC < todayUTC && caseItem.status !== "completed";
           case "due_today":
-            return dueDateUTC === todayUTC && caseItem.status !== "completed";
+            return (
+              isDueToday(caseItem.due_date) && caseItem.status !== "completed"
+            );
           case "due_tomorrow":
             return (
-              dueDateUTC === tomorrowUTC && caseItem.status !== "completed"
+              isDueTomorrow(caseItem.due_date) &&
+              caseItem.status !== "completed"
             );
           case "on_hold":
             return caseItem.status === "on_hold";

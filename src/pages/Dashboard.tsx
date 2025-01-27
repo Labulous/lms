@@ -43,6 +43,7 @@ export interface CalendarEvents {
     case_id: string;
     client_name: string;
     doctor: { name: string };
+    due_date?: string;
     case_products: { name: string; product_type: { name: string } }[];
     invoicesData:
       | {
@@ -192,14 +193,27 @@ const Dashboard: React.FC = () => {
         if (!labData?.labId) return;
 
         // Fetch case metrics and calendar events
-        const todayDate = new Date();
-        const today = new Date();
+        // Get today's date in UTC
+        const today = new Date(
+          Date.UTC(
+            new Date().getUTCFullYear(),
+            new Date().getUTCMonth(),
+            new Date().getUTCDate()
+          )
+        );
+
+        // Get tomorrow's date in UTC
         const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1); // Set tomorrow's date
+        tomorrow.setUTCDate(today.getUTCDate() + 1); // Set tomorrow's date in UTC
+        // Set tomorrow's date
 
         // Set the start and end of today to compare full date range
-        const startOfToday = new Date(today.setHours(0, 0, 0, 0)); // 12:00 AM today
-        const endOfToday = new Date(today.setHours(23, 59, 59, 999)); // 11:59 PM today
+        const startOfToday = new Date(today);
+        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+
+        // End of today in UTC (11:59:59.999 PM UTC)
+        const endOfToday = new Date(today);
+        endOfToday.setUTCHours(23, 59, 59, 999); //
 
         // Function to check if a date is due today
         const isDueToday = (dueDate: string) => {
@@ -341,6 +355,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -359,6 +374,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -377,6 +393,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -388,18 +405,12 @@ const Dashboard: React.FC = () => {
 
             // Create the event for active cases
             const activeEvent = {
-              title: `${
-                formattedActiveCases.filter(
-                  (caseItem) => caseItem.due_day === day
-                ).length
-              }`, // Example: "3 active cases"
+              title: `${formattedActiveCases.length}`, // Example: "3 active cases"
               start,
               end,
               isActive: true,
               resource: { count: activeCases.length, isPastDue: isPastDue },
-              formattedCases: formattedActiveCases.filter(
-                (caseItem) => caseItem.due_day === day
-              ), // Filter cases to only show on the correct day
+              formattedCases: formattedActiveCases, // Filter cases to only show on the correct day
             };
 
             // Create the event for "on_hold" cases
@@ -453,7 +464,7 @@ const Dashboard: React.FC = () => {
               id: 2,
               // isAllOnHold: true,
               resource: { count: 0, isPastDue: false },
-              formattedCases: formattedOnholdCases,
+              formattedCases: formattedOnholdCases
             };
             // Return both events (active and on hold)
             console.log(filterType, "filer type");

@@ -332,7 +332,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                   }
                   {
                     <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.isTommorow && event.title}
+                      {event.id===1 && event.title}
                     </div>
                   }
                 </div>
@@ -357,7 +357,11 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                 </p>
               </div>
               <div>
-                <Button onClick={() => handleEventClick(event)}>
+                <Button
+                  onClick={() =>
+                    handleEventClick(event.formattedCases[0].due_date)
+                  }
+                >
                   View CaseList
                 </Button>
               </div>
@@ -532,12 +536,11 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   };
 
   const handleEventClick = (event: any) => {
-    const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-    const utcDate = new Date(event.start);
+    // Convert to ISO string and extract only the date part (YYYY-MM-DD)
+    const date = new Date(event).toISOString().split("T")[0];
 
-    // Convert to local time by calling the Date object's methods
-    const localDateStr = utcDate.toLocaleString();
-    navigate(`/cases?dueDate=${utcDate}&status=in_progress%2Cin_queue`);
+    // Pass the formatted date to the URL
+    navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
   const handleEventHover = (event: CalendarEvents | null) => {
@@ -559,7 +562,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             startAccessor="start"
             endAccessor="end"
             style={{ height }}
-            views={['month', 'week', 'day']} // Make sure to include the right views
+            views={["month"]} // Make sure to include the right views
             components={components}
             // onNavigate={calendarNavigate}
             date={currentDate}
