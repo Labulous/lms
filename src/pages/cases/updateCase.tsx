@@ -657,13 +657,10 @@ const UpdateCase: React.FC = () => {
     };
   }, [caseId, lab]);
 
-  console.log(formData, "form");
-  console.log(selectedProducts, "selected");
   return (
     <div
       className="p-6"
       onClick={(e) => {
-        e.preventDefault();
         if (isAddingPan) {
           setIsAddingPan(false);
         }
@@ -692,10 +689,7 @@ const UpdateCase: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={loadingState.isLoading}
-            >
+            <Button onClick={handleSubmit} disabled={loadingState.isLoading}>
               {loadingState.isLoading && loadingState.action === "update" ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

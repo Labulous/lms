@@ -207,6 +207,56 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
 }) => (
   <div>
     {caseDetails?.map((invoice, index) => {
+      const formatTeethRange = (teeth: number[]): string => {
+        if (!teeth.length) return "";
+
+        // Define the sequence for upper and lower teeth based on the provided data
+        const teethArray = [
+          // Upper right to upper left
+          18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+          // Lower left to lower right
+          38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+        ];
+
+        // Function to group consecutive teeth based on the sequence
+        const getConsecutiveGroups = (teeth: number[]): string[] => {
+          if (teeth.length === 0) return [];
+
+          // Sort the teeth based on the order in teethArray
+          const sortedTeeth = [...teeth].sort(
+            (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+          );
+
+          let groups: string[] = [];
+          let groupStart = sortedTeeth[0];
+          let prev = sortedTeeth[0];
+
+          for (let i = 1; i <= sortedTeeth.length; i++) {
+            const current = sortedTeeth[i];
+
+            // Check if the current tooth is consecutive to the previous one in the sequence
+            if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+              // End of a group
+              if (groupStart === prev) {
+                groups.push(groupStart.toString());
+              } else {
+                groups.push(`${groupStart}-${prev}`);
+              }
+              groupStart = current; // Start a new group
+            }
+            prev = current;
+          }
+
+          return groups;
+        };
+
+        // Get consecutive groups of teeth
+        const groupedTeeth = getConsecutiveGroups(teeth);
+
+        // If there's only one group, return it
+        return groupedTeeth.join(", ");
+      };
+
       return (
         <div
           key={index}
@@ -396,8 +446,10 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   className="text-sm pl-6 font-extrabold"
                                   style={{ lineHeight: "1.15" }}
                                 >
-                                  <span className="font-normal">Teeth: </span>#
-                                  {item.teethProduct?.tooth_number?.join(", #")}
+                                  <span className="font-normal">Teeth: </span>
+                                  {formatTeethRange(
+                                    item.teethProduct?.tooth_number
+                                  )}
                                 </p>
                                 <p
                                   className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
@@ -414,7 +466,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     <>
                                       <span>
                                         <span className="font-normal">
-                                          Occlusal:{" "}
+                                          Incisal:{" "}
                                         </span>
                                         <span className="font-bold">
                                           {item?.teethProduct
@@ -874,7 +926,57 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     };
 
     const addedTeethMap = new Map();
-    console.log(teeth, "teeth detail");
+
+    const formatTeethRange = (teeth: number[]): string => {
+      if (!teeth.length) return "";
+
+      // Define the sequence for upper and lower teeth based on the provided data
+      const teethArray = [
+        // Upper right to upper left
+        18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+        // Lower left to lower right
+        38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+      ];
+
+      // Function to group consecutive teeth based on the sequence
+      const getConsecutiveGroups = (teeth: number[]): string[] => {
+        if (teeth.length === 0) return [];
+
+        // Sort the teeth based on the order in teethArray
+        const sortedTeeth = [...teeth].sort(
+          (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+        );
+
+        let groups: string[] = [];
+        let groupStart = sortedTeeth[0];
+        let prev = sortedTeeth[0];
+
+        for (let i = 1; i <= sortedTeeth.length; i++) {
+          const current = sortedTeeth[i];
+
+          // Check if the current tooth is consecutive to the previous one in the sequence
+          if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+            // End of a group
+            if (groupStart === prev) {
+              groups.push(groupStart.toString());
+            } else {
+              groups.push(`${groupStart}-${prev}`);
+            }
+            groupStart = current; // Start a new group
+          }
+          prev = current;
+        }
+
+        return groups;
+      };
+
+      // Get consecutive groups of teeth
+      const groupedTeeth = getConsecutiveGroups(teeth);
+
+      // If there's only one group, return it
+      return groupedTeeth.join(", ");
+    };
+
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -884,14 +986,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
           <div className="flex">
             <span className="w-16">Tooth #: </span>
             <div className="font-bold">
-              {teeth?.teethProduct.tooth_number.join(", ")}
+              {formatTeethRange(teeth?.teethProduct.tooth_number)}
             </div>
           </div>
           {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
             <div className="flex ml-2">
               <span className="w-20 text-[10px]">Pontic Teeth #: </span>
               <div className="font-bold text-[10px]">
-                {teeth?.teethProduct.pontic_teeth.join(", ") || ""}
+                {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
           )}
@@ -909,6 +1011,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             </div>
             <div className="space-y-0.5 ml-4">
               <div className="flex">
+                <span className="w-20 text-[10px]">Incisal: </span>
+                <div className="font-bold ml-1 text-[10px]">
+                  {teeth.teethProduct?.manual_occlusal_shade
+                    ? teeth.teethProduct?.manual_occlusal_shade
+                    : teeth.teethProduct?.occlusal_shade?.name || "N/A"}
+                </div>
+              </div>
+              <div className="flex">
                 <span className="w-20 text-[10px]">Body: </span>
                 <div className="font-bold ml-1 text-[10px]">
                   {teeth.teethProduct?.manual_body_shade
@@ -916,6 +1026,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                     : teeth.teethProduct?.body_shade?.name || "N/A"}
                 </div>
               </div>
+
               <div className="flex">
                 <span className="w-20 text-[10px]">Gingival: </span>
                 <div className="font-bold ml-1 text-[10px]">
@@ -976,13 +1087,13 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                   }}
                 >
                   <div className="flex">
-                    <span className="w-16">Occlusal: </span>
+                    <span className="w-16">Incisal: </span>
                     <div className="font-bold ml-1 flex gap-x-2">
                       <p>
                         {teeth.teethProduct?.manual_occlusal_shade
                           ? teeth.teethProduct?.manual_occlusal_shade
                           : teeth.teethProduct?.occlusal_shade?.name ||
-                            (teeth?.teethProduct?.custom_occlusal_shade && (
+                            (teeth?.teethProduct?.custom_occlusal_shade ? (
                               <p
                                 className="font-semibold ml-1"
                                 style={{
@@ -993,9 +1104,11 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_occlusal_shade}
+                                {teeth?.teethProduct?.custom_occlusal_shade || "N/A"}{" "}
+                                {teeth?.teethProduct?.custom_occlusal_shade &&
+                                  "(cus)"}
                               </p>
-                            ))}
+                            ) : "N/A")}
                       </p>
                     </div>
                   </div>
@@ -1005,22 +1118,23 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                       <p>
                         {teeth.teethProduct?.manual_body_shade
                           ? teeth.teethProduct?.manual_body_shade
-                          : teeth.teethProduct?.body_shade?.name || (
-                              teeth?.teethProduct?.custom_body_shade && (
-                                <p
-                                  className="font-semibold ml-1"
-                                  style={{
-                                    color:
-                                      TYPE_COLORS[
-                                        teeth?.product_type
-                                          ?.name as keyof typeof TYPE_COLORS
-                                      ] || TYPE_COLORS.Other,
-                                  }}
-                                >
-                                  {teeth?.teethProduct?.custom_body_shade}
-                                </p>
-                              )
-                            )}
+                          : teeth.teethProduct?.body_shade?.name ? (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_body_shade ||
+                                  "N/A"}{" "}
+                                {teeth?.teethProduct?.custom_body_shade &&
+                                  "(cus)"}
+                              </p>
+                            ): "N/A"}
                       </p>
                     </div>
                   </div>
@@ -1031,7 +1145,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         {teeth.teethProduct?.manual_gingival_shade
                           ? teeth.teethProduct?.manual_gingival_shade
                           : teeth.teethProduct?.gingival_shade?.name ||
-                            (teeth?.teethProduct?.custom_gingival_shade && (
+                            (teeth?.teethProduct?.custom_gingival_shade ? (
                               <p
                                 className="font-semibold ml-1"
                                 style={{
@@ -1042,9 +1156,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_gingival_shade}
+                                {teeth?.teethProduct?.custom_gingival_shade || "N/A"}
                               </p>
-                            ))}
+                            ) : "N/A")}
                       </p>
                     </div>
                   </div>
@@ -1056,7 +1170,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         {teeth.teethProduct?.manual_stump_shade
                           ? teeth.teethProduct?.manual_stump_shade
                           : teeth.teethProduct?.stump_shade?.name ||
-                            (teeth?.teethProduct?.custom_stump_shade && (
+                            (teeth?.teethProduct?.custom_stump_shade ? (
                               <p
                                 className="font-semibold ml-1"
                                 style={{
@@ -1069,7 +1183,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                               >
                                 {teeth?.teethProduct?.custom_stump_shade}
                               </p>
-                            ))}
+                            ) : "N/A")}
                       </p>
                     </div>
                   </div>
