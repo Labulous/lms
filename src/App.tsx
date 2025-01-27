@@ -195,7 +195,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/adjustments"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Adjustments />
                 </Layout>
@@ -207,7 +207,14 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requiredRole={["client"]}>
                 <Layout>
-                  <ClientProfile />
+                  {/* <ClientProfile /> */}
+                  <ClientProfile
+                    client={null} // Pass null or the required client data
+                    onEdit={() => { }}
+                    onDelete={() => { }}
+                    loading={false}
+                    error={null}
+                  />
                 </Layout>
               </ProtectedRoute>
             }
