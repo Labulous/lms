@@ -288,8 +288,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                         <div>
                           <p className="font-bold text-sm">Bill To:</p>
                           <div className="space-y-0" style={{ lineHeight: "1.1" }}>
-                            <p className="text-sm">{invoice.client.name}</p>
-                            <p className="text-sm">Dr. {invoice.client.doctor_name}</p>
+                            <p className="text-sm">{invoice.client.client_name}</p>
+                            <p className="text-sm">Dr. {invoice.doctor.name}</p>
                             <p className="text-sm">{invoice.client.street}</p>
                             <p className="text-sm">
                               {invoice.client.city}
@@ -312,11 +312,12 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
 
                     {/* Services Table */}
                     <div className="mb-8">
-                      <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4">
-                        <h3 className="font-bold col-span-7 text-xs p-2" style={{ lineHeight: "1.15" }}>Description</h3>
-                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Price</h2>
+                      <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4 gap-1">
+                        <h3 className="font-bold col-span-6 text-xs p-2" style={{ lineHeight: "1.15" }}>Description</h3>
+                        <h2 className="font-bold text-right col-span-1 text-xs p-2" style={{ lineHeight: "1.15" }}>Price</h2>
                         <h2 className="font-bold text-right col-span-1 text-xs p-2" style={{ lineHeight: "1.15" }}>DC(%)</h2>
-                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Amount</h2>
+                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}> Price(%)</h2>
+                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Sub Total</h2>
                       </div>
 
                       {invoice?.products.map((item: any, index: number) => {
@@ -330,7 +331,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                             style={{ lineHeight: "1.15" }}
                             key={index}
                           >
-                            <div className="space-y-1 font-medium col-span-7 pl-2">
+                            <div className="space-y-1 font-medium col-span-6 pl-2">
                               <div>
                                 <p className="font-extrabold" style={{ lineHeight: "1.15" }}>{item.name}</p>
                                 <p className="text-sm pl-6 font-extrabold" style={{ lineHeight: "1.15" }}>
@@ -482,7 +483,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                            <p className="text-right col-span-1 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
                               ${item.discounted_price.price}
                             </p>
                             <p className="text-right col-span-1 pr-2" style={{ lineHeight: "1.15" }}>
@@ -490,6 +491,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                             </p>
                             <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
                               ${item.discounted_price.final_price}
+                            </p>
+                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                              ${item.discounted_price.total}
                             </p>
                           </div>
                         );

@@ -183,17 +183,28 @@ const saveCaseProduct = async (
     }));
 
     // Calculate discounted prices for products
-    const discountedPrice = cases.products.map((product: any) => ({
-      product_id: product.id,
-      price: product.price,
-      discount: product.discount,
-      quantity: product.quantity,
-      final_price:
-        (product.price - (product.price * product.discount) / 100) *
-        product.quantity,
-      case_id: savedCaseId as string,
-      user_id: cases.overview.created_by,
-    }));
+    const discountedPrice = cases.products.map((product: any) => {
+      // Calculate the price after discount
+      const priceAfterDiscount =
+        product.price - (product.price * product.discount) / 100;
+
+      // Calculate final price (after discount) for the given quantity
+      const final_price = priceAfterDiscount * product.quantity;
+
+      // Calculate amount by multiplying final_price by quantity and then by product.teeth.length
+      const amount = final_price * product.teeth.length;
+
+      return {
+        product_id: product.id,
+        price: product.price,
+        discount: product.discount,
+        quantity: product.quantity,
+        final_price: final_price, // price after discount
+        total: amount, // final price * quantity * teeth length
+        case_id: savedCaseId as string,
+        user_id: cases.overview.created_by,
+      };
+    });
 
     // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
@@ -416,28 +427,36 @@ const updateCases = async (
     // Calculate discounted prices for products
     for (const product of cases.products) {
       // Prepare the data row
+
+      // Calculate totalAmount by iterating over all products
+      const totalAmount = cases.products.reduce(
+        (sum: number, item: SavedProduct) => {
+          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
+          const finalPriceBeforeDiscount =
+            item.price * item.teeth.length * quantity; // Total before discount
+          const discountedTotal =
+            finalPriceBeforeDiscount -
+            (finalPriceBeforeDiscount * (item.discount || 0)) / 100; // Apply discount to total
+
+          // Add discounted total for this product to the sum
+          return sum + discountedTotal;
+        },
+        0
+      );
+
       const discountedPriceRow = {
         product_id: product.id,
         price: product.price || 0,
         discount: product.discount || 0,
         quantity: product.quantity,
+        // Calculate the final price after discount and considering quantity
         final_price:
           (product.price - (product.price * product.discount) / 100 || 0) *
-          (product?.quantity ? product?.quantity : 1),
+          (product?.quantity || 1),
         case_id: caseId,
+        total: totalAmount || 0,
         user_id: cases.overview.created_by || "",
       };
-      const totalAmount = cases.products.reduce(
-        (sum: number, item: SavedProduct) => {
-          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
-          const totalPerProduct = item.price * item.teeth.length * quantity; // Total before discount
-          const discountedTotal =
-            totalPerProduct - (totalPerProduct * (item.discount || 0)) / 100; // Apply discount
-          return sum + discountedTotal; // Add to the overall sum
-        },
-        0
-      );
-
       const UpdatedInvoice = {
         case_id: caseId,
         client_id: cases.overview.client_id,
