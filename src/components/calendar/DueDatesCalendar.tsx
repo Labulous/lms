@@ -140,13 +140,13 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
     <div className="rbc-date-cell">
       <div className="custom-date-cell">
         <span className="date-number">{format(date, "d")}</span>
-        {events.length+1 > 0 && (
+        {events.length + 1 > 0 && (
           <div className="badge-container">
             <span
               className="count-badge "
               style={{ backgroundColor: "green !important" }}
             >
-              {events.length+1}
+              {events.length + 1}
             </span>
           </div>
         )}
@@ -291,23 +291,18 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           >
             {filterType !== "today_cell" && (
               <>
-                {event.onHold &&
-                  event.title &&
-                  event.title !== "0" &&
-                  filterType !== "today_cell" && (
-                    <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.title}
-                    </div>
-                  )}
-                {!event.onHold &&
-                  event.title !== "0" &&
-                  filterType !== "today_cell" && (
-                    <div
-                      className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
-                    >
-                      {event.title}
-                    </div>
-                  )}
+                {event.onHold && event.title && event.title !== "0" && (
+                  <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                    {event.title}
+                  </div>
+                )}
+                {!event.onHold && event.title !== "0" && (
+                  <div
+                    className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                  >
+                    {event.title}
+                  </div>
+                )}
               </>
             )}
 
@@ -320,19 +315,25 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                     </div>
                   )} */}
                   <div
-                    className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                    className={` ${"bg-yellow-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
                   >
                     {/* {event.title !=="" && event.title} */}
+                    {event.id === 2 && event.title}
                   </div>
                   {
-                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-6 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.isTommorow &&  !event.isAllOnHold && event.title}
+                    <div className="bg-red-500 col-span-4 w text-sm absolute bottom-[5px] left-1 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {!event.isTommorow && event.title}
                     </div>
                   }
                   {
-                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-1 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {!event.isTommorow &&  event.title}
-                      </div>
+                    <div className="bg-blue-500 col-span-4 w text-sm absolute bottom-[5px] left-8 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.id === 1 && event.title}
+                    </div>
+                  }
+                  {
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.isAllOnHold && event.title}
+                    </div>
                   }
                 </div>
               )}
@@ -534,8 +535,8 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
     const utcDate = new Date(event.start);
 
-// Convert to local time by calling the Date object's methods
-const localDateStr = utcDate.toLocaleString(); 
+    // Convert to local time by calling the Date object's methods
+    const localDateStr = utcDate.toLocaleString();
     navigate(`/cases?dueDate=${utcDate}&status=in_progress%2Cin_queue`);
   };
 
@@ -558,9 +559,8 @@ const localDateStr = utcDate.toLocaleString();
             startAccessor="start"
             endAccessor="end"
             style={{ height }}
-            views={["month"]}
             components={components}
-            onNavigate={calendarNavigate}
+            // onNavigate={calendarNavigate}
             date={currentDate}
             toolbar={true}
             defaultDate={new Date()}

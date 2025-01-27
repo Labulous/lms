@@ -442,7 +442,7 @@ const Dashboard: React.FC = () => {
               end: endOfToday,
               isTommorow: true,
               isAllOnHold: false,
-
+              id: 1,
               resource: { count: 0, isPastDue: false },
               formattedCases: formattedDueTommorwCases,
             };
@@ -450,7 +450,8 @@ const Dashboard: React.FC = () => {
               title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
               start: startOfToday,
               end: endOfToday,
-              isAllOnHold: true,
+              id: 2,
+              // isAllOnHold: true,
               resource: { count: 0, isPastDue: false },
               formattedCases: formattedOnholdCases,
             };
@@ -459,10 +460,21 @@ const Dashboard: React.FC = () => {
             if (filterType === "on_hold") {
               return [onHoldEvent];
             } else if (filterType === "today_cell") {
-              return [ tomorowEvent, onHoldAllEvent];
+              // Assuming tomorowEvent and onHoldAllEvent are arrays or objects that contain events
+              const allEvents = [
+                ...tomorowEvent.formattedCases, // assuming formattedCases is an array in tomorowEvent
+                ...onHoldAllEvent.formattedCases, // assuming formattedCases is an array in onHoldAllEvent
+              ];
+              const tommorow = [tomorowEvent][0];
+              const onHOld = [onHoldAllEvent][0];
+              console.log(tomorowEvent, "tomorowEvent");
+
+              return [tommorow, onHOld];
             } else {
               return [activeEvent];
             }
+
+            // return [activeEvent, onHoldEvent, tomorowEvent, onHoldAllEvent];
           })
           .flat(); // Flatten the array because we have two events per date (active and on hold)
 

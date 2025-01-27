@@ -361,6 +361,19 @@ const saveCases = async (
           setLoadingState({ isLoading: false, action: "save" });
         await updateBalanceTracking();
       }
+      const { data: count, error: caseCountError } = await supabase
+        .from("case_number_tracker")
+        .insert({ case_number: caseCount + 1, case_id: savedCaseId })
+        .select("*");
+
+      if (caseCountError) {
+        console.error("Error creating case count:", invoiceError);
+      } else {
+        console.log("case count created successfully:", invoiceData);
+        setLoadingState &&
+          setLoadingState({ isLoading: false, action: "save" });
+        await updateBalanceTracking();
+      }
     }
 
     // Step 5: Save the overview to localStorage
