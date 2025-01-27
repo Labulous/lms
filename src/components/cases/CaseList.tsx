@@ -548,57 +548,65 @@ const CaseList: React.FC = () => {
     {
       accessorKey: "due_date",
       header: ({ column }) => (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" className="p-0 hover:bg-transparent">
-              <div className="flex items-center">
-                Due Date
-                <ChevronsUpDown className="ml-2 h-4 w-4" />
-                {dueDateFilter && (
-                  <Badge variant="outline" className="ml-2 bg-background">
-                    {`${shortMonths[month]} ${day}`}
-                  </Badge>
-                )}
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-2">
-              <div className="flex items-center justify-between pb-2">
-                {dueDateFilter && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setDueDateFilter(undefined);
-                      column.setFilterValue(undefined);
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="p-0 hover:bg-transparent">
+                <div className="flex items-center">
+                  Due Date
+                  {dueDateFilter && (
+                    <Badge variant="outline" className="ml-2 bg-background">
+                      {`${shortMonths[month]} ${day}`}
+                    </Badge>
+                  )}
+                </div>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-2">
+                <div className="flex items-center justify-between pb-2">
+                  {dueDateFilter && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDueDateFilter(undefined);
+                        column.setFilterValue(undefined);
+                        searchParams.delete("dueDate");
+                        setSearchParams(searchParams);
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear Filter
+                    </Button>
+                  )}
+                </div>
+                <DayPicker
+                  mode="single"
+                  selected={dueDateFilter}
+                  onSelect={(date) => {
+                    setDueDateFilter(date || undefined);
+                    column.setFilterValue(date || undefined);
+                    if (date) {
+                      searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
+                    } else {
                       searchParams.delete("dueDate");
-                      setSearchParams(searchParams);
-                    }}
-                    className="h-8 px-2 text-xs"
-                  >
-                    Clear Filter
-                  </Button>
-                )}
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className="border-none"
+                />
               </div>
-              <DayPicker
-                mode="single"
-                selected={dueDateFilter}
-                onSelect={(date) => {
-                  setDueDateFilter(date || undefined);
-                  column.setFilterValue(date || undefined);
-                  if (date) {
-                    searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
-                  } else {
-                    searchParams.delete("dueDate");
-                  }
-                  setSearchParams(searchParams);
-                }}
-                className="border-none"
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            <ChevronsUpDown className="h-4 w-4" />
+          </Button>
+        </div>
       ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
@@ -1209,7 +1217,6 @@ const CaseList: React.FC = () => {
           <Plus className="mr-2 h-4 w-4" /> New Case
         </Button>
       </PageHeader>
-      <input type="file" multiple className="" />
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
