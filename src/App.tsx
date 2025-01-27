@@ -163,7 +163,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/invoices"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Invoices />
                 </Layout>
@@ -218,8 +218,8 @@ const App: React.FC = () => {
                   {/* <ClientProfile /> */}
                   <ClientProfile
                     client={null} // Pass null or the required client data
-                    onEdit={() => { }}
-                    onDelete={() => { }}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
                     loading={false}
                     error={null}
                   />

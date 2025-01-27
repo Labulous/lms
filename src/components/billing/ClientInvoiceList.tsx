@@ -92,6 +92,7 @@ import {
   HoverCardContent,
 } from "@/components/ui/hover-card";
 import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
+import { clientsService } from "@/services/clientsService";
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -129,7 +130,7 @@ type DiscountedPriceMap = {
 };
 const BATCH_SIZE = 50; // Process 50 items at a time
 
-const InvoiceList: React.FC = () => {
+const ClientInvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoicesData, setInvoicesData] = useState<any>([]);
@@ -187,7 +188,7 @@ const InvoiceList: React.FC = () => {
           return;
         }
         setLab(lab);
-        const { data: casesData, error: casesError } = await supabase
+        let query = supabase
           .from("cases")
           .select(
             `
@@ -260,8 +261,24 @@ const InvoiceList: React.FC = () => {
             )
           `
           )
-          .eq("lab_id", lab.id)
           .order("created_at", { ascending: false });
+
+        if (user?.role === "client") {
+          let clientId: string = "";
+          const clients = await clientsService.getClients(lab?.id as string);
+          if (Array.isArray(clients)) {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                clientId = client.id;
+              }
+            });
+          }
+          query = query.eq("client_id", clientId);
+        } else {
+          query = query.eq("lab_id", lab?.id);
+        }
+
+        const { data: casesData, error: casesError } = await query;
 
         if (casesError) {
           console.error("Error fetching invoices:", casesError);
@@ -2082,4 +2099,4 @@ const InvoiceList: React.FC = () => {
   );
 };
 
-export default InvoiceList;
+export default ClientInvoiceList;
