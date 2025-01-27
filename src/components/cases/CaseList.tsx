@@ -640,7 +640,9 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const date = row.getValue("received_date") as string;
-        return formatDate(date);
+        const createdAt = row.original.created_at;
+        console.log('Date values:', { received_date: date, created_at: createdAt, case_id: row.original.id });
+        return formatDate(date || createdAt);
       },
     },
     {
@@ -904,6 +906,11 @@ const CaseList: React.FC = () => {
         }
         const transformedCases = await Promise.all(
           casesData.map(async (item) => {
+            console.log('Raw case data:', {
+              id: item.id,
+              received_date: item.received_date,
+              created_at: item.created_at
+            });
             // Handle client data
             const clientData = Array.isArray(item.client)
               ? item.client[0]

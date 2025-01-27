@@ -1482,9 +1482,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-xs font-medium">
-                    {caseDetail?.received_date
-                      ? formatDate(caseDetail?.received_date)
-                      : "TBD"}
+                    {formatDate(caseDetail?.received_date || caseDetail?.created_at)}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -2424,10 +2422,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       <p className="text-sm text-gray-500">Files and photos</p>
 
                       <div className="flex flex-col gap-2">
-                        {caseDetail?.attachements?.map((file, index) => {
-                          const fileName = decodeURIComponent(
+                        {caseDetail?.attachements?.filter(file => file)?.map((file, index) => {
+                          const fileName = file ? decodeURIComponent(
                             file.split("/").pop()?.split("?")[0] || ""
-                          );
+                          ) : "";
                           const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
                             fileName
                           );
