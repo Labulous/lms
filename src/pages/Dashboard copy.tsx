@@ -530,7 +530,7 @@ const Dashboard: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0">
-                  <DueDatesCalendar events={calendarEvents} height={400} />
+                  {/* <DueDatesCalendar events={calendarEvents} height={400} /> */}
                 </CardContent>
               </Card>
             </div>
