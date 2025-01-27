@@ -27,8 +27,12 @@ import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import ClientProfile from "./components/clients/ClientProfile";
+import { useAuth } from "./contexts/AuthContext";
+import ClientDashboard from "./pages/ClientDashboard";
 
 const App: React.FC = () => {
+  const { user } = useAuth();
+
   return (
     <ErrorBoundary>
       <>
@@ -41,7 +45,11 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Dashboard />
+                  {user?.role === "client" ? (
+                    <ClientDashboard />
+                  ) : (
+                    <Dashboard />
+                  )}
                 </Layout>
               </ProtectedRoute>
             }
