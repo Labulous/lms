@@ -492,7 +492,10 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                               item?.teethProduct
                                                 ?.custom_body_shade
                                             }{" "}
-                                            (custom)
+                                            {item?.teethProduct
+                                              ?.custom_body_shade
+                                              ? "(cus)"
+                                              : ""}
                                           </span>
                                         )}
                                       </span>
@@ -1003,18 +1006,20 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         {teeth.teethProduct?.manual_body_shade
                           ? teeth.teethProduct?.manual_body_shade
                           : teeth.teethProduct?.body_shade?.name || (
-                              <p
-                                className="font-semibold ml-1"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
-                                      teeth?.product_type
-                                        ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {teeth?.teethProduct?.custom_body_shade} (cus)
-                              </p>
+                              teeth?.teethProduct?.custom_body_shade && (
+                                <p
+                                  className="font-semibold ml-1"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
+                                        teeth?.product_type
+                                          ?.name as keyof typeof TYPE_COLORS
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {teeth?.teethProduct?.custom_body_shade}
+                                </p>
+                              )
                             )}
                       </p>
                     </div>
