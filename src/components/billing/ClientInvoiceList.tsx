@@ -1036,7 +1036,7 @@ const ClientInvoiceList: React.FC = () => {
     return sorted.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const totalPages = Math.ceil(invoicesData.length / itemsPerPage);
 
   const allStatuses: Invoice["status"][] = [
     "unpaid",
@@ -1293,7 +1293,7 @@ const ClientInvoiceList: React.FC = () => {
                   Print Invoices
                 </Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  {/* <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1302,7 +1302,7 @@ const ClientInvoiceList: React.FC = () => {
                       <MoreHorizontal className="h-4 w-4 mr-2" />
                       More Actions
                     </Button>
-                  </DropdownMenuTrigger>
+                  </DropdownMenuTrigger> */}
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -1864,7 +1864,7 @@ const ClientInvoiceList: React.FC = () => {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              {["draft", "overdue"].includes(
+                              {/* {["draft", "overdue"].includes(
                                 invoice.status as
                                   | "draft"
                                   | "unpaid"
@@ -1905,8 +1905,8 @@ const ClientInvoiceList: React.FC = () => {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Edit Invoice
                                 </DropdownMenuItem>
-                              )}
-                              {["unpaid", "partially_paid"].includes(
+                              )} */}
+                              {/* {["unpaid", "partially_paid"].includes(
                                 invoice.invoice?.[0]?.status as
                                   | "draft"
                                   | "unpaid"
@@ -1932,7 +1932,7 @@ const ClientInvoiceList: React.FC = () => {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Record Payment
                                 </DropdownMenuItem>
-                              )}
+                              )} */}
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleDownload(invoice.id as string)
@@ -1942,7 +1942,7 @@ const ClientInvoiceList: React.FC = () => {
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
                               </DropdownMenuItem>
-                              {["draft", "overdue"].includes(
+                              {/* {["draft", "overdue"].includes(
                                 invoice.status as
                                   | "draft"
                                   | "unpaid"
@@ -1965,7 +1965,7 @@ const ClientInvoiceList: React.FC = () => {
                                     Delete Invoice
                                   </DropdownMenuItem>
                                 </>
-                              )}
+                              )} */}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
