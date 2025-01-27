@@ -136,6 +136,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         },
       ],
     },
+    {
+      icon: DollarSign,
+      label: "Billing",
+      href: "/billing",
+      roles: ["client"],
+      subItems: [
+        { label: "Invoices", href: "/billing/invoices", icon: FileText },
+        // { label: "Payments", href: "/billing/payments", icon: CreditCard },
+        // { label: "Balance Tracking", href: "/billing/balance", icon: Activity },
+        // { label: "Statements", href: "/billing/statements", icon: FileText },
+        {
+          label: "Adjustments",
+          href: "/billing/adjustments",
+          icon: DollarSign,
+        },
+      ],
+    },
     // {
     //   icon: BarChart2,
     //   label: "Reports",
