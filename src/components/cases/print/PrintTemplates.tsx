@@ -57,7 +57,7 @@ const teethData = [
   },
   {
     number: 18,
-    path: "M47.67,155.5c0.17-0.02,0.33-0.04,0.5-0.06c6.8-0.82,10.92-6.54,9.73-13.69c0.3-1.78,1.1-3.42,1.9-5.03 c0.58-1.18,1.22-2.43,2.34-3.11c0.9-0.55,1.99-0.65,3.03-0.74c3.45-0.3,6.89-0.61,10.34-0.91c1.25-0.11,2.54-0.22,3.75,0.11 c3.91,1.04,6.25,6.27,7.09,9.91c2.3,9.98-7.01,14.14-15.3,13.79C45.71,155.73,46.69,155.62,47.67,155.5z",
+    path: "M47.67,155.5c0.17-0.02,0.33-0.04,0.5-0.06c6.8-0.82,10.92-6.54,9.73-13.69c-0.3-1.78-1.1-3.42-1.9-5.03 c-0.58-1.18-1.22-2.43-2.34-3.11c-0.9-0.55-1.99-0.65-3.03-0.74c-3.45-0.3-6.89-0.61-10.34-0.91c-1.25-0.11-2.54-0.22-3.75,0.11 c-3.91,1.04-6.25,6.27-7.09,9.91c-2.3,9.98,7.01,14.14,15.3,13.79C45.71,155.73,46.69,155.62,47.67,155.5z",
     x: 43,
     y: 145,
   },
@@ -235,9 +235,16 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               className="object-contain"
                             />
                           </div>
-                          <div className="space-y-0" style={{ lineHeight: "1.1" }}>
-                            <p className="font-bold text-sm">{invoice.labDetail?.name}</p>
-                            <p className="text-sm">{invoice.labDetail?.office_address.address_1}</p>
+                          <div
+                            className="space-y-0"
+                            style={{ lineHeight: "1.1" }}
+                          >
+                            <p className="font-bold text-sm">
+                              {invoice.labDetail?.name}
+                            </p>
+                            <p className="text-sm">
+                              {invoice.labDetail?.office_address.address_1}
+                            </p>
                             <p className="text-sm">
                               {invoice.labDetail?.office_address.city},{" "}
                               {invoice.labDetail?.office_address.state_province}{" "}
@@ -245,17 +252,26 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 {invoice.labDetail?.office_address.zip_postal}
                               </span>
                             </p>
-                            <p className="text-sm">{invoice.labDetail?.office_address.phone_number}</p>
+                            <p className="text-sm">
+                              {invoice.labDetail?.office_address.phone_number}
+                            </p>
                           </div>
                         </div>
 
                         {/* Right side - Invoice Details */}
                         <div className="text-right">
-                          <h2 className="text-5xl font-bold text-gray-400 mb-8">INVOICE</h2>
-                          <div className="space-y-1" style={{ lineHeight: "1.1" }}>
+                          <h2 className="text-5xl font-bold text-gray-400 mb-8">
+                            INVOICE
+                          </h2>
+                          <div
+                            className="space-y-1"
+                            style={{ lineHeight: "1.1" }}
+                          >
                             <div className="border-b border-gray-300 pb-0.5">
                               <div className="grid grid-cols-[auto_1fr] gap-4">
-                                <p className="text-right font-medium whitespace-nowrap text-sm">Inv. #:</p>
+                                <p className="text-right font-medium whitespace-nowrap text-sm">
+                                  Inv. #:
+                                </p>
                                 <p className="text-right min-w-[120px] text-sm">
                                   {invoice.case_number
                                     ? invoice.case_number.split("-")[2]
@@ -265,15 +281,21 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                             </div>
                             <div className="border-b border-gray-300 pb-0.5">
                               <div className="grid grid-cols-[auto_1fr] gap-4">
-                                <p className="text-right font-medium whitespace-nowrap text-sm">Date:</p>
+                                <p className="text-right font-medium whitespace-nowrap text-sm">
+                                  Date:
+                                </p>
                                 <p className="text-right min-w-[120px] text-sm">
-                                  {formatDate(invoice?.created_at || "1/7/2025")}
+                                  {formatDate(
+                                    invoice?.created_at || "1/7/2025"
+                                  )}
                                 </p>
                               </div>
                             </div>
                             <div className="border-b border-gray-300 pb-0.5">
                               <div className="grid grid-cols-[auto_1fr] gap-4">
-                                <p className="text-right font-medium whitespace-nowrap text-sm">Pan #:</p>
+                                <p className="text-right font-medium whitespace-nowrap text-sm">
+                                  Pan #:
+                                </p>
                                 <p className="text-right min-w-[120px] text-sm">
                                   {invoice?.working_pan_name || ""}
                                 </p>
@@ -287,8 +309,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <div className="mt-8">
                         <div>
                           <p className="font-bold text-sm">Bill To:</p>
-                          <div className="space-y-0" style={{ lineHeight: "1.1" }}>
-                            <p className="text-sm">{invoice.client.client_name}</p>
+                          <div
+                            className="space-y-0"
+                            style={{ lineHeight: "1.1" }}
+                          >
+                            <p className="text-sm">
+                              {invoice.client.client_name}
+                            </p>
                             <p className="text-sm">Dr. {invoice.doctor.name}</p>
                             <p className="text-sm">{invoice.client.street}</p>
                             <p className="text-sm">
@@ -313,11 +340,37 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     {/* Services Table */}
                     <div className="mb-8">
                       <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4 gap-1">
-                        <h3 className="font-bold col-span-6 text-xs p-2" style={{ lineHeight: "1.15" }}>Description</h3>
-                        <h2 className="font-bold text-right col-span-1 text-xs p-2" style={{ lineHeight: "1.15" }}>Price</h2>
-                        <h2 className="font-bold text-right col-span-1 text-xs p-2" style={{ lineHeight: "1.15" }}>DC(%)</h2>
-                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}> Price(%)</h2>
-                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Sub Total</h2>
+                        <h3
+                          className="font-bold col-span-6 text-xs p-2"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          Description
+                        </h3>
+                        <h2
+                          className="font-bold text-right col-span-1 text-xs p-2"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          Price
+                        </h2>
+                        <h2
+                          className="font-bold text-right col-span-1 text-xs p-2"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          DC(%)
+                        </h2>
+                        <h2
+                          className="font-bold text-right col-span-2 text-xs p-2"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          {" "}
+                          Price(%)
+                        </h2>
+                        <h2
+                          className="font-bold text-right col-span-2 text-xs p-2"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          Sub Total
+                        </h2>
                       </div>
 
                       {invoice?.products.map((item: any, index: number) => {
@@ -333,24 +386,44 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           >
                             <div className="space-y-1 font-medium col-span-6 pl-2">
                               <div>
-                                <p className="font-extrabold" style={{ lineHeight: "1.15" }}>{item.name}</p>
-                                <p className="text-sm pl-6 font-extrabold" style={{ lineHeight: "1.15" }}>
-                                  <span className="font-normal">Teeth: </span>#{item.teethProduct?.tooth_number?.join(', #')}
+                                <p
+                                  className="font-extrabold"
+                                  style={{ lineHeight: "1.15" }}
+                                >
+                                  {item.name}
                                 </p>
-                                <p className="text-sm flex gap-0 flex-wrap pl-6 mt-3" style={{ lineHeight: "1.15" }}>
-                                  <span className="font-normal">Shade:&nbsp;</span>
+                                <p
+                                  className="text-sm pl-6 font-extrabold"
+                                  style={{ lineHeight: "1.15" }}
+                                >
+                                  <span className="font-normal">Teeth: </span>#
+                                  {item.teethProduct?.tooth_number?.join(", #")}
+                                </p>
+                                <p
+                                  className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
+                                  style={{ lineHeight: "1.15" }}
+                                >
+                                  <span className="font-normal">
+                                    Shade:&nbsp;
+                                  </span>
                                   {/* Occlusal Shade */}
                                   {(item?.teethProduct?.occlusal_shade?.name ||
                                     item?.teethProduct?.custom_occlusal_shade ||
-                                    item?.teethProduct?.manual_occlusal_shade) && (
+                                    item?.teethProduct
+                                      ?.manual_occlusal_shade) && (
                                     <>
                                       <span>
-                                        <span className="font-normal">Occlusal: </span>
-                                        <span className="font-bold">
-                                          {item?.teethProduct?.manual_occlusal_shade ||
-                                            item?.teethProduct?.occlusal_shade?.name}
+                                        <span className="font-normal">
+                                          Occlusal:{" "}
                                         </span>
-                                        {item?.teethProduct?.custom_occlusal_shade && (
+                                        <span className="font-bold">
+                                          {item?.teethProduct
+                                            ?.manual_occlusal_shade ||
+                                            item?.teethProduct?.occlusal_shade
+                                              ?.name}
+                                        </span>
+                                        {item?.teethProduct
+                                          ?.custom_occlusal_shade && (
                                           <span
                                             className="font-extrabold"
                                             style={{
@@ -361,20 +434,28 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                                 ] || TYPE_COLORS.Other,
                                             }}
                                           >
-                                            {item?.teethProduct?.custom_occlusal_shade}{" "}
+                                            {
+                                              item?.teethProduct
+                                                ?.custom_occlusal_shade
+                                            }{" "}
                                             (custom)
                                           </span>
                                         )}
                                       </span>
                                       {(item?.teethProduct?.body_shade?.name ||
-                                        item?.teethProduct?.gingival_shade?.name ||
+                                        item?.teethProduct?.gingival_shade
+                                          ?.name ||
                                         item?.teethProduct?.stump_shade_id ||
                                         item?.teethProduct?.custom_body_shade ||
-                                        item?.teethProduct?.custom_gingival_shade ||
-                                        item?.teethProduct?.custom_stump_shade ||
+                                        item?.teethProduct
+                                          ?.custom_gingival_shade ||
+                                        item?.teethProduct
+                                          ?.custom_stump_shade ||
                                         item?.teethProduct?.manual_body_shade ||
-                                        item?.teethProduct?.manual_gingival_shade ||
-                                        item?.teethProduct?.manual_stump_shade) && (
+                                        item?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                        item?.teethProduct
+                                          ?.manual_stump_shade) && (
                                         <span>,</span>
                                       )}
                                     </>
@@ -386,12 +467,17 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     item?.teethProduct?.manual_body_shade) && (
                                     <>
                                       <span>
-                                        <span className="font-normal">Body: </span>
-                                        <span className="font-bold">
-                                          {item?.teethProduct?.manual_body_shade ||
-                                            item?.teethProduct?.body_shade?.name}
+                                        <span className="font-normal">
+                                          Body:{" "}
                                         </span>
-                                        {item?.teethProduct?.custom_body_shade && (
+                                        <span className="font-bold">
+                                          {item?.teethProduct
+                                            ?.manual_body_shade ||
+                                            item?.teethProduct?.body_shade
+                                              ?.name}
+                                        </span>
+                                        {item?.teethProduct
+                                          ?.custom_body_shade && (
                                           <span
                                             className="font-extrabold"
                                             style={{
@@ -402,17 +488,25 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                                 ] || TYPE_COLORS.Other,
                                             }}
                                           >
-                                            {item?.teethProduct?.custom_body_shade}{" "}
+                                            {
+                                              item?.teethProduct
+                                                ?.custom_body_shade
+                                            }{" "}
                                             (custom)
                                           </span>
                                         )}
                                       </span>
-                                      {(item?.teethProduct?.gingival_shade?.name ||
+                                      {(item?.teethProduct?.gingival_shade
+                                        ?.name ||
                                         item?.teethProduct?.stump_shade_id ||
-                                        item?.teethProduct?.custom_gingival_shade ||
-                                        item?.teethProduct?.custom_stump_shade ||
-                                        item?.teethProduct?.manual_gingival_shade ||
-                                        item?.teethProduct?.manual_stump_shade) && (
+                                        item?.teethProduct
+                                          ?.custom_gingival_shade ||
+                                        item?.teethProduct
+                                          ?.custom_stump_shade ||
+                                        item?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                        item?.teethProduct
+                                          ?.manual_stump_shade) && (
                                         <span>,</span>
                                       )}
                                     </>
@@ -421,15 +515,21 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   {/* Gingival Shade */}
                                   {(item?.teethProduct?.gingival_shade?.name ||
                                     item?.teethProduct?.custom_gingival_shade ||
-                                    item?.teethProduct?.manual_gingival_shade) && (
+                                    item?.teethProduct
+                                      ?.manual_gingival_shade) && (
                                     <>
                                       <span>
-                                        <span className="font-normal">Gingival: </span>
-                                        <span className="font-bold">
-                                          {item?.teethProduct?.manual_gingival_shade ||
-                                            item?.teethProduct?.gingival_shade?.name}
+                                        <span className="font-normal">
+                                          Gingival:{" "}
                                         </span>
-                                        {item?.teethProduct?.custom_gingival_shade && (
+                                        <span className="font-bold">
+                                          {item?.teethProduct
+                                            ?.manual_gingival_shade ||
+                                            item?.teethProduct?.gingival_shade
+                                              ?.name}
+                                        </span>
+                                        {item?.teethProduct
+                                          ?.custom_gingival_shade && (
                                           <span
                                             className="font-extrabold"
                                             style={{
@@ -440,14 +540,19 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                                 ] || TYPE_COLORS.Other,
                                             }}
                                           >
-                                            {item?.teethProduct?.custom_gingival_shade}{" "}
+                                            {
+                                              item?.teethProduct
+                                                ?.custom_gingival_shade
+                                            }{" "}
                                             (custom)
                                           </span>
                                         )}
                                       </span>
                                       {(item?.teethProduct?.stump_shade_id ||
-                                        item?.teethProduct?.custom_stump_shade ||
-                                        item?.teethProduct?.manual_stump_shade) && (
+                                        item?.teethProduct
+                                          ?.custom_stump_shade ||
+                                        item?.teethProduct
+                                          ?.manual_stump_shade) && (
                                         <span>,</span>
                                       )}
                                     </>
@@ -458,12 +563,17 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     item?.teethProduct?.stump_shade_id ||
                                     item?.teethProduct?.manual_stump_shade) && (
                                     <span>
-                                      <span className="font-normal">Stump: </span>
-                                      <span className="font-bold">
-                                        {item?.teethProduct?.manual_stump_shade ||
-                                          item?.teethProduct?.stump_shade_id?.name}
+                                      <span className="font-normal">
+                                        Stump:{" "}
                                       </span>
-                                      {item?.teethProduct?.custom_stump_shade && (
+                                      <span className="font-bold">
+                                        {item?.teethProduct
+                                          ?.manual_stump_shade ||
+                                          item?.teethProduct?.stump_shade_id
+                                            ?.name}
+                                      </span>
+                                      {item?.teethProduct
+                                        ?.custom_stump_shade && (
                                         <span
                                           className="font-extrabold"
                                           style={{
@@ -474,7 +584,10 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                               ] || TYPE_COLORS.Other,
                                           }}
                                         >
-                                          {item?.teethProduct?.custom_stump_shade}{" "}
+                                          {
+                                            item?.teethProduct
+                                              ?.custom_stump_shade
+                                          }{" "}
                                           (custom)
                                         </span>
                                       )}
@@ -483,16 +596,28 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 </p>
                               </div>
                             </div>
-                            <p className="text-right col-span-1 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                            <p
+                              className="text-right col-span-1 pr-2 font-bold"
+                              style={{ lineHeight: "1.15" }}
+                            >
                               ${item.discounted_price.price}
                             </p>
-                            <p className="text-right col-span-1 pr-2" style={{ lineHeight: "1.15" }}>
+                            <p
+                              className="text-right col-span-1 pr-2"
+                              style={{ lineHeight: "1.15" }}
+                            >
                               {item.discounted_price.discount}%
                             </p>
-                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                            <p
+                              className="text-right col-span-2 pr-2 font-bold"
+                              style={{ lineHeight: "1.15" }}
+                            >
                               ${item.discounted_price.final_price}
                             </p>
-                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                            <p
+                              className="text-right col-span-2 pr-2 font-bold"
+                              style={{ lineHeight: "1.15" }}
+                            >
                               ${item.discounted_price.total}
                             </p>
                           </div>
@@ -503,12 +628,18 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <div className="flex justify-end pt-4 mt-4 border-t border-gray-800">
                         <div className="w-64">
                           <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium">Case Subtotal:</span>
-                            <span className="text-sm font-bold">${invoice?.invoice?.[0]?.amount}</span>
+                            <span className="text-sm font-medium">
+                              Case Subtotal:
+                            </span>
+                            <span className="text-sm font-bold">
+                              ${invoice?.invoice?.[0]?.amount}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center mt-2">
                             <span className="text-sm font-bold">TOTAL:</span>
-                            <span className="text-sm font-bold">${invoice?.invoice?.[0]?.due_amount}</span>
+                            <span className="text-sm font-bold">
+                              ${invoice?.invoice?.[0]?.due_amount}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -865,8 +996,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_body_shade}{" "}
-                                (cus)
+                                {teeth?.teethProduct?.custom_body_shade} (cus)
                               </p>
                             )}
                       </p>
@@ -913,8 +1043,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                {teeth?.teethProduct?.custom_stump_shade}{" "}
-                                (cus)
+                                {teeth?.teethProduct?.custom_stump_shade} (cus)
                               </p>
                             )}
                       </p>
