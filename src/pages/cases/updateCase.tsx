@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -70,6 +70,7 @@ const UpdateCase: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -159,10 +160,12 @@ const UpdateCase: React.FC = () => {
                 setFormData((prevData) => ({
                   ...prevData,
                   clientId: client.id,
-                }))
+                }));
               }
-            })
-            setClients(clients.filter((client) => client.email === user?.email));
+            });
+            setClients(
+              clients.filter((client) => client.email === user?.email)
+            );
           } else {
             setClients(clients);
           }
@@ -215,8 +218,6 @@ const UpdateCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.appointmentDate)
-      validationErrors.appointmentDate = "Appointment date is Required";
 
     if (
       !formData.caseDetails?.contactType ||
@@ -260,13 +261,17 @@ const UpdateCase: React.FC = () => {
               " " +
               transformedData.patientLastName,
             rx_number: "",
-            received_date: transformedData.orderDate,
+            received_date: transformedData.isDueDateTBD
+              ? null
+              : transformedData.orderDate,
             status: transformedData.status,
             due_date: transformedData.isDueDateTBD
               ? null
               : transformedData.dueDate,
             isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate,
+            appointment_date: transformedData.isDueDateTBD
+              ? null
+              : transformedData.appointmentDate || null,
             otherItems: transformedData.otherItems || "",
             invoice_notes: transformedData.notes?.invoiceNotes,
             instruction_notes: transformedData.notes?.instructionNotes,
@@ -277,6 +282,14 @@ const UpdateCase: React.FC = () => {
             custom_occulusal_details:
               transformedData.caseDetails?.customOcclusal,
             custom_pontic_details: transformedData.caseDetails?.customPontic,
+            margin_design_type: transformedData.caseDetails?.marginDesign,
+            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+            alloy_type: transformedData.caseDetails?.alloyType,
+            custom_margin_design_type:
+              transformedData.caseDetails?.customMargin,
+            custom_occlusion_design_type:
+              transformedData.caseDetails?.customOcclusalDesign,
+            custon_alloy_type: transformedData.caseDetails?.customAlloy,
             lab_id: lab?.labId,
             working_tag_id: formData.workingTagName,
             working_pan_name: formData.workingPanName,
@@ -354,16 +367,20 @@ const UpdateCase: React.FC = () => {
              working_pan_name,
              working_pan_color,
               rx_number,
-              received_date,
               isDueDateTBD,
               appointment_date,
               otherItems,
-              lab_notes,
               invoice_notes,
               instruction_notes,
               occlusal_type,
               contact_type,
               pontic_type,
+              margin_design_type,
+              occlusion_design_type,
+              alloy_type,
+              custom_margin_design_type,
+              custom_occlusion_design_type,
+              custon_alloy_type,
               qr_code,
               custom_contact_details,
               custom_occulusal_details,
@@ -507,6 +524,7 @@ const UpdateCase: React.FC = () => {
                 gingival_shade_id,
                 stump_shade_id,
                 tooth_number,
+                pontic_teeth,
                 notes,
                 product_id,
                 custom_occlusal_shade,
@@ -545,7 +563,7 @@ const UpdateCase: React.FC = () => {
             teethProduct: productTeeth,
           };
         });
-
+        console.log(productsWithDiscounts, "productsWithDiscounts");
         const caseDataApi: any = caseData;
         setFormData((prevData) => ({
           ...prevData,
@@ -582,7 +600,7 @@ const UpdateCase: React.FC = () => {
             consultRequested: caseDataApi.enclosed_items?.consultRequested || 0,
           },
           otherItems: caseDataApi.otherItems || "",
-          isDueDateTBD: prevData.isDueDateTBD || false,
+          isDueDateTBD: caseDataApi.isDueDateTBD || false,
           notes: {
             ...prevData.notes,
             instructionNotes: caseDataApi.instruction_notes || "",
@@ -595,6 +613,12 @@ const UpdateCase: React.FC = () => {
             ponticType: caseData.pontic_type || "",
             customPontic: caseData.custom_pontic_details || "",
             customContact: caseData.custom_contact_details || "",
+            marginDesign: caseData?.margin_design_type || "",
+            occlusalDesign: caseData?.occlusion_design_type || "",
+            alloyType: caseData?.alloy_type || "",
+            customMargin: caseData?.custom_margin_design_type || "",
+            customOcclusalDesign: caseData?.custom_occlusion_design_type || "",
+            customAlloy: caseData?.custon_alloy_type || "",
           },
           enclosed_case_id: caseDataApi.enclosed_items.id,
         }));
@@ -610,6 +634,7 @@ const UpdateCase: React.FC = () => {
             type: item?.product_type?.name || "",
             teeth: item?.teethProduct?.tooth_number || [],
             price: item?.discounted_price?.price,
+            pontic_teeth: item.teethProduct.pontic_teeth || [],
             shades: {
               body_shade: item.teethProduct?.body_shade_id || "",
               gingival_shade: item?.teethProduct?.gingival_shade_id || "",
@@ -646,24 +671,53 @@ const UpdateCase: React.FC = () => {
     };
   }, [caseId, lab]);
 
-  console.log(caseDetail, "Case details");
-  console.log(errors, "errors");
+  console.log(formData, "form");
+  console.log(selectedProducts, "selected");
   return (
-    <div className="p-6">
+    <div
+      className="p-6"
+      onClick={(e) => {
+        e.preventDefault();
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">
-          Update a Case{" "}
-          <span
-            className="text-blue-500 underline cursor-pointer"
-            onClick={() => {
-              caseDetail?.case_number
-                ? navigate(`/cases/${caseDetail.id}`)
-                : null;
-            }}
-          >
-            {caseDetail?.case_number ?? "Loading..."}
-          </span>
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-semibold text-gray-800">
+            Update a Case{" "}
+            <span
+              className="text-blue-500 underline cursor-pointer"
+              onClick={() => {
+                caseDetail?.case_number
+                  ? navigate(`/cases/${caseDetail.id}`)
+                  : null;
+              }}
+            >
+              {caseDetail?.case_number ?? "Loading..."}
+            </span>
+          </h1>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate(-1)}
+              disabled={loadingState.isLoading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={loadingState.isLoading}>
+              {loadingState.isLoading && loadingState.action === "update" ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                "Update Case"
+              )}
+            </Button>
+          </div>
+        </div>
 
         <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -676,7 +730,8 @@ const UpdateCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
-              isClient={user?.role === "client" ? true : false}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>

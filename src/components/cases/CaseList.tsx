@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import CaseFilters from "./CaseFilters";
-import PrintButtonWithDropdown from "./PrintButtonWithDropdown";
 import { supabase } from "@/lib/supabase";
-import { Database } from "@/types/supabase";
+import { labDetail } from "@/types/supabase";
 import { CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -44,7 +42,7 @@ import {
   FileText,
   Printer,
 } from "lucide-react";
-import { getLabIdByUserId } from "@/services/authService";
+import { getLabDataByUserId } from "@/services/authService";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -70,82 +68,26 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
 import { clientsService } from "../../services/clientsService";
+import { ExtendedCase } from "./CaseDetails";
+import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 
 const logger = createLogger({ module: "CaseList" });
-
-type Case = {
-  working_pan_name: string;
-  id: string;
-  created_at: string;
-  received_date: string | null;
-  ship_date: string | null;
-  status: string;
-  patient_name: string;
-  due_date: string;
-  case_number: string;
-  client: {
-    id: string;
-    client_name: string;
-    phone: string | null;
-  } | null;
-  doctor: {
-    id: string;
-    name: string;
-    client: {
-      id: string;
-      client_name: string;
-      phone: string | null;
-    } | null;
-  } | null;
-  pan_tag: string | null;
-  pan_color: string | null;
-  rx_number: string | null;
-  isDueDateTBD: boolean;
-  appointment_date: string | null;
-  otherItems: string | null;
-  lab_notes: string | null;
-  occlusal_type: string | null;
-  contact_type: string | null;
-  pontic_type: string | null;
-  custom_contact_details: string | null;
-  custom_occulusal_details: string | null;
-  custom_pontic_details: string | null;
-  tags: { name: string; color: string } | null;
-  pans: { name: string; color: string } | null;
-  enclosed_items: {
-    impression: boolean;
-    biteRegistration: boolean;
-    photos: boolean;
-    jig: boolean;
-    opposingModel: boolean;
-    articulator: boolean;
-    returnArticulator: boolean;
-    cadcamFiles: boolean;
-    consultRequested: boolean;
-    user_id: string;
-  } | null;
-  product_ids:
-    | {
-        products_id: string[];
-        id: string;
-      }[]
-    | null;
-};
 
 const CaseList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [cases, setCases] = useState<Case[]>([]);
-  const [filteredCases, setFilteredCases] = useState<Case[]>([]);
+  const [cases, setCases] = useState<ExtendedCase[]>([]);
+  const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
-  const [selectedRows, setSelectedRows] = useState<Row<Case>[]>([]);
-  const [labId, setLabId] = useState<string | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Row<ExtendedCase>[]>([]);
+  const [lab, setLab] = useState<labDetail | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [selectedCasesIds, setSelectedCases] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(() => {
     const statusParam = searchParams.get("status");
     return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
@@ -181,7 +123,7 @@ const CaseList: React.FC = () => {
   const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
   const month = date.getMonth() + 1; // Months are 0-indexed
   const day = date.getDate();
-  const columns: ColumnDef<Case>[] = [
+  const columns: ColumnDef<ExtendedCase>[] = [
     {
       accessorKey: "select",
       header: ({ table }) => (
@@ -197,7 +139,18 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => (
         <Checkbox
           checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          onCheckedChange={(value) => {
+            row.toggleSelected(!!value);
+            if (value) {
+              console.log("value", value);
+              setSelectedCases((items) => [...items, row.original.id]);
+            } else {
+              const cases = selectedCasesIds.filter(
+                (item) => item !== row.original.id
+              );
+              setSelectedCases(cases);
+            }
+          }}
           aria-label="Select row"
         />
       ),
@@ -221,81 +174,6 @@ const CaseList: React.FC = () => {
               </div>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-2" align="start">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                <span className="text-sm font-medium">Filter by Pan Tag</span>
-                {panFilter.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPanFilter([]);
-                      column.setFilterValue(undefined);
-                      searchParams.delete("tags");
-                      setSearchParams(searchParams);
-                    }}
-                    className="h-8 px-2 text-xs"
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
-                {Array.from(
-                  new Set(
-                    cases
-                      .filter((c) => c.pans?.name)
-                      .map((c) =>
-                        JSON.stringify({
-                          name: c.pans?.name,
-                          color: c.pans?.color,
-                        })
-                      )
-                  )
-                )
-                  .map((str) => JSON.parse(str))
-                  .map((pan) => (
-                    <div key={pan.name} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`pan-${pan.name}`}
-                        checked={panFilter.includes(pan.name)}
-                        onCheckedChange={(checked) => {
-                          const newPanFilter = checked
-                            ? [...panFilter, pan.name]
-                            : panFilter.filter((t) => t !== pan.name);
-                          setPanFilter(newPanFilter);
-                          column.setFilterValue(
-                            newPanFilter.length ? newPanFilter : undefined
-                          );
-                          if (newPanFilter.length > 0) {
-                            searchParams.set("tags", newPanFilter.join(","));
-                          } else {
-                            searchParams.delete("tags");
-                          }
-                          setSearchParams(searchParams);
-                        }}
-                      />
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded border"
-                          style={{
-                            backgroundColor: pan.color || "#f3f4f6",
-                            borderColor: "rgba(0,0,0,0.1)",
-                          }}
-                        />
-                        <label
-                          htmlFor={`pan-${pan.name}`}
-                          className="text-sm font-medium capitalize cursor-pointer"
-                        >
-                          {pan.name}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </PopoverContent>
         </Popover>
       ),
       cell: ({ row }) => {
@@ -328,14 +206,9 @@ const CaseList: React.FC = () => {
           </div>
         );
       },
-      filterFn: (row, id, value: string[]) => {
-        if (!value?.length) return true;
-        const tag = row.getValue(id) as { name: string; color: string };
-        return value.includes(tag?.name || "");
-      },
     },
     {
-      accessorKey: "tags",
+      accessorKey: "tag",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
@@ -375,20 +248,20 @@ const CaseList: React.FC = () => {
                 {Array.from(
                   new Set(
                     cases
-                      .filter((c) => c.tags?.name)
+                      .filter((c) => c.tag?.name)
                       .map((c) =>
                         JSON.stringify({
-                          name: c.tags?.name,
-                          color: c.tags?.color,
+                          name: c.tag?.name,
+                          color: c.tag?.color,
                         })
                       )
                   )
                 )
                   .map((str) => JSON.parse(str))
-                  .map((tag) => (
-                    <div key={tag.name} className="flex items-center space-x-2">
+                  .map((tag, index) => (
+                    <div key={index} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`tag-${tag.name}`}
+                        id={`tag-${tag.name} ${index}`}
                         checked={tagFilter.includes(tag.name)}
                         onCheckedChange={(checked) => {
                           const newTagFilter = checked
@@ -429,7 +302,7 @@ const CaseList: React.FC = () => {
         </Popover>
       ),
       cell: ({ row }) => {
-        const tag = row.getValue("tags") as { name: string; color: string };
+        const tag = row.getValue("tag") as { name: string; color: string };
         if (!tag?.name) return null;
 
         const color = tag.color || "#f3f4f6";
@@ -676,61 +549,68 @@ const CaseList: React.FC = () => {
     {
       accessorKey: "due_date",
       header: ({ column }) => (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" className="p-0 hover:bg-transparent">
-              <div className="flex items-center">
-                Due Date
-                <ChevronsUpDown className="ml-2 h-4 w-4" />
-                {dueDateFilter && (
-                  <Badge variant="outline" className="ml-2 bg-background">
-                    {`${shortMonths[month]} ${day}`}
-                  </Badge>
-                )}
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <div className="p-2">
-              <div className="flex items-center justify-between pb-2">
-                {dueDateFilter && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setDueDateFilter(undefined);
-                      column.setFilterValue(undefined);
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="p-0 hover:bg-transparent">
+                <div className="flex items-center">
+                  Due Date
+                  {dueDateFilter && (
+                    <Badge variant="outline" className="ml-2 bg-background">
+                      {`${shortMonths[month]} ${day}`}
+                    </Badge>
+                  )}
+                </div>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-2">
+                <div className="flex items-center justify-between pb-2">
+                  {dueDateFilter && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDueDateFilter(undefined);
+                        column.setFilterValue(undefined);
+                        searchParams.delete("dueDate");
+                        setSearchParams(searchParams);
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear Filter
+                    </Button>
+                  )}
+                </div>
+                <DayPicker
+                  mode="single"
+                  selected={dueDateFilter}
+                  onSelect={(date) => {
+                    setDueDateFilter(date || undefined);
+                    column.setFilterValue(date || undefined);
+                    if (date) {
+                      searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
+                    } else {
                       searchParams.delete("dueDate");
-                      setSearchParams(searchParams);
-                    }}
-                    className="h-8 px-2 text-xs"
-                  >
-                    Clear Filter
-                  </Button>
-                )}
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className="border-none"
+                />
               </div>
-              <DayPicker
-                mode="single"
-                selected={dueDateFilter}
-                onSelect={(date) => {
-                  setDueDateFilter(date || undefined);
-                  column.setFilterValue(date || undefined);
-                  if (date) {
-                    searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
-                  } else {
-                    searchParams.delete("dueDate");
-                  }
-                  setSearchParams(searchParams);
-                }}
-                className="border-none"
-              />
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            className="p-0 hover:bg-transparent"
+          >
+            <ChevronsUpDown className="h-4 w-4" />
+          </Button>
+        </div>
       ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        console.log(date, "date");
         const parsedDate = new Date(date);
 
         return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
@@ -748,7 +628,7 @@ const CaseList: React.FC = () => {
       },
     },
     {
-      accessorKey: "created_at",
+      accessorKey: "received_date",
       header: ({ column }) => (
         <Button
           variant="ghost"
@@ -760,8 +640,8 @@ const CaseList: React.FC = () => {
         </Button>
       ),
       cell: ({ row }) => {
-        const date = row.getValue("created_at") as string;
-        return <div>{format(new Date(date), "MM/dd/yyyy")}</div>;
+        const date = row.getValue("received_date") as string;
+        return formatDate(date);
       },
     },
     {
@@ -830,7 +710,6 @@ const CaseList: React.FC = () => {
     }
   }, [statusFilter]);
 
-  console.log(dueDateFilter, "dueDateFilter");
   useEffect(() => {
     if (dueDateFilter) {
       table.getColumn("due_date")?.setFilterValue(dueDateFilter);
@@ -842,8 +721,8 @@ const CaseList: React.FC = () => {
   useEffect(() => {
     const getLabId = async () => {
       try {
-        const data = await getLabIdByUserId(user?.id as string);
-        setLabId(data?.labId as string);
+        const data = await getLabDataByUserId(user?.id as string);
+        setLab(data);
       } catch (error) {
         console.error("Error fetching lab ID:", error);
       }
@@ -860,30 +739,95 @@ const CaseList: React.FC = () => {
         }
 
         let query = supabase
-            .from("cases")
-            .select(`
-              *,
-              client:clients!client_id (*),
-              doctor:doctors!doctor_id (*),
-              working_tag:working_tags (*),
-              enclosed_items:enclosed_case (*)
-            `)
-            .order("created_at", { ascending: false });
+          .from("cases")
+          .select(
+            `
+                id,
+              created_at,
+              received_date,
+              ship_date,
+              status,
+              patient_name,
+              due_date,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone,
+                street,
+                city,
+                state,
+                zip_code
+              ),
+              doctor:doctors!doctor_id (
+                id,
+                name,
+                client:clients!client_id (
+                  id,
+                  client_name,
+                  phone
+                )
+              ),
+              tag:working_tags!working_tag_id (
+                  name,
+                  color
+                ),
+            working_pan_name,
+            working_pan_color,
+              rx_number,
+              isDueDateTBD,
+              appointment_date,
+              case_number,
+              otherItems,
+              invoice_notes,
+              occlusal_type,
+              contact_type,
+              pontic_type,
+              custom_contact_details,
+              custom_occulusal_details,
+              custom_pontic_details,
+              instruction_notes,
+              enclosed_items:enclosed_case!enclosed_case_id (
+                impression,
+                biteRegistration,
+                photos,
+                jig,
+                opposingModel,
+                articulator,
+                returnArticulator,
+                cadcamFiles,
+                consultRequested,
+                user_id
+              ),
+              invoice:invoices!case_id (
+                id,
+                case_id,
+                amount,
+                status,
+                due_amount,
+                due_date
+              ),
+              product_ids:case_products!id (
+                products_id,
+                id
+              )
+            `
+          )
+          .order("created_at", { ascending: false });
 
         // Build query with filters
         if (user?.role === "client") {
-          let clientId:string = "";
-          const clients = await clientsService.getClients(labId as string);
+          let clientId: string = "";
+          const clients = await clientsService.getClients(lab?.id as string);
           if (Array.isArray(clients)) {
             clients.filter((client) => {
               if (client.email === user?.email) {
                 clientId = client.id;
               }
-            })
+            });
           }
           query = query.eq("client_id", clientId);
         } else {
-          query = query.eq("lab_id", labId);
+          query = query.eq("lab_id", lab?.id as string);
         }
 
         // Handle status filter from URL
@@ -932,9 +876,10 @@ const CaseList: React.FC = () => {
             const filterDate = new Date(dueDateParam);
             const nextDay = new Date(filterDate);
             nextDay.setDate(nextDay.getDate() + 1);
-            
-            query = query.gte("due_date", filterDate.toISOString())
-                        .lt("due_date", nextDay.toISOString());
+
+            query = query
+              .gte("due_date", filterDate.toISOString())
+              .lt("due_date", nextDay.toISOString());
           }
 
           const createdAtParam = searchParams.get("created_at");
@@ -942,9 +887,10 @@ const CaseList: React.FC = () => {
             const filterDate = new Date(createdAtParam);
             const nextDay = new Date(filterDate);
             nextDay.setDate(nextDay.getDate() + 1);
-            
-            query = query.gte("created_at", filterDate.toISOString())
-                        .lt("created_at", nextDay.toISOString());
+
+            query = query
+              .gte("created_at", filterDate.toISOString())
+              .lt("created_at", nextDay.toISOString());
           }
 
           const updatedAtParam = searchParams.get("updated_at");
@@ -952,9 +898,10 @@ const CaseList: React.FC = () => {
             const filterDate = new Date(updatedAtParam);
             const nextDay = new Date(filterDate);
             nextDay.setDate(nextDay.getDate() + 1);
-            
-            query = query.gte("updated_at", filterDate.toISOString())
-                        .lt("updated_at", nextDay.toISOString());
+
+            query = query
+              .gte("updated_at", filterDate.toISOString())
+              .lt("updated_at", nextDay.toISOString());
           }
         }
 
@@ -970,51 +917,205 @@ const CaseList: React.FC = () => {
           setFilteredCases([]);
           return;
         }
+        const transformedCases = await Promise.all(
+          casesData.map(async (item) => {
+            // Handle client data
+            const clientData = Array.isArray(item.client)
+              ? item.client[0]
+              : item.client;
 
-        const transformedCases = casesData.map(item => {
-          // Handle client data
-          const clientData = Array.isArray(item.client) ? item.client[0] : item.client;
-          
-          // Handle doctor data
-          const doctorData = Array.isArray(item.doctor) ? item.doctor[0] : item.doctor;
-          const doctorClient = doctorData?.client && Array.isArray(doctorData.client) 
-            ? doctorData.client[0] 
-            : doctorData?.client;
+            // Handle doctor data
+            const doctorData = Array.isArray(item.doctor)
+              ? item.doctor[0]
+              : item.doctor;
+            const doctorClient =
+              doctorData?.client && Array.isArray(doctorData.client)
+                ? doctorData.client[0]
+                : doctorData?.client;
 
-          // Handle tag data
-          const tagData = Array.isArray(item.working_tag) ? item.working_tag[0] : item.working_tag;
-          
-          // Handle enclosed items
-          const enclosedItemsData = Array.isArray(item.enclosed_items) 
-            ? item.enclosed_items[0] 
-            : item.enclosed_items;
+            // Handle tag data
+            const tagData = Array.isArray(item.tag) ? item.tag[0] : item.tag;
 
-          return {
-            ...item,
-            client: clientData ? {
-              id: clientData.id,
-              client_name: clientData.client_name,
-              phone: clientData.phone
-            } : null,
-            doctor: doctorData ? {
-              id: doctorData.id,
-              name: doctorData.name,
-              client: doctorClient ? {
-                id: doctorClient.id,
-                client_name: doctorClient.client_name,
-                phone: doctorClient.phone
-              } : null
-            } : null,
-            tags: tagData,
-            pans: item.working_pan || null,
-            enclosed_items: enclosedItemsData,
-            pan_tag: item.working_pan_name || null,
-            pan_color: item.working_pan_color || null,
-          } as Case;
-        });
+            // Handle enclosed items
+            const enclosedItemsData = Array.isArray(item.enclosed_items)
+              ? item.enclosed_items[0]
+              : item.enclosed_items;
 
-        setCases(transformedCases);
-        setFilteredCases(transformedCases);
+            // Prepare product IDs and case product IDs
+            const productsIdArray =
+              item?.product_ids?.map((p) => p.products_id) || [];
+            const caseProductIds = item?.product_ids?.map((p) => p.id) || [];
+
+            if (productsIdArray.length === 0) {
+              return {
+                ...item,
+                client: clientData
+                  ? {
+                      id: clientData.id,
+                      client_name: clientData.client_name,
+                      phone: clientData.phone,
+                    }
+                  : null,
+                doctor: doctorData
+                  ? {
+                      id: doctorData.id,
+                      name: doctorData.name,
+                      client: clientData
+                        ? {
+                            id: clientData.id,
+                            client_name: clientData.client_name,
+                            phone: clientData.phone,
+                          }
+                        : null,
+                    }
+                  : null,
+                tags: tagData,
+                enclosed_items: enclosedItemsData,
+                pan_tag: item.working_pan_name || null,
+                pan_color: item.working_pan_color || null,
+                products: [], // No products for this case
+              };
+            }
+
+            // Fetch products for the current case
+            const { data: productData, error: productsError } = await supabase
+              .from("products")
+              .select(
+                `
+                  id,
+                  name,
+                  price,
+                  lead_time,
+                  is_client_visible,
+                  is_taxable,
+                  created_at,
+                  updated_at,
+                  requires_shade,
+                  material:materials!material_id (
+                    name,
+                    description,
+                    is_active
+                  ),
+                  product_type:product_types!product_type_id (
+                    name,
+                    description,
+                    is_active
+                  ),
+                  billing_type:billing_types!billing_type_id (
+                    name,
+                    label,
+                    description,
+                    is_active
+                  )
+                `
+              )
+              .eq("lab_id", lab?.id)
+              .in("id", productsIdArray);
+
+            if (productsError) {
+              console.error("Error fetching products for case:", productsError);
+              return { ...item, products: [] }; // Return empty products if there's an error
+            }
+
+            const { data: discountedPriceData, error: discountedPriceError } =
+              await supabase
+                .from("discounted_price")
+                .select(
+                  `
+                  id,
+                  product_id,
+                  discount,
+                  final_price,
+                  price,
+                  quantity
+                `
+                )
+                .in("product_id", productsIdArray)
+                .eq("case_id", item.id);
+
+            if (discountedPriceError) {
+              console.error(
+                "Error fetching discounted prices for case:",
+                discountedPriceError
+              );
+            }
+
+            const { data: teethProductData, error: teethProductsError } =
+              await supabase
+                .from("case_product_teeth")
+                .select(
+                  `
+                  id,
+                  is_range,
+                  tooth_number,
+                  product_id,
+                  occlusal_shade:shade_options!occlusal_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  body_shade:shade_options!body_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  gingival_shade:shade_options!gingival_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  stump_shade:shade_options!stump_shade_id (
+                    name,
+                    category,
+                    is_active
+                  )
+                `
+                )
+                .in("product_id", productsIdArray)
+                .eq("case_product_id", item?.product_ids[0]?.id);
+
+            if (teethProductsError) {
+              console.error(
+                "Error fetching teeth products:",
+                teethProductsError
+              );
+            }
+
+            // Combine products with their relevant discounts and teeth products
+            const productsWithDiscounts = productData.flatMap((product) => {
+              const relevantDiscounts =
+                discountedPriceData?.filter(
+                  (discount) => discount.product_id === product.id
+                ) || [];
+
+              const relevantTeethProducts =
+                teethProductData?.filter(
+                  (teeth) => teeth.product_id === product.id
+                ) || [];
+
+              return relevantTeethProducts
+                .map((teeth, index) => {
+                  const discountedPrice = relevantDiscounts[index] || null;
+
+                  return {
+                    ...product,
+                    discounted_price: { ...discountedPrice },
+                    teethProduct: { ...teeth },
+                  };
+                })
+                .filter((item) => item.teethProduct.tooth_number !== null);
+            });
+
+            return {
+              ...item,
+              products: productsWithDiscounts,
+              labDetail: lab,
+            };
+          })
+        );
+
+        setCases(transformedCases as any);
+        setFilteredCases(transformedCases as any);
       } catch (err) {
         console.error("Error details:", err);
         logger.error("Error fetching cases:", err);
@@ -1024,10 +1125,10 @@ const CaseList: React.FC = () => {
       }
     };
 
-    if (!authLoading && user && labId) {
+    if (!authLoading && user && lab?.id) {
       fetchCases();
     }
-  }, [user, authLoading, labId, searchParams]);
+  }, [user, authLoading, lab, searchParams]);
 
   useEffect(() => {
     const filter = searchParams.get("filter");
@@ -1075,7 +1176,7 @@ const CaseList: React.FC = () => {
     }
   }, [searchParams, cases]);
 
-  const handlePrint = (selectedRows: Row<Case>[]) => {
+  const handlePrint = (selectedRows: Row<ExtendedCase>[]) => {
     console.log("Printing selected rows:", selectedRows);
   };
 
@@ -1099,8 +1200,9 @@ const CaseList: React.FC = () => {
         doctor: caseItem.doctor,
         created_at: caseItem.created_at,
         due_date: caseItem.due_date,
-        tag: caseItem.tags,
+        tag: caseItem.tag,
       })),
+      caseDetails: cases.filter((item) => selectedCasesIds.includes(item.id)),
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
@@ -1115,7 +1217,11 @@ const CaseList: React.FC = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
-
+  console.log(selectedCasesIds, "Selected");
+  console.log(
+    cases.filter((item) => selectedCasesIds.includes(item.id)),
+    "Selected"
+  );
   return (
     <div className="space-y-6">
       <PageHeader
@@ -1126,7 +1232,6 @@ const CaseList: React.FC = () => {
           <Plus className="mr-2 h-4 w-4" /> New Case
         </Button>
       </PageHeader>
-
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
@@ -1195,11 +1300,11 @@ const CaseList: React.FC = () => {
         <div className="rounded-md border">
           <Table>
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
+              {table.getHeaderGroups().map((headerGroup, index) => (
+                <TableRow key={index}>
+                  {headerGroup.headers.map((header, index) => (
                     <TableHead
-                      key={header.id}
+                      key={index}
                       className="whitespace-nowrap bg-muted hover:bg-muted"
                     >
                       {header.isPlaceholder

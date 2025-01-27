@@ -1,5 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { Calendar, dateFnsLocalizer, View } from "react-big-calendar";
+import {
+  Calendar,
+  dateFnsLocalizer,
+  View,
+  NavigateAction,
+} from "react-big-calendar";
 import {
   format,
   parse,
@@ -8,7 +13,7 @@ import {
   addMonths,
   subMonths,
 } from "date-fns";
-import enUS from "date-fns/locale/en-US";
+// import enUS from "date-fns/locale/en-US";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CalendarEvents } from "@/pages/Home";
@@ -29,7 +34,7 @@ import {
 import { Button } from "../ui/button";
 
 const locales = {
-  "en-US": enUS,
+  "en-US": "en",
 };
 
 const localizer = dateFnsLocalizer({
@@ -47,14 +52,18 @@ interface DueDatesCalendarProps {
 
 interface CustomToolbarProps {
   date: Date;
-  onNavigate: (action: "PREV" | "NEXT" | "TODAY") => void;
+  onNavigate: (action: NavigateAction) => void;
   label: string;
+  filterType?: string;
+  onFilterChange?: (filter: string) => void;
 }
 
 const CustomToolbar: React.FC<CustomToolbarProps> = ({
   date,
   onNavigate,
   label,
+  filterType = "due_date",
+  onFilterChange = () => {},
 }) => (
   <div className="rbc-toolbar">
     <div className="flex items-center gap-2">
@@ -76,13 +85,51 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
       </button>
       <h2 className="text-lg font-semibold">{label}</h2>
     </div>
-    <button
-      type="button"
-      onClick={() => onNavigate("TODAY")}
-      className="rbc-btn-group"
-    >
-      Today
-    </button>
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onNavigate("TODAY")}
+        className="rbc-btn-group"
+      >
+        Today
+      </button>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="h-8 px-3 text-xs">
+            {filterType === "due_date"
+              ? "Due Date"
+              : filterType === "on_hold"
+              ? "On Hold"
+              : filterType}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-40 p-1">
+          <div className="space-y-1">
+            <Button
+              variant={filterType === "due_date" ? "secondary" : "ghost"}
+              className="w-full justify-start text-xs"
+              onClick={() => onFilterChange("due_date")}
+            >
+              Due Date
+            </Button>
+            <Button
+              variant={filterType === "on_hold" ? "secondary" : "ghost"}
+              className="w-full justify-start text-xs"
+              onClick={() => onFilterChange("on_hold")}
+            >
+              On Hold
+            </Button>
+            <Button
+              variant={filterType === "on_hold" ? "secondary" : "ghost"}
+              className="w-full justify-start text-xs"
+              onClick={() => onFilterChange("today_cell")}
+            >
+              Today's Cell
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   </div>
 );
 
@@ -110,28 +157,56 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
   height = 500,
 }) => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
   const [animationDirection, setAnimationDirection] = useState<
     "left" | "right" | null
   >(null);
   const navigate = useNavigate();
+  const [filterType, setFilterType] = useState("due_date");
 
+  const filteredEvents = events.filter((event) => {
+    const start = new Date(event.start);
+    const end = new Date(event.end);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return false;
+    }
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    const todayDateString = today.toISOString().split("T")[0]; // 'YYYY-MM-DD'
+
+    // Filter based on filterType
+    if (filterType === "due_date") {
+      return !event.onHold;
+    } else if (filterType === "on_hold") {
+      return event.onHold;
+    } else if (filterType === "today_cell") {
+      // Compare the date part of the event's start with today's date
+      const eventStartDateString = start.toISOString().split("T")[0]; // 'YYYY-MM-DD'
+      return eventStartDateString === todayDateString;
+    }
+
+    return true;
+  });
+
+  console.log(events, "Event");
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
-      let newDate;
+      let newDate = new Date(currentDate);
+
       switch (action) {
         case "PREV":
           setAnimationDirection("right");
-          newDate = subMonths(currentDate, 1);
+          newDate = subMonths(newDate, 1);
           break;
         case "NEXT":
           setAnimationDirection("left");
-          newDate = addMonths(currentDate, 1);
+          newDate = addMonths(newDate, 1);
           break;
         case "TODAY":
           newDate = new Date();
-          setAnimationDirection(currentDate > new Date() ? "right" : "left");
+          setAnimationDirection(currentDate > newDate ? "right" : "left");
           break;
         default:
           return;
@@ -139,13 +214,33 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
       setCurrentDate(newDate);
 
-      // Reset animation direction after animation completes
       setTimeout(() => {
         setAnimationDirection(null);
       }, 300);
     },
     [currentDate]
   );
+
+  const calendarNavigate = useCallback(
+    (newDate: Date, view: View, action: NavigateAction) => {
+      if (!isNaN(newDate.getTime())) {
+        switch (action) {
+          case "PREV":
+          case "NEXT":
+          case "TODAY":
+            handleNavigate(action);
+            break;
+          default:
+            setCurrentDate(newDate);
+        }
+      }
+    },
+    [handleNavigate]
+  );
+
+  const handleFilterChange = (newFilter: string) => {
+    setFilterType(newFilter);
+  };
 
   const dayPropGetter = (date: Date) => {
     const today = new Date();
@@ -166,9 +261,12 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const components = {
     toolbar: (props: any) => (
       <CustomToolbar
-        date={props.date}
+        {...props}
+        date={currentDate}
         onNavigate={handleNavigate}
-        label={format(props.date, "MMMM yyyy")}
+        label={format(currentDate, "MMMM yyyy")}
+        filterType={filterType}
+        onFilterChange={handleFilterChange}
       />
     ),
     dateCellWrapper: (props: any) => {
@@ -190,15 +288,26 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             title=""
             className="w--full grid"
           >
-            {event.onHold && event.title && (
+            {event.onHold &&
+              event.title &&
+              event.title !== "0" &&
+              filterType !== "today_cell" && (
+                <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                  {event.title}
+                </div>
+              )}
+            {!event.onHold &&
+              event.title !== "0" &&
+              filterType !== "today_cell" && (
+                <div
+                  className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                >
+                  {event.title}
+                </div>
+              )}
+
+            {filterType === "today_cell" && (
               <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                {event.title}
-              </div>
-            )}
-            {!event.onHold && (
-              <div
-                className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
-              >
                 {event.title}
               </div>
             )}
@@ -215,6 +324,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                 <h4 className="font-medium">
                   {format(event.start, "MMMM d, yyyy")}
                 </h4>
+
                 <p className="text-sm text-muted-foreground">
                   {event.title} {events.length === 1 ? "case" : "cases"} due
                 </p>
@@ -251,6 +361,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                         {event.status}
                       </Badge>
                     </div>
+                    <h4 className="font-medium">{event.due_date}</h4>
 
                     <div className="flex flex-col text-sm text-muted-foreground">
                       <div className="flex justify-between">
@@ -394,38 +505,42 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   };
 
   const handleEventClick = (event: any) => {
-    // Extract the start date of the event
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
     navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
+    console.log(event, "event");
   };
+
   return (
-    <div className="calendar-wrapper" style={{ height }}>
-      <div
-        className={`calendar-slide ${
-          animationDirection ? `slide-${animationDirection}` : ""
-        }`}
-      >
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          components={components}
-          views={["month"] as View[]}
-          defaultView="month"
-          date={currentDate}
-          onNavigate={handleNavigate as any}
-          eventPropGetter={eventStyleGetter}
-          // onSelectEvent={handleEventClick}
-          dayPropGetter={dayPropGetter}
-          className="calendar-container"
-        />
+    <>
+      <div className="calendar-wrapper" style={{ height }}>
+        <div
+          className={`calendar-container ${
+            animationDirection ? `slide-${animationDirection}` : ""
+          }`}
+        >
+          <Calendar
+            localizer={localizer}
+            events={filteredEvents}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height }}
+            views={["month"]}
+            components={components}
+            onNavigate={calendarNavigate}
+            date={currentDate}
+            toolbar={true}
+            defaultDate={new Date()}
+            dayPropGetter={dayPropGetter}
+            eventPropGetter={eventStyleGetter}
+            className="calendar-container"
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -41,6 +41,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [notes, setNotes] = useState("");
   const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
 
   const calculateFinalPrice = (
     price: number,
@@ -206,10 +207,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                           disabled={false}
                           selectedProduct={{
                             type: [],
+                            selectedPontic: [1],
                           }}
-                          onAddToShadeTable={function (): void {
-                            throw new Error("Function not implemented.");
-                          }}
+                          onAddToShadeTable={() => ""}
+                          ponticTeeth={ponticTeeth}
+                          setPonticTeeth={setPonticTeeth}
+                          groupSelectedTeethState={[]}
                         />
                         {errors.teeth && (
                           <p className="mt-1 text-sm text-red-600">

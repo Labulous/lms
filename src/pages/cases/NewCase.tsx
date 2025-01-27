@@ -62,6 +62,8 @@ const NewCase: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
+
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
@@ -134,7 +136,7 @@ const NewCase: React.FC = () => {
           toast.error("Unable to get Lab Id");
           return null;
         }
-        
+
         const clients = await clientsService.getClients(labData?.labId ?? "");
         if (Array.isArray(clients)) {
           if (user?.role === "client") {
@@ -143,10 +145,12 @@ const NewCase: React.FC = () => {
                 setFormData((prevData) => ({
                   ...prevData,
                   clientId: client.id,
-                }))
+                }));
               }
-            })
-            setClients(clients.filter((client) => client.email === user?.email));
+            });
+            setClients(
+              clients.filter((client) => client.email === user?.email)
+            );
           } else {
             setClients(clients);
           }
@@ -199,8 +203,6 @@ const NewCase: React.FC = () => {
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
-    if (!formData.isDueDateTBD && !formData.appointmentDate)
-      validationErrors.appointmentDate = "Due date is required";
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
@@ -268,7 +270,7 @@ const NewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.instructionNotes,
+            instruction_notes: transformedData.notes?.instructionNotes,
             invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
@@ -282,6 +284,15 @@ const NewCase: React.FC = () => {
             attachements: selectedFiles.map((item) => item.url),
             working_pan_name: transformedData.workingPanName,
             working_pan_color: transformedData.workingPanColor,
+            working_tag_id: transformedData.workingTagName,
+            margin_design_type: transformedData.caseDetails?.marginDesign,
+            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+            alloy_type: transformedData.caseDetails?.alloyType,
+            custom_margin_design_type:
+              transformedData.caseDetails?.customMargin,
+            custom_occlusion_design_type:
+              transformedData.caseDetails?.customOcclusalDesign,
+            custon_alloy_type: transformedData.caseDetails?.customAlloy,
           },
           products: selectedProducts,
 
@@ -302,8 +313,18 @@ const NewCase: React.FC = () => {
       mainDivRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [errors]);
+
+  console.log(formData, "formData");
   return (
-    <div className="p-6" ref={mainDivRef}>
+    <div
+      className="p-6"
+      ref={mainDivRef}
+      onClick={(e) => {
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-800 mb-6">
           Create a New Case
@@ -320,7 +341,8 @@ const NewCase: React.FC = () => {
               errors={errors}
               clients={clients}
               loading={loading}
-              isClient={user?.role === "client" ? true : false}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>
@@ -341,6 +363,7 @@ const NewCase: React.FC = () => {
         </div>
 
         {/* Files and Notes Section Grid */}
+
         <div className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
           <div className="bg-white shadow">

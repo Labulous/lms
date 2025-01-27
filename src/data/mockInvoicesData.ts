@@ -13,6 +13,7 @@ export interface InvoiceItem {
   toothNumber: string;
   discount: number;
   discountId?: string;
+  due_amount?: number;
   caseProductTeethId?: string;
   notes?: {
     instructionNotes: string;
@@ -68,7 +69,6 @@ export interface Invoice {
   clientId?: string;
   clientName?: string;
   patient?: string;
-  lab_notes?: string;
   client?: {
     client_name?: string;
     id?: string;
