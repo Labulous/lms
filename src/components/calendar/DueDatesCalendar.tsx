@@ -327,12 +327,12 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                   }
                   {
                     <div className="bg-blue-500 col-span-4 w text-sm absolute bottom-[5px] left-8 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.id === 1 && event.title}
+                      {event.isPastDue && event.title}
                     </div>
                   }
                   {
                     <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.isAllOnHold && event.title}
+                      {event.isTommorow && event.title}
                     </div>
                   }
                 </div>
@@ -559,6 +559,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             startAccessor="start"
             endAccessor="end"
             style={{ height }}
+            views={['month', 'week', 'day']} // Make sure to include the right views
             components={components}
             // onNavigate={calendarNavigate}
             date={currentDate}
