@@ -1248,7 +1248,7 @@ const CaseList: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        heading="Cases"
+        heading="Case Management"
         description="View and manage all your dental lab cases."
       >
         <Button onClick={() => navigate("/cases/new")}>

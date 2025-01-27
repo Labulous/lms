@@ -269,7 +269,7 @@ const ClientList: React.FC<ClientListProps> = ({
   return (
     <div className="space-y-6">
       <PageHeader
-        heading="Clients"
+        heading="Client Management"
         description="Manage your client accounts and information."
       >
         <Button onClick={() => navigate("/clients/new")}>

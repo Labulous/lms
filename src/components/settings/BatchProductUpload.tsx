@@ -310,8 +310,8 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="mr-2 h-4 w-4" /> Batch Add Products
+        <Button variant="default">
+          <Plus className="mr-2 h-4 w-4" /> Add Products
         </Button>
       </DialogTrigger>
       <DialogContent
@@ -337,7 +337,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           <TabsContent value="manual">
             <div className="space-y-4">
               {products.map((product, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-4">
+                <div key={index} className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]">
                   <div className="grid grid-cols-12 gap-4 items-end">
                     <div className="col-span-3 space-y-2">
                       <Label htmlFor={`name-${index}`}>Name</Label>
@@ -347,6 +347,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                         onChange={(e) =>
                           updateProduct(index, "name", e.target.value)
                         }
+                        className="bg-white"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
@@ -359,7 +360,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "product_type_id", value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -379,7 +380,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "material_id", value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Material" />
                         </SelectTrigger>
                         <SelectContent>
@@ -404,6 +405,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                             parseFloat(e.target.value)
                           )
                         }
+                        className="bg-white"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
@@ -416,7 +418,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "billing_type_id", value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -441,6 +443,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                             parseInt(e.target.value)
                           )
                         }
+                        className="bg-white"
                       />
                     </div>
                     <div className="col-span-1 flex items-end justify-end">
