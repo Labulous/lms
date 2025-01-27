@@ -1209,7 +1209,6 @@ const CaseList: React.FC = () => {
           <Plus className="mr-2 h-4 w-4" /> New Case
         </Button>
       </PageHeader>
-      <input type="file" multiple className="" />
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">

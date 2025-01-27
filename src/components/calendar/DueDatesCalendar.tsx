@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, SetStateAction } from "react";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -48,6 +48,8 @@ const localizer = dateFnsLocalizer({
 interface DueDatesCalendarProps {
   events?: CalendarEvents[];
   height?: number;
+  filterType: string;
+  setFilterType: React.Dispatch<SetStateAction<string>>;
 }
 
 interface CustomToolbarProps {
@@ -138,13 +140,13 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
     <div className="rbc-date-cell">
       <div className="custom-date-cell">
         <span className="date-number">{format(date, "d")}</span>
-        {events.length > 0 && (
+        {events.length+1 > 0 && (
           <div className="badge-container">
             <span
               className="count-badge "
               style={{ backgroundColor: "green !important" }}
             >
-              {events.length}
+              {events.length+1}
             </span>
           </div>
         )}
@@ -156,6 +158,8 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
   height = 500,
+  filterType,
+  setFilterType,
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
@@ -163,7 +167,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     "left" | "right" | null
   >(null);
   const navigate = useNavigate();
-  const [filterType, setFilterType] = useState("due_date");
 
   const filteredEvents = events.filter((event) => {
     const start = new Date(event.start);
@@ -172,25 +175,23 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       return false;
     }
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    const todayDateString = today.toISOString().split("T")[0]; // 'YYYY-MM-DD'
-
     // Filter based on filterType
     if (filterType === "due_date") {
-      return !event.onHold;
+      return event.isActive;
     } else if (filterType === "on_hold") {
       return event.onHold;
     } else if (filterType === "today_cell") {
-      // Compare the date part of the event's start with today's date
-      const eventStartDateString = start.toISOString().split("T")[0]; // 'YYYY-MM-DD'
-      return eventStartDateString === todayDateString;
+      console.log(event, "event");
+
+      // Return events where either isAllOnHold OR isTommorow is true
+      return !event.isActive && !event.onHold;
     }
 
     return true;
   });
 
-  console.log(events, "Event");
+  console.log(filteredEvents, "filteredEvents");
+  console.log(events, "events");
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
       let newDate = new Date(currentDate);
@@ -288,29 +289,54 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             title=""
             className="w--full grid"
           >
-            {event.onHold &&
-              event.title &&
-              event.title !== "0" &&
-              filterType !== "today_cell" && (
-                <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                  {event.title}
-                </div>
-              )}
-            {!event.onHold &&
-              event.title !== "0" &&
-              filterType !== "today_cell" && (
-                <div
-                  className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
-                >
-                  {event.title}
-                </div>
-              )}
-
-            {filterType === "today_cell" && (
-              <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                {event.title}
-              </div>
+            {filterType !== "today_cell" && (
+              <>
+                {event.onHold &&
+                  event.title &&
+                  event.title !== "0" &&
+                  filterType !== "today_cell" && (
+                    <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.title}
+                    </div>
+                  )}
+                {!event.onHold &&
+                  event.title !== "0" &&
+                  filterType !== "today_cell" && (
+                    <div
+                      className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                    >
+                      {event.title}
+                    </div>
+                  )}
+              </>
             )}
+
+            <div>
+              {filterType === "today_cell" && (
+                <div>
+                  {/* {event.isTommorow && (
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.title}
+                    </div>
+                  )} */}
+                  <div
+                    className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                  >
+                    {/* {event.title !=="" && event.title} */}
+                  </div>
+                  {
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-6 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.isTommorow &&  !event.isAllOnHold && event.title}
+                    </div>
+                  }
+                  {
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-1 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {!event.isTommorow &&  event.title}
+                      </div>
+                  }
+                </div>
+              )}
+            </div>
           </div>
         </HoverCardTrigger>
         <HoverCardContent
@@ -506,7 +532,11 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const handleEventClick = (event: any) => {
     const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
-    navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
+    const utcDate = new Date(event.start);
+
+// Convert to local time by calling the Date object's methods
+const localDateStr = utcDate.toLocaleString(); 
+    navigate(`/cases?dueDate=${utcDate}&status=in_progress%2Cin_queue`);
   };
 
   const handleEventHover = (event: CalendarEvents | null) => {
@@ -524,7 +554,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
         >
           <Calendar
             localizer={localizer}
-            events={filteredEvents}
+            events={events}
             startAccessor="start"
             endAccessor="end"
             style={{ height }}

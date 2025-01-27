@@ -46,6 +46,10 @@ export interface CalendarEvents {
   end: Date;
   resource?: any;
   onHold?: boolean;
+  isTommorow?: boolean;
+  isAllOnHold?: boolean;
+  isPastDue?: boolean;
+  isActive?: boolean;
   formattedCases: {
     case_id: string;
     client_name: string;
@@ -424,7 +428,7 @@ const Home: React.FC = () => {
                     <Maximize2 className="h-4 w-4" />
                   </Button>
                 </div>
-                <DueDatesCalendar events={casesEvents} />
+                {/* <DueDatesCalendar events={casesEvents} /> */}
               </div>
             </div>
 
