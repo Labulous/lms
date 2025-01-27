@@ -52,6 +52,7 @@ export interface CalendarEvents {
   isPastDue?: boolean;
   isActive?: boolean;
   formattedCases: {
+    due_date?: string;
     case_id: string;
     client_name: string;
     doctor: { name: string };
