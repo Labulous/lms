@@ -297,7 +297,6 @@ const NewCase: React.FC = () => {
     }
   }, [errors]);
 
-  console.log(formData, "formData");
   return (
     <div
       className="p-6"

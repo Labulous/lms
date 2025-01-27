@@ -36,7 +36,7 @@ const App: React.FC = () => {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
-          {/* <Route path="/home1" element={<Home1 />} /> */}
+          <Route path="/home1" element={<Home1 />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
