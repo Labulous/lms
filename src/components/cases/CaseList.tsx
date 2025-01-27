@@ -67,7 +67,6 @@ import {
 
 import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
-import { clientsService } from "../../services/clientsService";
 import { ExtendedCase } from "./CaseDetails";
 import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 
@@ -738,97 +737,83 @@ const CaseList: React.FC = () => {
           throw new Error("No active session");
         }
 
+        // Build query with filters
         let query = supabase
           .from("cases")
           .select(
             `
-                id,
-              created_at,
-              received_date,
-              ship_date,
-              status,
-              patient_name,
-              due_date,
+              id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            client:clients!client_id (
+              id,
+              client_name,
+              phone,
+              street,
+              city,
+              state,
+              zip_code
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
               client:clients!client_id (
                 id,
                 client_name,
-                phone,
-                street,
-                city,
-                state,
-                zip_code
-              ),
-              doctor:doctors!doctor_id (
-                id,
-                name,
-                client:clients!client_id (
-                  id,
-                  client_name,
-                  phone
-                )
-              ),
-              tag:working_tags!working_tag_id (
-                  name,
-                  color
-                ),
-            working_pan_name,
-            working_pan_color,
-              rx_number,
-              isDueDateTBD,
-              appointment_date,
-              case_number,
-              otherItems,
-              invoice_notes,
-              occlusal_type,
-              contact_type,
-              pontic_type,
-              custom_contact_details,
-              custom_occulusal_details,
-              custom_pontic_details,
-              instruction_notes,
-              enclosed_items:enclosed_case!enclosed_case_id (
-                impression,
-                biteRegistration,
-                photos,
-                jig,
-                opposingModel,
-                articulator,
-                returnArticulator,
-                cadcamFiles,
-                consultRequested,
-                user_id
-              ),
-              invoice:invoices!case_id (
-                id,
-                case_id,
-                amount,
-                status,
-                due_amount,
-                due_date
-              ),
-              product_ids:case_products!id (
-                products_id,
-                id
+                phone
               )
-            `
+            ),
+            tag:working_tags!working_tag_id (
+                name,
+                color
+              ),
+          working_pan_name,
+          working_pan_color,
+            rx_number,
+            isDueDateTBD,
+            appointment_date,
+            case_number,
+            otherItems,
+            invoice_notes,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            instruction_notes,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            invoice:invoices!case_id (
+              id,
+              case_id,
+              amount,
+              status,
+              due_amount,
+              due_date
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            )
+          `
           )
+          .eq("lab_id", lab?.id)
           .order("created_at", { ascending: false });
-
-        // Build query with filters
-        if (user?.role === "client") {
-          let clientId: string = "";
-          const clients = await clientsService.getClients(lab?.id as string);
-          if (Array.isArray(clients)) {
-            clients.filter((client) => {
-              if (client.email === user?.email) {
-                clientId = client.id;
-              }
-            });
-          }
-          query = query.eq("client_id", clientId);
-        } else {
-          query = query.eq("lab_id", lab?.id as string);
-        }
 
         // Handle status filter from URL
         const statusParam = searchParams.get("status");

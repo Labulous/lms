@@ -1,0 +1,2529 @@
+import { useState, useEffect, SetStateAction } from "react";
+import { Link, useParams } from "react-router-dom";
+import {
+  User,
+  FileText,
+  Package,
+  CircleDot,
+  MoreHorizontal,
+  Printer,
+  CheckCircle2,
+  X,
+} from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import {
+  Case,
+  CaseProduct,
+  ToothInfo,
+  CaseStatus,
+  CASE_STATUS_DESCRIPTIONS,
+  WorkingStationLog,
+  WorkingStationTypes,
+  WorkstationForm,
+  labDetail,
+} from "@/types/supabase";
+
+import CaseProgress, { CaseStep } from "./CaseProgress";
+import { QRCodeSVG } from "qrcode.react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import cn from "classnames";
+import InvoiceActions from "@/components/cases/InvoiceActions";
+import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
+import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
+import { FileWithStatus } from "./wizard/steps/FilesStep";
+import PrintHandler from "./print/PrintHandler";
+import { PAPER_SIZES } from "./print/PrintHandler";
+import OnHoldModal from "./wizard/modals/OnHoldModal";
+import ScheduleDelivery from "./wizard/modals/ScheduleDelivery";
+import { EditInvoiceModal } from "../billing/EditInvoiceModal";
+import { Invoice } from "@/data/mockInvoicesData";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
+import { LoadingState } from "@/pages/cases/NewCase";
+import OnCancelModal from "./wizard/modals/onCancelModal";
+import FilePreview from "./wizard/modals/FilePreview";
+import ClientCaseProgress from "./ClientCaseProgress";
+
+interface CaseFile {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  uploaded_at: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  lead_time: string | null;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  created_at: string;
+  updated_at: string;
+  requires_shade: boolean;
+  material?: Material;
+  product_type: ProductType;
+  billing_type: BillingType;
+  discounted_price?: DiscountedPrice;
+  contact_type: string;
+}
+
+interface Material {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface ProductType {
+  name: string;
+  is_active: boolean;
+  description: string;
+}
+
+interface BillingType {
+  name: string;
+  label: string;
+  is_active: boolean;
+  description: string;
+}
+
+export interface DiscountedPrice {
+  product_id: string;
+  discount: number;
+  final_price: number;
+  price: number;
+}
+
+export interface ExtendedCase {
+  id: string;
+  created_at: string;
+  received_date?: string | null;
+  ship_date: string | null;
+  status: CaseStatus;
+  patient_name: string;
+  due_date: string;
+  case_number: string;
+  working_pan_name?: string;
+  working_pan_color?: string;
+  client: {
+    id: string;
+    client_name: string;
+    phone: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
+  };
+  doctor: {
+    id: string;
+    name: string;
+    client: {
+      id: string;
+      client_name: string;
+      phone: string;
+    };
+  };
+  case_products: CaseProduct[];
+  product_ids: {
+    id: string;
+    products_id: string[];
+  }[];
+  otherItems: string;
+  custom_contact_details: string;
+  custom_occulusal_details: string;
+  custom_pontic_details: string;
+  custom_occlusal_details: string;
+  margin_design_type: string;
+  occlusion_design_type: string;
+  alloy_type: string;
+  custom_margin_design_type: string;
+  custom_occlusion_design_type: string;
+  custon_alloy_type: string;
+  occlusal_type: string;
+  pontic_type: string;
+  attachements: string[];
+  contact_type: string;
+  appointment_date: string;
+  instruction_notes: string | null;
+  invoice_notes: string;
+  enclosed_items: {
+    jig: number;
+    photos: number;
+    user_id: string;
+    impression: number;
+    articulator: number;
+    cadcamFiles: number;
+    opposingModel: number;
+    biteRegistration: number;
+    consultRequested: number;
+    returnArticulator: number;
+  };
+  products: any[];
+  tag: {
+    color: string;
+    name: string;
+    id: string;
+  };
+  invoice: {
+    id: string;
+    case_id: string;
+    amount: number;
+    status: string;
+    due_date: string;
+    discount?: string;
+    due_amount?: string;
+    tax?: string;
+    notes?: string;
+    items?: any;
+    discount_type?: string;
+  }[];
+  teethProduct?: {
+    tooth_number: number[];
+    body_shade?: { name: string };
+    gingival_shade?: { name: string };
+    occlusal_shade?: { name: string };
+    stump_shade_id?: { name: string };
+  }[];
+  labDetail?: labDetail;
+  isDueDateTBD?: boolean;
+  is_approved?: boolean;
+  created_from: string;
+}
+
+interface CaseDetailsProps {
+  drawerMode?: boolean;
+  caseId?: string;
+  onNavigate?: (path: string) => void;
+}
+
+const TYPE_COLORS = {
+  Crown: "rgb(59 130 246)", // blue-500
+  Bridge: "rgb(168 85 247)", // purple-500
+  Removable: "rgb(77 124 15)", // lime-700
+  Implant: "rgb(6 182 212)", // cyan-500
+  Other: "rgb(107 114 128)", // gray-500
+  Veneer: "rgb(236 72 153)", // pink-500
+  Inlay: "rgb(249 115 22)", // orange-500
+  Onlay: "rgb(234 179 8)", // yellow-500
+};
+
+const formatTeethRange = (teeth: number[]): string => {
+  if (!teeth || teeth.length === 0) return "";
+
+  const ranges: string[] = [];
+  let start = teeth[0];
+  let end = teeth[0];
+
+  for (let i = 1; i <= teeth.length; i++) {
+    if (i < teeth.length && teeth[i] === end + 1) {
+      end = teeth[i];
+    } else {
+      ranges.push(start === end ? start.toString() : `${start}-${end}`);
+      if (i < teeth.length) {
+        start = teeth[i];
+        end = teeth[i];
+      }
+    }
+  }
+
+  return ranges.join(", ");
+};
+
+const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
+  drawerMode,
+  caseId: propCaseId,
+  onNavigate,
+}) => {
+  const params = useParams<{ caseId: string }>();
+  const routeCaseId = params.caseId;
+  const activeCaseId = propCaseId || routeCaseId;
+
+  const navigate = useNavigate();
+  const safeNavigate = (path: string) => {
+    if (drawerMode && onNavigate) {
+      onNavigate(path);
+    } else {
+      navigate(path);
+    }
+  };
+
+  const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  let location = useLocation();
+  const [editingInvoice, setEditingInvoice] = useState<ExtendedCase | null>(
+    null
+  );
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
+  const [activePrintType, setActivePrintType] = useState<string | null>(null);
+  const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
+  const [onCancelModal, setOnCancelModal] = useState<boolean>(false);
+  const [onHoldReason, setOnHoldReason] = useState<string>("");
+  const [invoicePreviewModalOpen, setInvoicePreviewModalOpen] =
+    useState<boolean>(false);
+  const [selectedPaperSize, setSelectedPaperSize] =
+    useState<keyof typeof PAPER_SIZES>("LETTER");
+  const [stepsData, setStepData] = useState<CaseStep[] | []>([]);
+  const [lab, setLab] = useState<labDetail | null>(null);
+  const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
+  const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
+  const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
+  const [files, setFiles] = useState<string[]>([]);
+  const [workStationTypes, setWorkStationTypes] = useState<
+    WorkingStationTypes[] | []
+  >([]);
+  const { user } = useAuth();
+
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    action: null,
+    isLoading: false,
+  });
+  const [workstationForm, setWorkStationForm] = useState<WorkstationForm>({
+    created_by: user?.id as string,
+    technician_id: user?.role === "technician" ? user.id : "",
+    custom_workstation_type: "",
+    status: "in_progress",
+    started_notes: "",
+    started_at: "jan 200 ",
+    completed_at: "",
+    issue_reported_at: "",
+    workstation_type_id: "",
+    case_id: activeCaseId as string,
+  });
+
+  const getWorkStationDetails = async (case_ceated_at: string) => {
+    try {
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (!lab?.id) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
+      const { data: workStationData, error: workStationError } = await supabase
+        .from("workstation_log")
+        .select(
+          `
+            id,
+         technician:users!technician_id (id, name),
+         type:workstation_types!workstation_type_id (
+         id,
+         name
+         ),
+         status,
+         started_at,
+         completed_at,
+         issue_reported_at,
+         attachements,
+         custom_workstation_type,
+         started_notes,
+         completed_notes,
+         issue_reported_notes,
+         created_by: users!created_by (
+         id,
+         name
+         )
+        `
+        )
+        .eq("case_id", activeCaseId);
+      const { data: worksationTypes, error: worksationTypesErrors } =
+        await supabase
+          .from("workstation_types")
+          .select(
+            `
+        id,
+        name,
+        is_default,
+        is_active,
+        created_at
+        `
+          )
+          .eq("lab_id", lab.id);
+      if (workStationError) {
+        setError(workStationError?.message || "");
+      } else {
+        console.log(workStationData, "workStationData");
+
+        let workStationDataApi: any = workStationData;
+        const steps = [
+          {
+            date: case_ceated_at || new Date().toISOString(),
+            technician: {
+              name: "System",
+              id: "",
+            },
+            status: "completed" as
+              | "in_progress"
+              | "completed"
+              | "issue_reported",
+            notes: "Case has been created and is ready for Manufacturing.",
+          },
+          ...workStationDataApi.map((item: any) => {
+            return {
+              date: item.started_at,
+              id: item.id,
+              workstation_type_id: item?.type?.id || "",
+              workstation_type_name: item?.type?.name || "",
+              status: item.status as
+                | "in_progress"
+                | "completed"
+                | "issue_reported",
+
+              notes: item.notes,
+              started_notes: item.started_notes,
+              completed_notes: item.completed_notes,
+              issue_reported_notes: item.issue_reported_notes,
+              custom_workstation_type: item.custom_workstation_type,
+              started_at: item.started_at,
+              completed_at: item.completed_at,
+              issue_reported_at: item.issue_reported_at,
+              technician: {
+                name: item.technician.name,
+                id: item.technician.id,
+              },
+              created_by: {
+                name: item.created_by.name,
+              },
+              isEditOn: false,
+              files: item.attachements,
+            };
+          }),
+        ];
+        setStepData(steps);
+      }
+      if (worksationTypesErrors) {
+        setError(worksationTypesErrors?.message || "");
+      } else {
+        console.log(workStationData, "workStationData");
+        const customWorkstationType: WorkingStationTypes = {
+          id: "custom-id", // You can generate a unique ID if needed
+          name: "custom",
+          is_default: false, // or true depending on your logic
+          is_active: true, // or false depending on your logic
+          created_at: new Date().toISOString(),
+        };
+        const updatedWorkstationTypes = [
+          ...worksationTypes,
+          customWorkstationType,
+        ];
+
+        setWorkStationTypes(updatedWorkstationTypes);
+      }
+    } catch (err) {
+      console.log(err, "erro");
+    } finally {
+    }
+  };
+
+  const fetchCaseData = async (refetch?: boolean) => {
+    try {
+      setLoading(refetch ? false : true);
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (!lab?.id) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
+      setLab(lab);
+
+      const { data: caseData, error } = await supabase
+        .from("cases")
+        .select(
+          `
+            id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            attachements,
+            case_number,
+            invoice:invoices!case_id (
+              id,
+              case_id,
+              amount,
+              status,
+              due_amount,
+              due_date
+            ),
+            client:clients!client_id (
+              id,
+              client_name,
+              phone,
+              street,
+              city,
+              state,
+              zip_code
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+            working_pan_name,
+            working_pan_color,
+            rx_number,
+            received_date,
+            invoice_notes,
+            isDueDateTBD,
+            appointment_date,
+            instruction_notes,
+            otherItems,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            qr_code,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            created_by:users!created_by (
+              name,
+              id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            ),
+             margin_design_type,
+            occlusion_design_type,
+            alloy_type,
+            custom_margin_design_type,
+            custom_occlusion_design_type,
+            custon_alloy_type,
+            is_approved,
+            created_from
+          `
+        )
+        .eq("id", activeCaseId)
+        .single();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        setError(error.message);
+        return;
+      }
+
+      if (!caseData) {
+        console.error("No case data found");
+        setError("Case not found");
+        return;
+      }
+      let caseDataApi: any = caseData;
+
+      setCaseDetail(caseDataApi);
+      getWorkStationDetails(caseData?.created_at);
+      setFiles(caseData.attachements);
+      if (caseData.product_ids?.[0]?.products_id) {
+        const productsIdArray = caseData.product_ids[0].products_id;
+        const caseProductId = caseData.product_ids[0].id;
+
+        // Fetch products
+        if (productsIdArray?.length > 0) {
+          const { data: productData, error: productsError } = await supabase
+            .from("products")
+            .select(
+              `
+                id,
+                name,
+                price,
+                lead_time,
+                is_client_visible,
+                is_taxable,
+                created_at,
+                updated_at,
+                requires_shade,
+                material:materials!material_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                product_type:product_types!product_type_id (
+                  name,
+                  description,
+                  is_active
+                ),
+                billing_type:billing_types!billing_type_id (
+                  name,
+                  label,
+                  description,
+                  is_active
+                )
+              `
+            )
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.id);
+
+          if (productsError) {
+            setError(productsError.message);
+            return;
+          }
+
+          // Fetch discounted prices
+          const { data: discountedPriceData, error: discountedPriceError } =
+            await supabase
+              .from("discounted_price")
+              .select(
+                `
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity
+              `
+              )
+              .in("product_id", productsIdArray)
+              .eq("case_id", activeCaseId);
+
+          if (discountedPriceError) {
+            console.error(
+              "Error fetching discounted prices:",
+              discountedPriceError
+            );
+            setError(discountedPriceError.message);
+            return;
+          }
+
+          // Fetch teeth products if case product ID exists
+          let teethProducts: any = [];
+          if (caseProductId) {
+            const { data: teethProductData, error: teethProductsError } =
+              await supabase
+                .from("case_product_teeth")
+                .select(
+                  `
+                  is_range,
+                  occlusal_shade:shade_options!occlusal_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  body_shade:shade_options!body_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  gingival_shade:shade_options!gingival_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  stump_shade_id:shade_options!stump_shade_id (
+                    name,
+                    category,
+                    is_active
+                  ),
+                  tooth_number,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
+                  type,
+                  id
+                `
+                )
+                .eq("case_product_id", caseProductId)
+                .eq("case_id", caseData.id);
+
+            if (teethProductsError) {
+              setError(teethProductsError.message);
+              return;
+            }
+            teethProducts = teethProductData;
+            console.log(teethProductData, "teethProductData");
+          }
+          console.log(productData, "productData");
+          console.log(discountedPriceData, "discountedPriceData");
+          // Combine all product data
+          const productsWithDiscounts = productData.flatMap((product: any) => {
+            // Find all the discounted prices for this product
+            const relevantDiscounts = discountedPriceData.filter(
+              (discount: { product_id: string }) =>
+                discount.product_id === product.id
+            );
+
+            // Find all the teeth products for this product
+            const relevantTeethProducts = teethProducts.filter(
+              (teeth: any) => teeth.product_id === product.id
+            );
+
+            // Map each teeth product to a corresponding discounted price
+            return relevantTeethProducts.map((teeth: any, index: number) => {
+              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
+              const discountedPrice =
+                relevantDiscounts[index % relevantDiscounts.length] || null;
+              console.log(lab, "lab");
+              return {
+                ...product,
+                discounted_price: discountedPrice,
+                teethProduct: teeth,
+              };
+            });
+          });
+
+          setCaseDetail({
+            ...(caseData as any),
+            products: productsWithDiscounts,
+            labDetail: lab,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching case data:", error);
+      toast.error("Failed to load case details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!activeCaseId) {
+      setError("No case ID provided");
+      setLoading(false);
+      return;
+    }
+
+    if (activeCaseId) {
+      fetchCaseData();
+    }
+  }, [activeCaseId]);
+
+  const handleCompleteStage = async (stageName: string) => {
+    console.log(`Completing stage: ${stageName}`);
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    console.log(`Uploading photo: ${file.name}`);
+  };
+
+  const handlePrint = (type: string) => {
+    if (!caseDetail) return;
+
+    // Create the preview URL with state encoded in base64
+    const previewState = {
+      type,
+      paperSize: selectedPaperSize,
+      caseData: {
+        id: caseDetail.id,
+        patient_name: caseDetail.patient_name,
+        case_number: caseDetail.case_number,
+        qr_code: `https://app.labulous.com/cases/${caseDetail.id}`,
+        client: caseDetail.client,
+        doctor: caseDetail.doctor,
+        created_at: caseDetail.created_at,
+        due_date: caseDetail.due_date,
+        tag: caseDetail.tag,
+      },
+      caseDetails: [caseDetail],
+    };
+
+    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
+    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    window.open(previewUrl, "_blank");
+  };
+
+  const handleDownloadFile = async (fileUrl: string) => {
+    try {
+      // If it's already a full URL, fetch it directly
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to fetch file");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      // Extract filename from path
+      const filename = fileUrl.split("/").pop()?.split("?")[0] || "download";
+      // Decode the filename to handle special characters
+      a.download = decodeURIComponent(filename);
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("Error downloading file");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mb-4"></div>
+          <p className="text-gray-600">Loading case details...</p>
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center bg-red-50 p-6 rounded-lg">
+          <div className="text-red-600 text-xl mb-2">Error</div>
+          <p className="text-gray-700">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!caseDetail) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">No case details found</p>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreateNewWorkStation = () => {
+    setSelectedFiles([]);
+    const newCreateStep = {
+      date: new Date().toISOString(),
+      technician: {
+        name: user?.role === "technician" ? user.name : "",
+        id: "",
+      },
+      isNew: true,
+      status: workstationForm.status as
+        | "in_progress"
+        | "completed"
+        | "issue_reported",
+      notes: workstationForm.started_notes,
+    };
+
+    setStepData((steps) => [...steps, newCreateStep]);
+  };
+
+  const handleSubmitWorkstation = async () => {
+    // Validation for required fields
+    if (
+      !workstationForm.case_id ||
+      !workstationForm.status ||
+      !workstationForm.technician_id ||
+      !workstationForm.created_by ||
+      !workstationForm.workstation_type_id ||
+      !workstationForm.started_notes
+    ) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    const updateDueDate = () => {
+      const currentDate = new Date(); // Get the current date
+
+      const nextMonthDate = new Date(
+        currentDate.getFullYear(),
+        currentDate.getMonth() + 1,
+        currentDate.getDate()
+      );
+
+      const formattedDate =
+        nextMonthDate.toISOString().replace("T", " ").split(".")[0] + "+00";
+
+      return formattedDate;
+    };
+
+    // Create the dataToFeed object
+    const dataToFeed = {
+      case_id: workstationForm.case_id,
+      lab_id: lab?.id, // labId is optional but should be checked if necessary
+      status: workstationForm.status,
+      started_notes: workstationForm.started_notes, // notes can be empty
+      technician_id: workstationForm.technician_id,
+      created_by: workstationForm.created_by,
+      started_at: new Date().toISOString(), // Valid timestamp
+      workstation_type_id:
+        workstationForm.workstation_type_id === "custom-id"
+          ? null
+          : workstationForm.workstation_type_id,
+      custom_workstation_type: workstationForm.custom_workstation_type
+        ? workstationForm.custom_workstation_type
+        : null, // Optional field
+      attachements: selectedFiles.map((item) => item.url),
+    };
+    setWorkstationLoading(true);
+    try {
+      const { data: insertWorkstation, error: insertError } = await supabase
+        .from("workstation_log")
+        .insert(dataToFeed)
+        .select("*");
+
+      if (insertError) {
+        toast.error("Failed to Insert New Workstation!");
+        setWorkstationLoading(false);
+      } else {
+        toast.success("Workstation inserted successfully!");
+
+        const { error: updateError } = await supabase
+          .from("cases")
+          .update({ status: "in_progress" })
+          .eq("id", activeCaseId);
+
+        if (updateError) {
+          toast.error(
+            "Workstation has been created but failed to update the case"
+          );
+        }
+        const { error: updateInvoiceError } = await supabase
+          .from("invoices")
+          .update({ due_date: updateDueDate() })
+          .eq("case_id", caseDetail.id);
+
+        if (updateInvoiceError) {
+          toast.error(
+            "Workstation has been created but failed to update the case"
+          );
+        }
+        toast.success("Updated case Successfully!");
+        setWorkStationForm({
+          created_by: user?.id as string,
+          technician_id: user?.role === "technician" ? user.id : "",
+          custom_workstation_type: "",
+          status: "in_progress",
+          started_notes: "",
+          started_at: "",
+          completed_at: "",
+          issue_reported_at: "",
+          workstation_type_id: "",
+          case_id: activeCaseId as string,
+        });
+        setStepData((prev) => prev.filter((item) => !item.isNew));
+        getWorkStationDetails(caseDetail.created_at);
+        fetchCaseData(true);
+        setWorkstationLoading(false);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred.");
+      setWorkstationLoading(false);
+    }
+  };
+
+  const handleUpdateCaseStatus = async (status: string) => {
+    if (status === "on_hold" && !onHoldReason) {
+      toast.error("Please Provide the Reason For Holding a case");
+      return;
+    }
+    try {
+      // Update the case status in the database
+      const updateData = {
+        status: status,
+      };
+      const updateDataWithNotes = {
+        status: status,
+        onhold_notes: onHoldReason,
+      };
+
+      const { error: updateError } = await supabase
+        .from("cases")
+        .update(status === "on_hold" ? updateDataWithNotes : updateData)
+        .eq("id", activeCaseId);
+
+      if (updateError) {
+        console.error("Error updating case status:", updateError);
+        toast.error("Failed to Update the case Status");
+        return;
+      }
+
+      if (status === "on_hold") {
+        const workstationsToOnHold = stepsData.filter(
+          (item) =>
+            item.technician?.name !== "System" && item.status !== "completed"
+        );
+
+        try {
+          const updatePromises = workstationsToOnHold.map(async (item) => {
+            const { error: updateError } = await supabase
+              .from("workstation_log")
+              .update({ status: "on_hold" })
+              .eq("id", item.id);
+
+            if (updateError) {
+              console.error(
+                `Error updating workstation log for ID ${item.id}:`,
+                updateError
+              );
+            }
+          });
+
+          await Promise.all(updatePromises);
+
+          const { error: updateCaseError } = await supabase
+            .from("cases")
+            .update({ isDueDateTBD: true })
+            .eq("id", caseDetail.id);
+
+          if (updateCaseError) {
+            console.error(
+              `Error updating case  isDueDateTBD:`,
+              updateCaseError
+            );
+          }
+
+          setOnHoldModal(false);
+        } catch (err) {
+          console.error("Error updating workstations to on_hold:", err);
+          toast.error("Failed to update workstations to on hold");
+        }
+      }
+
+      fetchCaseData();
+      toast.success("Case Updated Successfully.");
+    } catch (err) {
+      console.error("Error in handleUpdateCaseStatus:", err);
+      toast.error("Failed to Update the case Status");
+    }
+  };
+
+  const handleCaseComplete = () => {
+    const isWorkstationCompleted = stepsData.every((item) => {
+      if (item?.technician?.name === "System" && item.isNew === true) {
+        return true;
+      }
+      if (item?.technician?.name === "System") {
+        return item.status === "completed";
+      }
+      return item.status === "completed";
+    });
+
+    console.log("isWorkstationCompleted:", isWorkstationCompleted);
+
+    if (stepsData && stepsData.length === 1) {
+      console.log("System step count is 1, returning false");
+      return toast.error("Workstation steps have not been created yet.");
+    }
+
+    if (isWorkstationCompleted) {
+      console.log("Workstation is completed. Proceeding with status update.");
+
+      handleUpdateCaseStatus("completed");
+    } else {
+      toast.error("Please Complete the Workstations First.");
+    }
+  };
+
+  const handleBackClick = () => {
+    safeNavigate("/cases");
+  };
+
+  const handleEditClick = () => {
+    safeNavigate(`/cases/update?caseId=${activeCaseId}`);
+  };
+  const handleCloseEditModal = () => {
+    setTimeout(() => {
+      setEditingInvoice(null);
+    }, 0);
+  };
+
+  const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
+    console.log(updatedInvoice, "updated Invoices");
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+
+      const { data: updatedCaseProducts, error: updateCaseProductsError } =
+        await supabase
+          .from("case_products")
+          .update({ products_id: updatedProductIds })
+          .eq("case_id", updatedInvoice.id)
+          .select();
+
+      if (updateCaseProductsError) {
+        throw new Error(updateCaseProductsError.message);
+      }
+      console.log(updatedCaseProducts, "updatedCaseProducts");
+      for (const item of updatedInvoice?.items || []) {
+        try {
+          // Calculate the final price based on the quantity, unit price, and discount
+          const finalPrice =
+            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+
+          if (item.discountId && item.caseProductTeethId) {
+            // Update the discounted_price table
+            const { data: updatedDiscount, error: updateDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .update({
+                  discount: item.discount,
+                  quantity: item.quantity || 1,
+                  price: item.unitPrice,
+                  final_price: finalPrice,
+                })
+                .eq("id", item.discountId)
+                .select();
+
+            if (updateDiscountError) {
+              throw new Error(updateDiscountError.message);
+            }
+
+            // Update the case_product_teeth table
+            const { data: updateTeeth, error: updateTeethError } =
+              await supabase
+                .from("case_product_teeth")
+                .update({
+                  tooth_number: [item.toothNumber],
+                })
+                .eq("id", item.caseProductTeethId)
+                .select("*");
+
+            console.log("Updated discount row:", updatedDiscount);
+            console.log("Updated teeth row:", updateTeeth);
+          } else {
+            // Create a new discounted_price row
+            const { data: newDiscount, error: newDiscountError } =
+              await supabase
+                .from("discounted_price")
+                .insert([
+                  {
+                    discount: item.discount,
+                    quantity: item.quantity,
+                    price: item.unitPrice,
+                    final_price: finalPrice,
+                    product_id: item.id,
+                    case_id: updatedInvoice.id,
+                    user_id: user?.id,
+                  },
+                ])
+                .select();
+
+            if (newDiscountError) {
+              throw new Error(newDiscountError.message);
+            }
+
+            console.log("Created new discount row:", newDiscount);
+
+            // Create a new case_product_teeth row
+            const { data: newTeeth, error: newTeethError } = await supabase
+              .from("case_product_teeth")
+              .insert([
+                {
+                  tooth_number: [Number(item.toothNumber)],
+                  product_id: item.id, // Ensure to include the product_id
+                  case_id: updatedInvoice.id,
+                  lab_id: lab?.id,
+                  case_product_id: updatedCaseProducts[0].id,
+                },
+              ])
+              .select("*");
+
+            if (newTeethError) {
+              throw new Error(newTeethError.message);
+            }
+
+            console.log("Created new teeth row:", newTeeth);
+          }
+
+          await updateBalanceTracking();
+        } catch (error) {
+          console.error(
+            `Error processing item with productId ${item.id}:`,
+            error
+          );
+          // Optionally, continue with the next item instead of throwing
+        }
+      }
+
+      const { error: updateCasesError } = await supabase
+        .from("cases")
+        .update({
+          invoice_notes: updatedInvoice?.notes?.invoiceNotes,
+        })
+        .eq("id", updatedInvoice.id);
+
+      if (updateCasesError) {
+        throw new Error(updateCasesError.message);
+      }
+
+      const { error: updateInvoicesError } = await supabase
+        .from("invoices")
+        .update({
+          amount: updatedInvoice.totalAmount,
+          due_amount: updatedInvoice.totalAmount,
+        })
+        .eq("case_id", updatedInvoice.id);
+
+      if (updateInvoicesError) {
+        throw new Error(updateInvoicesError.message);
+      }
+
+      toast.success("Invoice and related data updated successfully");
+
+      handleCloseEditModal();
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      toast.error("Failed to update invoice");
+    } finally {
+      setLoadingState({ isLoading: false, action: null });
+      fetchCaseData(true);
+    }
+  };
+  const handleOpenEditModal = (
+    invoice: ExtendedCase,
+    mode: "edit" | "payment" = "edit"
+  ) => {
+    setTimeout(() => {
+      setEditingInvoice(invoice);
+    }, 0);
+  };
+
+  console.log(caseDetail, "CaseDetails");
+  return (
+    <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
+      <div className="w-full bg-white border-b border-gray-200">
+        <div className="w-full px-16 py-6">
+          <div className="flex justify-between items-start">
+            <div className="flex items-start space-x-6">
+              <div className="p-2 bg-white rounded-lg border border-gray-200">
+                <QRCodeSVG
+                  value={`/${location.pathname}`}
+                  size={64}
+                  level="H"
+                  includeMargin={true}
+                />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight mb-4">
+                  {caseDetail.patient_name
+                    ? caseDetail.patient_name
+                    : "Unknown Patient"}
+                </h1>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Case #:</span>
+                    <span className="text-sm font-medium text-primary">
+                      {caseDetail?.case_number || "N/A"}
+                    </span>
+                  </div>
+                  <Separator orientation="vertical" className="h-4" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">INV #:</span>
+                    {caseDetail.is_approved ? (
+                        <div
+                        className="text-sm font-medium text-primary cursor-pointer"
+                        onClick={() => setIsPreviewModalOpen(true)}
+                      >
+                        {caseDetail?.invoice.length > 0
+                          ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                          : "N/A"}
+                      </div>
+                    ) : (
+                      <div className="text-sm font-medium">
+                        TBA
+                      </div>
+                    )}
+                    
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <Badge
+                          className={cn(
+                            "bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit",
+                            {
+                              "bg-neutral-500 text-neutral-500 hover:bg-neutral-500":
+                                caseDetail.status === "in_queue",
+                              "bg-blue-500 text-blue-500 hover:bg-blue-500":
+                                caseDetail.status === "in_progress",
+                              "bg-yellow-500 text-yellow-500 hover:bg-yellow-500":
+                                caseDetail.status === "on_hold",
+                              "bg-green-500 text-green-500 hover:bg-green-500":
+                                caseDetail.status === "completed",
+                              "bg-red-500 text-red-500 hover:bg-red-500":
+                                caseDetail.status === "cancelled",
+                            }
+                          )}
+                        >
+                          {caseDetail.status.toLowerCase().replace(/_/g, " ")}
+                        </Badge>
+                        {caseDetail.is_approved ? (
+                            <Badge className="bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit bg-green-500 text-green-500 hover:bg-green-500">Approved</Badge>
+                        ) : (
+                            <Badge className="bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit bg-red-500 text-red-500 hover:bg-red-500">Pending</Badge>
+                        )}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {
+                            CASE_STATUS_DESCRIPTIONS[
+                              caseDetail.status as CaseStatus
+                            ]
+                          }
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end space-y-6">
+              <div className="flex items-center space-x-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <Printer className="mr-2 h-4 w-4" />
+                      Print
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger>
+                        Paper Size
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LETTER")}
+                        >
+                          Letter (8.5 x 11")
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("LEGAL")}
+                        >
+                          Legal (8.5 x 14")
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onSelect={() => setSelectedPaperSize("HALF")}
+                        >
+                          Half (5.5 x 8.5")
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => handlePrint("lab-slip")}>
+                      Lab Slip
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <MoreHorizontal className="mr-2 h-4 w-4" />
+                      Actions
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={handleEditClick}>
+                      Edit Case
+                    </DropdownMenuItem>
+                    {/* <DropdownMenuItem
+                      onClick={() => {
+                        if (caseDetail.status === "completed") {
+                          toast.error("Case is Already Completed.");
+                        } else {
+                          setOnHoldModal(true);
+                        }
+                      }}
+                    >
+                      On Hold
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        if (caseDetail.status === "completed") {
+                          toast.error("Case is Already Completed.");
+                        } else {
+                          setOnCancelModal(true);
+                        }
+                      }}
+                    >
+                      Cancel Case
+                    </DropdownMenuItem> */}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Received Date</span>
+                  <span className="text-xs font-medium">
+                    {formatDate(caseDetail.created_at)}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Due Date</span>
+                  <span className="text-xs font-medium">
+                    {caseDetail.isDueDateTBD
+                      ? "TBD"
+                      : formatDate(caseDetail.due_date)}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Ship Date</span>
+                  <span className="text-xs font-medium">
+                    {caseDetail.ship_date
+                      ? formatDate(caseDetail.ship_date)
+                      : "Not Shipped"}
+                  </span>
+                </div>
+                <Separator orientation="vertical" className="h-6" />
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500">Appointment</span>
+                  <span className="text-xs font-medium">
+                    {caseDetail.isDueDateTBD
+                      ? "TBD"
+                      : formatDateWithTime(caseDetail.appointment_date)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <CircleDot className="mr-2" size={20} /> Case Progress
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                {stepsData.length > 0 && (
+                  <ClientCaseProgress
+                    steps={stepsData}
+                    caseDetail={caseDetail}
+                    handleNewWorkstation={handleCreateNewWorkStation}
+                    workstationForm={workstationForm}
+                    setWorkStationForm={setWorkStationForm}
+                    workStationTypes={workStationTypes}
+                    handleSubmitWorkstation={handleSubmitWorkstation}
+                    setSteps={setStepData}
+                    isLoading={workstationLoading}
+                    setLoading={setWorkstationLoading}
+                    getWorkStationDetails={getWorkStationDetails}
+                    caseId={activeCaseId as string}
+                    caseCreatedAt={caseDetail.created_at}
+                    selectedFiles={selectedFiles}
+                    setSelectedFiles={setSelectedFiles}
+                  />
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <Package className="mr-2" size={20} /> Case Items
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Type
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Material/Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Shade
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Notes
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail.products?.map((product, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            <span
+                              className="px-2 py-1 rounded text-white"
+                              style={{
+                                backgroundColor:
+                                  TYPE_COLORS[
+                                    product?.product_type
+                                      ?.name as keyof typeof TYPE_COLORS
+                                  ] || TYPE_COLORS.Other,
+                              }}
+                            >
+                              {product?.product_type?.name ?? "Null"}
+                            </span>
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product?.teethProduct?.tooth_number.length >= 1
+                              ? formatTeethRange(
+                                  product.teethProduct.tooth_number
+                                )
+                              : null}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product.material?.name || "-"}
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            <div className="space-y-1">
+                              {product?.teethProduct?.occlusal_shade?.name ||
+                              product?.teethProduct?.custom_occlusal_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Occlusal:
+                                    </span>
+                                    <div className="flex gap-2">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_occlusal_shade ||
+                                          product?.teethProduct?.occlusal_shade
+                                            ?.name}
+                                      </p>{" "}
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
+                                        {product?.teethProduct
+                                          ?.custom_occlusal_shade || ""}{" "}
+                                        {"(custom)"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
+                              {/* Body shade */}
+                              {product?.teethProduct?.body_shade?.name ||
+                              product?.teethProduct?.custom_body_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">Body:</span>
+                                    <div className="flex gap-2">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_body_shade ||
+                                          product?.teethProduct?.body_shade
+                                            ?.name}
+                                      </p>{" "}
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
+                                        {product?.teethProduct
+                                          ?.custom_body_shade || ""}{" "}
+                                        {"(custom)"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Gingival shade */}
+                              {product?.teethProduct?.gingival_shade?.name ||
+                              product?.teethProduct?.custom_gingival_shade ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Gingival:
+                                    </span>
+                                    <div className="flex gap-2">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                          product?.teethProduct?.gingival_shade
+                                            ?.name}
+                                      </p>
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
+                                        {product?.teethProduct
+                                          ?.custom_gingival_shade || ""}{" "}
+                                        {"custom"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
+
+                              {/* Stump shade */}
+                              {product?.teethProduct?.custom_stump_shade ||
+                              product?.teethProduct?.stump_shade_id ? (
+                                <p>
+                                  <div className="flex gap-2">
+                                    <span className="text-gray-500">
+                                      Stump:
+                                    </span>
+                                    <div className="flex gap-2">
+                                      <p>
+                                        {product?.teethProduct
+                                          ?.manual_stump_shade ||
+                                          product?.teethProduct?.stump_shade_id
+                                            ?.name}
+                                      </p>{" "}
+                                      <p
+                                        className="font-semibold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
+                                              product?.product_type
+                                                ?.name as keyof typeof TYPE_COLORS
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
+                                        {product?.teethProduct
+                                          ?.custom_stump_shade || ""}{" "}
+                                        {"(custom)"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </p>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                            {product.teethProduct?.notes ? (
+                              <div className="max-w-xs">
+                                <p className="text-gray-600 line-clamp-2">
+                                  {product.teethProduct?.notes}
+                                </p>
+                                {product.teethProduct?.notes.length > 100 && (
+                                  <HoverCard>
+                                    <HoverCardTrigger asChild>
+                                      <Button
+                                        variant="link"
+                                        className="h-auto p-0 text-xs text-blue-500 hover:text-blue-600"
+                                      >
+                                        Show more
+                                      </Button>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent
+                                      className="w-80 p-4"
+                                      align="start"
+                                      side="left"
+                                    >
+                                      <div className="space-y-2">
+                                        <p className="font-medium text-sm">
+                                          Product Notes
+                                        </p>
+                                        <p className="text-sm text-gray-600">
+                                          {product.notes}
+                                        </p>
+                                      </div>
+                                    </HoverCardContent>
+                                  </HoverCard>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex justify-center items-center w-full">
+                  <div className="flex flex-col w-full">
+                    <CardTitle className=" text-xl flex items-center">
+                      <FileText className="mr-2" size={20} /> Invoice
+                    </CardTitle>
+                    {caseDetail.is_approved && (
+                        <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm text-gray-500">INV #:</span>
+                        <div
+                            className="text-sm font-medium text-primary cursor-pointer"
+                            onClick={() => setIsPreviewModalOpen(true)}
+                        >
+                            {caseDetail?.invoice.length > 0
+                            ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                            : "N/A"}
+                        </div>
+                        </div>
+                    )}
+                  </div>
+                  <div>
+                  {caseDetail.is_approved && (
+                    <Button
+                      variant={"default"}
+                      onClick={() => handleOpenEditModal(caseDetail, "edit")}
+                    >
+                      Edit Invoice
+                    </Button>
+                  )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+              {caseDetail.is_approved ? (
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Billing Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Quantity
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Discount
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Final Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Subtotal
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail?.products &&
+                        caseDetail?.products?.map((product, index) => {
+                          const price = product?.discounted_price?.price || 0;
+                          const discount =
+                            product?.discounted_price?.discount || 0;
+                          const finalPrice =
+                            product?.discounted_price?.final_price || price;
+                          const quantity =
+                            product?.discounted_price.quantity || 1;
+                          const subtotal = finalPrice * quantity;
+
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.teethProduct.tooth_number?.length > 1
+                                  ? formatTeethRange(
+                                      product.teethProduct?.tooth_number
+                                    )
+                                  : product.teethProduct?.tooth_number[0]}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.name || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product?.discounted_price?.quantity || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                ${product?.discounted_price?.price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {discount > 0 ? (
+                                  <span className="text-green-600">
+                                    {product?.discounted_price?.discount}%
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${product?.discounted_price?.final_price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${subtotal.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
+
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
+                        <TableCell className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableCell>
+                        <TableCell
+                          colSpan={9}
+                          className="text-xs py-2 pl-4 pr-0 text-right"
+                        >
+                          Total:
+                        </TableCell>
+                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                          $
+                          {caseDetail.products
+                            ?.reduce((total, product) => {
+                              const finalPrice =
+                                product.discounted_price?.final_price ||
+                                product.price ||
+                                0;
+                              return total + finalPrice;
+                            }, 0)
+                            .toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="bg-white">To be announced</div>
+              )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <Package className="mr-2" size={20} /> Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {caseDetail?.custom_occlusal_details ? (
+                    <div>
+                      <p className="text-gray-600">Occlusal Details</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_occlusal_details}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {caseDetail.custom_contact_details ? (
+                    <div>
+                      <p className="text-gray-600">Contact Type</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_contact_details}
+                      </p>
+                    </div>
+                  ) : null}
+                  <div className="mb-4">
+                    <p className="text-gray-600">Instruction Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.instruction_notes || "No Instruction notes"}
+                    </p>
+                  </div>
+                  <div className="mb-4">
+                    <p className="text-gray-600">Invoice Notes</p>
+                    <p className="font-medium">
+                      {caseDetail?.invoice_notes || "No Invoice notes"}
+                    </p>
+                  </div>
+
+                  {caseDetail.custom_pontic_details ? (
+                    <div>
+                      <p className="text-gray-600">Contact Type</p>
+                      <p className="font-medium">
+                        {caseDetail.custom_pontic_details}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+
+                {caseDetail.teethProduct?.map(
+                  (
+                    product: {
+                      tooth_number: number[];
+                      body_shade?: { name: string };
+                      gingival_shade?: { name: string };
+                      occlusal_shade?: { name: string };
+                      stump_shade_id?: { name: string };
+                    },
+                    index: number
+                  ) => (
+                    <div
+                      key={index}
+                      className="border-b last:border-b-0 pb-4 mb-4"
+                    >
+                      <div>
+                        <h3 className="text-lg font-medium mb-2 flex items-center">
+                          <CircleDot className="mr-2" size={16} /> Selected
+                          Teeth
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                          <div className="bg-gray-50 p-3 rounded">
+                            <p className="font-medium mb-2">
+                              Tooth #
+                              {product.tooth_number.length > 1
+                                ? product.tooth_number
+                                    .map((i) => `${i}`)
+                                    .join(", ")
+                                : product.tooth_number[0]}
+                            </p>
+                            <div className="text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Body Shade:
+                                </span>
+                                <span>{product.body_shade?.name || "N/A"}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Gingival Shade:
+                                </span>
+                                <span>
+                                  {product.gingival_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Occlusal Shade:
+                                </span>
+                                <span>
+                                  {product.occlusal_shade?.name || "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 capitalize">
+                                  Stump Shade:
+                                </span>
+                                <span>
+                                  {product.stump_shade_id?.name || "N/A"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-3">
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" defaultValue="doctor-info" collapsible>
+                  <AccordionItem value="doctor-info" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        <span className="font-semibold">
+                          Doctor Information
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Client Name</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.client?.client_name ||
+                              "Unknown Clinic"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Doctor Name</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.name || "Unknown Doctor"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Phone Number</p>
+                          <p className="font-medium">
+                            {caseDetail.doctor?.client?.phone || "Not provided"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion
+                  type="single"
+                  defaultValue="instructions"
+                  collapsible
+                >
+                  <AccordionItem value="instructions" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Instructions</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Occlusal Type
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.occlusal_type
+                                ? caseDetail?.occlusal_type
+                                : caseDetail.custom_occulusal_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Contact Type
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.contact_type
+                                ? caseDetail?.contact_type
+                                : caseDetail?.custom_contact_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Pontic Type</p>
+                            <p className="font-medium">
+                              {caseDetail?.pontic_type
+                                ? caseDetail?.pontic_type
+                                : caseDetail?.custom_pontic_details ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                        </div>{" "}
+                        <div className="space-y-4">
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Margin Design
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.margin_design_type
+                                ? caseDetail?.margin_design_type
+                                : caseDetail?.custom_margin_design_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">
+                              Occlusal Design
+                            </p>
+                            <p className="font-medium">
+                              {caseDetail?.occlusion_design_type
+                                ? caseDetail?.occlusion_design_type
+                                : caseDetail?.custom_occlusion_design_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Alloy</p>
+                            <p className="font-medium">
+                              {caseDetail?.alloy_type
+                                ? caseDetail?.alloy_type
+                                : caseDetail?.custon_alloy_type ||
+                                  "Not specified"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="notes" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <span className="font-semibold">Case Notes</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Instruction Notes
+                          </p>
+                          <p className="font-medium">
+                            {caseDetail.instruction_notes ||
+                              "No Instruction notes"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">
+                            Invoices Notes
+                          </p>
+                          <p className="font-medium">
+                            {caseDetail?.invoice_notes || "No Invoices notes"}
+                          </p>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="enclosed" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Enclosed Items</span>
+                          <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
+                            {Object.values(
+                              caseDetail.enclosed_items || {}
+                            ).reduce((sum, value) => {
+                              return typeof value === "number"
+                                ? Number(sum) + value
+                                : sum;
+                            }, 0)}
+                          </span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        {[
+                          { key: "impression", label: "Impression" },
+                          {
+                            key: "biteRegistration",
+                            label: "Bite Registration",
+                          },
+                          { key: "photos", label: "Photos" },
+                          { key: "jig", label: "Jig" },
+                          { key: "opposingModel", label: "Opposing Model" },
+                          { key: "articulator", label: "Articulator" },
+                          {
+                            key: "returnArticulator",
+                            label: "Return Articulator",
+                          },
+                          { key: "cadcamFiles", label: "CAD/CAM Files" },
+                          {
+                            key: "consultRequested",
+                            label: "Consult Requested",
+                          },
+                        ].map((item) => (
+                          <div
+                            key={item.key}
+                            className="flex items-center gap-2"
+                          >
+                            {caseDetail?.enclosed_items?.[
+                              item.key as keyof typeof caseDetail.enclosed_items
+                            ] ? (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <X className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className="text-sm">
+                              {item.label}:{" "}
+                              {caseDetail?.enclosed_items?.[
+                                item.key as keyof typeof caseDetail.enclosed_items
+                              ] || "Not Provided"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="my-4">
+                        <p className="text-gray-600">Other Items Note</p>
+                        <p className="font-medium">
+                          {caseDetail?.otherItems || "No notes"}
+                        </p>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="py-2 px-3">
+                <Accordion type="single" collapsible>
+                  <AccordionItem value="attachments" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5" />
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Attachments</span>
+                          <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-1 text-xs font-medium text-gray-50">
+                            {caseDetail?.attachements?.length ?? 0}
+                          </span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-4">
+                      <p className="text-sm text-gray-500">Files and photos</p>
+
+                      <div className="flex flex-col gap-2">
+                        {caseDetail?.attachements?.map((file, index) => {
+                          const fileName = decodeURIComponent(
+                            file.split("/").pop()?.split("?")[0] || ""
+                          );
+                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                            fileName
+                          );
+
+                          return (
+                            <div
+                              key={index}
+                              className="border rounded-lg p-4 space-y-2"
+                            >
+                              {isImage ? (
+                                <div
+                                  className="relative aspect-video w-full overflow-hidden rounded-md"
+                                  onClick={() => {
+                                    setIsFilePreview(true);
+                                    setFiles((files) => {
+                                      const filteredFiles = files.filter(
+                                        (f) => f !== file
+                                      );
+
+                                      return [file, ...filteredFiles];
+                                    });
+                                  }}
+                                >
+                                  <img
+                                    src={file}
+                                    alt={fileName}
+                                    className="object-contain w-full h-full"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-gray-500">
+                                  <FileText className="h-8 w-8" />
+                                  <span className="text-sm">{fileName}</span>
+                                </div>
+                              )}
+
+                              <div className="flex justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownloadFile(file)}
+                                  className="gap-2"
+                                >
+                                  Download
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {(!caseDetail?.attachements ||
+                          caseDetail.attachements.length === 0) && (
+                          <p className="text-sm text-gray-500">
+                            No attachments found
+                          </p>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+      {/* Invoice Preview Modal */}
+      {isPreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setIsLoadingPreview(false);
+          }}
+          formData={{
+            clientId: caseDetail.client?.id,
+            items: caseDetail.invoice?.[0]?.items || [],
+            discount: caseDetail.invoice?.[0]?.discount || 0,
+            discountType:
+              caseDetail.invoice?.[0]?.discount_type || "percentage",
+            tax: caseDetail.invoice?.[0]?.tax || 0,
+            notes: caseDetail.invoice?.[0]?.notes || "",
+          }}
+          caseDetails={[caseDetail]}
+        />
+      )}
+      {activePrintType && caseDetail && (
+        <PrintHandler
+          type={activePrintType as any}
+          paperSize={selectedPaperSize}
+          caseData={{
+            id: caseDetail.id,
+            patient_name: caseDetail.patient_name,
+            case_number: caseDetail.case_number,
+            qr_code: `https://app.labulous.com/cases/${caseDetail.id}`,
+            client: caseDetail.client,
+            doctor: caseDetail.doctor,
+            created_at: caseDetail.created_at,
+            due_date: caseDetail.due_date,
+            // tag: caseDetail.tag,
+          }}
+          onComplete={() => setActivePrintType(null)}
+        />
+      )}
+
+      {onHoldModal && (
+        <OnHoldModal
+          onClose={() => setOnHoldModal(false)}
+          onHoldReason={onHoldReason}
+          setOnHoldReason={setOnHoldReason}
+          handleUpdateCaseStatus={() => handleUpdateCaseStatus("on_hold")}
+        />
+      )}
+      {onCancelModal && (
+        <OnCancelModal
+          onClose={() => setOnCancelModal(false)}
+          caseId={caseDetail.id}
+          workstations={stepsData}
+          fetchCaseData={fetchCaseData}
+        />
+      )}
+      {isScheduleModal && (
+        <ScheduleDelivery onClose={() => setIsScheduleModal(false)} />
+      )}
+
+      {/* {invoicePreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={invoicePreviewModalOpen}
+          onClose={() => setInvoicePreviewModalOpen(false)}
+        />
+      )} */}
+
+      {editingInvoice && (
+        <EditInvoiceModal
+          invoice={editingInvoice as any}
+          mode={"edit"}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveInvoice}
+        />
+      )}
+      {isFilePreview && (
+        <FilePreview files={files} onClose={() => setIsFilePreview(false)} />
+      )}
+    </div>
+  );
+};
+
+export default ClientCaseDetails;
