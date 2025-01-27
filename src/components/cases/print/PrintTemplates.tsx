@@ -544,7 +544,10 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                               item?.teethProduct
                                                 ?.custom_body_shade
                                             }{" "}
-                                            (custom)
+                                            {item?.teethProduct
+                                              ?.custom_body_shade
+                                              ? "(cus)"
+                                              : ""}
                                           </span>
                                         )}
                                       </span>
