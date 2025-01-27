@@ -1172,8 +1172,7 @@ const CaseList: React.FC = () => {
             return dueDateUTC < todayUTC && caseItem.status !== "completed";
           case "due_today":
             return (
-              isDueToday(caseItem.due_date) &&
-              caseItem.status !== "completed"
+              isDueToday(caseItem.due_date) && caseItem.status !== "completed"
             );
           case "due_tomorrow":
             return (
