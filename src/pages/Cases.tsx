@@ -9,6 +9,7 @@ import UpdateCase from "./cases/updateCase";
 import { useAuth } from "../contexts/AuthContext";
 import ClientCaseDetails from "@/components/cases/ClientCaseDetails";
 import ClientUpdateCase from "./cases/ClientUpdateCase";
+import ClientCaseList from "@/components/cases/ClientCaseList";
 
 const Cases: React.FC = () => {
   const { user } = useAuth();
@@ -16,7 +17,10 @@ const Cases: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Routes>
-        <Route index element={<CaseList />} />
+        <Route
+          index
+          element={user?.role === "client" ? <ClientCaseList /> : <CaseList />}
+        />
         <Route
           path="new"
           element={user?.role === "client" ? <ClientNewCase /> : <NewCase />}
