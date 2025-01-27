@@ -6,6 +6,7 @@ import { LoadingState } from "@/pages/cases/NewCase";
 import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
+import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -247,10 +248,18 @@ const saveCaseProduct = async (
 const saveCases = async (
   cases: any,
   navigate?: any,
-  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  identifier?: string
 ) => {
   try {
     // Step 1: Save enclosed case details
+    const caseCount = await fetchCaseCount(cases.overview.lab_id); // Fetch current case count
+
+    if (typeof caseCount !== "number") {
+      toast.error("Unable to get Case Number");
+      setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+      return;
+    }
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,
       biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -275,11 +284,15 @@ const saveCases = async (
     }
 
     const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+    const sequentialNumber = String(caseCount + 1).padStart(5, "0");
 
-    // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    const case_number = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
+      case_number,
     };
 
     const { data, error } = await supabase
@@ -728,10 +741,11 @@ export const getCaseById = (id: string): Case | undefined => {
 export const addCase = (
   newCase: Case,
   navigate?: any,
-  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  identifier?: string
 ): void => {
   cases = [newCase];
-  saveCases(newCase, navigate, setLoadingState);
+  saveCases(newCase, navigate, setLoadingState, identifier);
 };
 
 // Function to update a case
