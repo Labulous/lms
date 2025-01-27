@@ -1846,6 +1846,184 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
             <Card>
               <CardHeader>
+                <CardTitle className="flex items-center text-xl">
+                  <FileText className="mr-2" size={20} /> Invoice
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-2 px-3">
+                <div className="border rounded-lg bg-white">
+                  <Table>
+                    <TableHeader className="bg-slate-100 border-b border-slate-200">
+                      <TableRow>
+                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                          Tooth
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                          Billing Item
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Quantity
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Discount
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Final Price
+                        </TableHead>
+                        <TableHead className="w-[1px] p-0">
+                          <Separator
+                            orientation="vertical"
+                            className="h-full"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                          Subtotal
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {caseDetail?.products &&
+                        caseDetail?.products?.map((product, index) => {
+                          const price = product?.discounted_price?.price || 0;
+                          const discount =
+                            product?.discounted_price?.discount || 0;
+                          const finalPrice =
+                            product?.discounted_price?.final_price || price;
+                          const quantity =
+                            product?.discounted_price.quantity || 1;
+                          const subtotal = finalPrice * quantity;
+
+                          return (
+                            <TableRow key={index}>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.teethProduct.tooth_number?.length > 1
+                                  ? formatTeethRange(
+                                      product.teethProduct?.tooth_number
+                                    )
+                                  : product.teethProduct?.tooth_number[0]}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product.name || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {product?.discounted_price?.quantity || "-"}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                ${product?.discounted_price?.price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {discount > 0 ? (
+                                  <span className="text-green-600">
+                                    {product?.discounted_price?.discount}%
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${product?.discounted_price?.final_price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                ${subtotal.toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
+                        <TableCell
+                          colSpan={9}
+                          className="text-xs py-2 pl-4 pr-0 text-right"
+                        >
+                          Due Amount:
+                        </TableCell>
+                        <TableCell
+                          colSpan={3}
+                          className="text-xs py-2 pl-4 pr-0 font-medium"
+                        >
+                          ${caseDetail.invoice[0].due_amount}
+                        </TableCell>
+
+                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                          Total: ${caseDetail.invoice[0].amount}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <div className="flex justify-center items-center w-full">
                   <div className="flex flex-col w-full">
                     <CardTitle className=" text-xl flex items-center">
@@ -2311,10 +2489,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <p className="text-sm text-gray-500">
                             Instruction Notes
                           </p>
-                          <p className="font-medium">
-                            {caseDetail.instruction_notes ||
-                              "No Instruction notes"}
-                          </p>
+                          <div className="text-sm whitespace-pre-wrap break-words overflow-hidden border rounded p-3 bg-gray-50">
+                            {caseDetail.instruction_notes}
+                          </div>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">
