@@ -230,67 +230,65 @@ const NewCase: React.FC = () => {
       return;
     }
 
-    if (caseNumber) {
-      try {
-        setLoadingState({ isLoading: true, action: "save" });
-        const transformedData = {
-          ...formData,
-          status: formData.status.toLowerCase() as CaseStatus | string,
-        };
-        const newCase: any = {
-          overview: {
-            client_id: transformedData.clientId,
-            doctor_id: transformedData.doctorId || "",
-            created_by: user?.id || "",
-            patient_name:
-              transformedData.patientFirstName +
-              " " +
-              transformedData.patientLastName,
-            rx_number: "",
-            received_date: transformedData.orderDate,
-            status: transformedData.status || "in_queue",
-            due_date: transformedData.isDueDateTBD
-              ? null
-              : transformedData.dueDate,
-            isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate,
-            otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.notes?.instructionNotes,
-            invoice_notes: transformedData.notes?.invoiceNotes,
-            occlusal_type: transformedData.caseDetails?.occlusalType,
-            contact_type: transformedData.caseDetails?.contactType,
-            pontic_type: transformedData.caseDetails?.ponticType,
-            custom_contact_details: transformedData.caseDetails?.customContact,
-            custom_occulusal_details:
-              transformedData.caseDetails?.customOcclusal,
-            custom_pontic_details: transformedData.caseDetails?.customPontic,
-            lab_id: lab?.labId,
-            case_number: caseNumber,
-            attachements: selectedFiles.map((item) => item.url),
-            working_pan_name: transformedData.workingPanName,
-            working_pan_color: transformedData.workingPanColor,
-            working_tag_id: transformedData.workingTagName,
-            margin_design_type: transformedData.caseDetails?.marginDesign,
-            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
-            alloy_type: transformedData.caseDetails?.alloyType,
-            custom_margin_design_type:
-              transformedData.caseDetails?.customMargin,
-            custom_occlusion_design_type:
-              transformedData.caseDetails?.customOcclusalDesign,
-            custon_alloy_type: transformedData.caseDetails?.customAlloy,
-          },
-          products: selectedProducts,
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+      const transformedData = {
+        ...formData,
+        status: formData.status.toLowerCase() as CaseStatus | string,
+      };
+      const newCase: any = {
+        overview: {
+          client_id: transformedData.clientId,
+          doctor_id: transformedData.doctorId || "",
+          created_by: user?.id || "",
+          patient_name:
+            transformedData.patientFirstName +
+            " " +
+            transformedData.patientLastName,
+          rx_number: "",
+          received_date: transformedData.orderDate,
+          status: transformedData.status || "in_queue",
+          due_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.dueDate,
+          isDueDateTBD: transformedData.isDueDateTBD || false,
+          appointment_date: transformedData.appointmentDate,
+          otherItems: transformedData.otherItems || "",
+          instruction_notes: transformedData.notes?.instructionNotes,
+          invoice_notes: transformedData.notes?.invoiceNotes,
+          occlusal_type: transformedData.caseDetails?.occlusalType,
+          contact_type: transformedData.caseDetails?.contactType,
+          pontic_type: transformedData.caseDetails?.ponticType,
+          custom_contact_details: transformedData.caseDetails?.customContact,
+          custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+          custom_pontic_details: transformedData.caseDetails?.customPontic,
+          lab_id: lab?.labId,
+          attachements: selectedFiles.map((item) => item.url),
+          working_pan_name: transformedData.workingPanName,
+          working_pan_color: transformedData.workingPanColor,
+          working_tag_id: transformedData.workingTagName,
+          margin_design_type: transformedData.caseDetails?.marginDesign,
+          occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+          alloy_type: transformedData.caseDetails?.alloyType,
+          custom_margin_design_type: transformedData.caseDetails?.customMargin,
+          custom_occlusion_design_type:
+            transformedData.caseDetails?.customOcclusalDesign,
+          custon_alloy_type: transformedData.caseDetails?.customAlloy,
+        },
+        products: selectedProducts,
 
-          enclosedItems: transformedData.enclosedItems,
-        };
-        // Add case to database
-        await addCase(newCase, navigate, setLoadingState);
-      } catch (error) {
-        console.error("Error creating case:", error);
-        toast.error("Failed to create case");
-      }
-    } else {
-      toast.error("Unable to Create Case Number");
+        enclosedItems: transformedData.enclosedItems,
+      };
+      // Add case to database
+      await addCase(
+        newCase,
+        navigate,
+        setLoadingState,
+        lab?.name?.substring(0, 3).toUpperCase() as string
+      );
+    } catch (error) {
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     }
   };
   useEffect(() => {

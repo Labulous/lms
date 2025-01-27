@@ -25,7 +25,7 @@ import { supabase } from "../lib/supabase";
 
 export async function fetchCaseCount(labId: string) {
   const { count, error } = await supabase
-    .from("cases") // Replace with your table name
+    .from("case_number_tracker") // Replace with your table name
     .select("*", { count: "exact" })
     .eq("lab_id", labId);
 

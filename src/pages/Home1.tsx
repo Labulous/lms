@@ -417,7 +417,7 @@ const Home: React.FC = () => {
                   <Maximize2 className="h-4 w-4" />
                 </Button>
               </div>
-              <DueDatesCalendar events={casesEvents} />
+              {/* <DueDatesCalendar events={casesEvents} /> */}
             </div>
           </div>
 

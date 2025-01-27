@@ -364,41 +364,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
-    // Check if it's an arch selection
-    const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
-    const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-    const isFullArch = teeth.length >= 16;
+    // Define the sequence for upper and lower teeth based on the provided data
+    const teethArray = [
+      // Upper right to upper left
+      18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+      // Lower left to lower right
+      38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+    ];
 
-    if (isFullArch) {
-      if (hasUpper && hasLower) return "All";
-      if (hasUpper) return "Upper";
-      if (hasLower) return "Lower";
-    }
+    // Function to group consecutive teeth based on the sequence
+    const getConsecutiveGroups = (teeth: number[]): string[] => {
+      if (teeth.length === 0) return [];
 
-    if (teeth.length === 1) return teeth[0].toString();
+      // Sort the teeth based on the order in teethArray
+      const sortedTeeth = [...teeth].sort(
+        (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+      );
 
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+      let groups: string[] = [];
+      let groupStart = sortedTeeth[0];
+      let prev = sortedTeeth[0];
 
-    let ranges: string[] = [];
-    let rangeStart = sortedTeeth[0];
-    let prev = sortedTeeth[0];
+      for (let i = 1; i <= sortedTeeth.length; i++) {
+        const current = sortedTeeth[i];
 
-    for (let i = 1; i <= sortedTeeth.length; i++) {
-      const current = sortedTeeth[i];
-      if (current !== prev + 1) {
-        // End of a range
-        if (rangeStart === prev) {
-          ranges.push(rangeStart.toString());
-        } else {
-          ranges.push(`${rangeStart}-${prev}`);
+        // Check if the current tooth is consecutive to the previous one in the sequence
+        if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+          // End of a group
+          if (groupStart === prev) {
+            groups.push(groupStart.toString());
+          } else {
+            groups.push(`${groupStart}-${prev}`);
+          }
+          groupStart = current; // Start a new group
         }
-        rangeStart = current;
+        prev = current;
       }
-      prev = current;
-    }
 
-    return ranges.join(", ");
+      return groups;
+    };
+
+    // Get consecutive groups of teeth
+    const groupedTeeth = getConsecutiveGroups(teeth);
+
+    // If there's only one group, return it
+    return groupedTeeth.join(", ");
   };
+
 
   const handleProductSelect = (
     value: any,
@@ -891,6 +903,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             row.shades?.custom_body ||
                             row.shades?.custom_gingival ||
                             row.shades?.custom_occlusal ||
+                            row.shades?.manual_occlusal ||
+                            row.shades?.manual_gingival ||
+                            row.shades?.manual_body ||
+                            row.shades?.manual_stump ||
                             row.shades?.custom_stump ||
                             row.shades?.stump_shade ? (
                               <div>
@@ -1448,7 +1464,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           disabled={!row.id}
                           onClick={() => togglePercentPopover(index)}
                         >
-                          <Percent className="h-4 w-4" />
+                         {selectedProducts?.[index]?.discount} <Percent className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent

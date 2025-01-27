@@ -35,6 +35,9 @@ export interface CalendarEvents {
   start: Date;
   end: Date;
   onHold?: boolean;
+  isAllOnHold?: boolean;
+  isPastDue?: boolean;
+  isActive?: boolean;
   resource: any;
   formattedCases: {
     case_id: string;
@@ -80,6 +83,7 @@ const Dashboard: React.FC = () => {
     WorkstationIssue[]
   >([]);
   const [casesList, setCasesList] = useState<CasesDues[]>([]);
+  const [filterType, setFilterType] = useState("due_date");
 
   const [totalWorkstations, setTotalWorkstations] = useState(0);
   const [metrics, setMetrics] = useState({
@@ -391,6 +395,7 @@ const Dashboard: React.FC = () => {
               }`, // Example: "3 active cases"
               start,
               end,
+              isActive: true,
               resource: { count: activeCases.length, isPastDue: isPastDue },
               formattedCases: formattedActiveCases.filter(
                 (caseItem) => caseItem.due_day === day
@@ -415,40 +420,61 @@ const Dashboard: React.FC = () => {
               ), // Filter cases to only show on the correct day
             };
 
-            //  const pastDueEvent = {
-            //    title: `${
-            //      formattedOnHoldCases.length > 0
-            //        ? formattedActiveCases.filter(
-            //            (caseItem) => caseItem.due_day < day
-            //          ).length
-            //        : ""
-            //    }`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isPastDue: true,
-            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedActiveCases.filter(
-            //      (caseItem) => caseItem.due_day < day
-            //    ), // Filter cases to only show on the correct day
-            //  };
-            //  const tomorowEvent = {
-            //    title: `${formattedDueTommorwCases.length || ""}`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isTommorow: true,
-            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedDueTommorwCases,
-            //  };
-            //  const onHoldAllEvent = {
-            //    title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isAllOnHold: true,
-            //    resource: { count: activeCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedOnholdCases,
-            //  };
+            const pastDueEvent = {
+              title: `${
+                formattedOnHoldCases.length > 0
+                  ? formattedActiveCases.filter(
+                      (caseItem) => caseItem.due_day < day
+                    ).length
+                  : ""
+              }`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              isPastDue: true,
+              resource: { count: onHoldCases.length, isPastDue: isPastDue },
+              formattedCases: formattedActiveCases.filter(
+                (caseItem) => caseItem.due_day < day
+              ), // Filter cases to only show on the correct day
+            };
+            const tomorowEvent = {
+              title: `${formattedDueTommorwCases.length || ""}`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              isTommorow: true,
+              isAllOnHold: false,
+              id: 1,
+              resource: { count: 0, isPastDue: false },
+              formattedCases: formattedDueTommorwCases,
+            };
+            const onHoldAllEvent = {
+              title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              id: 2,
+              // isAllOnHold: true,
+              resource: { count: 0, isPastDue: false },
+              formattedCases: formattedOnholdCases,
+            };
             // Return both events (active and on hold)
-            return [activeEvent, onHoldEvent];
+            console.log(filterType, "filer type");
+            if (filterType === "on_hold") {
+              return [onHoldEvent];
+            } else if (filterType === "today_cell") {
+              // Assuming tomorowEvent and onHoldAllEvent are arrays or objects that contain events
+              const allEvents = [
+                ...tomorowEvent.formattedCases, // assuming formattedCases is an array in tomorowEvent
+                ...onHoldAllEvent.formattedCases, // assuming formattedCases is an array in onHoldAllEvent
+              ];
+              const tommorow = [tomorowEvent][0];
+              const onHOld = [onHoldAllEvent][0];
+              console.log(tomorowEvent, "tomorowEvent");
+
+              return [tommorow, onHOld];
+            } else {
+              return [activeEvent];
+            }
+
+            // return [activeEvent, onHoldEvent, tomorowEvent, onHoldAllEvent];
           })
           .flat(); // Flatten the array because we have two events per date (active and on hold)
 
@@ -493,7 +519,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchDashboardData();
-  }, [user, casesList]);
+  }, [user, casesList, filterType]);
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -624,7 +650,12 @@ const Dashboard: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0">
-                  <DueDatesCalendar events={calendarEvents} height={400} />
+                  <DueDatesCalendar
+                    events={calendarEvents}
+                    height={400}
+                    filterType={filterType}
+                    setFilterType={setFilterType}
+                  />
                 </CardContent>
               </Card>
             </div>

@@ -247,27 +247,27 @@ const TYPE_COLORS = {
   Onlay: "rgb(234 179 8)", // yellow-500
 };
 
-const formatTeethRange = (teeth: number[]): string => {
-  if (!teeth || teeth.length === 0) return "";
+// const formatTeethRange = (teeth: number[]): string => {
+//   if (!teeth || teeth.length === 0) return "";
 
-  const ranges: string[] = [];
-  let start = teeth[0];
-  let end = teeth[0];
+//   const ranges: string[] = [];
+//   let start = teeth[0];
+//   let end = teeth[0];
 
-  for (let i = 1; i <= teeth.length; i++) {
-    if (i < teeth.length && teeth[i] === end + 1) {
-      end = teeth[i];
-    } else {
-      ranges.push(start === end ? start.toString() : `${start}-${end}`);
-      if (i < teeth.length) {
-        start = teeth[i];
-        end = teeth[i];
-      }
-    }
-  }
+//   for (let i = 1; i <= teeth.length; i++) {
+//     if (i < teeth.length && teeth[i] === end + 1) {
+//       end = teeth[i];
+//     } else {
+//       ranges.push(start === end ? start.toString() : `${start}-${end}`);
+//       if (i < teeth.length) {
+//         start = teeth[i];
+//         end = teeth[i];
+//       }
+//     }
+//   }
 
-  return ranges.join(", ");
-};
+//   return ranges.join(", ");
+// };
 
 const CaseDetails: React.FC<CaseDetailsProps> = ({
   drawerMode,
@@ -628,7 +628,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 discount,
                 final_price,
                 price,
-                quantity
+                quantity,
+                total
               `
               )
               .in("product_id", productsIdArray)
@@ -1248,6 +1249,57 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
 
   console.log(caseDetail, "CaseDetails");
+
+  const formatTeethRange = (teeth: number[]): string => {
+    if (!teeth.length) return "";
+
+    // Define the sequence for upper and lower teeth based on the provided data
+    const teethArray = [
+      // Upper right to upper left
+      18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+      // Lower left to lower right
+      38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+    ];
+
+    // Function to group consecutive teeth based on the sequence
+    const getConsecutiveGroups = (teeth: number[]): string[] => {
+      if (teeth.length === 0) return [];
+
+      // Sort the teeth based on the order in teethArray
+      const sortedTeeth = [...teeth].sort(
+        (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+      );
+
+      let groups: string[] = [];
+      let groupStart = sortedTeeth[0];
+      let prev = sortedTeeth[0];
+
+      for (let i = 1; i <= sortedTeeth.length; i++) {
+        const current = sortedTeeth[i];
+
+        // Check if the current tooth is consecutive to the previous one in the sequence
+        if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+          // End of a group
+          if (groupStart === prev) {
+            groups.push(groupStart.toString());
+          } else {
+            groups.push(`${groupStart}-${prev}`);
+          }
+          groupStart = current; // Start a new group
+        }
+        prev = current;
+      }
+
+      return groups;
+    };
+
+    // Get consecutive groups of teeth
+    const groupedTeeth = getConsecutiveGroups(teeth);
+
+    // If there's only one group, return it
+    return groupedTeeth.join(", ");
+  };
+
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1601,11 +1653,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
                               {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade || product?.teethProduct?.manual_occlusal_shade ? (
+                              product?.teethProduct?.custom_occlusal_shade ||
+                              product?.teethProduct?.manual_occlusal_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
-                                      Occlusal:
+                                      Incisal:
                                     </span>
                                     <div className="flex gap-2">
                                       <p>
@@ -1944,7 +1997,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     {product?.discounted_price?.discount}%
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400">-</span>
+                                  <span className="text-gray-400">0%</span>
                                 )}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
@@ -1963,7 +2016,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                ${subtotal.toFixed(2)}
+                                ${product?.discounted_price?.total}
                               </TableCell>
                             </TableRow>
                           );
@@ -2002,7 +2055,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {caseDetail?.custom_occlusal_details ? (
                     <div>
-                      <p className="text-gray-600">Occlusal Details</p>
+                      <p className="text-gray-600">Incisal Details</p>
                       <p className="font-medium">
                         {caseDetail.custom_occlusal_details}
                       </p>
@@ -2087,7 +2140,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600 capitalize">
-                                  Occlusal Shade:
+                                  Incisal Shade:
                                 </span>
                                 <span>
                                   {product.occlusal_shade?.name || "N/A"}
@@ -2172,7 +2225,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         <div className="space-y-4">
                           <div>
                             <p className="text-sm text-gray-500">
-                              Occlusal Type
+                              Incisal Type
                             </p>
                             <p className="font-medium">
                               {caseDetail?.occlusal_type
@@ -2216,7 +2269,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           </div>
                           <div>
                             <p className="text-sm text-gray-500">
-                              Occlusal Design
+                              Incisal Design
                             </p>
                             <p className="font-medium">
                               {caseDetail?.occlusion_design_type
