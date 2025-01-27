@@ -215,272 +215,307 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             height: "277mm", // Fixed height to match LETTER page size
           }}
         >
-          <div className="border border-gray-800 mt-10">
-            <div className="p-5">
-              <div className="p-0">
-                {/* Header Section */}
-                <div className="flex justify-between mb-8">
-                  {/* Company Info */}
-                  <div className="flex flex-col gap-0 items-start">
-                    <img
-                      src={staticLabLogo}
-                      alt="Solaris Dental Design Logo"
-                      width={120}
-                      height={120}
-                      className="object-contain flex justify-center items-center"
-                    />
-                    <div className="text-sm font-medium">
-                      <h3 className="font-bold mb-1 text-xl">
-                        {invoice.labDetail?.name}
-                      </h3>
-                      <p>{invoice.labDetail?.office_address.address_1}</p>
-                      <p>{invoice.labDetail?.office_address.address_2}</p>
-                      <p>
-                        <span>{invoice.labDetail?.office_address.city}</span>,{" "}
-                        {invoice.labDetail?.office_address.state_province}{" "}
-                        <span>
-                          {invoice.labDetail?.office_address.zip_postal}
-                        </span>
-                      </p>
-                      <p>{invoice.labDetail?.office_address.phone_number}</p>
-                    </div>
-                  </div>
-
-                  {/* Invoice Details */}
-                  <div className="text-sm">
-                    <h1 className="text-xl font-bold mb-2">INVOICE</h1>
-                    <p className="font-bold">
-                      <p className="text-gray-600">
-                        Inv #:{" "}
-                        {invoice.case_number
-                          ? invoice.case_number.split("-")[2]
-                          : "N/A"}
-                      </p>
-                    </p>
-                    <p className="font-bold">
-                      {formatDate(invoice?.created_at || "1/7/2025")}
-                    </p>
-                    <div className="mt-4 font-medium">
-                      <p className="font-bold">Bill To:</p>
-                      <p>{invoice.client.street}</p>
-                      <p>
-                        {invoice.client.city}
-                        {", "}
-                        <span>{invoice.client.state}</span>
-                      </p>
-                      <p>{invoice.client.phone}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Patient Section */}
-                <div className="mb-6">
-                  <p className="font-medium">
-                    <span className="font-bold">Patient:</span>{" "}
-                    {invoice?.patient_name}
-                  </p>
-                </div>
-
-                {/* Services Table */}
-                <div className="mb-8">
-                  <div className="grid grid-cols-12 border-b border-gray-800 pb-2 mb-4">
-                    <h3 className="font-bold col-span-6 text-xs" style={{ lineHeight: "1.15" }}>Description</h3>
-                    <h2 className="font-bold text-right col-span-2 text-xs" style={{ lineHeight: "1.15" }}>Price</h2>
-                    <h2 className="font-bold text-right col-span-2 text-xs" style={{ lineHeight: "1.15" }}>DC(%)</h2>
-                    <h2 className="font-bold text-right col-span-2 text-xs" style={{ lineHeight: "1.15" }}>Amount</h2>
-                  </div>
-
-                  {invoice?.products.map((item: any, index: number) => {
-                    return (
-                      <div
-                        className={`grid grid-cols-12 text-sm ${
-                          index < invoice.products.length - 1
-                            ? "mb-8 pb-8 border-b border-gray-300"
-                            : ""
-                        }`}
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        <div key={index} className="space-y-1 font-medium col-span-6">
+          <div className="bg-white">
+            <div className="mx-auto max-w-xl">
+              <div className="p-8">
+                <div className="p-5">
+                  <div className="p-0">
+                    {/* Header Section */}
+                    <div className="space-y-4">
+                      {/* Header */}
+                      <div className="flex justify-between items-center">
+                        {/* Left side - Company Info */}
+                        <div className="space-y-4">
                           <div>
-                            <p className="font-extrabold" style={{ lineHeight: "1.15" }}>{item.name}</p>
-                            <p className="text-sm pl-4 font-extrabold" style={{ lineHeight: "1.15" }}>
-                              Teeth: #{item.teethProduct?.tooth_number[0]}
+                            <img
+                              src={staticLabLogo}
+                              alt="Solaris Dental Design Logo"
+                              width={100}
+                              height={100}
+                              className="object-contain"
+                            />
+                          </div>
+                          <div className="space-y-0" style={{ lineHeight: "1.1" }}>
+                            <p className="font-bold text-sm">{invoice.labDetail?.name}</p>
+                            <p className="text-sm">{invoice.labDetail?.office_address.address_1}</p>
+                            <p className="text-sm">
+                              {invoice.labDetail?.office_address.city},{" "}
+                              {invoice.labDetail?.office_address.state_province}{" "}
+                              <span>
+                                {invoice.labDetail?.office_address.zip_postal}
+                              </span>
                             </p>
-                            <p className="text-sm flex gap-0 flex-wrap pl-4" style={{ lineHeight: "1.15" }}>
-                              {/* Occlusal Shade */}
-                              {(item?.teethProduct?.occlusal_shade?.name ||
-                                item?.teethProduct?.custom_occlusal_shade ||
-                                item?.teethProduct?.manual_occlusal_shade) && (
-                                <>
-                                  <span>
-                                    <span>Occlusal:</span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct?.manual_occlusal_shade ||
-                                        item?.teethProduct?.occlusal_shade?.name}
-                                    </span>
-                                    {item?.teethProduct?.custom_occlusal_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              item?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {item?.teethProduct?.custom_occlusal_shade}{" "}
-                                        (custom)
-                                      </span>
-                                    )}
-                                  </span>
-                                  {(item?.teethProduct?.body_shade?.name ||
-                                    item?.teethProduct?.gingival_shade?.name ||
-                                    item?.teethProduct?.stump_shade_id ||
-                                    item?.teethProduct?.custom_body_shade ||
-                                    item?.teethProduct?.custom_gingival_shade ||
-                                    item?.teethProduct?.custom_stump_shade ||
-                                    item?.teethProduct?.manual_body_shade ||
-                                    item?.teethProduct?.manual_gingival_shade ||
-                                    item?.teethProduct?.manual_stump_shade) && (
-                                    <span>,</span>
-                                  )}
-                                </>
-                              )}
-
-                              {/* Body Shade */}
-                              {(item?.teethProduct?.body_shade?.name ||
-                                item?.teethProduct?.custom_body_shade ||
-                                item?.teethProduct?.manual_body_shade) && (
-                                <>
-                                  <span>
-                                    <span>Body:</span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct?.manual_body_shade ||
-                                        item?.teethProduct?.body_shade?.name}
-                                    </span>
-                                    {item?.teethProduct?.custom_body_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              item?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {item?.teethProduct?.custom_body_shade}{" "}
-                                        (custom)
-                                      </span>
-                                    )}
-                                  </span>
-                                  {(item?.teethProduct?.gingival_shade?.name ||
-                                    item?.teethProduct?.stump_shade_id ||
-                                    item?.teethProduct?.custom_gingival_shade ||
-                                    item?.teethProduct?.custom_stump_shade ||
-                                    item?.teethProduct?.manual_gingival_shade ||
-                                    item?.teethProduct?.manual_stump_shade) && (
-                                    <span>,</span>
-                                  )}
-                                </>
-                              )}
-
-                              {/* Gingival Shade */}
-                              {(item?.teethProduct?.gingival_shade?.name ||
-                                item?.teethProduct?.custom_gingival_shade ||
-                                item?.teethProduct?.manual_gingival_shade) && (
-                                <>
-                                  <span>
-                                    <span>Gingival:</span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct?.manual_gingival_shade ||
-                                        item?.teethProduct?.gingival_shade?.name}
-                                    </span>
-                                    {item?.teethProduct?.custom_gingival_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              item?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {item?.teethProduct?.custom_gingival_shade}{" "}
-                                        (custom)
-                                      </span>
-                                    )}
-                                  </span>
-                                  {(item?.teethProduct?.stump_shade_id ||
-                                    item?.teethProduct?.custom_stump_shade ||
-                                    item?.teethProduct?.manual_stump_shade) && (
-                                    <span>,</span>
-                                  )}
-                                </>
-                              )}
-
-                              {/* Stump Shade */}
-                              {(item?.teethProduct?.custom_stump_shade ||
-                                item?.teethProduct?.stump_shade_id ||
-                                item?.teethProduct?.manual_stump_shade) && (
-                                <span>
-                                  <span>Stump:</span>
-                                  <span className="font-bold">
-                                    {item?.teethProduct?.manual_stump_shade ||
-                                      item?.teethProduct?.stump_shade_id?.name}
-                                  </span>
-                                  {item?.teethProduct?.custom_stump_shade && (
-                                    <span
-                                      className="font-extrabold"
-                                      style={{
-                                        color:
-                                          TYPE_COLORS[
-                                            item?.product_type
-                                              ?.name as keyof typeof TYPE_COLORS
-                                          ] || TYPE_COLORS.Other,
-                                      }}
-                                    >
-                                      {item?.teethProduct?.custom_stump_shade}{" "}
-                                      (custom)
-                                    </span>
-                                  )}
-                                </span>
-                              )}
-                            </p>
+                            <p className="text-sm">{invoice.labDetail?.office_address.phone_number}</p>
                           </div>
                         </div>
-                        <p className="text-right col-span-2 font-bold" style={{ lineHeight: "1.15" }}>
-                          ${item.discounted_price.price}
-                        </p>
-                        <p className="text-right col-span-2" style={{ lineHeight: "1.15" }}>
-                          {item.discounted_price.discount}%
-                        </p>
-                        <p className="text-right col-span-2 font-bold" style={{ lineHeight: "1.15" }}>
-                          ${item.discounted_price.final_price}
-                        </p>
-                      </div>
-                    );
-                  })}
 
-                  <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-800">
-                    <p className="text-sm">{invoice?.working_pan_name || ''}</p>
-                    <div className="flex flex-col gap-2 items-end">
-                      <p className="font-bold">
-                        Total: ${invoice?.invoice?.[0]?.amount}
-                      </p>
-                      <p className="font-bold">
-                        Total Due: ${invoice?.invoice?.[0]?.due_amount}
+                        {/* Right side - Invoice Details */}
+                        <div className="text-right">
+                          <h2 className="text-5xl font-bold text-gray-400 mb-8">INVOICE</h2>
+                          <div className="space-y-1" style={{ lineHeight: "1.1" }}>
+                            <div className="border-b border-gray-300 pb-0.5">
+                              <div className="grid grid-cols-[auto_1fr] gap-4">
+                                <p className="text-right font-medium whitespace-nowrap text-sm">Inv. #:</p>
+                                <p className="text-right min-w-[120px] text-sm">
+                                  {invoice.case_number
+                                    ? invoice.case_number.split("-")[2]
+                                    : "N/A"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="border-b border-gray-300 pb-0.5">
+                              <div className="grid grid-cols-[auto_1fr] gap-4">
+                                <p className="text-right font-medium whitespace-nowrap text-sm">Date:</p>
+                                <p className="text-right min-w-[120px] text-sm">
+                                  {formatDate(invoice?.created_at || "1/7/2025")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="border-b border-gray-300 pb-0.5">
+                              <div className="grid grid-cols-[auto_1fr] gap-4">
+                                <p className="text-right font-medium whitespace-nowrap text-sm">Pan #:</p>
+                                <p className="text-right min-w-[120px] text-sm">
+                                  {invoice?.working_pan_name || ""}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bill To Section */}
+                      <div className="mt-8">
+                        <div>
+                          <p className="font-bold text-sm">Bill To:</p>
+                          <div className="space-y-0" style={{ lineHeight: "1.1" }}>
+                            <p className="text-sm">{invoice.client.name}</p>
+                            <p className="text-sm">Dr. {invoice.client.doctor_name}</p>
+                            <p className="text-sm">{invoice.client.street}</p>
+                            <p className="text-sm">
+                              {invoice.client.city}
+                              {", "}
+                              <span>{invoice.client.state}</span>
+                            </p>
+                            <p className="text-sm">{invoice.client.phone}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Patient Section */}
+                    <div className="mt-4 mb-6">
+                      <p className="text-sm">
+                        <span className="font-bold">Patient:</span>{" "}
+                        <span>{invoice?.patient_name}</span>
                       </p>
                     </div>
+
+                    {/* Services Table */}
+                    <div className="mb-8">
+                      <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4">
+                        <h3 className="font-bold col-span-7 text-xs p-2" style={{ lineHeight: "1.15" }}>Description</h3>
+                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Price</h2>
+                        <h2 className="font-bold text-right col-span-1 text-xs p-2" style={{ lineHeight: "1.15" }}>DC(%)</h2>
+                        <h2 className="font-bold text-right col-span-2 text-xs p-2" style={{ lineHeight: "1.15" }}>Amount</h2>
+                      </div>
+
+                      {invoice?.products.map((item: any, index: number) => {
+                        return (
+                          <div
+                            className={`grid grid-cols-12 text-sm ${
+                              index < invoice.products.length - 1
+                                ? "mb-6 pb-2 border-b border-gray-300"
+                                : ""
+                            }`}
+                            style={{ lineHeight: "1.15" }}
+                            key={index}
+                          >
+                            <div className="space-y-1 font-medium col-span-7 pl-2">
+                              <div>
+                                <p className="font-extrabold" style={{ lineHeight: "1.15" }}>{item.name}</p>
+                                <p className="text-sm pl-6 font-extrabold" style={{ lineHeight: "1.15" }}>
+                                  <span className="font-normal">Teeth: </span>#{item.teethProduct?.tooth_number?.join(', #')}
+                                </p>
+                                <p className="text-sm flex gap-0 flex-wrap pl-6 mt-3" style={{ lineHeight: "1.15" }}>
+                                  <span className="font-normal">Shade:&nbsp;</span>
+                                  {/* Occlusal Shade */}
+                                  {(item?.teethProduct?.occlusal_shade?.name ||
+                                    item?.teethProduct?.custom_occlusal_shade ||
+                                    item?.teethProduct?.manual_occlusal_shade) && (
+                                    <>
+                                      <span>
+                                        <span className="font-normal">Occlusal: </span>
+                                        <span className="font-bold">
+                                          {item?.teethProduct?.manual_occlusal_shade ||
+                                            item?.teethProduct?.occlusal_shade?.name}
+                                        </span>
+                                        {item?.teethProduct?.custom_occlusal_shade && (
+                                          <span
+                                            className="font-extrabold"
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                  item?.product_type
+                                                    ?.name as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            {item?.teethProduct?.custom_occlusal_shade}{" "}
+                                            (custom)
+                                          </span>
+                                        )}
+                                      </span>
+                                      {(item?.teethProduct?.body_shade?.name ||
+                                        item?.teethProduct?.gingival_shade?.name ||
+                                        item?.teethProduct?.stump_shade_id ||
+                                        item?.teethProduct?.custom_body_shade ||
+                                        item?.teethProduct?.custom_gingival_shade ||
+                                        item?.teethProduct?.custom_stump_shade ||
+                                        item?.teethProduct?.manual_body_shade ||
+                                        item?.teethProduct?.manual_gingival_shade ||
+                                        item?.teethProduct?.manual_stump_shade) && (
+                                        <span>,</span>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {/* Body Shade */}
+                                  {(item?.teethProduct?.body_shade?.name ||
+                                    item?.teethProduct?.custom_body_shade ||
+                                    item?.teethProduct?.manual_body_shade) && (
+                                    <>
+                                      <span>
+                                        <span className="font-normal">Body: </span>
+                                        <span className="font-bold">
+                                          {item?.teethProduct?.manual_body_shade ||
+                                            item?.teethProduct?.body_shade?.name}
+                                        </span>
+                                        {item?.teethProduct?.custom_body_shade && (
+                                          <span
+                                            className="font-extrabold"
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                  item?.product_type
+                                                    ?.name as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            {item?.teethProduct?.custom_body_shade}{" "}
+                                            (custom)
+                                          </span>
+                                        )}
+                                      </span>
+                                      {(item?.teethProduct?.gingival_shade?.name ||
+                                        item?.teethProduct?.stump_shade_id ||
+                                        item?.teethProduct?.custom_gingival_shade ||
+                                        item?.teethProduct?.custom_stump_shade ||
+                                        item?.teethProduct?.manual_gingival_shade ||
+                                        item?.teethProduct?.manual_stump_shade) && (
+                                        <span>,</span>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {/* Gingival Shade */}
+                                  {(item?.teethProduct?.gingival_shade?.name ||
+                                    item?.teethProduct?.custom_gingival_shade ||
+                                    item?.teethProduct?.manual_gingival_shade) && (
+                                    <>
+                                      <span>
+                                        <span className="font-normal">Gingival: </span>
+                                        <span className="font-bold">
+                                          {item?.teethProduct?.manual_gingival_shade ||
+                                            item?.teethProduct?.gingival_shade?.name}
+                                        </span>
+                                        {item?.teethProduct?.custom_gingival_shade && (
+                                          <span
+                                            className="font-extrabold"
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                  item?.product_type
+                                                    ?.name as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            {item?.teethProduct?.custom_gingival_shade}{" "}
+                                            (custom)
+                                          </span>
+                                        )}
+                                      </span>
+                                      {(item?.teethProduct?.stump_shade_id ||
+                                        item?.teethProduct?.custom_stump_shade ||
+                                        item?.teethProduct?.manual_stump_shade) && (
+                                        <span>,</span>
+                                      )}
+                                    </>
+                                  )}
+
+                                  {/* Stump Shade */}
+                                  {(item?.teethProduct?.custom_stump_shade ||
+                                    item?.teethProduct?.stump_shade_id ||
+                                    item?.teethProduct?.manual_stump_shade) && (
+                                    <span>
+                                      <span className="font-normal">Stump: </span>
+                                      <span className="font-bold">
+                                        {item?.teethProduct?.manual_stump_shade ||
+                                          item?.teethProduct?.stump_shade_id?.name}
+                                      </span>
+                                      {item?.teethProduct?.custom_stump_shade && (
+                                        <span
+                                          className="font-extrabold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
+                                                item?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {item?.teethProduct?.custom_stump_shade}{" "}
+                                          (custom)
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                              ${item.discounted_price.price}
+                            </p>
+                            <p className="text-right col-span-1 pr-2" style={{ lineHeight: "1.15" }}>
+                              {item.discounted_price.discount}%
+                            </p>
+                            <p className="text-right col-span-2 pr-2 font-bold" style={{ lineHeight: "1.15" }}>
+                              ${item.discounted_price.final_price}
+                            </p>
+                          </div>
+                        );
+                      })}
+
+                      {/* Total and Total Due Section */}
+                      <div className="flex justify-end pt-4 mt-4 border-t border-gray-800">
+                        <div className="w-64">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium">Case Subtotal:</span>
+                            <span className="text-sm font-bold">${invoice?.invoice?.[0]?.amount}</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-sm font-bold">TOTAL:</span>
+                            <span className="text-sm font-bold">${invoice?.invoice?.[0]?.due_amount}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+
+                    <div className="text-center mt-4 font-medium">
+                      <p className="text-sm">Thank you for your business!</p>
+                    </div>
                   </div>
-                </div>
-
-                {/* Footer */}
-
-                <div className="text-center mt-4 font-medium">
-                  <p className="text-sm">Thank you for your business!</p>
                 </div>
               </div>
             </div>
