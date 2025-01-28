@@ -58,7 +58,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   errors = {},
   clients = [],
   loading = false,
-  isClient = false
+  isClient = false,
 }) => {
   // Debug log for initial render and props
   const [tags, setTags] = useState<WorkingTag[]>([]);
@@ -170,7 +170,6 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   };
 
-  console.log(formData, "formd ata");
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -179,7 +178,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="clientId" className="text-xs">
-                Client *
+                Client <span className="text-red-500">*</span>
               </Label>
               <div className="mt-1">
                 {loading ? (
@@ -231,7 +230,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="doctorId" className="text-xs">
-                Doctor *
+                Doctor <span className="text-red-500">*</span>
               </Label>
               <Select
                 name="doctorId"
@@ -272,7 +271,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="patientFirstName" className="text-xs">
-                Patient Name *
+                Patient Name <span className="text-red-500">*</span>
               </Label>
               <div className="grid grid-cols-2 gap-2">
                 <div>
@@ -323,7 +322,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="orderDate" className="text-xs">
-                Order Date *
+                Order Date <span className="text-red-500">*</span>
               </Label>
               <DatePicker
                 date={
@@ -347,7 +346,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             <div className="space-y-0">
               <div className="flex justify-between items-center">
                 <Label htmlFor="dueDate" className="text-xs">
-                  Due Date
+                  Due Date <span className="text-red-500">*</span>
                 </Label>
                 <div className="flex items-center space-x-2">
                   <Label htmlFor="isDueDateTBD" className="text-xs">
@@ -392,7 +391,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="appointmentDate" className="text-xs">
-                Appointment Date & Time
+                Appointment Date & Time <span className="text-red-500">*</span>
               </Label>
               <div className="w-full">
                 <DateTimePicker
@@ -433,7 +432,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="status" className="text-xs">
-                Status *
+                Status <span className="text-red-500">*</span>
               </Label>
               <Select
                 name="status"
@@ -463,6 +462,14 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         <p>{CASE_STATUS_DESCRIPTIONS["in_queue"]}</p>
                       </TooltipContent>
                     </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="draft">Draft</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["draft"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </TooltipProvider>
                 </SelectContent>
               </Select>
@@ -473,7 +480,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
             <div className="space-y-0">
               <Label htmlFor="deliveryMethod" className="text-xs">
-                Delivery Method *
+                Delivery Method <span className="text-red-500">*</span>
               </Label>
               <Select
                 name="deliveryMethod"
@@ -504,7 +511,6 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 </p>
               )}
             </div>
-
           </div>
         </div>
       </div>

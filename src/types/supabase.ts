@@ -187,7 +187,8 @@ export type CaseStatus =
   | "in_progress"
   | "on_hold"
   | "completed"
-  | "cancelled";
+  | "cancelled"
+  | "draft";
 
 export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
   in_queue: "Case has been received and is waiting to be assigned",
@@ -195,6 +196,7 @@ export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
   on_hold: "Case work has been temporarily paused",
   completed: "Case has been finished and is ready for delivery",
   cancelled: "Case has been cancelled and will not be processed",
+  draft: "Case is in draft mode and has not been submitted",
 };
 
 /**

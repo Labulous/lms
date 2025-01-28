@@ -18,6 +18,7 @@ export const CASE_STATUSES = [
   "on_hold",
   "completed",
   "cancelled",
+  "draft",
 ] as const;
 
 export type CaseStatus = (typeof CASE_STATUSES)[number];

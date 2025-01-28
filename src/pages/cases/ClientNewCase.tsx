@@ -203,7 +203,7 @@ const ClientNewCase: React.FC = () => {
     if (!formData.isDueDateTBD && !formData.dueDate)
       validationErrors.dueDate = "Due date is required";
     if (!formData.isDueDateTBD && !formData.appointmentDate)
-      validationErrors.appointmentDate = "Due date is required";
+      validationErrors.appointmentDate = "Appointment date is required";
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";

@@ -499,7 +499,7 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
 
     // Update the state with the grouped teeth
-    setGroupSelectedTeethState(groups);
+    // setGroupSelectedTeethState(groups);
 
     return groups; // Optional, for debugging or testing
   };
@@ -706,6 +706,7 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setselectedProducts([newProduct]);
     }
   }, selectedProducts);
+  console.log(selectedProducts);
 
   console.log(shadesItems, "shadeData");
 
