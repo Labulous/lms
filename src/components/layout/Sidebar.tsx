@@ -148,7 +148,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         // { label: "Statements", href: "/billing/statements", icon: FileText },
         {
           label: "Adjustments",
-          href: "/billing/adjustments",
+          href: "/billing/client-adjustments",
           icon: DollarSign,
         },
       ],

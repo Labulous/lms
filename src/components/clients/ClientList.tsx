@@ -34,6 +34,8 @@ import {
   Phone,
   Mail,
   Building,
+  Check,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -55,6 +57,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { AnyMxRecord } from "dns";
 import { createClientByAdmin } from "@/services/authService";
 import { getLabIdByUserId } from "@/services/authService";
+import { checkEmailExists } from "@/services/authService";
 import toast from "react-hot-toast";
 
 const logger = createLogger({ module: "ClientList" });
@@ -101,6 +104,9 @@ const ClientList: React.FC<ClientListProps> = ({
   const [labId, setLabId] = useState<string | null>(null);
   //console.log(labId);
 
+  const [emailExistsMap, setEmailExistsMap] = useState<Record<string, boolean>>({});
+
+
   useEffect(() => {
     const loadClients = async () => {
       try {
@@ -118,6 +124,23 @@ const ClientList: React.FC<ClientListProps> = ({
     };
     loadClients();
   }, [user]);
+
+  useEffect(() => {
+    const checkEmails = async () => {
+      const emailCheckResults: Record<string, boolean> = {};
+
+      // Iterate over each client to check their email
+      for (const client of clients) {
+        const exists = await checkEmailExists(client.email);
+        emailCheckResults[client.email] = exists;
+      }
+
+      setEmailExistsMap(emailCheckResults); // Save the results to state
+    };
+
+    checkEmails();
+  }, [clients]);
+
 
   // Form input states
   const [email, setEmail] = useState("");
@@ -297,6 +320,23 @@ const ClientList: React.FC<ClientListProps> = ({
       },
     },
     {
+      accessorKey: "has_login",
+      header: "Has Login Credentials",
+      cell: ({ row }) => {
+        const client = row.original;
+        const emailExists = emailExistsMap[client.email];
+        return (
+          <div className="flex items-center">
+            {emailExists ? (
+              <Check className="h-4 w-4 text-green-500" />
+            ) : (
+              <X className="h-4 w-4 text-red-500" />
+            )}
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
@@ -312,7 +352,7 @@ const ClientList: React.FC<ClientListProps> = ({
       id: "actions",
       cell: ({ row }) => {
         const client = row.original;
-
+        const emailExists = emailExistsMap[client.email];
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -342,12 +382,14 @@ const ClientList: React.FC<ClientListProps> = ({
                 Delete client
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => openCreateLoginModal(client.id)}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Client Login
-              </DropdownMenuItem>
+              {!emailExists && (
+                <DropdownMenuItem
+                  onClick={() => openCreateLoginModal(client.id)}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Client Login
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );

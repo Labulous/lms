@@ -27,6 +27,7 @@ import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import ClientProfile from "./components/clients/ClientProfile";
+import ClientAdjustments from "./pages/billing/ClientAdjustments";
 
 const App: React.FC = () => {
   return (
@@ -195,9 +196,19 @@ const App: React.FC = () => {
           <Route
             path="/billing/adjustments"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <Adjustments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing/client-adjustments"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientAdjustments />
                 </Layout>
               </ProtectedRoute>
             }
