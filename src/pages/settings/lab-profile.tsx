@@ -25,6 +25,7 @@ interface LabProfileFormData {
     file: File | null
 }
 
+
 export const LABProfile: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -32,6 +33,8 @@ export const LABProfile: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
+
+
 
     const [formData, setFormData] = useState<LabProfileFormData>({
         id: "",
@@ -104,6 +107,7 @@ export const LABProfile: React.FC = () => {
         setIsEditing(true);
     };
 
+
     const handleSave = async (e: React.FormEvent) => {
         debugger;
         if (!formData) return;
@@ -171,13 +175,19 @@ export const LABProfile: React.FC = () => {
 
 
                 toast.success("Lab updated successfully");
+
+                navigate('/', { replace: true });
+                setTimeout(() => {
+                    navigate("/settings/lab-profile", { replace: true });
+                }, 100);
+
                 setLoading(false);
                 setIsEditing(false);
             }
 
             fetchLabs();
             setLoading(false);
-            navigate(`${location.pathname}?reload=${new Date().getTime()}`, { replace: true });
+
             //window.location.reload();
         } catch (error) {
             console.error("Error updating lab:", error);
@@ -186,6 +196,7 @@ export const LABProfile: React.FC = () => {
             setLoading(false);
         }
     };
+
 
 
 
@@ -214,311 +225,311 @@ export const LABProfile: React.FC = () => {
 
     return (
         <Layout>
-        <div className="flex h-full bg-gray-50">
-            <SettingsTabs />
-            <div className="flex-1 p-6">
-                <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                    Lab Profile
-                </h2>
-                <div className="space-y-6">
-                    <form onSubmit={handleSave}>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-4">
-                                {!isEditing ? (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleEditClick}
-                                        >
-                                            <Pencil className="h-4 w-4 mr-2" />
-                                            Edit
-                                        </Button>
-                                    </>
-                                ) : (
-                                    <div className="space-x-2">
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            type='submit'
-                                        >
-                                            <Save className="h-4 w-4 mr-2" />
-                                            Save
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleCancel}
-                                        >
-                                            <X className="h-4 w-4 mr-2" />
-                                            Cancel
-                                        </Button>
-                                    </div>
-                                )}
-                            </CardHeader>
+            <div className="flex h-full bg-gray-50">
+                <SettingsTabs />
+                <div className="flex-1 p-6">
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-6">
+                        Lab Profile
+                    </h2>
+                    <div className="space-y-6">
+                        <form onSubmit={handleSave}>
+                            <Card>
+                                <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-4">
+                                    {!isEditing ? (
+                                        <>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleEditClick}
+                                            >
+                                                <Pencil className="h-4 w-4 mr-2" />
+                                                Edit
+                                            </Button>
+                                        </>
+                                    ) : (
+                                        <div className="space-x-2">
+                                            <Button
+                                                variant="default"
+                                                size="sm"
+                                                type='submit'
+                                            >
+                                                <Save className="h-4 w-4 mr-2" />
+                                                Save
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={handleCancel}
+                                            >
+                                                <X className="h-4 w-4 mr-2" />
+                                                Cancel
+                                            </Button>
+                                        </div>
+                                    )}
+                                </CardHeader>
 
-                            <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg">Basic Information</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
+                                <CardContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-lg">Basic Information</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
 
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Logo</Label>
-                                                {isEditing ?
-                                                    <div className="relative">
-                                                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                                            <input
-                                                                id="fileInput"
-                                                                type="file"
-                                                                name="fileUpload"
-                                                                accept="image/*"
-                                                                onChange={handleFileChange}
-                                                                className="hidden"
-                                                                disabled={!isEditing}
-                                                            />
-                                                            <div className="space-y-4">
-                                                                <div className="flex justify-center space-x-1">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={triggerFileInput}
-                                                                        className="inline-flex items-center px-1 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                                    >
-                                                                        <Upload className="h-2 w-5 mr-2" />
-                                                                        Upload Files
-                                                                    </button>
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Logo</Label>
+                                                    {isEditing ?
+                                                        <div className="relative">
+                                                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                                                <input
+                                                                    id="fileInput"
+                                                                    type="file"
+                                                                    name="fileUpload"
+                                                                    accept="image/*"
+                                                                    onChange={handleFileChange}
+                                                                    className="hidden"
+                                                                    disabled={!isEditing}
+                                                                />
+                                                                <div className="space-y-4">
+                                                                    <div className="flex justify-center space-x-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={triggerFileInput}
+                                                                            className="inline-flex items-center px-1 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                                        >
+                                                                            <Upload className="h-2 w-5 mr-2" />
+                                                                            Upload Files
+                                                                        </button>
+                                                                    </div>
+                                                                    <p className="text-sm text-gray-500">
+                                                                        Click the button above to select lab logo
+                                                                    </p>
                                                                 </div>
-                                                                <p className="text-sm text-gray-500">
-                                                                    Click the button above to select lab logo
-                                                                </p>
                                                             </div>
-                                                        </div>
-                                                        {formData.file && (
-                                                            <p className="mt-2 text-sm text-gray-600">
-                                                                Uploaded file: <strong>{formData.file.name}</strong>
-                                                            </p>
-                                                        )}
-                                                    </div> :
-                                                    <div>
-                                                        {formData?.attachements && formData?.attachements.length > 0 && (
-                                                            <img
-                                                                src={
-                                                                    formData?.attachements
-                                                                        ? formData.attachements
-                                                                        : ""
-                                                                }
-                                                                alt="Lab Logo"
-                                                                className="mt-4"
-                                                                style={{ width: "150px", height: "30px", objectFit: "contain" }}
-                                                            />
-                                                        )}
-                                                    </div>}
-                                            </div>
+                                                            {formData.file && (
+                                                                <p className="mt-2 text-sm text-gray-600">
+                                                                    Uploaded file: <strong>{formData.file.name}</strong>
+                                                                </p>
+                                                            )}
+                                                        </div> :
+                                                        <div>
+                                                            {formData?.attachements && formData?.attachements.length > 0 && (
+                                                                <img
+                                                                    src={
+                                                                        formData?.attachements
+                                                                            ? formData.attachements
+                                                                            : ""
+                                                                    }
+                                                                    alt="Lab Logo"
+                                                                    className="mt-4"
+                                                                    style={{ width: "150px", height: "30px", objectFit: "contain" }}
+                                                                />
+                                                            )}
+                                                        </div>}
+                                                </div>
 
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Name</Label>
-                                                <div className="relative">
-                                                    <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        name="clientName"
-                                                        value={formData.name}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                name: e.target.value,
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                        className="pl-10"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Email</Label>
-                                                <div className="relative">
-                                                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        name="email"
-                                                        value={formData.office_address.email}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    email: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                        className="pl-10"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Phone</Label>
-                                                <div className="relative">
-                                                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        name="phone"
-                                                        value={formData.office_address.phone_number}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    phone_number: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                        className="pl-10"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                        </CardContent>
-                                    </Card>
-
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-lg">Address</CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Address1</Label>
-                                                <div className="relative">
-                                                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        name="address.address_1"
-                                                        value={formData.office_address.address_1}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    address_1: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                        className="pl-10"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-medium">Address2</Label>
-                                                <div className="relative">
-                                                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        name="address.address_2"
-                                                        value={formData.office_address.address_2}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    address_2: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        disabled={!isEditing}
-                                                        className="pl-10"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
                                                 <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">City</Label>
-                                                    <Input
-                                                        name="address.city"
-                                                        value={formData.office_address.city}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    city: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                    />
+                                                    <Label className="text-sm font-medium">Name</Label>
+                                                    <div className="relative">
+                                                        <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            name="clientName"
+                                                            value={formData.name}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    name: e.target.value,
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Email</Label>
+                                                    <div className="relative">
+                                                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            name="email"
+                                                            value={formData.office_address.email}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        email: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">State</Label>
-                                                    <Input
-                                                        name="address.state"
-                                                        value={formData.office_address.state_province}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    state_province: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                    />
+                                                    <Label className="text-sm font-medium">Phone</Label>
+                                                    <div className="relative">
+                                                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            name="phone"
+                                                            value={formData.office_address.phone_number}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        phone_number: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Country</Label>
-                                                    <Input
-                                                        name="address.country"
-                                                        value={formData.office_address.country}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    country: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">Zip Code</Label>
-                                                    <Input
-                                                        name="address.zipCode"
-                                                        value={formData.office_address.zip_postal}
-                                                        onChange={(e) => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                office_address: {
-                                                                    ...prev.office_address,
-                                                                    zip_postal: e.target.value,
-                                                                },
-                                                            }));
-                                                        }}
-                                                        required
-                                                        disabled={!isEditing}
-                                                    />
-                                                </div>
-                                            </div>
 
-                                        </CardContent>
-                                    </Card>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </form>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-lg">Address</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Address1</Label>
+                                                    <div className="relative">
+                                                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            name="address.address_1"
+                                                            value={formData.office_address.address_1}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        address_1: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-sm font-medium">Address2</Label>
+                                                    <div className="relative">
+                                                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                        <Input
+                                                            name="address.address_2"
+                                                            value={formData.office_address.address_2}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        address_2: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            disabled={!isEditing}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm font-medium">City</Label>
+                                                        <Input
+                                                            name="address.city"
+                                                            value={formData.office_address.city}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        city: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm font-medium">State</Label>
+                                                        <Input
+                                                            name="address.state"
+                                                            value={formData.office_address.state_province}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        state_province: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm font-medium">Country</Label>
+                                                        <Input
+                                                            name="address.country"
+                                                            value={formData.office_address.country}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        country: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label className="text-sm font-medium">Zip Code</Label>
+                                                        <Input
+                                                            name="address.zipCode"
+                                                            value={formData.office_address.zip_postal}
+                                                            onChange={(e) => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    office_address: {
+                                                                        ...prev.office_address,
+                                                                        zip_postal: e.target.value,
+                                                                    },
+                                                                }));
+                                                            }}
+                                                            required
+                                                            disabled={!isEditing}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </form>
+                    </div>
                 </div>
             </div>
-        </div>
         </Layout>
     );
 };
