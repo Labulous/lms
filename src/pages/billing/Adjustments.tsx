@@ -54,6 +54,9 @@ export interface Adjustment {
   description: string;
   payment_date: string; // ISO date string
 }
+interface Invoice {
+  case_number: string;
+}
 
 const Adjustments = () => {
   const [isNewCreditModalOpen, setIsNewCreditModalOpen] = useState(false);
@@ -67,6 +70,7 @@ const Adjustments = () => {
   const { user } = useAuth();
 
   const handleCreditSubmit = async (data: any) => {
+    debugger;
     if (data.type === "apply") {
       try {
         const {
@@ -77,12 +81,15 @@ const Adjustments = () => {
           paymentAmount,
           overpaymentAmount,
           remainingBalance,
+          labId
         } = data;
 
         if (!updatedInvoices || !client) {
           console.error("Missing updatedInvoices or client information.");
           return;
         }
+
+        const caseNumbers = updatedInvoices.map((inv: Invoice) => inv.case_number).join(",");
 
         // Step 1: Update invoices
         for (const invoice of updatedInvoices) {
@@ -124,6 +131,21 @@ const Adjustments = () => {
         const { error: paymentError } = await supabase
           .from("payments")
           .insert(paymentDataToInsert);
+
+
+
+        // Insert a new credit adjustment
+
+        const { error: insertError } = await supabase
+          .from("adjustments")
+          .insert({
+            client_id: client,
+            credit_amount: data.paymentAmount,
+            description: `Adjustment for the invoice ${caseNumbers}`,
+            lab_id: data.labId,
+            payment_date: date,
+          });
+
 
         if (paymentError) {
           throw new Error(`Failed to insert payment: ${paymentError.message}`);

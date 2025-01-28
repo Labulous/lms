@@ -213,6 +213,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
   console.log(selectedClient, "selectedClient");
   const handleSubmit = async () => {
+    debugger;
     try {
       setLoading(true);
 
@@ -234,12 +235,13 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
         overpaymentAmount,
         remainingBalance,
         updatedInvoices,
+        labId: lab?.labId, 
         type: "apply",
       };
       if (creditType === "apply") {
-        await onSubmit(paymentData);
+       await onSubmit(paymentData);
       } else {
-        await onSubmit(creditData);
+        //await onSubmit(creditData);
       }
 
       toast.success("Credit created successfully");

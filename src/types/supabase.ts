@@ -223,13 +223,14 @@ export interface OfficeAddress {
   state_province?: string;
   zip_postal?: string;
   country?: string;
-  phone_number?: string;  
+  phone_number?: string;
   email?: string;
 }
 
 export interface labDetail {
   name: string;
   id?: string;
+  attachements? : string,
   office_address: OfficeAddress; // office_address should be an array of objects
 }
 
@@ -877,6 +878,8 @@ export interface Users {
   id: string;
   role: string;
   name: string,
+  firstname: string,
+  lastname: string,
   email: string;
   phone: string;
   address: {
@@ -887,7 +890,7 @@ export interface Users {
   };
   clinicRegistrationNumber: string;
   notes: string;
-  doctors: [{ name: string, phone:string, email: string, notes: string }],
+  doctors: [{ name: string, phone: string, email: string, notes: string }],
   contactName: string;
   password: string;
   confirmPassword: string;

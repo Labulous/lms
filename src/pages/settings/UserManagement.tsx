@@ -52,6 +52,8 @@ export interface Doctor {
 
 interface userFormData {
     role: string;
+    firstname: string,
+    lastname: string,
     name: string,
     email: string;
     phone: string;
@@ -82,6 +84,8 @@ export const UserManagement: React.FC = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState<userFormData>({
         role: "",
+        firstname: "",
+        lastname: "",
         name: "",
         email: "",
         phone: "",
@@ -194,7 +198,7 @@ export const UserManagement: React.FC = () => {
         console.log(formData);
         setLoading(true);
         e.preventDefault();
-
+        formData.name = formData.firstname + ' ' + formData.lastname;
         const labData = await getLabIdByUserId(user?.id as string);
         if (!labData?.labId) {
             toast.error("Lab not found");
@@ -206,13 +210,15 @@ export const UserManagement: React.FC = () => {
                     .from("users")
                     .update({
                         name: formData.name,
+                        firstname: formData.firstname,
+                        lastname: formData.lastname,
                         //color: formData.color,
                         updated_at: new Date().toISOString(),
                     })
                     .eq("id", editingUser.id);
 
                 if (error) throw error;
-                toast.success("Pan updated successfully");
+                toast.success("User updated successfully");
                 setLoading(false);
             } else {
 
@@ -220,6 +226,8 @@ export const UserManagement: React.FC = () => {
                     await createUserByAdmins(labData.labId,
                         formData.role,
                         formData.name,
+                        formData.firstname,
+                        formData.lastname,
                         formData.email,
                         formData.password,
                         {
@@ -236,7 +244,7 @@ export const UserManagement: React.FC = () => {
                         });
                 }
                 else {
-                    await createUserByAdmins(labData.labId, formData.role, formData.name, formData.email, formData.password);
+                    await createUserByAdmins(labData.labId, formData.role, formData.name, formData.firstname, formData.lastname, formData.email, formData.password);
                 }
                 //if (error) throw error;
                 toast.success("User created successfully");
@@ -247,6 +255,8 @@ export const UserManagement: React.FC = () => {
             setFormData({
                 role: "",
                 name: "",
+                firstname: "",
+                lastname: "",
                 email: "",
                 password: "",
                 confirmPassword: "",
@@ -276,6 +286,8 @@ export const UserManagement: React.FC = () => {
         setFormData({
             role: user.role,
             name: user.name,
+            firstname: user?.firstname,
+            lastname: user?.lastname,
             email: user.email,
             password: "",
             confirmPassword: "",
@@ -376,6 +388,8 @@ export const UserManagement: React.FC = () => {
                                             setFormData({
                                                 role: "",
                                                 name: "",
+                                                firstname: "",
+                                                lastname: "",
                                                 email: "",
                                                 password: "",
                                                 confirmPassword: "",
@@ -409,7 +423,7 @@ export const UserManagement: React.FC = () => {
                                         </DialogTitle>
                                     </DialogHeader>
                                     <form onSubmit={handleSubmit} className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-3 gap-2">
                                             <div className="space-y-2">
                                                 <Label htmlFor="name">Role *</Label>
                                                 <Select value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))} >
@@ -433,12 +447,24 @@ export const UserManagement: React.FC = () => {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <Label htmlFor="name"> {formData.role == "client" ? "Client Name *" : "Name *"} </Label>
+                                                <Label htmlFor="name"> {formData.role == "client" ? "Client First Name *" : "First Name *"} </Label>
                                                 <Input
                                                     id="name"
-                                                    value={formData.name}
+                                                    value={formData.firstname}
                                                     onChange={(e) =>
-                                                        setFormData((prev) => ({ ...prev, name: e.target.value }))
+                                                        setFormData((prev) => ({ ...prev, firstname: e.target.value }))
+                                                    }
+                                                    placeholder="Enter name"
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="name"> {formData.role == "client" ? "Client Last Name *" : "Last Name *"} </Label>
+                                                <Input
+                                                    id="name"
+                                                    value={formData.lastname}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({ ...prev, lastname: e.target.value }))
                                                     }
                                                     placeholder="Enter name"
                                                     required
@@ -484,9 +510,6 @@ export const UserManagement: React.FC = () => {
                                                         type={showPassword ? "text" : "password"}
                                                         value={formData.password}
                                                         onChange={handlePasswordChange}
-                                                        // onChange={(e) =>
-                                                        //     setFormData((prev) => ({ ...prev, password: e.target.value }))
-                                                        // }
                                                         placeholder="Enter password"
                                                         required
                                                         className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
@@ -514,9 +537,6 @@ export const UserManagement: React.FC = () => {
                                                         type={showConfirmPassword ? "text" : "password"}
                                                         value={formData.confirmPassword}
                                                         onChange={handlePasswordChange}
-                                                        // onChange={(e) =>
-                                                        //     setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))
-                                                        // }
                                                         placeholder="Enter confirm password"
                                                         required
                                                         className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
