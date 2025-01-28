@@ -640,7 +640,13 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const date = row.getValue("received_date") as string;
-        return formatDate(date);
+        const createdAt = row.original.created_at;
+        console.log("Date values:", {
+          received_date: date,
+          created_at: createdAt,
+          case_id: row.original.id,
+        });
+        return formatDate(date || createdAt);
       },
     },
     {
@@ -1484,7 +1490,7 @@ const CaseList: React.FC = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        heading="Cases"
+        heading="Case Management"
         description="View and manage all your dental lab cases."
       >
         <Button onClick={() => navigate("/cases/new")}>

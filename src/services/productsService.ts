@@ -19,6 +19,7 @@ export interface ProductInput {
   product_type_id: string;
   billing_type_id: string;
   requires_shade?: boolean;
+  lab_id: string;
 }
 export interface ProductTypes {
   id: string;
@@ -99,7 +100,8 @@ class ProductsService {
           billing_type_id: input.billing_type_id,
           requires_shade: input.requires_shade || false, // Default to false if no requires_shade
           material_id: input.material_id || "",
-          product_type_id: input.product_type_id || "",
+          product_type_id: input.product_type_id,
+          lab_id: input.lab_id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
