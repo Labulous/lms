@@ -12,6 +12,7 @@ import { BalanceTrackingItem } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { clientsService } from "@/services/clientsService";
 
 const ClientBalanceList = () => {
   // State
@@ -50,7 +51,7 @@ const ClientBalanceList = () => {
     {
       outstandingBalance: 0,
       creditBalance: 0,
-      thisMonth: 200,
+      thisMonth: 0,
       lastMonth: 0,
       days30Plus: 0,
       days60Plus: 0,
@@ -78,10 +79,8 @@ const ClientBalanceList = () => {
           return;
         }
 
-        const { data: balanceList, error: balanceListError } = await supabase
-          .from("balance_tracking")
-          .select(
-            `
+        let query = supabase.from("balance_tracking").select(
+          `
                created_at,
               client_id,
               outstanding_balance,
@@ -95,8 +94,24 @@ const ClientBalanceList = () => {
               lab_id,
               clients!client_id ( client_name )
               `
-          )
-          .eq("lab_id", lab.labId);
+        );
+
+        if (user?.role === "client") {
+          let clientId: string = "";
+          const clients = await clientsService.getClients(lab?.labId as string);
+          if (Array.isArray(clients)) {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                clientId = client.id;
+              }
+            });
+          }
+          query = query.eq("client_id", clientId);
+        } else {
+          query = query.eq("lab_id", lab?.labId);
+        }
+
+        const { data: balanceList, error: balanceListError } = await query;
 
         if (balanceListError) {
           console.error("Error fetching products for case:", balanceListError);
@@ -124,7 +139,7 @@ const ClientBalanceList = () => {
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
-      <div className="flex justify-between items-center">
+      {/* <div className="flex justify-between items-center">
         <div className="flex gap-2">
           <Input
             placeholder="Search clients..."
@@ -133,7 +148,7 @@ const ClientBalanceList = () => {
             className="w-[300px]"
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Table */}
       <div className="border rounded-md">
