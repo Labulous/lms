@@ -69,34 +69,11 @@ const Home1: React.FC = () => {
       .from("cases")
       .select(
         `
-          id,
-          created_at,
-          received_date,
-          ship_date,
-          status,
-          patient_name,
-          due_date,
-          case_number,
-          invoice:invoices!case_id (
-            id,
-            case_id,
-            amount,
-            status,
-            due_amount,
-            due_date
-          ),
-          client:clients!client_id (
-            id,
-            client_name,
-            phone,
-            street,
-            city,
-            state,
-            zip_code
-          )
-        `
+        id,
+     
+      `
       )
-      .eq("id", "27dafea6-ecf5-41ef-8b40-65ae17c1b1a1")
+      .eq("id", activeCaseId)
       .single(), // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,

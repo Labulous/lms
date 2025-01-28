@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
-import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +70,14 @@ const colors = [
   "#00BCD4", // Cerulean Blue
   "#FFEB3B", // Lemon Yellow
 ];
-
+interface Client{
+  id:string,
+  client_name:string,
+  doctors:{
+    id:string,
+    name:string
+  }[]
+}
 interface OrderDetailsStepProps {
   formData: CaseFormData;
   onChange: (
@@ -391,7 +397,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         {clients && clients.length > 0 ? (
                           clients.map((client) => (
                             <SelectItem key={client.id} value={client.id}>
-                              {client.clientName || "Unnamed Client"}
+                              {client.client_name || "Unnamed Client"}
                             </SelectItem>
                           ))
                         ) : (

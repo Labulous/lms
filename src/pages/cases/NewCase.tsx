@@ -10,19 +10,27 @@ import FilesStep, {
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData } from "@/types/supabase";
 import { addCase, DeliveryMethod } from "../../data/mockCasesData";
-import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 export interface LoadingState {
   action: "save" | "update" | null;
   isLoading: boolean;
   progress?: number;
 }
-
+interface Client {
+  id: string;
+  client_name: string;
+  doctors: {
+    id: string;
+    name: string;
+  }[];
+}
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -53,12 +61,9 @@ const NewCase: React.FC = () => {
       invoiceNotes: "",
     },
   });
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
-  const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
@@ -125,53 +130,68 @@ const NewCase: React.FC = () => {
       return newData;
     });
   };
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  const {
+    data: clients,
+    error: clientsError,
+    isLoading: clientLoading,
+  } = useQuery(
+    labIdData
+      ? supabase
+          .from("clients")
+          .select(
+            `
+             id,
+             client_name,
+             doctors:doctors!id (
+             id,
+             name
+             )
+            `
+          )
+          .eq("lab_id", labIdData.lab_id)
+          .order("client_name", { ascending: true })
+      : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  if (clientsError) {
+    return <div>Faild to fetch Clients!</div>;
+  }
 
-  useEffect(() => {
-    const getCasesLength = async () => {
-      try {
-        setLoading(true);
+  if (isLabLoading) {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-gray-500">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+        <span>Loading clients...</span>
+      </div>
+    );
+  }
 
-        const labData = await getLabIdByUserId(user?.id as string);
-        if (!labData) {
-          toast.error("Unable to get Lab Id");
-          return null;
-        }
-        const clients = await clientsService.getClients(labData?.labId ?? "");
-        if (Array.isArray(clients)) {
-          setClients(clients);
-        }
+  if (labError) {
+    console.error("Error fetching lab ID:", labError);
+    toast.error("Failed to get labId");
+    return null;
+  }
 
-        setLab(labData);
-        const number = await fetchCaseCount(labData.labId); // Fetch current case count
+  if (!labIdData || !labIdData.lab_id) {
+    console.warn("No lab ID found.");
+    return null;
+  }
 
-        if (typeof number === "number") {
-          // Generate case number
-          const identifier = labData?.name
-            ?.substring(0, 3)
-            .toUpperCase() as string;
-          const currentYear = new Date().getFullYear().toString().slice(-2);
-          const currentMonth = String(new Date().getMonth() + 1).padStart(
-            2,
-            "0"
-          );
-          const sequentialNumber = String(number + 1).padStart(5, "0");
-
-          const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
-          setCaseNumber(caseNumber);
-        } else {
-          setCaseNumber(null);
-        }
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        toast.error("Failed to load clients");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getCasesLength();
-  }, [user?.id]);
-  console.log(errors, "Errors");
+  // If no match is found, return null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -262,7 +282,7 @@ const NewCase: React.FC = () => {
           custom_contact_details: transformedData.caseDetails?.customContact,
           custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
           custom_pontic_details: transformedData.caseDetails?.customPontic,
-          lab_id: lab?.labId,
+          lab_id: labIdData?.lab_id,
           attachements: selectedFiles.map((item) => item.url),
           working_pan_name: transformedData.workingPanName,
           working_pan_color: transformedData.workingPanColor,
@@ -276,26 +296,15 @@ const NewCase: React.FC = () => {
           custon_alloy_type: transformedData.caseDetails?.customAlloy,
         },
         products: selectedProducts,
-
         enclosedItems: transformedData.enclosedItems,
       };
       // Add case to database
-      await addCase(
-        newCase,
-        navigate,
-        setLoadingState,
-        lab?.name?.substring(0, 3).toUpperCase() as string
-      );
+      await addCase(newCase, navigate, setLoadingState);
     } catch (error) {
       console.error("Error creating case:", error);
       toast.error("Failed to create case");
     }
   };
-  useEffect(() => {
-    if (errors && mainDivRef.current) {
-      mainDivRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [errors]);
 
   return (
     <div
@@ -321,7 +330,7 @@ const NewCase: React.FC = () => {
               formData={formData}
               onChange={handleFormChange}
               errors={errors}
-              clients={clients}
+              clients={clients as Client[]}
               loading={loading}
               isAddingPan={isAddingPan}
               setIsAddingPan={setIsAddingPan}

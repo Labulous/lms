@@ -390,21 +390,26 @@ class ClientsService {
 
         // Compare current doctors with new doctors to see if we need to update
         const currentDoctorsSet = new Set(
-          currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+          currentDoctors.map(
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+          )
         );
         const newDoctorsSet = new Set(
-          clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+          clientData.doctors.map(
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+          )
         );
 
         // Only update if there are actual changes
-        if (currentDoctors.length !== clientData.doctors.length || 
-            ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
-          
+        if (
+          currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every((d) => newDoctorsSet.has(d))
+        ) {
           // First try to update existing doctors instead of deleting
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
             const currentDoctor = currentDoctors[i];
-            
+
             if (currentDoctor) {
               // Update existing doctor
               const { error: updateError } = await supabase
@@ -437,12 +442,15 @@ class ClientsService {
 
           // Remove any excess doctors
           if (currentDoctors.length > clientData.doctors.length) {
-            const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
+            const doctorsToKeep = currentDoctors.slice(
+              0,
+              clientData.doctors.length
+            );
             const { error: deleteError } = await supabase
               .from("doctors")
               .delete()
               .eq("client_id", id)
-              .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
+              .not("id", "in", `(${doctorsToKeep.map((d) => d.id).join(",")})`);
 
             if (deleteError) {
               logger.error("Error removing excess doctors", { deleteError });

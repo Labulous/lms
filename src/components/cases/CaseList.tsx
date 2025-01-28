@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { labDetail } from "@/types/supabase";
@@ -69,6 +69,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
 import { ExtendedCase } from "./CaseDetails";
 import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
+import toast from "react-hot-toast";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -77,11 +79,11 @@ const CaseList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState<ExtendedCase[]>([]);
   const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [loading, setLoading] = useState(true);
+  // const [error, setError] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
-  const [selectedRows, setSelectedRows] = useState<Row<ExtendedCase>[]>([]);
-  const [lab, setLab] = useState<labDetail | null>(null);
+  // const [selectedRows, setSelectedRows] = useState<Row<ExtendedCase>[]>([]);
+  // const [lab, setLab] = useState<labDetail | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -118,7 +120,6 @@ const CaseList: React.FC = () => {
     }),
     [paginationState]
   );
-  console.log(filteredCases, "filteredCases");
   const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
   const month = date.getMonth() + 1; // Months are 0-indexed
   const day = date.getDate();
@@ -141,7 +142,6 @@ const CaseList: React.FC = () => {
           onCheckedChange={(value) => {
             row.toggleSelected(!!value);
             if (value) {
-              console.log("value", value);
               setSelectedCases((items) => [...items, row.original.id]);
             } else {
               const cases = selectedCasesIds.filter(
@@ -680,8 +680,244 @@ const CaseList: React.FC = () => {
     },
   ];
 
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  if (labError) {
+    return <div>Loading!!!</div>;
+  }
+
+  const { data: query, error: caseError } = useQuery(
+    labIdData?.lab_id
+      ? supabase
+          .from("cases")
+          .select(
+            `
+       id,
+        created_at,
+        received_date,
+        ship_date,
+        status,
+        patient_name,
+        due_date,
+        attachements,
+        case_number,
+        invoice:invoices!case_id (
+          id,
+          case_id,
+          amount,
+          status,
+          due_amount,
+          due_date
+        ),
+        client:clients!client_id (
+          id,
+          client_name,
+          phone,
+          street,
+          city,
+          state,
+          zip_code
+        ),
+        doctor:doctors!doctor_id (
+          id,
+          name,
+          client:clients!client_id (
+            id,
+            client_name,
+            phone
+          )
+        ),
+        tag:working_tags!working_tag_id (
+          name,
+          color
+        ),
+        working_pan_name,
+        working_pan_color,
+        rx_number,
+        received_date,
+        invoice_notes,
+        isDueDateTBD,
+        appointment_date,
+        instruction_notes,
+        otherItems,
+        occlusal_type,
+        contact_type,
+        pontic_type,
+        qr_code,
+        custom_contact_details,
+        custom_occulusal_details,
+        custom_pontic_details,
+        enclosed_items:enclosed_case!enclosed_case_id (
+          impression,
+          biteRegistration,
+          photos,
+          jig,
+          opposingModel,
+          articulator,
+          returnArticulator,
+          cadcamFiles,
+          consultRequested,
+          user_id
+        ),
+        created_by:users!created_by (
+          name,
+          id
+        ),
+        product_ids:case_products!id (
+          products_id,
+          id
+        ),
+         margin_design_type,
+        occlusion_design_type,
+        alloy_type,
+        custom_margin_design_type,
+        custom_occlusion_design_type,
+        custon_alloy_type,
+      discounted_price:discounted_price!id (
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity,
+                total
+          ),
+        teethProduct: case_product_teeth!id (
+          id,
+          is_range,
+
+          tooth_number,
+          product_id,
+          occlusal_shade:shade_options!occlusal_shade_id (
+          name,
+          category,
+          is_active
+          ),
+           body_shade:shade_options!body_shade_id (
+           name,
+           category,
+            is_active
+            ),
+            gingival_shade:shade_options!gingival_shade_id (
+            name,
+            category,
+             is_active
+             ),
+             stump_shade:shade_options!stump_shade_id (
+               name,
+              category,
+              is_active
+                    ),
+                  pontic_teeth,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
+                  type,
+          product:products!product_id (
+                    id,
+                    name,
+                    price,
+                    lead_time,
+                    is_client_visible,
+                    is_taxable,
+                    created_at,
+                    updated_at,
+                    requires_shade,
+                    material:materials!material_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    product_type:product_types!product_type_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    billing_type:billing_types!billing_type_id (
+                      name,
+                      label,
+                      description,
+                      is_active
+                    )
+          )
+          )
+    `
+          )
+          .eq("lab_id", labIdData?.lab_id)
+          .order("created_at", { ascending: false })
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 5000,
+    }
+  );
+  if (caseError && labIdData?.lab_id) {
+    // toast.error("failed to fetech cases");
+  }
+
+  const arragedNewCases: ExtendedCase[] | undefined = query?.map(
+    (item: any) => {
+      return {
+        ...item,
+        products: item.teethProduct.map((tp: any) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          billing_type: tp.product.billing_type,
+          discounted_price: tp.product.discounted_price,
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            product_id: tp.product_id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+          },
+        })),
+      };
+    }
+  );
+
   const table = useReactTable({
-    data: filteredCases,
+    data: filteredCases as ExtendedCase[],
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -707,414 +943,419 @@ const CaseList: React.FC = () => {
     } else {
       table.getColumn("status")?.setFilterValue(undefined);
     }
-  }, [statusFilter]);
-
-  useEffect(() => {
     if (dueDateFilter) {
       table.getColumn("due_date")?.setFilterValue(dueDateFilter);
     } else {
       table.getColumn("due_date")?.setFilterValue(undefined);
     }
-  }, [dueDateFilter]);
+  }, [statusFilter, dueDateFilter]);
+
+  // useEffect(() => {
+  //   const getLabId = async () => {
+  //     try {
+  //       const data = await getLabDataByUserId(user?.id as string);
+  //       setLab(data);
+  //     } catch (error) {
+  //       console.error("Error fetching lab ID:", error);
+  //     }
+  //   };
+  //   getLabId();
+  // }, [user?.id]);
+
+  // useEffect(() => {
+  //   const fetchCases = async () => {
+  //     try {
+  //       setLoading(true);
+  //       if (!user?.id) {
+  //         throw new Error("No active session");
+  //       }
+
+  //       // Build query with filters
+  //       let query = supabase
+  //         .from("cases")
+  //         .select(
+  //           `
+  //             id,
+  //           created_at,
+  //           received_date,
+  //           ship_date,
+  //           status,
+  //           patient_name,
+  //           due_date,
+  //           client:clients!client_id (
+  //             id,
+  //             client_name,
+  //             phone,
+  //             street,
+  //             city,
+  //             state,
+  //             zip_code
+  //           ),
+  //           doctor:doctors!doctor_id (
+  //             id,
+  //             name,
+  //             client:clients!client_id (
+  //               id,
+  //               client_name,
+  //               phone
+  //             )
+  //           ),
+  //           tag:working_tags!working_tag_id (
+  //               name,
+  //               color
+  //             ),
+  //         working_pan_name,
+  //         working_pan_color,
+  //           rx_number,
+  //           isDueDateTBD,
+  //           appointment_date,
+  //           case_number,
+  //           otherItems,
+  //           invoice_notes,
+  //           occlusal_type,
+  //           contact_type,
+  //           pontic_type,
+  //           custom_contact_details,
+  //           custom_occulusal_details,
+  //           custom_pontic_details,
+  //           instruction_notes,
+  //           enclosed_items:enclosed_case!enclosed_case_id (
+  //             impression,
+  //             biteRegistration,
+  //             photos,
+  //             jig,
+  //             opposingModel,
+  //             articulator,
+  //             returnArticulator,
+  //             cadcamFiles,
+  //             consultRequested,
+  //             user_id
+  //           ),
+  //           invoice:invoices!case_id (
+  //             id,
+  //             case_id,
+  //             amount,
+  //             status,
+  //             due_amount,
+  //             due_date
+  //           ),
+  //           product_ids:case_products!id (
+  //             products_id,
+  //             id
+  //           )
+  //         `
+  //         )
+  //         .eq("lab_id", lab?.id)
+  //         .order("created_at", { ascending: false });
+
+  //       // Handle status filter from URL
+  //       const statusParam = searchParams.get("status");
+  //       if (statusParam) {
+  //         const statuses = statusParam.split(",");
+  //         query = query.in("status", statuses);
+  //       }
+
+  //       // Handle filter parameter from URL (for past_due, due_today, etc.)
+  //       const filter = searchParams.get("filter");
+  //       if (filter) {
+  //         const today = new Date();
+  //         today.setHours(0, 0, 0, 0);
+  //         const tomorrow = new Date(today);
+  //         tomorrow.setDate(tomorrow.getDate() + 1);
+
+  //         switch (filter) {
+  //           case "past_due":
+  //             query = query
+  //               .in("status", ["in_progress", "in_queue"])
+  //               .lt("due_date", today.toISOString());
+  //             break;
+  //           case "due_today":
+  //             query = query
+  //               .in("status", ["in_progress", "in_queue"])
+  //               .gte("due_date", today.toISOString())
+  //               .lt("due_date", tomorrow.toISOString());
+  //             break;
+  //           case "due_tomorrow":
+  //             const dayAfterTomorrow = new Date(tomorrow);
+  //             dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+  //             query = query
+  //               .in("status", ["in_progress", "in_queue"])
+  //               .gte("due_date", tomorrow.toISOString())
+  //               .lt("due_date", dayAfterTomorrow.toISOString());
+  //             break;
+  //           case "on_hold":
+  //             query = query.eq("status", "on_hold");
+  //             break;
+  //         }
+  //       } else {
+  //         // Handle other date filters only if filter param is not present
+  //         const dueDateParam = searchParams.get("due_date");
+  //         if (dueDateParam) {
+  //           const filterDate = new Date(dueDateParam);
+  //           const nextDay = new Date(filterDate);
+  //           nextDay.setDate(nextDay.getDate() + 1);
+
+  //           query = query
+  //             .gte("due_date", filterDate.toISOString())
+  //             .lt("due_date", nextDay.toISOString());
+  //         }
+
+  //         const createdAtParam = searchParams.get("created_at");
+  //         if (createdAtParam) {
+  //           const filterDate = new Date(createdAtParam);
+  //           const nextDay = new Date(filterDate);
+  //           nextDay.setDate(nextDay.getDate() + 1);
+
+  //           query = query
+  //             .gte("created_at", filterDate.toISOString())
+  //             .lt("created_at", nextDay.toISOString());
+  //         }
+
+  //         const updatedAtParam = searchParams.get("updated_at");
+  //         if (updatedAtParam) {
+  //           const filterDate = new Date(updatedAtParam);
+  //           const nextDay = new Date(filterDate);
+  //           nextDay.setDate(nextDay.getDate() + 1);
+
+  //           query = query
+  //             .gte("updated_at", filterDate.toISOString())
+  //             .lt("updated_at", nextDay.toISOString());
+  //         }
+  //       }
+
+  //       const { data: casesData, error: casesError } = await query;
+
+  //       if (casesError) {
+  //         console.error("Supabase error:", casesError);
+  //         throw casesError;
+  //       }
+
+  //       if (!casesData) {
+  //         setCases([]);
+  //         setFilteredCases([]);
+  //         return;
+  //       }
+  //       const transformedCases = await Promise.all(
+  //         casesData.map(async (item) => {
+  //           // Handle client data
+  //           const clientData = Array.isArray(item.client)
+  //             ? item.client[0]
+  //             : item.client;
+
+  //           // Handle doctor data
+  //           const doctorData = Array.isArray(item.doctor)
+  //             ? item.doctor[0]
+  //             : item.doctor;
+  //           const doctorClient =
+  //             doctorData?.client && Array.isArray(doctorData.client)
+  //               ? doctorData.client[0]
+  //               : doctorData?.client;
+
+  //           // Handle tag data
+  //           const tagData = Array.isArray(item.tag) ? item.tag[0] : item.tag;
+
+  //           // Handle enclosed items
+  //           const enclosedItemsData = Array.isArray(item.enclosed_items)
+  //             ? item.enclosed_items[0]
+  //             : item.enclosed_items;
+
+  //           // Prepare product IDs and case product IDs
+  //           const productsIdArray =
+  //             item?.product_ids?.map((p) => p.products_id) || [];
+  //           const caseProductIds = item?.product_ids?.map((p) => p.id) || [];
+
+  //           if (productsIdArray.length === 0) {
+  //             return {
+  //               ...item,
+  //               client: clientData
+  //                 ? {
+  //                     id: clientData.id,
+  //                     client_name: clientData.client_name,
+  //                     phone: clientData.phone,
+  //                   }
+  //                 : null,
+  //               doctor: doctorData
+  //                 ? {
+  //                     id: doctorData.id,
+  //                     name: doctorData.name,
+  //                     client: clientData
+  //                       ? {
+  //                           id: clientData.id,
+  //                           client_name: clientData.client_name,
+  //                           phone: clientData.phone,
+  //                         }
+  //                       : null,
+  //                   }
+  //                 : null,
+  //               tags: tagData,
+  //               enclosed_items: enclosedItemsData,
+  //               pan_tag: item.working_pan_name || null,
+  //               pan_color: item.working_pan_color || null,
+  //               products: [], // No products for this case
+  //             };
+  //           }
+
+  //           // Fetch products for the current case
+  //           const { data: productData, error: productsError } = await supabase
+  //             .from("products")
+  //             .select(
+  //               `
+  //                 id,
+  //                 name,
+  //                 price,
+  //                 lead_time,
+  //                 is_client_visible,
+  //                 is_taxable,
+  //                 created_at,
+  //                 updated_at,
+  //                 requires_shade,
+  //                 material:materials!material_id (
+  //                   name,
+  //                   description,
+  //                   is_active
+  //                 ),
+  //                 product_type:product_types!product_type_id (
+  //                   name,
+  //                   description,
+  //                   is_active
+  //                 ),
+  //                 billing_type:billing_types!billing_type_id (
+  //                   name,
+  //                   label,
+  //                   description,
+  //                   is_active
+  //                 )
+  //               `
+  //             )
+  //             .eq("lab_id", lab?.id)
+  //             .in("id", productsIdArray);
+
+  //           if (productsError) {
+  //             console.error("Error fetching products for case:", productsError);
+  //             return { ...item, products: [] }; // Return empty products if there's an error
+  //           }
+
+  //           const { data: discountedPriceData, error: discountedPriceError } =
+  //             await supabase
+  //               .from("discounted_price")
+  //               .select(
+  //                 `
+  //                 id,
+  //                 product_id,
+  //                 discount,
+  //                 final_price,
+  //                 price,
+  //                 quantity
+  //               `
+  //               )
+  //               .in("product_id", productsIdArray)
+  //               .eq("case_id", item.id);
+
+  //           if (discountedPriceError) {
+  //             console.error(
+  //               "Error fetching discounted prices for case:",
+  //               discountedPriceError
+  //             );
+  //           }
+
+  //           const { data: teethProductData, error: teethProductsError } =
+  //             await supabase
+  //               .from("case_product_teeth")
+  //               .select(
+  //                 `
+  //                 id,
+  //                 is_range,
+  //                 tooth_number,
+  //                 product_id,
+  //                 occlusal_shade:shade_options!occlusal_shade_id (
+  //                   name,
+  //                   category,
+  //                   is_active
+  //                 ),
+  //                 body_shade:shade_options!body_shade_id (
+  //                   name,
+  //                   category,
+  //                   is_active
+  //                 ),
+  //                 gingival_shade:shade_options!gingival_shade_id (
+  //                   name,
+  //                   category,
+  //                   is_active
+  //                 ),
+  //                 stump_shade:shade_options!stump_shade_id (
+  //                   name,
+  //                   category,
+  //                   is_active
+  //                 )
+  //               `
+  //               )
+  //               .in("product_id", productsIdArray)
+  //               .eq("case_product_id", item?.product_ids[0]?.id);
+
+  //           if (teethProductsError) {
+  //             console.error(
+  //               "Error fetching teeth products:",
+  //               teethProductsError
+  //             );
+  //           }
+
+  //           // Combine products with their relevant discounts and teeth products
+  //           const productsWithDiscounts = productData.flatMap((product) => {
+  //             const relevantDiscounts =
+  //               discountedPriceData?.filter(
+  //                 (discount) => discount.product_id === product.id
+  //               ) || [];
+
+  //             const relevantTeethProducts =
+  //               teethProductData?.filter(
+  //                 (teeth) => teeth.product_id === product.id
+  //               ) || [];
+
+  //             return relevantTeethProducts
+  //               .map((teeth, index) => {
+  //                 const discountedPrice = relevantDiscounts[index] || null;
+
+  //                 return {
+  //                   ...product,
+  //                   discounted_price: { ...discountedPrice },
+  //                   teethProduct: { ...teeth },
+  //                 };
+  //               })
+  //               .filter((item) => item.teethProduct.tooth_number !== null);
+  //           });
+
+  //           return {
+  //             ...item,
+  //             products: productsWithDiscounts,
+  //             labDetail: lab,
+  //           };
+  //         })
+  //       );
+
+  //       setCases(transformedCases as any);
+  //       setFilteredCases(transformedCases as any);
+  //     } catch (err) {
+  //       console.error("Error details:", err);
+  //       logger.error("Error fetching cases:", err);
+  //       setError(err instanceof Error ? err.message : "Failed to fetch cases");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (!authLoading && user && lab?.id) {
+  //     fetchCases();
+  //   }
+  // }, [user, authLoading, lab, searchParams]);
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
-    const getLabId = async () => {
-      try {
-        const data = await getLabDataByUserId(user?.id as string);
-        setLab(data);
-      } catch (error) {
-        console.error("Error fetching lab ID:", error);
-      }
-    };
-    getLabId();
-  }, [user?.id]);
-
-  useEffect(() => {
-    const fetchCases = async () => {
-      try {
-        setLoading(true);
-        if (!user?.id) {
-          throw new Error("No active session");
-        }
-
-        // Build query with filters
-        let query = supabase
-          .from("cases")
-          .select(
-            `
-              id,
-            created_at,
-            received_date,
-            ship_date,
-            status,
-            patient_name,
-            due_date,
-            client:clients!client_id (
-              id,
-              client_name,
-              phone,
-              street,
-              city,
-              state,
-              zip_code
-            ),
-            doctor:doctors!doctor_id (
-              id,
-              name,
-              client:clients!client_id (
-                id,
-                client_name,
-                phone
-              )
-            ),
-            tag:working_tags!working_tag_id (
-                name,
-                color
-              ),
-          working_pan_name,
-          working_pan_color,
-            rx_number,
-            isDueDateTBD,
-            appointment_date,
-            case_number,
-            otherItems,
-            invoice_notes,
-            occlusal_type,
-            contact_type,
-            pontic_type,
-            custom_contact_details,
-            custom_occulusal_details,
-            custom_pontic_details,
-            instruction_notes,
-            enclosed_items:enclosed_case!enclosed_case_id (
-              impression,
-              biteRegistration,
-              photos,
-              jig,
-              opposingModel,
-              articulator,
-              returnArticulator,
-              cadcamFiles,
-              consultRequested,
-              user_id
-            ),
-            invoice:invoices!case_id (
-              id,
-              case_id,
-              amount,
-              status,
-              due_amount,
-              due_date
-            ),
-            product_ids:case_products!id (
-              products_id,
-              id
-            )
-          `
-          )
-          .eq("lab_id", lab?.id)
-          .order("created_at", { ascending: false });
-
-        // Handle status filter from URL
-        const statusParam = searchParams.get("status");
-        if (statusParam) {
-          const statuses = statusParam.split(",");
-          query = query.in("status", statuses);
-        }
-
-        // Handle filter parameter from URL (for past_due, due_today, etc.)
-        const filter = searchParams.get("filter");
-        if (filter) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-
-          switch (filter) {
-            case "past_due":
-              query = query
-                .in("status", ["in_progress", "in_queue"])
-                .lt("due_date", today.toISOString());
-              break;
-            case "due_today":
-              query = query
-                .in("status", ["in_progress", "in_queue"])
-                .gte("due_date", today.toISOString())
-                .lt("due_date", tomorrow.toISOString());
-              break;
-            case "due_tomorrow":
-              const dayAfterTomorrow = new Date(tomorrow);
-              dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
-              query = query
-                .in("status", ["in_progress", "in_queue"])
-                .gte("due_date", tomorrow.toISOString())
-                .lt("due_date", dayAfterTomorrow.toISOString());
-              break;
-            case "on_hold":
-              query = query.eq("status", "on_hold");
-              break;
-          }
-        } else {
-          // Handle other date filters only if filter param is not present
-          const dueDateParam = searchParams.get("due_date");
-          if (dueDateParam) {
-            const filterDate = new Date(dueDateParam);
-            const nextDay = new Date(filterDate);
-            nextDay.setDate(nextDay.getDate() + 1);
-
-            query = query
-              .gte("due_date", filterDate.toISOString())
-              .lt("due_date", nextDay.toISOString());
-          }
-
-          const createdAtParam = searchParams.get("created_at");
-          if (createdAtParam) {
-            const filterDate = new Date(createdAtParam);
-            const nextDay = new Date(filterDate);
-            nextDay.setDate(nextDay.getDate() + 1);
-
-            query = query
-              .gte("created_at", filterDate.toISOString())
-              .lt("created_at", nextDay.toISOString());
-          }
-
-          const updatedAtParam = searchParams.get("updated_at");
-          if (updatedAtParam) {
-            const filterDate = new Date(updatedAtParam);
-            const nextDay = new Date(filterDate);
-            nextDay.setDate(nextDay.getDate() + 1);
-
-            query = query
-              .gte("updated_at", filterDate.toISOString())
-              .lt("updated_at", nextDay.toISOString());
-          }
-        }
-
-        const { data: casesData, error: casesError } = await query;
-
-        if (casesError) {
-          console.error("Supabase error:", casesError);
-          throw casesError;
-        }
-
-        if (!casesData) {
-          setCases([]);
-          setFilteredCases([]);
-          return;
-        }
-        const transformedCases = await Promise.all(
-          casesData.map(async (item) => {
-            // Handle client data
-            const clientData = Array.isArray(item.client)
-              ? item.client[0]
-              : item.client;
-
-            // Handle doctor data
-            const doctorData = Array.isArray(item.doctor)
-              ? item.doctor[0]
-              : item.doctor;
-            const doctorClient =
-              doctorData?.client && Array.isArray(doctorData.client)
-                ? doctorData.client[0]
-                : doctorData?.client;
-
-            // Handle tag data
-            const tagData = Array.isArray(item.tag) ? item.tag[0] : item.tag;
-
-            // Handle enclosed items
-            const enclosedItemsData = Array.isArray(item.enclosed_items)
-              ? item.enclosed_items[0]
-              : item.enclosed_items;
-
-            // Prepare product IDs and case product IDs
-            const productsIdArray =
-              item?.product_ids?.map((p) => p.products_id) || [];
-            const caseProductIds = item?.product_ids?.map((p) => p.id) || [];
-
-            if (productsIdArray.length === 0) {
-              return {
-                ...item,
-                client: clientData
-                  ? {
-                      id: clientData.id,
-                      client_name: clientData.client_name,
-                      phone: clientData.phone,
-                    }
-                  : null,
-                doctor: doctorData
-                  ? {
-                      id: doctorData.id,
-                      name: doctorData.name,
-                      client: clientData
-                        ? {
-                            id: clientData.id,
-                            client_name: clientData.client_name,
-                            phone: clientData.phone,
-                          }
-                        : null,
-                    }
-                  : null,
-                tags: tagData,
-                enclosed_items: enclosedItemsData,
-                pan_tag: item.working_pan_name || null,
-                pan_color: item.working_pan_color || null,
-                products: [], // No products for this case
-              };
-            }
-
-            // Fetch products for the current case
-            const { data: productData, error: productsError } = await supabase
-              .from("products")
-              .select(
-                `
-                  id,
-                  name,
-                  price,
-                  lead_time,
-                  is_client_visible,
-                  is_taxable,
-                  created_at,
-                  updated_at,
-                  requires_shade,
-                  material:materials!material_id (
-                    name,
-                    description,
-                    is_active
-                  ),
-                  product_type:product_types!product_type_id (
-                    name,
-                    description,
-                    is_active
-                  ),
-                  billing_type:billing_types!billing_type_id (
-                    name,
-                    label,
-                    description,
-                    is_active
-                  )
-                `
-              )
-              .eq("lab_id", lab?.id)
-              .in("id", productsIdArray);
-
-            if (productsError) {
-              console.error("Error fetching products for case:", productsError);
-              return { ...item, products: [] }; // Return empty products if there's an error
-            }
-
-            const { data: discountedPriceData, error: discountedPriceError } =
-              await supabase
-                .from("discounted_price")
-                .select(
-                  `
-                  id,
-                  product_id,
-                  discount,
-                  final_price,
-                  price,
-                  quantity
-                `
-                )
-                .in("product_id", productsIdArray)
-                .eq("case_id", item.id);
-
-            if (discountedPriceError) {
-              console.error(
-                "Error fetching discounted prices for case:",
-                discountedPriceError
-              );
-            }
-
-            const { data: teethProductData, error: teethProductsError } =
-              await supabase
-                .from("case_product_teeth")
-                .select(
-                  `
-                  id,
-                  is_range,
-                  tooth_number,
-                  product_id,
-                  occlusal_shade:shade_options!occlusal_shade_id (
-                    name,
-                    category,
-                    is_active
-                  ),
-                  body_shade:shade_options!body_shade_id (
-                    name,
-                    category,
-                    is_active
-                  ),
-                  gingival_shade:shade_options!gingival_shade_id (
-                    name,
-                    category,
-                    is_active
-                  ),
-                  stump_shade:shade_options!stump_shade_id (
-                    name,
-                    category,
-                    is_active
-                  )
-                `
-                )
-                .in("product_id", productsIdArray)
-                .eq("case_product_id", item?.product_ids[0]?.id);
-
-            if (teethProductsError) {
-              console.error(
-                "Error fetching teeth products:",
-                teethProductsError
-              );
-            }
-
-            // Combine products with their relevant discounts and teeth products
-            const productsWithDiscounts = productData.flatMap((product) => {
-              const relevantDiscounts =
-                discountedPriceData?.filter(
-                  (discount) => discount.product_id === product.id
-                ) || [];
-
-              const relevantTeethProducts =
-                teethProductData?.filter(
-                  (teeth) => teeth.product_id === product.id
-                ) || [];
-
-              return relevantTeethProducts
-                .map((teeth, index) => {
-                  const discountedPrice = relevantDiscounts[index] || null;
-
-                  return {
-                    ...product,
-                    discounted_price: { ...discountedPrice },
-                    teethProduct: { ...teeth },
-                  };
-                })
-                .filter((item) => item.teethProduct.tooth_number !== null);
-            });
-
-            return {
-              ...item,
-              products: productsWithDiscounts,
-              labDetail: lab,
-            };
-          })
-        );
-
-        setCases(transformedCases as any);
-        setFilteredCases(transformedCases as any);
-      } catch (err) {
-        console.error("Error details:", err);
-        logger.error("Error fetching cases:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch cases");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (!authLoading && user && lab?.id) {
-      fetchCases();
+    if (arragedNewCases && arragedNewCases.length > 0 && !hasRunRef.current) {
+      setCases(arragedNewCases);
+      console.log("hi");
+      hasRunRef.current = true; // Mark that the effect has run
     }
-  }, [user, authLoading, lab, searchParams]);
-
+  }, [arragedNewCases]);
   useEffect(() => {
     const filter = searchParams.get("filter");
 
@@ -1188,10 +1429,16 @@ const CaseList: React.FC = () => {
 
       setFilteredCases(filteredCases);
     } else {
-      setFilteredCases(cases);
+      const setData = async () => {
+        (await arragedNewCases)
+          ? setFilteredCases(cases)
+          : setFilteredCases([]);
+      };
+      setData();
     }
   }, [searchParams, cases]);
 
+  console.log(cases, "cases");
   const handlePrint = (selectedRows: Row<ExtendedCase>[]) => {
     console.log("Printing selected rows:", selectedRows);
   };
@@ -1226,18 +1473,14 @@ const CaseList: React.FC = () => {
     window.open(previewUrl, "_blank");
   };
 
-  if (loading) {
+  if (!arragedNewCases) {
     return <div>Loading...</div>;
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-  console.log(selectedCasesIds, "Selected");
-  console.log(
-    cases.filter((item) => selectedCasesIds.includes(item.id)),
-    "Selected"
-  );
+  //   return <div>Error: {error}</div>;
+  // }
+  const amount = 20133;
+
   return (
     <div className="space-y-6">
       <PageHeader
