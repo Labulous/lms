@@ -183,7 +183,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/balance"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Balances />
                 </Layout>

@@ -1,8 +1,18 @@
 import { Button } from "@/components/ui/button";
 import BalanceList from "@/components/billing/BalanceList";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import ClientBalanceList from "@/components/billing/ClientBalanceList";
 
 const Balances = () => {
+  const { user } = useAuth();
+
   return (
     <main className="flex flex-col gap-8 p-8">
       <div className="flex items-center justify-between">
@@ -35,7 +45,7 @@ const Balances = () => {
         </div>
       </div>
 
-      <BalanceList />
+      {user?.role === "client" ? <ClientBalanceList /> : <BalanceList />}
     </main>
   );
 };
