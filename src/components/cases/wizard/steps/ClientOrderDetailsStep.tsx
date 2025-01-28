@@ -35,10 +35,33 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
 const logger = createLogger({ module: "OrderDetailsStep" });
+
+const colors = [
+  "#FF5733", // Vibrant Red-Orange
+  "#33FF57", // Bright Green
+  "#3357FF", // Bold Blue
+  "#FF33A8", // Hot Pink
+  "#FFD133", // Bright Yellow
+  "#33FFF5", // Aqua Blue
+  "#8D33FF", // Deep Purple
+  "#FF8633", // Soft Orange
+  "#33FF99", // Mint Green
+  "#FF3333", // Bright Red
+  "#4CAF50", // Forest Green
+  "#FFC107", // Amber
+  "#9C27B0", // Amethyst Purple
+  "#2196F3", // Sky Blue
+  "#FF9800", // Vivid Orange
+  "#E91E63", // Raspberry Pink
+  "#607D8B", // Cool Gray
+  "#673AB7", // Royal Purple
+  "#00BCD4", // Cerulean Blue
+  "#FFEB3B", // Lemon Yellow
+];
 
 interface OrderDetailsStepProps {
   formData: CaseFormData;
@@ -65,10 +88,22 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const [pans, setPans] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isCustomColor, setIsCustomColor] = useState(false);
   const [isAddingPan, setIsAddingPan] = useState(false);
   const addTagTriggerRef = useRef<HTMLButtonElement>(null);
   const [newTagData, setNewTagData] = useState({ name: "", color: "#000000" });
   const { user } = useAuth();
+  const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
+  const [isEditingTag, setIsEditingTag] = useState(false);
+
+  const handleEditTag = async (tagId: string) => {
+    const tag = tags.find((t) => t.id === tagId);
+    if (tag) {
+      setEditingTag(tag);
+      setIsEditingTag(true);
+    }
+  };
+
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -168,6 +203,97 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const WorkingTagSelect = ({
+    value,
+    onValueChange,
+    tags,
+    onEdit,
+    onDelete,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    tags: WorkingTag[];
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <Select
+        value={value}
+        onValueChange={onValueChange}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        <SelectTrigger className="bg-white">
+          <SelectValue placeholder="Select Tag" className="text-gray-500">
+            {value && tags.find((t) => t.id === value) && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{
+                    backgroundColor: tags.find((t) => t.id === value)?.color,
+                  }}
+                />
+                <span>
+                  {tags.find((t) => t.id === value)?.name || "Unnamed tag"}
+                </span>
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          className="max-h-[200px] overflow-y-auto"
+        >
+          {tags && tags.length > 0 ? (
+            tags.map((tag) => (
+              <SelectItem key={tag.id} value={tag.id} className="pr-24">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span>{tag.name || "Unnamed tag"}</span>
+                </div>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <button
+                    type="button"
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdit(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="_no_tags" disabled>
+              No tags available
+            </SelectItem>
+          )}
+        </SelectContent>
+      </Select>
+    );
   };
 
   return (
@@ -510,6 +636,183 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   {errors.deliveryMethod}
                 </p>
               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-5 w-full">
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Working Pan</Label>
+                  {/* <ColorPicker
+                    mode="create"
+                    selectedColor="#000000"
+                    tags={[]}
+                    type={"pan"}
+                    setTags={setPans}
+                    setPans={setPans}
+                    pans={[]}
+                    onClose={() => setIsAddingPan(false)}
+                    initiallyOpen={isAddingPan}
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingTag(false);
+                          setIsAddingPan(true);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add New
+                      </button>
+                    }
+                  /> */}
+                </div>
+                <div className="relative">
+                  <div className="flex gap-2 relative">
+                    <Input
+                      name="text"
+                      placeholder="Enter the Pan"
+                      value={formData.workingPanName}
+                      onChange={(e) =>
+                        onChange(
+                          "workingPanName",
+                          e.target.value || ("" as string)
+                        )
+                      }
+                    />
+                    <div
+                      className="flex h-10 w-12 bg-gray-300 rounded-md cursor-pointer"
+                      style={{
+                        backgroundColor: formData.workingPanColor,
+                      }}
+                      onClick={() => setIsAddingPan(!isAddingPan)}
+                    ></div>
+                  </div>
+                  {isAddingPan && (
+                    <div
+                      className="w-72 absolute top-12 bg-white p-2 z-50 border rounded-md"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    >
+                      <div className="flex justify-end py-2">
+                        <button onClick={() => setIsAddingPan(false)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className=" space-y-5 bg-white">
+                        <div className="flex w-full gap-4">
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(false)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "secondary" : "destructive"
+                            }
+                          >
+                            Select Colors
+                          </Button>
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(true)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "destructive" : "secondary"
+                            }
+                          >
+                            Select Custom Color
+                          </Button>
+                        </div>
+                        {!isCustomColor ? (
+                          <div className="grid grid-cols-5 gap-2 bg-white z-50">
+                            {colors.map((item, key) => {
+                              return (
+                                <div
+                                  key={key}
+                                  className={`h-12 w-12 rounded-md cursor-pointer ${
+                                    formData.workingPanColor === item
+                                      ? "border-2 border-black"
+                                      : ""
+                                  }`}
+                                  style={{
+                                    backgroundColor: item,
+                                  }}
+                                  onClick={() =>
+                                    onChange("workingPanColor", item)
+                                  }
+                                ></div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <HexColorPicker
+                            color={formData.workingPanColor || "#fffff"}
+                            onChange={(color) =>
+                              onChange("workingPanColor", color)
+                            }
+                            style={{ width: "100% !important" }}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs">Working Tag</Label>
+                  <ColorPicker
+                    mode="create"
+                    selectedColor="#000000"
+                    tags={[]}
+                    setTags={setTags}
+                    setPans={setPans}
+                    pans={[]}
+                    onClose={() => setIsAddingTag(false)}
+                    initiallyOpen={isAddingTag}
+                    type={"tag"}
+                    trigger={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingPan(false);
+                          setIsAddingTag(!isAddingTag);
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add New
+                      </button>
+                    }
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <WorkingTagSelect
+                    value={formData.workingTagName || ""}
+                    onValueChange={(value) => onChange("workingTagName", value)}
+                    tags={tags}
+                    onEdit={handleEditTag}
+                    onDelete={(id) => {
+                      const tagToDelete = tags.find((t) => t.id === id);
+                      if (tagToDelete) {
+                        const confirmed = window.confirm(
+                          `Are you sure you want to delete the tag "${tagToDelete.name}"?`
+                        );
+                        if (confirmed) {
+                          // If the deleted tag is currently selected, clear the selection
+                          if (formData.workingTagName === id) {
+                            onChange("workingTagName", "");
+                          }
+                          // Remove the tag from the tags array
+                          setTags(tags.filter((t) => t.id !== id));
+                          toast.success("Tag deleted successfully");
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -526,6 +526,7 @@ const ClientUpdateCase: React.FC = () => {
                 tooth_number,
                 notes,
                 product_id,
+                quantity,
                 custom_occlusal_shade,
                 custom_body_shade,
                 custom_gingival_shade,
@@ -626,6 +627,7 @@ const ClientUpdateCase: React.FC = () => {
           ...(caseData as any),
           products: productsWithDiscounts,
         });
+
         setSelectedProducts((items) => [
           ...productsWithDiscounts.map((item) => ({
             id: item?.id || "",
@@ -649,6 +651,7 @@ const ClientUpdateCase: React.FC = () => {
             },
             discount: item?.discounted_price?.discount || 0,
             notes: item?.teethProduct?.notes || "",
+            quantity: item?.teethProduct?.quantity || 1,
           })),
         ]);
       } catch (error) {

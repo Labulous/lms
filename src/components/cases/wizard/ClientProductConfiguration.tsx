@@ -320,15 +320,6 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
         toast.error("Error fetching products from Supabase");
         throw error;
       }
-      console.log(
-        "Fetched products:",
-        fetchedProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          material: p.material,
-          type: p.product_type,
-        }))
-      );
       setProducts(fetchedProducts);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -347,7 +338,6 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const getShadeOptions = async (labId: string) => {
       const shadeOptions = await fetchShadeOptions(labId);
       if (shadeOptions) {
-        console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
         const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
@@ -406,7 +396,6 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
     setSelectedProduct(product);
@@ -526,6 +515,7 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   console.log(groupSelectedTeethState, "groupSelectedTeethState");
+
   const handleSaveShades = (index: number) => {
     const updatedShades = {
       occlusal_shade: shadeData[index]?.occlusal_shade || "",
@@ -541,8 +531,6 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
       manual_occlusal: shadeData[index]?.manual_occlusal || "",
       manual_stump: shadeData[index]?.manual_stump || "",
     };
-
-    console.log(updatedShades, "updatedShades");
 
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
@@ -706,9 +694,6 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setselectedProducts([newProduct]);
     }
   }, selectedProducts);
-  console.log(selectedProducts);
-
-  console.log(shadesItems, "shadeData");
 
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
@@ -878,7 +863,15 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               row.shades?.body_shade ||
                               row.shades?.gingival_shade ||
                               row.shades?.occlusal_shade ||
-                              row.shades?.stump_shade
+                              row.shades?.stump_shade ||
+                              row.shades?.custom_body ||
+                              row.shades?.custom_gingival ||
+                              row.shades?.custom_occlusal ||
+                              row.shades?.custom_stump ||
+                              row.shades?.manual_body ||
+                              row.shades?.manual_gingival ||
+                              row.shades?.manual_occlusal ||
+                              row.shades?.manual_stump
                                 ? "text-blue-600"
                                 : ""
                             }`}
@@ -892,7 +885,11 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             row.shades?.custom_gingival ||
                             row.shades?.custom_occlusal ||
                             row.shades?.custom_stump ||
-                            row.shades?.stump_shade ? (
+                            row.shades?.stump_shade ||
+                            row.shades?.manual_body ||
+                            row.shades?.manual_gingival ||
+                            row.shades?.manual_occlusal ||
+                            row.shades?.manual_stump ? (
                               <div>
                                 {shadeData[index]?.occlusal_shade === "manual"
                                   ? shadeData[index]?.manual_occlusal
