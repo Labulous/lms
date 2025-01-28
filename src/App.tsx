@@ -27,6 +27,8 @@ import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import ClientProfile from "./components/clients/ClientProfile";
+import ClientAdjustments from "./pages/billing/ClientAdjustments";
+import ClientStatements from "./pages/billing/ClientStatements";
 import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
 
@@ -201,11 +203,31 @@ const App: React.FC = () => {
             }
           />
           <Route
+            path="/billing/client-statements"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientStatements />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/billing/adjustments"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <Adjustments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing/client-adjustments"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientAdjustments />
                 </Layout>
               </ProtectedRoute>
             }
@@ -218,8 +240,8 @@ const App: React.FC = () => {
                   {/* <ClientProfile /> */}
                   <ClientProfile
                     client={null} // Pass null or the required client data
-                    onEdit={() => {}}
-                    onDelete={() => {}}
+                    onEdit={() => { }}
+                    onDelete={() => { }}
                     loading={false}
                     error={null}
                   />

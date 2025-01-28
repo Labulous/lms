@@ -165,11 +165,11 @@ const StatementList = ({ statement }: StatementList) => {
                   ${statement.outstanding.toFixed(2)}
                 </TableCell>
                 <TableCell>{formatDate(statement.last_sent)}</TableCell>
-                <TableCell>
+                {user?.role != "client" && <TableCell>
                   <Button variant="ghost" size="icon">
                     <Settings2 className="h-4 w-4" />
                   </Button>
-                </TableCell>
+                </TableCell>}
               </TableRow>
             ))}
           </TableBody>

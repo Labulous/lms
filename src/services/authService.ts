@@ -600,6 +600,28 @@ export const getLabDataByUserId = async (
   }
 };
 
+//Check Email exist in users table
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    // Query the 'users' table to check for the email
+    const { data: userData, error } = await supabase
+      .from("users")
+      .select("id") // Only need the id to check existence
+      .eq("email", email);
+
+    if (error) {
+      console.error("Error checking for email in users table:", error);
+      throw new Error("Error occurred while checking email existence.");
+    }
+
+    // Return true if email exists, false otherwise
+    return userData && userData.length > 0;
+  } catch (error) {
+    console.error("Error in checkEmailExists function:", error);
+    throw error;
+  }
+};
+
 // Listen to auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
   logger.debug("Auth state changed", { event, userId: session?.user?.id });

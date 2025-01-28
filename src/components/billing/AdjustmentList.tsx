@@ -19,6 +19,7 @@ import {
 import { Settings2, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Mock data for development
 const mockAdjustments = [
@@ -44,10 +45,12 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
 
+  const { user } = useAuth();
+
   const clearSearch = () => {
     setSearchQuery("");
   };
-  console.log(adjustments, "adjustmentsadjustments");
+  console.log(adjustments, "adjustments");
 
   return (
     <div className="space-y-4">
@@ -96,31 +99,41 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {adjustments.map((adjustment) => (
-              <TableRow key={adjustment.id}>
-                <TableCell>{formatDate(adjustment.payment_date)}</TableCell>
-                <TableCell>{adjustment.client.client_name}</TableCell>
-                <TableCell>{adjustment.description}</TableCell>
-                <TableCell className="text-right">
-                  {adjustment?.credit_amount != null &&
-                  adjustment.credit_amount > 0
-                    ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
-                    : "-"}
-                </TableCell>
+            {adjustments
+              .filter((adjustment) => {
+                // Apply search filter here
+                return (
+                  adjustment.client.client_name
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                  adjustment.description.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+              })
+              .map((adjustment) => (
+                <TableRow key={adjustment.id}>
+                  <TableCell>{formatDate(adjustment.payment_date)}</TableCell>
+                  <TableCell>{adjustment.client.client_name}</TableCell>
+                  <TableCell>{adjustment.description}</TableCell>
+                  <TableCell className="text-right">
+                    {adjustment?.credit_amount != null && adjustment.credit_amount > 0
+                      ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
+                      : "-"}
+                  </TableCell>
 
-                <TableCell className="text-right">
-                  {adjustment.debit_amount && adjustment?.debit_amount > 0
-                    ? `$${adjustment.debit_amount.toFixed(2)}`
-                    : "-"}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon">
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                  <TableCell className="text-right">
+                    {adjustment.debit_amount && adjustment?.debit_amount > 0
+                      ? `$${adjustment.debit_amount.toFixed(2)}`
+                      : "-"}
+                  </TableCell>
+                  {user?.role != "client" && <TableCell>
+                    <Button variant="ghost" size="icon">
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>}
+                </TableRow>
+              ))}
           </TableBody>
+
         </Table>
       </div>
 
