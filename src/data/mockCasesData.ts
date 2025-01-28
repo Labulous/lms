@@ -7,6 +7,7 @@ import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import { getLabIdByUserId } from "@/services/authService";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -254,12 +255,15 @@ const saveCases = async (
   try {
     // Step 1: Save enclosed case details
     const caseCount = await fetchCaseCount(cases.overview.lab_id); // Fetch current case count
+    const labData = await getLabIdByUserId(cases.overview.created_by as string);
 
     if (typeof caseCount !== "number") {
       toast.error("Unable to get Case Number");
       setLoadingState && setLoadingState({ isLoading: false, action: "save" });
       return;
     }
+    setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,
       biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -288,7 +292,9 @@ const saveCases = async (
     const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
     const sequentialNumber = String(caseCount + 1).padStart(5, "0");
 
-    const case_number = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    const case_number = `${labData?.name
+      .substring(0, 3)
+      .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
@@ -342,8 +348,8 @@ const saveCases = async (
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
-        due_amount: totalAmount,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };
@@ -363,9 +369,13 @@ const saveCases = async (
       }
       const { data: count, error: caseCountError } = await supabase
         .from("case_number_tracker")
-        .insert({ case_number: caseCount + 1, case_id: savedCaseId })
+        .insert({
+          case_number: caseCount + 1,
+          case_id: savedCaseId,
+          lab_id: cases.overview.lab_id,
+        })
         .select("*");
-
+      console.log(count, "count");
       if (caseCountError) {
         console.error("Error creating case count:", invoiceError);
       } else {
@@ -480,22 +490,22 @@ const updateCases = async (
           (product.price - (product.price * product.discount) / 100 || 0) *
           (product?.quantity || 1),
         case_id: caseId,
-        total: totalAmount || 0,
+        total: Number(totalAmount) || 0,
         user_id: cases.overview.created_by || "",
       };
       const UpdatedInvoice = {
         case_id: caseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
+        amount: Number(totalAmount),
         due_date: null,
       };
       const newInvoice = {
         case_id: caseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
-        due_amount: totalAmount,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };
@@ -754,11 +764,10 @@ export const getCaseById = (id: string): Case | undefined => {
 export const addCase = (
   newCase: Case,
   navigate?: any,
-  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
-  identifier?: string
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
 ): void => {
   cases = [newCase];
-  saveCases(newCase, navigate, setLoadingState, identifier);
+  saveCases(newCase, navigate, setLoadingState);
 };
 
 // Function to update a case

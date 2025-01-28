@@ -64,62 +64,7 @@ export interface CalendarEvents {
 const Home1: React.FC = () => {
   const navigate = useNavigate();
 
-  const { data: caseDataa, error: caseError } = useQuery(
-    supabase
-      .from("cases")
-      .select(
-        `
-          id,
-          created_at,
-          received_date,
-          ship_date,
-          status,
-          patient_name,
-          due_date,
-          case_number,
-          invoice:invoices!case_id (
-            id,
-            case_id,
-            amount,
-            status,
-            due_amount,
-            due_date
-          ),
-          client:clients!client_id (
-            id,
-            client_name,
-            phone,
-            street,
-            city,
-            state,
-            zip_code
-          )
-        `
-      )
-      .eq("id", "27dafea6-ecf5-41ef-8b40-65ae17c1b1a1")
-      .single(), // Fetching a single record based on `activeCaseId`
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
-
-  // Error handling
-  if (caseError) {
-    return <div>Error fetching case data: {caseError.message}</div>;
-  }
-
-  // Show loading state until the data is available
-  if (!caseDataa) {
-    return <div>Loading...</div>;
-  }
-  console.log(caseDataa, "caseDataa");
-  return (
-    <div className="container mx-auto p-6">
-      {" "}
-      home 1 ${caseDataa.case_number}
-    </div>
-  );
+  return <div className="container mx-auto p-6"> home 1 $</div>;
 };
 
 export default Home1;
