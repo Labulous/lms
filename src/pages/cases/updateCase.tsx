@@ -21,6 +21,7 @@ import {
   DiscountedPrice,
 } from "@/components/cases/CaseDetails";
 import { FileWithStatus } from "@/components/cases/wizard/steps/FileUploads";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -655,7 +656,7 @@ const UpdateCase: React.FC = () => {
     return () => {
       null;
     };
-  }, [caseId, lab]);
+  }, [caseId, clients]);
 
   return (
     <div
@@ -711,7 +712,14 @@ const UpdateCase: React.FC = () => {
               formData={formData}
               onChange={handleFormChange}
               errors={errors}
-              clients={clients}
+              clients={clients.map((item) => ({
+                id: item.id, 
+                client_name: item.clientName,
+                doctors: item.doctors.map((item) => ({
+                  id: item.id as string,
+                  name: item.name,
+                })),
+              }))}
               loading={loading}
               isAddingPan={isAddingPan}
               setIsAddingPan={setIsAddingPan}

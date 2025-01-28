@@ -70,13 +70,13 @@ const colors = [
   "#00BCD4", // Cerulean Blue
   "#FFEB3B", // Lemon Yellow
 ];
-interface Client{
-  id:string,
-  client_name:string,
-  doctors:{
-    id:string,
-    name:string
-  }[]
+interface Client {
+  id: string;
+  client_name: string;
+  doctors: {
+    id: string;
+    name: string;
+  }[];
 }
 interface OrderDetailsStepProps {
   formData: CaseFormData;
@@ -115,7 +115,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const [isEditingTag, setIsEditingTag] = useState(false);
 
   const handleEditTag = async (tagId: string) => {
-    const tag = tags.find(t => t.id === tagId);
+    const tag = tags.find((t) => t.id === tagId);
     if (tag) {
       setEditingTag(tag);
       setIsEditingTag(true);
@@ -143,9 +143,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       if (error) throw error;
 
       // Update local state
-      setTags(tags.map(tag => 
-        tag.id === editingTag.id ? editingTag : tag
-      ));
+      setTags(tags.map((tag) => (tag.id === editingTag.id ? editingTag : tag)));
 
       setIsEditingTag(false);
       setEditingTag(null);
@@ -291,26 +289,33 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-      <Select 
-        value={value} 
+      <Select
+        value={value}
         onValueChange={onValueChange}
         open={isOpen}
         onOpenChange={setIsOpen}
       >
         <SelectTrigger className="bg-white">
           <SelectValue placeholder="Select Tag" className="text-gray-500">
-            {value && tags.find(t => t.id === value) && (
+            {value && tags.find((t) => t.id === value) && (
               <div className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"
-                  style={{ backgroundColor: tags.find(t => t.id === value)?.color }}
+                  style={{
+                    backgroundColor: tags.find((t) => t.id === value)?.color,
+                  }}
                 />
-                <span>{tags.find(t => t.id === value)?.name || "Unnamed tag"}</span>
+                <span>
+                  {tags.find((t) => t.id === value)?.name || "Unnamed tag"}
+                </span>
               </div>
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent onCloseAutoFocus={(e) => e.preventDefault()} className="max-h-[200px] overflow-y-auto">
+        <SelectContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          className="max-h-[200px] overflow-y-auto"
+        >
           {tags && tags.length > 0 ? (
             tags.map((tag) => (
               <SelectItem key={tag.id} value={tag.id} className="pr-24">
@@ -881,16 +886,18 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     tags={tags}
                     onEdit={handleEditTag}
                     onDelete={(id) => {
-                      const tagToDelete = tags.find(t => t.id === id);
+                      const tagToDelete = tags.find((t) => t.id === id);
                       if (tagToDelete) {
-                        const confirmed = window.confirm(`Are you sure you want to delete the tag "${tagToDelete.name}"?`);
+                        const confirmed = window.confirm(
+                          `Are you sure you want to delete the tag "${tagToDelete.name}"?`
+                        );
                         if (confirmed) {
                           // If the deleted tag is currently selected, clear the selection
                           if (formData.workingTagName === id) {
                             onChange("workingTagName", "");
                           }
                           // Remove the tag from the tags array
-                          setTags(tags.filter(t => t.id !== id));
+                          setTags(tags.filter((t) => t.id !== id));
                           toast.success("Tag deleted successfully");
                         }
                       }
@@ -915,7 +922,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 id="name"
                 value={editingTag?.name || ""}
                 onChange={(e) =>
-                  setEditingTag(prev => prev ? { ...prev, name: e.target.value } : null)
+                  setEditingTag((prev) =>
+                    prev ? { ...prev, name: e.target.value } : null
+                  )
                 }
               />
             </div>
@@ -933,7 +942,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     )}
                     style={{ backgroundColor: color }}
                     onClick={() => {
-                      setEditingTag(prev => prev ? { ...prev, color } : null);
+                      setEditingTag((prev) =>
+                        prev ? { ...prev, color } : null
+                      );
                       setIsCustomColor(false);
                     }}
                   />
@@ -954,7 +965,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     className="w-full max-w-[200px]"
                     color={editingTag?.color || "#000000"}
                     onChange={(color) =>
-                      setEditingTag(prev => prev ? { ...prev, color } : null)
+                      setEditingTag((prev) =>
+                        prev ? { ...prev, color } : null
+                      )
                     }
                   />
                 </div>
@@ -962,10 +975,13 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setIsEditingTag(false);
-              setIsCustomColor(false);
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditingTag(false);
+                setIsCustomColor(false);
+              }}
+            >
               Cancel
             </Button>
             <Button onClick={handleUpdateTag} disabled={isLoading}>
