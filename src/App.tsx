@@ -28,6 +28,7 @@ import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import ClientProfile from "./components/clients/ClientProfile";
 import ClientAdjustments from "./pages/billing/ClientAdjustments";
+import ClientStatements from "./pages/billing/ClientStatements";
 import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
 
@@ -197,6 +198,16 @@ const App: React.FC = () => {
               <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <Statements />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/billing/client-statements"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientStatements />
                 </Layout>
               </ProtectedRoute>
             }
