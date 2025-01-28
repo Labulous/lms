@@ -813,7 +813,6 @@ const ClientCaseList: React.FC = () => {
             )
           `
           )
-          .eq("lab_id", lab?.id)
           .order("created_at", { ascending: false });
 
         if (user?.role === "client") {

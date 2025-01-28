@@ -13,7 +13,7 @@ import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
-const BalanceList = () => {
+const ClientBalanceList = () => {
   // State
   const [balanceType, setBalanceType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -218,4 +218,4 @@ const BalanceList = () => {
   );
 };
 
-export default BalanceList;
+export default ClientBalanceList;

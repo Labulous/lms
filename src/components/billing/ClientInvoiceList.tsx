@@ -92,6 +92,7 @@ import {
   HoverCardContent,
 } from "@/components/ui/hover-card";
 import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
+import { clientsService } from "@/services/clientsService";
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -129,7 +130,7 @@ type DiscountedPriceMap = {
 };
 const BATCH_SIZE = 50; // Process 50 items at a time
 
-const InvoiceList: React.FC = () => {
+const ClientInvoiceList: React.FC = () => {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoicesData, setInvoicesData] = useState<any>([]);
@@ -187,7 +188,7 @@ const InvoiceList: React.FC = () => {
           return;
         }
         setLab(lab);
-        const { data: casesData, error: casesError } = await supabase
+        let query = supabase
           .from("cases")
           .select(
             `
@@ -260,8 +261,24 @@ const InvoiceList: React.FC = () => {
             )
           `
           )
-          .eq("lab_id", lab.id)
           .order("created_at", { ascending: false });
+
+        if (user?.role === "client") {
+          let clientId: string = "";
+          const clients = await clientsService.getClients(lab?.id as string);
+          if (Array.isArray(clients)) {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                clientId = client.id;
+              }
+            });
+          }
+          query = query.eq("client_id", clientId);
+        } else {
+          query = query.eq("lab_id", lab?.id);
+        }
+
+        const { data: casesData, error: casesError } = await query;
 
         if (casesError) {
           console.error("Error fetching invoices:", casesError);
@@ -1019,7 +1036,7 @@ const InvoiceList: React.FC = () => {
     return sorted.slice(startIndex, endIndex);
   };
 
-  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const totalPages = Math.ceil(invoicesData.length / itemsPerPage);
 
   const allStatuses: Invoice["status"][] = [
     "unpaid",
@@ -1276,7 +1293,7 @@ const InvoiceList: React.FC = () => {
                   Print Invoices
                 </Button>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  {/* <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
                       size="sm"
@@ -1285,7 +1302,7 @@ const InvoiceList: React.FC = () => {
                       <MoreHorizontal className="h-4 w-4 mr-2" />
                       More Actions
                     </Button>
-                  </DropdownMenuTrigger>
+                  </DropdownMenuTrigger> */}
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -1847,7 +1864,7 @@ const InvoiceList: React.FC = () => {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              {["draft", "overdue"].includes(
+                              {/* {["draft", "overdue"].includes(
                                 invoice.status as
                                   | "draft"
                                   | "unpaid"
@@ -1888,8 +1905,8 @@ const InvoiceList: React.FC = () => {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Edit Invoice
                                 </DropdownMenuItem>
-                              )}
-                              {["unpaid", "partially_paid"].includes(
+                              )} */}
+                              {/* {["unpaid", "partially_paid"].includes(
                                 invoice.invoice?.[0]?.status as
                                   | "draft"
                                   | "unpaid"
@@ -1915,7 +1932,7 @@ const InvoiceList: React.FC = () => {
                                   <Pencil className="mr-2 h-4 w-4" />
                                   Record Payment
                                 </DropdownMenuItem>
-                              )}
+                              )} */}
                               <DropdownMenuItem
                                 onClick={() =>
                                   handleDownload(invoice.id as string)
@@ -1925,7 +1942,7 @@ const InvoiceList: React.FC = () => {
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
                               </DropdownMenuItem>
-                              {["draft", "overdue"].includes(
+                              {/* {["draft", "overdue"].includes(
                                 invoice.status as
                                   | "draft"
                                   | "unpaid"
@@ -1948,7 +1965,7 @@ const InvoiceList: React.FC = () => {
                                     Delete Invoice
                                   </DropdownMenuItem>
                                 </>
-                              )}
+                              )} */}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -2082,4 +2099,4 @@ const InvoiceList: React.FC = () => {
   );
 };
 
-export default InvoiceList;
+export default ClientInvoiceList;

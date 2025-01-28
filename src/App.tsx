@@ -28,8 +28,12 @@ import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import ClientProfile from "./components/clients/ClientProfile";
 import ClientAdjustments from "./pages/billing/ClientAdjustments";
+import { useAuth } from "./contexts/AuthContext";
+import ClientDashboard from "./pages/ClientDashboard";
 
 const App: React.FC = () => {
+  const { user } = useAuth();
+
   return (
     <ErrorBoundary>
       <>
@@ -42,7 +46,11 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <Layout>
-                  <Dashboard />
+                  {user?.role === "client" ? (
+                    <ClientDashboard />
+                  ) : (
+                    <Dashboard />
+                  )}
                 </Layout>
               </ProtectedRoute>
             }
@@ -156,7 +164,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/invoices"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Invoices />
                 </Layout>
@@ -176,7 +184,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/balance"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Balances />
                 </Layout>
