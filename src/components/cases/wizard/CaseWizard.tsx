@@ -256,7 +256,14 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
             formData={formData}
             onChange={handleFormChange}
             errors={errors}
-            clients={clients}
+            clients={clients.map((item) => ({
+              id: item.id,
+              client_name: item.clientName,
+              doctors: item.doctors.map((item) => ({
+                id: item.id as string,
+                name: item.name,
+              })),
+            }))}
             loading={loading}
             isAddingPan={isAddingPan}
             setIsAddingPan={setIsAddingPan}
