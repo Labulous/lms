@@ -38,6 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 import BatchProductUpload from "./BatchProductUpload";
 import { ProductInput } from "@/services/productsService";
+import { EditProductForm } from "./EditProductForm";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] & {};
 
@@ -71,6 +72,7 @@ const ProductList: React.FC<ProductListProps> = ({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   // Filtering
   const getFilteredProducts = () => {
@@ -432,10 +434,7 @@ const ProductList: React.FC<ProductListProps> = ({
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[160px]">
                       <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEdit?.(product);
-                        }}
+                        onClick={() => setEditingProduct(product)}
                         className="cursor-pointer"
                       >
                         <Pencil className="mr-2 h-4 w-4" />
@@ -470,6 +469,16 @@ const ProductList: React.FC<ProductListProps> = ({
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Product Dialog */}
+      <EditProductForm
+        product={editingProduct || undefined}
+        isOpen={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        onSave={(values) => {
+          onEdit?.({ ...editingProduct!, ...values });
+        }}
+      />
 
       {/* Pagination controls */}
       <div className="flex items-center justify-between">

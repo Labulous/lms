@@ -121,6 +121,7 @@ const ProductsServices: React.FC = () => {
     try {
       // Create products one by one to ensure proper error handling
       for (const product of products) {
+        console.log('Adding product:', product); // Debug log
         await productsService.addProduct(product);
       }
 
