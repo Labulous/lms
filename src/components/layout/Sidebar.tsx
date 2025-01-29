@@ -102,6 +102,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin", "super_admin", "technician", "client"],
     },
     {
+      icon: UserCircle,
+      label: "Profile",
+      href: "/client-profile",
+      roles: ["client"],
+    },
+    {
       icon: Briefcase,
       label: "Cases",
       href: "/cases",
@@ -164,12 +170,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       label: "Inventory",
       href: "/inventory",
       roles: ["admin", "super_admin"],
-    },
-    {
-      icon: UserCircle,
-      label: "Profile",
-      href: "/client-profile",
-      roles: ["client"],
     },
   ];
 
