@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -183,10 +184,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
             errors.push(`Row ${i}: Name is required`);
             continue;
           }
-          if (!product.product_type_id) {
-            errors.push(`Row ${i}: Product Type ID is required`);
-            continue;
-          }
           if (!product.material_id) {
             errors.push(`Row ${i}: Material ID is required`);
             continue;
@@ -274,9 +271,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       if (!product.name?.trim()) {
         errors.push(`Row ${index + 1}: Name is required`);
       }
-      if (!product.product_type_id?.trim()) {
-        errors.push(`Row ${index + 1}: Product Type is required`);
-      }
       if (!product.material_id?.trim()) {
         errors.push(`Row ${index + 1}: Material is required`);
       }
@@ -354,6 +348,8 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
     if (isOpen) fetchReferenceData();
   }, [isOpen]); // Only fetch when dialog opens
 
+  const hasUnsavedChanges = products.some((product) => product.name || product.price || product.material_id || product.billing_type_id);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -363,10 +359,24 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       </DialogTrigger>
       <DialogContent
         className="max-w-[1440px] max-h-[80vh] w-full overflow-y-auto"
-        aria-describedby="dialog-description"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside if there are unsaved changes
+          if (hasUnsavedChanges) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing with escape key if there are unsaved changes
+          if (hasUnsavedChanges) {
+            e.preventDefault();
+          }
+        }}
       >
         <DialogHeader>
           <DialogTitle>Batch Add Products</DialogTitle>
+          <DialogDescription>
+            Add multiple products at once using either manual entry or CSV upload
+          </DialogDescription>
         </DialogHeader>
         <div id="dialog-description" className="sr-only">
           Add multiple products at once using either manual entry or CSV upload

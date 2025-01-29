@@ -16,7 +16,7 @@ export interface ProductInput {
   is_client_visible: boolean;
   is_taxable: boolean;
   material_id: string;
-  product_type_id: string;
+  product_type_id?: string;
   billing_type_id: string;
   requires_shade?: boolean;
   lab_id: string;
@@ -99,8 +99,8 @@ class ProductsService {
           is_taxable: input.is_taxable,
           billing_type_id: input.billing_type_id,
           requires_shade: input.requires_shade || false, // Default to false if no requires_shade
-          material_id: input.material_id || "",
-          product_type_id: input.product_type_id,
+          material_id: input.material_id,
+          product_type_id: input.product_type_id || null, // Allow null for product_type_id
           lab_id: input.lab_id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -165,14 +165,44 @@ class ProductsService {
 
   async deleteProduct(id: string): Promise<void> {
     try {
-      logger.debug("Deleting product", { id });
+      logger.debug("Attempting to delete product", { id });
 
-      const { error } = await supabase.from("products").delete().eq("id", id);
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
 
       if (error) {
-        logger.error("Error deleting product", { error });
-        throw error;
+        // Log the full error object for debugging
+        logger.error("Error deleting product", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+
+        // Handle foreign key violation
+        if (error.code === '23503') {
+          // Extract the table name from the error message
+          const tableMatch = error.message?.match(/table "([^"]+)"/g);
+          const referencingTable = tableMatch?.[1]?.replace(/^table "|"$/g, '') || '';
+          
+          // Format the table name for display
+          const formattedTable = referencingTable
+            .replace(/_/g, ' ')
+            .replace(/case product/i, 'case')
+            .toLowerCase();
+
+          throw new Error(
+            `Cannot delete this product as it is being used in ${formattedTable}`
+          );
+        }
+        
+        // For other errors, throw a generic message
+        throw new Error(`Failed to delete product: ${error.message}`);
       }
+
+      logger.debug("Product deleted successfully", { id });
     } catch (error) {
       logger.error("Error in deleteProduct", { error });
       throw error;

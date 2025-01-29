@@ -31,7 +31,7 @@ const ProductsServices: React.FC = () => {
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
-  const [productToDelete, setProductToDelete] = useState<Product | undefined>();
+  const [productsToDelete, setProductsToDelete] = useState<Product[]>([]);
   const [activeTab, setActiveTab] = useState("products");
 
   useEffect(() => {
@@ -92,23 +92,52 @@ const ProductsServices: React.FC = () => {
     setIsWizardOpen(true);
   };
 
-  const handleDeleteClick = (product: Product) => {
-    setProductToDelete(product);
+  const handleDeleteClick = async (product: Product) => {
+    try {
+      // Check if we're trying to delete a service (services have no material_id)
+      if (!product.material_id && activeTab === "services") {
+        setServices(prev => prev.filter(service => service.id !== product.id));
+        toast.success("Service deleted successfully");
+        return;
+      }
+      
+      // For products, show confirmation dialog
+      setProductsToDelete([product]);
+      setIsDeleteModalOpen(true);
+    } catch (error) {
+      console.error("Error in handleDeleteClick:", error);
+      toast.error("An error occurred while processing your request");
+    }
+  };
+
+  const handleBatchDeleteClick = async (products: Product[]) => {
+    // Show confirmation dialog for batch delete
+    setProductsToDelete(products);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!productToDelete) return;
+    if (productsToDelete.length === 0) return;
 
     try {
-      await productsService.deleteProduct(productToDelete.id);
-      await loadProductsAndTypes();
-      setIsDeleteModalOpen(false);
-      setProductToDelete(undefined);
-      toast.success("Product deleted successfully");
-    } catch (error) {
+      // Delete all products in the array
+      for (const product of productsToDelete) {
+        await productsService.deleteProduct(product.id);
+      }
+      
+      // Update local state immediately
+      setProducts(prev => prev.filter(p => !productsToDelete.map(d => d.id).includes(p.id)));
+      
+      const message = productsToDelete.length === 1 
+        ? "Product deleted successfully" 
+        : `${productsToDelete.length} products deleted successfully`;
+      toast.success(message);
+    } catch (error: any) {
       console.error("Error deleting product:", error);
-      toast.error("Failed to delete product. Please try again.");
+      toast.error(error.message || "Failed to delete product. Please try again.");
+    } finally {
+      setIsDeleteModalOpen(false);
+      setProductsToDelete([]);
     }
   };
 
@@ -162,6 +191,7 @@ const ProductsServices: React.FC = () => {
             productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
+            onBatchDelete={handleBatchDeleteClick}
             onBatchAdd={handleBatchAdd}
           />
         </TabsContent>
@@ -191,6 +221,7 @@ const ProductsServices: React.FC = () => {
             productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
+            onBatchDelete={handleBatchDeleteClick}
             onBatchAdd={handleBatchAdd}
           />
         </TabsContent>
@@ -216,11 +247,15 @@ const ProductsServices: React.FC = () => {
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
-          setProductToDelete(undefined);
+          setProductsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title="Delete Product"
-        message="Are you sure you want to delete this product? This action cannot be undone."
+        title={productsToDelete.length === 1 ? "Delete Product" : "Delete Products"}
+        message={
+          productsToDelete.length === 1
+            ? "Are you sure you want to delete this product? This action cannot be undone."
+            : `Are you sure you want to delete ${productsToDelete.length} products? This action cannot be undone.`
+        }
       />
     </div>
   );

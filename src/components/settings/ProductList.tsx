@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Plus,
   MoreVertical,
@@ -52,6 +52,7 @@ interface ProductListProps {
   productTypes: { id: string; name: string }[];
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
+  onBatchDelete?: (products: Product[]) => void;
   onBatchAdd?: (products: ProductInput[]) => Promise<void>;
 }
 
@@ -60,6 +61,7 @@ const ProductList: React.FC<ProductListProps> = ({
   productTypes,
   onEdit,
   onDelete,
+  onBatchDelete,
   onBatchAdd,
 }) => {
   // State
@@ -73,6 +75,7 @@ const ProductList: React.FC<ProductListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Filtering
   const getFilteredProducts = () => {
@@ -96,7 +99,7 @@ const ProductList: React.FC<ProductListProps> = ({
     return filtered;
   };
 
-  const filteredProducts = getFilteredProducts();
+  const filteredProducts = useMemo(() => getFilteredProducts(), [products, searchTerm, typeFilter]);
 
   // Sorting
   const handleSort = (key: keyof Product) => {
@@ -143,8 +146,24 @@ const ProductList: React.FC<ProductListProps> = ({
   };
 
   const handleBatchDelete = () => {
-    // Implement batch delete functionality for selected products
+    if (!onBatchDelete || selectedProducts.length === 0) return;
+    
+    // Get the selected product objects
+    const productsToDelete = products.filter(p => selectedProducts.includes(p.id));
+    onBatchDelete(productsToDelete);
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [products.length]);
+
+  useEffect(() => {
+    setSelectedProducts([]);
+  }, [products]);
+
+  useEffect(() => {
+    setOpenMenuId(null);
+  }, [products]);
 
   if (products.length === 0) {
     return (
@@ -421,7 +440,7 @@ const ProductList: React.FC<ProductListProps> = ({
                 </TableCell>
                 <TableCell>{product.billing_type?.label}</TableCell>
                 <TableCell>
-                  <DropdownMenu>
+                  <DropdownMenu open={openMenuId === product.id} onOpenChange={(open) => setOpenMenuId(open ? product.id : null)}>
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -432,9 +451,12 @@ const ProductList: React.FC<ProductListProps> = ({
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[160px]">
+                    <DropdownMenuContent align="end" className="w-[160px]" onCloseAutoFocus={(e) => e.preventDefault()}>
                       <DropdownMenuItem
-                        onClick={() => setEditingProduct(product)}
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          setEditingProduct(product);
+                        }}
                         className="cursor-pointer"
                       >
                         <Pencil className="mr-2 h-4 w-4" />
@@ -443,6 +465,7 @@ const ProductList: React.FC<ProductListProps> = ({
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
+                          setOpenMenuId(null);
                           // Implement duplicate
                         }}
                         className="cursor-pointer"
@@ -452,9 +475,17 @@ const ProductList: React.FC<ProductListProps> = ({
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
-                          onDelete?.(product);
+                          e.preventDefault();
+                          setOpenMenuId(null);
+                          if (onDelete) {
+                            try {
+                              await onDelete(product);
+                            } catch (error) {
+                              console.error("Error deleting product:", error);
+                            }
+                          }
                         }}
                         className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground"
                       >

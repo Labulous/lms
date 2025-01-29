@@ -45,13 +45,13 @@ type BillingType = Database["public"]["Tables"]["billing_types"]["Row"];
 
 const formSchema = z.object({
   name: z.string().min(1, "Product name is required"),
-  price: z.number().gte(0, "Price must be 0 or greater"),
+  price: z.coerce.number().min(0, "Price must be 0 or greater"),
   description: z.string().optional(),
-  lead_time: z.number().optional(),
+  lead_time: z.coerce.number().optional(),
   is_client_visible: z.boolean().default(true),
   is_taxable: z.boolean().default(true),
   material_id: z.string().min(1, "Material is required"),
-  product_type_id: z.string().min(1, "Product type is required"),
+  product_type_id: z.string().optional(),
   billing_type_id: z.string().min(1, "Billing type is required"),
   requires_shade: z.boolean().default(false),
 });
@@ -256,11 +256,14 @@ export function EditProductForm({ product, isOpen, onClose, onSave }: EditProduc
                 name="product_type_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Product Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel>Product Type (Optional)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder="Select a product type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
