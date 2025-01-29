@@ -876,11 +876,11 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                           {/* Display filteredTeeth */}
                           {filteredTeeth.length > 0
                             ? filteredTeeth.join(",") // Join filtered teeth with commas
-                            : "---"}{" "}
+                            : "---"}{""}
                           {/* Display remainingPontic not in selected teeth */}
                           <div className="left-0">
                             {remainingPontic.length > 0
-                              ? remainingPontic.join(",") // Join remainingPontic with commas
+                              ? `,${remainingPontic.join(",")}` // Join remainingPontic with commas
                               : "---"}
                           </div>
                         </div>

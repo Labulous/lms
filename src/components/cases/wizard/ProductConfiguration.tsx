@@ -305,16 +305,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         .from("products")
         .select(
           `
-                *,
-                material:materials(name),
-                product_type:product_types(name),
-                billing_type:billing_types(name, label)
-              `
+          *,
+          material:materials!material_id (name, id),
+          product_type:product_types (name),
+          billing_type:billing_types (name, label)
+        `
         )
         .order("name")
         .eq("product_type_id", selectedId?.id)
-        .eq("lab_id", lab?.labId)
-        .select("*");
+        .eq("lab_id", lab?.labId);
 
       if (error) {
         toast.error("Error fetching products from Supabase");
