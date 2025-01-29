@@ -257,12 +257,12 @@ const saveCases = async (
     const caseCount = await fetchCaseCount(cases.overview.lab_id); // Fetch current case count
     const labData = await getLabIdByUserId(cases.overview.created_by as string);
 
-    if (typeof caseCount !== "number") {
+    if (!caseCount && typeof caseCount !== "number") {
       toast.error("Unable to get Case Number");
       setLoadingState && setLoadingState({ isLoading: false, action: "save" });
       return;
     }
-    setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+    setLoadingState && setLoadingState({ isLoading: true, action: "save" });
 
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,

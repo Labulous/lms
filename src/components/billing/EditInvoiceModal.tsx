@@ -68,7 +68,7 @@ export function EditInvoiceModal({
   useEffect(() => {
     if (invoice) {
       const transformedItems = invoice?.products?.map((item) => ({
-        unitPrice: item?.discounted_price?.price ?? 0,
+        unitPrice: (item?.discounted_price?.price ?? 0).toFixed(2),
         discount: item?.discounted_price?.discount ?? 0,
         quantity: item?.discounted_price?.quantity ?? 0,
         discountId: item?.discounted_price?.id,
@@ -129,7 +129,8 @@ export function EditInvoiceModal({
       }
 
       // Calculate the total for this item
-      const itemTotal = item.unitPrice * item.quantity * toothArray.length; // Total before discount
+      const itemTotal =
+        Number(item.unitPrice) * item.quantity * toothArray.length; // Total before discount
       const discountedItemTotal =
         itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
 
@@ -159,7 +160,9 @@ export function EditInvoiceModal({
           caseProductTeethId: item.caseProductTeethId,
           toothNumber: item.toothNumber,
           total:
-            item.unitPrice * item.quantity * (1 - (item.discount || 0) / 100),
+            Number(item.unitPrice) *
+            item.quantity *
+            (1 - (item.discount || 0) / 100),
         })),
         notes: notes as {
           labNotes: string;
@@ -170,7 +173,7 @@ export function EditInvoiceModal({
           value: discount,
           amount:
             items.reduce(
-              (sum, item) => sum + item.unitPrice * item.quantity,
+              (sum, item) => sum + Number(item.unitPrice) * item.quantity,
               0
             ) *
             (discount / 100),
@@ -453,13 +456,14 @@ export function EditInvoiceModal({
                       <TableCell>
                         <Input
                           type="number"
+                          className="w-24"
                           disabled={invoice?.invoice?.[0]?.status === "paid"}
                           value={item.unitPrice}
                           onChange={(e) => {
                             const updatedItems = [...items];
                             updatedItems[index] = {
                               ...item,
-                              unitPrice: parseFloat(e.target.value),
+                              unitPrice: Number(e.target.value).toFixed(2),
                             };
                             setItems(updatedItems);
                           }}
@@ -500,7 +504,7 @@ export function EditInvoiceModal({
                           style: "currency",
                           currency: "USD",
                         }).format(
-                          item.unitPrice *
+                          Number(item.unitPrice) *
                             item.quantity *
                             (1 - (item.discount || 0) / 100) *
                             (item.toothNumber

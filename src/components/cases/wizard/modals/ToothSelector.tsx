@@ -550,14 +550,13 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
 
     // Check if the toothNumber is in selectedTeeth
-    if (!sortedTeeth.includes(toothNumber)) return false; // If not in selectedTeeth, it's not selectable
+    // if (!sortedTeeth.includes(toothNumber)) return false; // If not in selectedTeeth, it's not selectable
 
     // If the tooth is already a pontic, allow deselecting it
     if (ponticTeeth.has(toothNumber)) return true;
 
     // Ensure the toothNumber is valid for selection as pontic
-    const isValidPontic =
-      selectedTeeth.includes(toothNumber) && !ponticTeeth.has(toothNumber);
+    const isValidPontic = !ponticTeeth.has(toothNumber);
 
     return isValidPontic;
   };
@@ -832,36 +831,64 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                 Selected Teeth
               </div>
               <div className="text-gray-600 text-xs font-bold text-center break-words max-w-[270px]">
-                {groupSelectedTeethState.map((item, i) => {
-                  return (
-                    <div key={i} className="flex flex-wrap justify-center">
-                      {item.join(",")}
-                    </div>
-                  );
-                })}
+                {selectedProduct?.type?.some(
+                  (t) => t.toLowerCase() === "bridge"
+                ) ? (
+                  groupSelectedTeethState.map((item, i) => {
+                    return (
+                      <div key={i} className="flex flex-wrap justify-center">
+                        {item.join(",")}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-wrap justify-center">
+                    {selectedTeeth.join(",")}
+                  </div>
+                )}
               </div>
-              <div className="text-gray-400 text-sm text-center">
-                Pontic Teeth
-              </div>
-              <div className="text-purple-600 text-xs font-bold text-center break-words max-w-[270px]">
-                {groupSelectedTeethState.map((item, groupIndex) => {
-                  // Filter items based on selectedPontic
-                  const filteredTeeth = item.filter((tooth) =>
-                    selectedProduct.selectedPontic.includes(tooth)
-                  );
+              {selectedProduct?.type?.some(
+                (t) => t.toLowerCase() === "bridge"
+              ) && (
+                <>
+                  <div className="text-gray-400 text-sm text-center">
+                    Pontic Teeth
+                  </div>
 
-                  return (
-                    <div
-                      key={groupIndex}
-                      className="flex flex-wrap justify-center"
-                    >
-                      {filteredTeeth.length > 0
-                        ? filteredTeeth.join(",") // Join filtered teeth with commas
-                        : "---"}{" "}
-                    </div>
-                  );
-                })}
-              </div>
+                  <div className="text-purple-600 text-xs font-bold text-center break-words max-w-[270px]">
+                    {groupSelectedTeethState.map((item, groupIndex) => {
+                      // Filter items based on selectedPontic
+                      const filteredTeeth = item.filter((tooth) =>
+                        selectedProduct.selectedPontic.includes(tooth)
+                      );
+
+                      // Get selectedPontic that are not in filteredTeeth
+                      const remainingPontic =
+                        selectedProduct.selectedPontic.filter(
+                          (pontic) => !item.includes(pontic)
+                        );
+
+                      return (
+                        <div
+                          key={groupIndex}
+                          className="flex flex-wrap justify-center"
+                        >
+                          {/* Display filteredTeeth */}
+                          {filteredTeeth.length > 0
+                            ? filteredTeeth.join(",") // Join filtered teeth with commas
+                            : "---"}{" "}
+                          {/* Display remainingPontic not in selected teeth */}
+                          <div className="left-0">
+                            {remainingPontic.length > 0
+                              ? remainingPontic.join(",") // Join remainingPontic with commas
+                              : "---"}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
 
               {/* Display Abutment teeth */}
               {/* {(() => {

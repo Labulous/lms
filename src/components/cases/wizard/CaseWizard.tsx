@@ -34,6 +34,7 @@ export interface FormData {
   workingTagName?: string;
   workingPanColor?: string;
   patientLastName: string;
+  is_appointment_TBD: boolean;
   orderDate: string;
   status: (typeof CASE_STATUSES)[number];
   statusError?: string;
@@ -97,6 +98,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     enclosedItems: defaultEnclosedItems,
     otherItems: "",
     isDueDateTBD: false,
+    is_appointment_TBD: false,
     notes: {
       instructionNotes: "",
       invoiceNotes: "",

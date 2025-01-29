@@ -826,6 +826,7 @@ export interface FormData {
   workingPanName?: string;
   workingTagName?: string;
   workingPanColor?: string;
+  is_appointment_TBD: boolean;
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -874,8 +875,8 @@ export interface CaseFilters {
  */
 export interface Users {
   id: string;
-  role:string;
-  name : string,
+  role: string;
+  name: string;
   email: string;
   phone: string;
   street: string;
