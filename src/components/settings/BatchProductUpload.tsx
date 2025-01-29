@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -31,6 +32,8 @@ import { toast } from "react-hot-toast";
 import { ProductInput } from "@/services/productsService";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/types/supabase";
+import { useAuth } from "@/contexts/AuthContext";
+import { getLabIdByUserId } from "@/services/authService";
 
 type Material = Database["public"]["Tables"]["materials"]["Row"];
 interface ProductType {
@@ -51,49 +54,51 @@ interface BatchProductUploadProps {
 const emptyProduct = (): ProductInput => ({
   name: "",
   price: 0,
-  lead_time: undefined,
+  lead_time: 0,
   is_client_visible: true,
   is_taxable: true,
   material_id: "",
-  product_type_id: "",
   billing_type_id: "",
   requires_shade: false,
-  description: ""
+  description: "",
+  lab_id: "",
 });
 
 const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   onUpload,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [products, setProducts] = useState<ProductInput[]>([emptyProduct()]);
+  const [products, setProducts] = useState<ProductInput[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("manual");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+  const [labId, setLabId] = useState<string>("");
 
   // Reference data
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
 
   useEffect(() => {
-    const fetchReferenceData = async () => {
-      const [materialsData, productTypesData, billingTypesData] =
-        await Promise.all([
-          supabase.from("materials").select("*").order("name"),
-          supabase.from("product_types").select("*").order("name"),
-          supabase.from("billing_types").select("*").order("name"),
-        ]);
-
-      if (materialsData.data) setMaterials(materialsData.data as any);
-      if (productTypesData.data) setProductTypes(productTypesData.data as any);
-      if (billingTypesData.data) setBillingTypes(billingTypesData.data as any);
+    const fetchLabId = async () => {
+      if (user?.id) {
+        const data = await getLabIdByUserId(user.id);
+        if (data?.labId) {
+          setLabId(data.labId);
+          // Initialize products with lab_id
+          setProducts([{ ...emptyProduct(), lab_id: data.labId }]);
+        }
+      }
     };
+    fetchLabId();
+  }, [user]);
 
-    if (isOpen) fetchReferenceData();
-  }, [isOpen]); // Only fetch when dialog opens
-
-  const addRow = () => {
-    setProducts([...products, emptyProduct()]);
+  const addProduct = () => {
+    if (!labId) {
+      toast.error("Lab ID not available. Please try again.");
+      return;
+    }
+    setProducts([...products, { ...emptyProduct(), lab_id: labId }]);
   };
 
   const removeRow = (index: number) => {
@@ -146,7 +151,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                 product.price = parseFloat(value) || 0;
                 break;
               case "lead time":
-                product.lead_time = parseInt(value) || undefined;
+                product.lead_time = parseInt(value) || 0;
                 break;
               case "visible to clients":
                 product.is_client_visible = value.toLowerCase() === "true";
@@ -155,16 +160,16 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                 product.is_taxable = value.toLowerCase() === "true";
                 break;
               case "material id":
-                product.material_id = value;
-                break;
-              case "product type id":
-                product.product_type_id = value;
+                product.material_id = value.trim();
                 break;
               case "billing type id":
-                product.billing_type_id = value;
+                product.billing_type_id = value.trim();
                 break;
               case "requires shade":
                 product.requires_shade = value.toLowerCase() === "true";
+                break;
+              case "description":
+                product.description = value.trim();
                 break;
             }
           });
@@ -172,14 +177,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           // Validate required fields
           if (!product.name) {
             errors.push(`Row ${i}: Name is required`);
-            continue;
-          }
-          if (!product.price) {
-            errors.push(`Row ${i}: Price is required`);
-            continue;
-          }
-          if (!product.product_type_id) {
-            errors.push(`Row ${i}: Product Type ID is required`);
             continue;
           }
           if (!product.material_id) {
@@ -208,7 +205,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           return;
         }
 
-        setProducts(newProducts);
+        setProducts(newProducts.map(product => ({ ...product, lab_id: labId })));
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -231,9 +228,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       "Visible to Clients",
       "Taxable",
       "Material ID",
-      "Product Type ID",
       "Billing Type ID",
       "Requires Shade",
+      "Description",
     ].join(",");
 
     const sample = [
@@ -243,9 +240,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       "true",
       "true",
       "material_id_here",
-      "product_type_id_here",
       "billing_type_id_here",
       "false",
+      "Sample description",
     ].join(",");
 
     const csvContent = `${headers}\n${sample}`;
@@ -264,21 +261,35 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
     const errors: string[] = [];
 
     productsToValidate.forEach((product, index) => {
-      if (!product.name) errors.push(`Row ${index + 1}: Name is required`);
-      if (!product.price) errors.push(`Row ${index + 1}: Price is required`);
-      if (!product.product_type_id)
-        errors.push(`Row ${index + 1}: Product Type is required`);
-      if (!product.material_id)
+      if (!product.name?.trim()) {
+        errors.push(`Row ${index + 1}: Name is required`);
+      }
+      if (!product.material_id?.trim()) {
         errors.push(`Row ${index + 1}: Material is required`);
-      if (!product.billing_type_id)
+      }
+      if (!product.billing_type_id?.trim()) {
         errors.push(`Row ${index + 1}: Billing Type is required`);
+      }
+      if (typeof product.price !== 'number') {
+        errors.push(`Row ${index + 1}: Price must be a number`);
+      }
+      if (product.lead_time !== undefined && typeof product.lead_time !== 'number') {
+        errors.push(`Row ${index + 1}: Lead time must be a number`);
+      }
     });
 
     return errors;
   };
 
   const handleSubmit = async () => {
+    if (!labId) {
+      toast.error("Lab ID not available. Please try again.");
+      return;
+    }
+
+    setIsSubmitting(true);
     const errors = validateProducts(products);
+
     if (errors.length > 0) {
       toast.error(
         <div>
@@ -290,15 +301,21 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           </ul>
         </div>
       );
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      setIsSubmitting(true);
-      await onUpload(products);
-      toast.success(`Successfully uploaded ${products.length} products`);
+      // Ensure all products have the lab_id
+      const productsWithLabId = products.map(product => ({
+        ...product,
+        lab_id: labId
+      }));
+      
+      await onUpload(productsWithLabId);
+      toast.success("Products added successfully!");
       setIsOpen(false);
-      setProducts([emptyProduct()]);
+      setProducts([{ ...emptyProduct(), lab_id: labId }]);
     } catch (error) {
       console.error("Error uploading products:", error);
       toast.error("Failed to upload products. Please try again.");
@@ -307,19 +324,50 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
     }
   };
 
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      const [materialsData, billingTypesData] =
+        await Promise.all([
+          supabase.from("materials").select("*").order("name"),
+          supabase.from("billing_types").select("*").order("name"),
+        ]);
+
+      if (materialsData.data) setMaterials(materialsData.data as any);
+      if (billingTypesData.data) setBillingTypes(billingTypesData.data as any);
+    };
+
+    if (isOpen) fetchReferenceData();
+  }, [isOpen]); // Only fetch when dialog opens
+
+  const hasUnsavedChanges = products.some((product) => product.name || product.price || product.material_id || product.billing_type_id);
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="mr-2 h-4 w-4" /> Batch Add Products
+        <Button variant="default">
+          <Plus className="mr-2 h-4 w-4" /> Add Products
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="max-w-[90vw] max-h-[80vh] w-full overflow-y-auto"
-        aria-describedby="dialog-description"
+        className="max-w-[1440px] max-h-[80vh] w-full overflow-y-auto"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking outside if there are unsaved changes
+          if (hasUnsavedChanges) {
+            e.preventDefault();
+          }
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent closing with escape key if there are unsaved changes
+          if (hasUnsavedChanges) {
+            e.preventDefault();
+          }
+        }}
       >
         <DialogHeader>
           <DialogTitle>Batch Add Products</DialogTitle>
+          <DialogDescription>
+            Add multiple products at once using either manual entry or CSV upload
+          </DialogDescription>
         </DialogHeader>
         <div id="dialog-description" className="sr-only">
           Add multiple products at once using either manual entry or CSV upload
@@ -337,49 +385,28 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           <TabsContent value="manual">
             <div className="space-y-4">
               {products.map((product, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-4">
+                <div key={index} className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]">
                   <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-3 space-y-2">
-                      <Label htmlFor={`name-${index}`}>Name</Label>
+                    <div className="col-span-5 space-y-2">
+                      <Label htmlFor={`name-${index}`} className="text-xs">Name</Label>
                       <Input
                         id={`name-${index}`}
                         value={product.name}
                         onChange={(e) =>
                           updateProduct(index, "name", e.target.value)
                         }
+                        className="bg-white"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`productType-${index}`}>
-                        Product Type
-                      </Label>
-                      <Select
-                        value={product.product_type_id}
-                        onValueChange={(value) =>
-                          updateProduct(index, "product_type_id", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {productTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`material-${index}`}>Material</Label>
+                      <Label htmlFor={`material-${index}`} className="text-xs">Material</Label>
                       <Select
                         value={product.material_id}
                         onValueChange={(value) =>
                           updateProduct(index, "material_id", value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Material" />
                         </SelectTrigger>
                         <SelectContent>
@@ -392,22 +419,23 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       </Select>
                     </div>
                     <div className="col-span-1 space-y-2">
-                      <Label htmlFor={`price-${index}`}>Price</Label>
+                      <Label htmlFor={`price-${index}`} className="text-xs">Price</Label>
                       <Input
                         id={`price-${index}`}
                         type="number"
-                        value={product.price}
+                        value={product.price || 0}
                         onChange={(e) =>
                           updateProduct(
                             index,
                             "price",
-                            parseFloat(e.target.value)
+                            parseFloat(e.target.value) || 0
                           )
                         }
+                        className="bg-white"
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`billingType-${index}`}>
+                      <Label htmlFor={`billingType-${index}`} className="text-xs">
                         Billing Type
                       </Label>
                       <Select
@@ -416,7 +444,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "billing_type_id", value)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Select Type" />
                         </SelectTrigger>
                         <SelectContent>
@@ -429,7 +457,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       </Select>
                     </div>
                     <div className="col-span-1 space-y-2">
-                      <Label htmlFor={`leadTime-${index}`}>Lead Time</Label>
+                      <Label htmlFor={`leadTime-${index}`} className="text-xs">Lead Time (days)</Label>
                       <Input
                         id={`leadTime-${index}`}
                         type="number"
@@ -441,6 +469,8 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                             parseInt(e.target.value)
                           )
                         }
+                        className="bg-white"
+                        placeholder="Optional"
                       />
                     </div>
                     <div className="col-span-1 flex items-end justify-end">
@@ -463,7 +493,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "is_client_visible", checked)
                         }
                       />
-                      <Label htmlFor={`clientVisible-${index}`}>
+                      <Label htmlFor={`clientVisible-${index}`} className="text-xs">
                         Visible to Clients
                       </Label>
                     </div>
@@ -475,7 +505,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "is_taxable", checked)
                         }
                       />
-                      <Label htmlFor={`taxable-${index}`}>Taxable</Label>
+                      <Label htmlFor={`taxable-${index}`} className="text-xs">Taxable</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
@@ -485,7 +515,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "requires_shade", checked)
                         }
                       />
-                      <Label htmlFor={`requiresShade-${index}`}>
+                      <Label htmlFor={`requiresShade-${index}`} className="text-xs">
                         Requires Shade
                       </Label>
                     </div>
@@ -493,7 +523,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addRow} className="w-full">
+              <Button variant="outline" onClick={addProduct} className="w-full">
                 <Plus className="mr-2 h-4 w-4" /> Add Another Product
               </Button>
             </div>
@@ -535,7 +565,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                         {products.map((product, index) => (
                           <TableRow key={index}>
                             <TableCell>{product.name}</TableCell>
-                            <TableCell>${product.price}</TableCell>
+                            <TableCell>${product.price || 0}</TableCell>
                             <TableCell>{product.lead_time || "-"}</TableCell>
                             <TableCell>
                               {product.is_client_visible ? "Yes" : "No"}

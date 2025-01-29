@@ -29,6 +29,7 @@ import Dashboard from "./pages/Dashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
 
+import Home1 from "./pages/Home1";
 
 const App: React.FC = () => {
   return (
@@ -37,6 +38,7 @@ const App: React.FC = () => {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/home1" element={<Home1 />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
@@ -118,10 +120,7 @@ const App: React.FC = () => {
                     path="products-services"
                     element={<ProductsServices />}
                   />
-                    <Route
-                    path="user-management"
-                    element={<UserManagement />}
-                  />
+                  <Route path="user-management" element={<UserManagement />} />
                      <Route
                     path="lab-profile"
                     element={<LABProfile />}

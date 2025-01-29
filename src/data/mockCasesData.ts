@@ -5,10 +5,9 @@ import { SetStateAction } from "react";
 import { LoadingState } from "@/pages/cases/NewCase";
 import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
-import {
-  duplicateInvoiceProductsByTeeth,
-  duplicateProductsByTeeth,
-} from "@/lib/dulicateProductsByTeeth";
+import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
+import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import { getLabIdByUserId } from "@/services/authService";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -151,6 +150,7 @@ const saveCaseProduct = async (
       case_product_id: caseProductId,
       is_range: cases.products.length > 0,
       tooth_number: product.teeth || "",
+      pontic_teeth: product.pontic_teeth || [],
       product_id: product.id,
       type: product.type || "",
       lab_id: cases.overview.lab_id || "",
@@ -185,17 +185,28 @@ const saveCaseProduct = async (
     }));
 
     // Calculate discounted prices for products
-    const discountedPrice = cases.products.map((product: any) => ({
-      product_id: product.id,
-      price: product.price,
-      discount: product.discount,
-      quantity: product.quantity,
-      final_price:
-        (product.price - (product.price * product.discount) / 100) *
-        product.quantity,
-      case_id: savedCaseId as string,
-      user_id: cases.overview.created_by,
-    }));
+    const discountedPrice = cases.products.map((product: any) => {
+      // Calculate the price after discount
+      const priceAfterDiscount =
+        product.price - (product.price * product.discount) / 100;
+
+      // Calculate final price (after discount) for the given quantity
+      const final_price = priceAfterDiscount * product.quantity;
+
+      // Calculate amount by multiplying final_price by quantity and then by product.teeth.length
+      const amount = final_price * product.teeth.length;
+
+      return {
+        product_id: product.id,
+        price: product.price,
+        discount: product.discount,
+        quantity: product.quantity,
+        final_price: final_price, // price after discount
+        total: amount, // final price * quantity * teeth length
+        case_id: savedCaseId as string,
+        user_id: cases.overview.created_by,
+      };
+    });
 
     // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
@@ -238,10 +249,21 @@ const saveCaseProduct = async (
 const saveCases = async (
   cases: any,
   navigate?: any,
-  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  identifier?: string
 ) => {
   try {
     // Step 1: Save enclosed case details
+    const caseCount = await fetchCaseCount(cases.overview.lab_id); // Fetch current case count
+    const labData = await getLabIdByUserId(cases.overview.created_by as string);
+
+    if (typeof caseCount !== "number") {
+      toast.error("Unable to get Case Number");
+      setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+      return;
+    }
+    setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,
       biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -266,11 +288,17 @@ const saveCases = async (
     }
 
     const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+    const sequentialNumber = String(caseCount + 1).padStart(5, "0");
 
-    // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    const case_number = `${labData?.name
+      .substring(0, 3)
+      .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
+      case_number,
     };
 
     const { data, error } = await supabase
@@ -305,21 +333,23 @@ const saveCases = async (
 
       // Step 4: Create invoice for the case
 
-      const totalAmount = duplicateInvoiceProductsByTeeth(
-        cases.products
-      ).reduce((sum: number, item: SavedProduct) => {
-        const itemTotal = item.price * (item?.quantity ? item?.quantity : 1); // Total price without discount
-        const discountedTotal =
-          itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
-        return sum + discountedTotal; // Add to the sum
-      }, 0);
+      const totalAmount = cases.products.reduce(
+        (sum: number, item: SavedProduct) => {
+          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
+          const totalPerProduct = item.price * item.teeth.length * quantity; // Total before discount
+          const discountedTotal =
+            totalPerProduct - (totalPerProduct * (item.discount || 0)) / 100; // Apply discount
+          return sum + discountedTotal; // Add to the overall sum
+        },
+        0
+      );
 
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
-        due_amount: totalAmount,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };
@@ -333,6 +363,23 @@ const saveCases = async (
         console.error("Error creating invoice:", invoiceError);
       } else {
         console.log("Invoice created successfully:", invoiceData);
+        setLoadingState &&
+          setLoadingState({ isLoading: false, action: "save" });
+        await updateBalanceTracking();
+      }
+      const { data: count, error: caseCountError } = await supabase
+        .from("case_number_tracker")
+        .insert({
+          case_number: caseCount + 1,
+          case_id: savedCaseId,
+          lab_id: cases.overview.lab_id,
+        })
+        .select("*");
+      console.log(count, "count");
+      if (caseCountError) {
+        console.error("Error creating case count:", invoiceError);
+      } else {
+        console.log("case count created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
         await updateBalanceTracking();
@@ -406,9 +453,7 @@ const updateCases = async (
     console.log("Cases updated successfully:", caseOverviewData);
 
     // Step 3: Update case products (instead of saving, we'll update)
-    const productIds = duplicateProductsByTeeth(cases.products).map(
-      (item: any) => item.id
-    );
+    const productIds = cases.products.map((item: any) => item.id);
     const caseProduct = {
       user_id: cases.overview.created_by,
       case_id: caseId,
@@ -416,20 +461,54 @@ const updateCases = async (
     };
 
     // Calculate discounted prices for products
-    for (const product of duplicateProductsByTeeth(cases.products)) {
+    for (const product of cases.products) {
       // Prepare the data row
+
+      // Calculate totalAmount by iterating over all products
+      const totalAmount = cases.products.reduce(
+        (sum: number, item: SavedProduct) => {
+          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
+          const finalPriceBeforeDiscount =
+            item.price * item.teeth.length * quantity; // Total before discount
+          const discountedTotal =
+            finalPriceBeforeDiscount -
+            (finalPriceBeforeDiscount * (item.discount || 0)) / 100; // Apply discount to total
+
+          // Add discounted total for this product to the sum
+          return sum + discountedTotal;
+        },
+        0
+      );
+
       const discountedPriceRow = {
         product_id: product.id,
         price: product.price || 0,
         discount: product.discount || 0,
         quantity: product.quantity,
+        // Calculate the final price after discount and considering quantity
         final_price:
           (product.price - (product.price * product.discount) / 100 || 0) *
-          (product?.quantity ? product?.quantity : 1),
+          (product?.quantity || 1),
         case_id: caseId,
+        total: Number(totalAmount) || 0,
         user_id: cases.overview.created_by || "",
       };
-
+      const UpdatedInvoice = {
+        case_id: caseId,
+        client_id: cases.overview.client_id,
+        lab_id: cases.overview.lab_id,
+        amount: Number(totalAmount),
+        due_date: null,
+      };
+      const newInvoice = {
+        case_id: caseId,
+        client_id: cases.overview.client_id,
+        lab_id: cases.overview.lab_id,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
+        status: "unpaid",
+        due_date: null,
+      };
       console.log("Processing product:", product.id);
 
       // Fetch existing row by case_id and product_id
@@ -483,6 +562,57 @@ const updateCases = async (
           );
         }
       }
+
+      const { data: existingInvoicesRow, error: invoiceFetchError } =
+        await supabase
+          .from("invoices")
+          .select("id") // Only fetch the ID for updates
+          .eq("case_id", caseId)
+          .single();
+
+      if (invoiceFetchError && invoiceFetchError.code !== "PGRST116") {
+        // Log error if it's not "No rows found" (PGRST116 means no match)
+        console.error(
+          `Error fetching row for product_id: ${product.id}`,
+          invoiceFetchError
+        );
+        continue; // Skip this product and move on to the next
+      }
+
+      if (existingInvoicesRow) {
+        // Update the existing row
+        const { error: updateError } = await supabase
+          .from("invoices")
+          .update(UpdatedInvoice)
+          .eq("id", existingInvoicesRow.id);
+
+        if (updateError) {
+          console.error(
+            `Error updating row for product_id: ${product.id}`,
+            updateError
+          );
+        } else {
+          console.log(
+            `Discounted price updated successfully for product_id: ${product.id}`
+          );
+        }
+      } else {
+        // Insert a new row
+        const { error: insertError } = await supabase
+          .from("invoices")
+          .insert(newInvoice);
+
+        if (insertError) {
+          console.error(
+            `Error inserting row for product_id: ${product.id}`,
+            insertError
+          );
+        } else {
+          console.log(
+            `Discounted price inserted successfully for product_id: ${product.id}`
+          );
+        }
+      }
     }
 
     // Upsert case products
@@ -499,45 +629,44 @@ const updateCases = async (
     }
     // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
     // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
-    const caseProductTeethRows = duplicateProductsByTeeth(cases.products).map(
-      (product: any) => ({
-        case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
-        is_range: cases.products.length > 0,
-        product_id: product.id,
-        type: product.type || "",
-        lab_id: cases.overview.lab_id || "",
-        quantity: product.quantity || 1,
-        notes: product.notes || "",
-        tooth_number: product.teeth || "",
-        occlusal_shade_id:
-          product.shades.occlusal_shade === "manual"
-            ? null
-            : product.shades.occlusal_shade || null,
-        body_shade_id:
-          product.shades.body_shade === "manual"
-            ? null
-            : product.shades.body_shade || null,
-        gingival_shade_id:
-          product.shades.gingival_shade === "manual"
-            ? null
-            : product.shades.gingival_shade || null,
-        stump_shade_id:
-          product.shades.stump_shade === "manual"
-            ? null
-            : product.shades.stump_shade || null,
+    const caseProductTeethRows = cases.products.map((product: any) => ({
+      case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
+      is_range: cases.products.length > 0,
+      product_id: product.id,
+      type: product.type || "",
+      lab_id: cases.overview.lab_id || "",
+      quantity: product.quantity || 1,
+      notes: product.notes || "",
+      tooth_number: product.teeth || [],
+      pontic_teeth: product.pontic_teeth || [],
+      occlusal_shade_id:
+        product.shades.occlusal_shade === "manual"
+          ? null
+          : product.shades.occlusal_shade || null,
+      body_shade_id:
+        product.shades.body_shade === "manual"
+          ? null
+          : product.shades.body_shade || null,
+      gingival_shade_id:
+        product.shades.gingival_shade === "manual"
+          ? null
+          : product.shades.gingival_shade || null,
+      stump_shade_id:
+        product.shades.stump_shade === "manual"
+          ? null
+          : product.shades.stump_shade || null,
 
-        manual_body_shade: product?.shades.manual_body || null,
-        manual_occlusal_shade: product?.shades.manual_occlusal || null,
-        manual_gingival_shade: product?.shades.manual_gingival || null,
-        manual_stump_shade: product?.shades.manual_stump || null,
-        custom_body_shade: product?.shades.custom_body || null,
-        custom_occlusal_shade: product?.shades.custom_occlusal || null,
-        custom_gingival_shade: product?.shades.custom_gingival || null,
-        custom_stump_shade: product?.shades.custom_stump || null,
+      manual_body_shade: product?.shades.manual_body || null,
+      manual_occlusal_shade: product?.shades.manual_occlusal || null,
+      manual_gingival_shade: product?.shades.manual_gingival || null,
+      manual_stump_shade: product?.shades.manual_stump || null,
+      custom_body_shade: product?.shades.custom_body || null,
+      custom_occlusal_shade: product?.shades.custom_occlusal || null,
+      custom_gingival_shade: product?.shades.custom_gingival || null,
+      custom_stump_shade: product?.shades.custom_stump || null,
 
-        case_id: caseId,
-      })
-    );
+      case_id: caseId,
+    }));
 
     // Step to check if rows exist for product_id before inserting
     for (const row of caseProductTeethRows) {
@@ -605,55 +734,6 @@ const updateCases = async (
         }
       }
     }
-    // Upsert case_product_teeth rows
-    // const { error: caseProductTeethError } = await supabase
-    //   .from("case_product_teeth")
-    //   .upsert(caseProductTeethRows)
-    //   .select("");
-
-    // if (caseProductTeethError) {
-    //   console.error(
-    //     "Error updating case_product_teeth rows:",
-    //     caseProductTeethError
-    //   );
-    //   return; // Exit if there is an error
-    // } else {
-    //   console.log("Case product teeth rows updated successfully!");
-    //   toast.success("Case updated successfully");
-    //   if (navigate && caseId) {
-    //     navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-    //   }
-    // }
-
-    // Step 5: Update invoice for the case
-    // const updateDueDate = () => {
-    //   const currentDate = new Date();
-    //   const dueDate = new Date(
-    //     currentDate.getFullYear(),
-    //     currentDate.getMonth(),
-    //     28
-    //   );
-    //   return dueDate.toISOString().replace("T", " ").split(".")[0] + "+00";
-    // };
-
-    // const updatedInvoice = {
-    //   client_id: cases.overview.client_id,
-    //   lab_id: cases.overview.lab_id,
-    //   status: cases.overview.status,
-    //   due_date: null,
-    // };
-
-    // const { data: invoiceData, error: invoiceError } = await supabase
-    //   .from("invoices")
-    //   .upsert(updatedInvoice)
-    //   .eq("case_id", caseId)
-    //   .select("*");
-
-    // if (invoiceError) {
-    //   console.error("Error updating invoice:", invoiceError);
-    // } else {
-    //   console.log("Invoice updated successfully:", invoiceData);
-    // }
 
     // Step 6: Save the updated overview to localStorage and navigate
     localStorage.setItem("cases", JSON.stringify(cases));

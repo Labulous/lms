@@ -200,6 +200,14 @@ interface ProductRow {
   isComplete: boolean;
 }
 
+const teethArray = [
+  // Upper right to upper left
+  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+
+  // Lower left to lower right
+  38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+];
+
 const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   selectedProducts,
   onCaseDetailsChange,
@@ -245,6 +253,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
+  const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
+  const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
+    number[][]
+  >([]);
 
   const [notePopoverOpen, setNotePopoverOpen] = useState<Map<number, boolean>>(
     new Map()
@@ -352,41 +364,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
-    // Check if it's an arch selection
-    const hasUpper = teeth.some((t) => t >= 11 && t <= 28);
-    const hasLower = teeth.some((t) => t >= 31 && t <= 48);
-    const isFullArch = teeth.length >= 16;
+    // Define the sequence for upper and lower teeth based on the provided data
+    const teethArray = [
+      // Upper right to upper left
+      18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+      // Lower left to lower right
+      38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+    ];
 
-    if (isFullArch) {
-      if (hasUpper && hasLower) return "All";
-      if (hasUpper) return "Upper";
-      if (hasLower) return "Lower";
-    }
+    // Function to group consecutive teeth based on the sequence
+    const getConsecutiveGroups = (teeth: number[]): string[] => {
+      if (teeth.length === 0) return [];
 
-    if (teeth.length === 1) return teeth[0].toString();
+      // Sort the teeth based on the order in teethArray
+      const sortedTeeth = [...teeth].sort(
+        (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+      );
 
-    const sortedTeeth = [...teeth].sort((a, b) => a - b);
+      let groups: string[] = [];
+      let groupStart = sortedTeeth[0];
+      let prev = sortedTeeth[0];
 
-    let ranges: string[] = [];
-    let rangeStart = sortedTeeth[0];
-    let prev = sortedTeeth[0];
+      for (let i = 1; i <= sortedTeeth.length; i++) {
+        const current = sortedTeeth[i];
 
-    for (let i = 1; i <= sortedTeeth.length; i++) {
-      const current = sortedTeeth[i];
-      if (current !== prev + 1) {
-        // End of a range
-        if (rangeStart === prev) {
-          ranges.push(rangeStart.toString());
-        } else {
-          ranges.push(`${rangeStart}-${prev}`);
+        // Check if the current tooth is consecutive to the previous one in the sequence
+        if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+          // End of a group
+          if (groupStart === prev) {
+            groups.push(groupStart.toString());
+          } else {
+            groups.push(`${groupStart}-${prev}`);
+          }
+          groupStart = current; // Start a new group
         }
-        rangeStart = current;
+        prev = current;
       }
-      prev = current;
-    }
 
-    return ranges.join(", ");
+      return groups;
+    };
+
+    // Get consecutive groups of teeth
+    const groupedTeeth = getConsecutiveGroups(teeth);
+
+    // If there's only one group, return it
+    return groupedTeeth.join(", ");
   };
+
 
   const handleProductSelect = (
     value: any,
@@ -458,14 +482,51 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   console.log(selectedProducts, "selectedProducts");
 
-  const handleTeethSelectionChange = (teeth: any[], index: number) => {
+  const groupSelectedTeeth = (selectedTeeth: number[]) => {
+    // Sort selectedTeeth based on their order in teethArray
+    const sortedTeeth = selectedTeeth.sort(
+      (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+    );
+
+    const groups = [];
+    let currentGroup = [sortedTeeth[0]];
+
+    for (let i = 1; i < sortedTeeth.length; i++) {
+      const prevIndex = teethArray.indexOf(sortedTeeth[i - 1]);
+      const currentIndex = teethArray.indexOf(sortedTeeth[i]);
+
+      // Check if the current tooth is contiguous with the previous one
+      if (currentIndex === prevIndex + 1) {
+        currentGroup.push(sortedTeeth[i]);
+      } else {
+        // If not contiguous, push the current group to groups and start a new group
+        groups.push(currentGroup);
+        currentGroup = [sortedTeeth[i]];
+      }
+    }
+
+    // Push the final group
+    if (currentGroup.length) {
+      groups.push(currentGroup);
+    }
+
+    // Update the state with the grouped teeth
+    setGroupSelectedTeethState(groups);
+
+    return groups; // Optional, for debugging or testing
+  };
+  const handleTeethSelectionChange = (
+    teeth: any[],
+    pontic_teeth: number[],
+    index: number
+  ) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
-        const updatedProducts = [...prevSelectedProducts];
-
+        let updatedProducts = [...prevSelectedProducts];
         updatedProducts[index] = {
           ...updatedProducts[index],
           teeth,
+          pontic_teeth,
         };
 
         return updatedProducts;
@@ -473,8 +534,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         return prevSelectedProducts;
       }
     });
+    groupSelectedTeeth(teeth);
   };
-  console.log(shadeData, "shadeDate");
+
+  console.log(groupSelectedTeethState, "groupSelectedTeethState");
   const handleSaveShades = (index: number) => {
     const updatedShades = {
       occlusal_shade: shadeData[index]?.occlusal_shade || "",
@@ -593,23 +656,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const obj = {
           body_shade: item.shades?.body_shade
             ? item.shades?.body_shade
-            : item.shades?.body_shade === "manual"
+            : item.shades?.manual_body &&
+              !item.shades.custom_body &&
+              !item.shades?.body_shade
             ? "manual"
             : "",
 
           gingival_shade: item.shades?.gingival_shade
             ? item.shades?.gingival_shade
-            : item.shades?.gingival_shade === "manual"
+            : item.shades?.manual_gingival &&
+              !item.shades.custom_body &&
+              !item.shades?.gingival_shade
             ? "manual"
             : "",
           occlusal_shade: item.shades?.occlusal_shade
             ? item.shades?.occlusal_shade
-            : item.shades?.occlusal_shade === "manual"
+            : item.shades?.manual_occlusal &&
+              !item.shades.custom_occlusal &&
+              !item.shades?.occlusal_shade
             ? "manual"
             : "",
           stump_shade: item.shades?.stump_shade
             ? item.shades?.stump_shade
-            : item.shades?.stump_shade === "manual"
+            : item.shades?.manual_stump &&
+              !item.shades.custom_stump &&
+              !item.shades?.stump_shade
             ? "manual"
             : "",
           id: item.id,
@@ -656,6 +727,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -764,15 +836,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             selectedProduct?.billing_type?.name || "perTooth"
                           }
                           selectedTeeth={row.teeth}
-                          onSelectionChange={(teeth) => {
-                            handleTeethSelectionChange(teeth, index);
+                          onSelectionChange={(teeth, pontic_teeth) => {
+                            handleTeethSelectionChange(
+                              teeth,
+                              pontic_teeth
+                                ? (pontic_teeth as number[] | [])
+                                : [],
+                              index
+                            );
                           }}
                           disabled={!row.type}
                           selectedProduct={{
                             type: row.type ? [row.type] : [],
+                            selectedPontic: row.pontic_teeth as number[],
                           }}
                           addedTeethMap={new Map()}
                           onAddToShadeTable={() => {}}
+                          ponticTeeth={ponticTeeth}
+                          setPonticTeeth={setPonticTeeth}
+                          groupSelectedTeethState={groupSelectedTeethState}
                         />
                       </PopoverContent>
                     </Popover>
@@ -818,6 +900,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {row.shades?.body_shade ||
                             row.shades?.gingival_shade ||
                             row.shades?.occlusal_shade ||
+                            row.shades?.custom_body ||
+                            row.shades?.custom_gingival ||
+                            row.shades?.custom_occlusal ||
+                            row.shades?.manual_occlusal ||
+                            row.shades?.manual_gingival ||
+                            row.shades?.manual_body ||
+                            row.shades?.manual_stump ||
+                            row.shades?.custom_stump ||
                             row.shades?.stump_shade ? (
                               <div>
                                 {shadeData[index]?.occlusal_shade === "manual"
@@ -923,7 +1013,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <h2>Custom</h2>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="occlusal">Occlusal</Label>
+                                <Label htmlFor="occlusal">Incisal</Label>
                                 <Select
                                   value={shadeData[index]?.occlusal_shade || ""}
                                   onValueChange={(value) => {
@@ -934,6 +1024,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         occlusal_shade: value,
                                         manual_occlusal: "",
                                         id: row.id,
+                                        custom_occlusal: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1016,6 +1107,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         body_shade: value,
                                         id: row.id,
                                         manual_body: "",
+                                        custom_body: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1097,6 +1189,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         gingival_shade: value,
                                         manual_gingival: "",
                                         id: row.id,
+                                        custom_gingival: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1179,6 +1272,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         stump_shade: value,
                                         id: row.id,
                                         manual_stump: "",
+                                        custom_stump: "",
                                       };
                                       return updatedShadeData;
                                     });
@@ -1370,7 +1464,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           disabled={!row.id}
                           onClick={() => togglePercentPopover(index)}
                         >
-                          <Percent className="h-4 w-4" />
+                         {selectedProducts?.[index]?.discount} <Percent className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent

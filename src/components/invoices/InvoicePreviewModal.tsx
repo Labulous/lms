@@ -41,7 +41,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       generatePreview();
     }
   }, [isOpen, formData]);
-  console.log(caseDetails, "caseDetails");
   const generatePreview = async () => {
     setLoading(true);
     setError(null);
@@ -214,12 +213,11 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
           {/* Content */}
           <div ref={invoiceRef}>
-            {/* <InvoiceTemplate
+            <InvoiceTemplate
               paperSize={selectedPaperSize}
               caseDetails={caseDetails}
               ref={invoiceRef}
-            /> */}
-            <LabSlipTemplate caseDetails={caseDetails} paperSize="LETTER" />
+            />
           </div>
 
           {/* Footer */}

@@ -8,10 +8,11 @@ import {
 import { Button } from "@/components/ui/button";
 
 interface OnHoldModalProps {
-  onHoldReason: string;
-  setOnHoldReason: React.Dispatch<SetStateAction<string>>;
+  onHoldReason: string | null;
+  setOnHoldReason: React.Dispatch<SetStateAction<string | null>>;
   onClose: () => void;
   handleUpdateCaseStatus: (type: string) => void;
+  isOpen: boolean;
 }
 
 const OnHoldModal = ({
@@ -19,6 +20,7 @@ const OnHoldModal = ({
   setOnHoldReason,
   onClose,
   handleUpdateCaseStatus,
+  isOpen,
 }: OnHoldModalProps) => {
   useEffect(() => {
     // Ensure pointer-events are reset when the component unmounts
@@ -34,7 +36,7 @@ const OnHoldModal = ({
 
   return (
     <Dialog
-      open
+      open={isOpen}
       onOpenChange={() => {
         handleClose();
       }}
@@ -52,7 +54,7 @@ const OnHoldModal = ({
 
             <textarea
               name="reasonNote"
-              value={onHoldReason}
+              value={onHoldReason || "" as string}
               onChange={(e) => setOnHoldReason(e.target.value)}
               id="reasonNote"
               rows={3}

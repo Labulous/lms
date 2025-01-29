@@ -29,7 +29,14 @@ import { supabase } from "@/lib/supabase";
 import { ProductType } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
@@ -58,7 +65,6 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
-  console.log(invoice, "invoice?.products");
   useEffect(() => {
     if (invoice) {
       const transformedItems = invoice?.products?.map((item) => ({
@@ -67,9 +73,12 @@ export function EditInvoiceModal({
         quantity: item?.discounted_price?.quantity ?? 0,
         discountId: item?.discounted_price?.id,
         caseProductTeethId: item.teethProduct.id,
-        toothNumber: item.teethProduct?.tooth_number?.[0] || 0,
+        toothNumber: item.teethProduct?.tooth_number
+          .map((item) => item)
+          .join(","),
         description: item.name,
         id: item.id,
+        due_amount: invoice?.invoice?.[0]?.due_amount,
       }));
       setItems(transformedItems as any);
       setNotes({
@@ -104,16 +113,35 @@ export function EditInvoiceModal({
 
   const calculateTotal = () => {
     const subtotal = items.reduce((sum, item) => {
-      const itemTotal = item.unitPrice * item.quantity;
-      const discountAmount = (itemTotal * (item.discount || 0)) / 100;
-      return sum + (itemTotal - discountAmount);
+      // Convert toothNumber string to an array, handle errors gracefully
+      let toothArray: number[] = [];
+      try {
+        toothArray = item.toothNumber.split(",").map((num) => {
+          const parsed = parseInt(num.trim(), 10); // Parse each number
+          if (isNaN(parsed)) throw new Error("Invalid tooth number");
+          return parsed;
+        });
+      } catch (error) {
+        console.error(
+          `Error parsing toothNumber for item: ${item.id}, skipping item.`
+        );
+        return sum; // Skip this item and continue to the next
+      }
+
+      // Calculate the total for this item
+      const itemTotal = item.unitPrice * item.quantity * toothArray.length; // Total before discount
+      const discountedItemTotal =
+        itemTotal - (itemTotal * (item.discount || 0)) / 100; // Apply discount
+
+      return sum + discountedItemTotal; // Add to the running sum
     }, 0);
 
-    const discountAmount = (subtotal * discount) / 100;
+    // Apply a global discount to the subtotal (if any)
+    const totalDiscountAmount = (subtotal * discount) / 100;
 
-    return subtotal - discountAmount;
+    // Return the final total after applying the global discount
+    return subtotal - totalDiscountAmount;
   };
-
   const handleSave = async () => {
     if (!invoice) return;
 
@@ -178,7 +206,8 @@ export function EditInvoiceModal({
                 quantity
               `
         )
-        .in("product_id", [product.id]);
+        .in("product_id", [product.id])
+        .eq("case_id", invoice?.id);
 
       if (error) {
         console.error("Error fetching discounted price:", error.message);
@@ -222,7 +251,6 @@ export function EditInvoiceModal({
       console.error("An unexpected error occurred:", err);
     }
   };
-  console.log(items, "items");
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -248,7 +276,7 @@ export function EditInvoiceModal({
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6" id="dialog-onhold">
           {/* Client Info */}
           <div className="flex justify-between items-start">
             <div>
@@ -390,6 +418,37 @@ export function EditInvoiceModal({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
+
+                        {/* <Select
+                          name="clientId"
+                          value={item.id}
+                          onValueChange={(value) => {
+                            handleSelectedProduct(
+                              products.filter((item) => item.id === value)[0]
+                            );
+                          }}
+                        >
+                          <SelectTrigger className={cn("bg-white")}>
+                            <SelectValue placeholder="Select a client" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products && products.length > 0 ? (
+                              products.map((product) => (
+                                <SelectItem
+                                  key={product.id}
+                                  value={product.id}
+                                  className="hover:bg-gray-200 cursor-pointer"
+                                >
+                                  {product.name || ""}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="_no_clients" disabled>
+                                No clients available
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select> */}
                       </TableCell>
                       <TableCell>
                         <Input
@@ -443,9 +502,13 @@ export function EditInvoiceModal({
                         }).format(
                           item.unitPrice *
                             item.quantity *
-                            (1 - (item.discount || 0) / 100)
+                            (1 - (item.discount || 0) / 100) *
+                            (item.toothNumber
+                              .split(",")
+                              .filter((num) => num.trim() !== "").length || 0)
                         )}
                       </TableCell>
+
                       <TableCell>
                         <Button
                           variant="ghost"
@@ -509,7 +572,14 @@ export function EditInvoiceModal({
               />
             </div> */}
 
-            <div className="w-1/3 space-y-4 h-[150px] flex justify-end items-end">
+            <div className="w-1/3 space-y-4 h-[150px] flex justify-end items-end gap-5">
+              <div className="flex border-t-2 border-b-2 py-5 font-bold ">
+                <span>Due Amount:</span>
+                <span>
+                  $
+                  {items.reduce((sum, item) => sum + (item.due_amount || 0), 0)}{" "}
+                </span>
+              </div>
               <div className="flex border-t-2 border-b-2 py-5 font-bold">
                 <span>Total:</span>
                 <span>

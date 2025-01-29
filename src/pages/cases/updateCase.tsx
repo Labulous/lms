@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -21,6 +21,7 @@ import {
   DiscountedPrice,
 } from "@/components/cases/CaseDetails";
 import { FileWithStatus } from "@/components/cases/wizard/steps/FileUploads";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -66,10 +67,10 @@ const UpdateCase: React.FC = () => {
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
-  const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
+  const [isAddingPan, setIsAddingPan] = useState(false);
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,25 +156,6 @@ const UpdateCase: React.FC = () => {
         if (Array.isArray(clients)) {
           setClients(clients);
         }
-        const number = await fetchCaseCount(labData.labId); // Fetch current case count
-
-        if (typeof number === "number") {
-          // Generate case number
-          const identifier = labData?.name
-            ?.substring(0, 3)
-            .toUpperCase() as string;
-          const currentYear = new Date().getFullYear().toString().slice(-2);
-          const currentMonth = String(new Date().getMonth() + 1).padStart(
-            2,
-            "0"
-          );
-          const sequentialNumber = String(number + 1).padStart(5, "0");
-
-          const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
-          setCaseNumber(caseNumber);
-        } else {
-          setCaseNumber(null);
-        }
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
@@ -203,8 +185,6 @@ const UpdateCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
-    if (!formData.appointmentDate)
-      validationErrors.appointmentDate = "Appointment date is Required";
 
     if (
       !formData.caseDetails?.contactType ||
@@ -231,68 +211,65 @@ const UpdateCase: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
-    if (caseNumber) {
-      try {
-        setLoadingState({ isLoading: true, action: "save" });
-        const transformedData = {
-          ...formData,
-          status: formData.status.toLowerCase() as CaseStatus,
-        };
-        const newCase: any = {
-          overview: {
-            client_id: transformedData.clientId,
-            doctor_id: transformedData.doctorId || "",
-            created_by: user?.id || "",
-            patient_name:
-              transformedData.patientFirstName +
-              " " +
-              transformedData.patientLastName,
-            rx_number: "",
-            received_date: transformedData.orderDate,
-            status: transformedData.status,
-            due_date: transformedData.isDueDateTBD
-              ? null
-              : transformedData.dueDate,
-            isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate,
-            otherItems: transformedData.otherItems || "",
-            invoice_notes: transformedData.notes?.invoiceNotes,
-            instruction_notes: transformedData.notes?.instructionNotes,
-            occlusal_type: transformedData.caseDetails?.occlusalType,
-            contact_type: transformedData.caseDetails?.contactType,
-            pontic_type: transformedData.caseDetails?.ponticType,
-            custom_contact_details: transformedData.caseDetails?.customContact,
-            custom_occulusal_details:
-              transformedData.caseDetails?.customOcclusal,
-            custom_pontic_details: transformedData.caseDetails?.customPontic,
-            margin_design_type: transformedData.caseDetails?.marginDesign,
-            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
-            alloy_type: transformedData.caseDetails?.alloyType,
-            custom_margin_design_type:
-              transformedData.caseDetails?.customMargin,
-            custom_occlusion_design_type:
-              transformedData.caseDetails?.customOcclusalDesign,
-            custon_alloy_type: transformedData.caseDetails?.customAlloy,
-            lab_id: lab?.labId,
-            working_tag_id: formData.workingTagName,
-            working_pan_name: formData.workingPanName,
-            working_pan_color: formData.workingPanColor,
-            case_number: caseNumber,
-            enclosed_case_id: formData.enclosed_case_id,
-            attachements: selectedFiles.map((item) => item.url),
-          },
-          products: selectedProducts.filter((item) => item.id && item.type),
-          enclosedItems: transformedData.enclosedItems,
-          files: selectedFiles,
-        };
-        console.log(newCase, "newCase");
-        await updateCase(newCase, navigate, setLoadingState, caseId as string);
-      } catch (error) {
-        console.error("Error creating case:", error);
-        toast.error("Failed to create case");
-      }
-    } else {
-      toast.error("Unable to Create Case Number");
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+      const transformedData = {
+        ...formData,
+        status: formData.status.toLowerCase() as CaseStatus,
+      };
+      const newCase: any = {
+        overview: {
+          client_id: transformedData.clientId,
+          doctor_id: transformedData.doctorId || "",
+          created_by: user?.id || "",
+          patient_name:
+            transformedData.patientFirstName +
+            " " +
+            transformedData.patientLastName,
+          rx_number: "",
+          received_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.orderDate,
+          status: transformedData.status,
+          due_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.dueDate,
+          isDueDateTBD: transformedData.isDueDateTBD || false,
+          appointment_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.appointmentDate || null,
+          otherItems: transformedData.otherItems || "",
+          invoice_notes: transformedData.notes?.invoiceNotes,
+          instruction_notes: transformedData.notes?.instructionNotes,
+          occlusal_type: transformedData.caseDetails?.occlusalType,
+          contact_type: transformedData.caseDetails?.contactType,
+          pontic_type: transformedData.caseDetails?.ponticType,
+          custom_contact_details: transformedData.caseDetails?.customContact,
+          custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+          custom_pontic_details: transformedData.caseDetails?.customPontic,
+          margin_design_type: transformedData.caseDetails?.marginDesign,
+          occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+          alloy_type: transformedData.caseDetails?.alloyType,
+          custom_margin_design_type: transformedData.caseDetails?.customMargin,
+          custom_occlusion_design_type:
+            transformedData.caseDetails?.customOcclusalDesign,
+          custon_alloy_type: transformedData.caseDetails?.customAlloy,
+          lab_id: lab?.labId,
+          working_tag_id: formData.workingTagName,
+          working_pan_name: formData.workingPanName,
+          working_pan_color: formData.workingPanColor,
+          enclosed_case_id: formData.enclosed_case_id,
+          attachements: selectedFiles.map((item) => item.url),
+        },
+        products: selectedProducts.filter((item) => item.id && item.type),
+        enclosedItems: transformedData.enclosedItems,
+        files: selectedFiles,
+      };
+      console.log(newCase, "newCase");
+      await updateCase(newCase, navigate, setLoadingState, caseId as string);
+    } catch (error) {
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     }
   };
 
@@ -350,7 +327,6 @@ const UpdateCase: React.FC = () => {
              working_pan_name,
              working_pan_color,
               rx_number,
-              received_date,
               isDueDateTBD,
               appointment_date,
               otherItems,
@@ -508,6 +484,7 @@ const UpdateCase: React.FC = () => {
                 gingival_shade_id,
                 stump_shade_id,
                 tooth_number,
+                pontic_teeth,
                 notes,
                 product_id,
                 custom_occlusal_shade,
@@ -546,7 +523,7 @@ const UpdateCase: React.FC = () => {
             teethProduct: productTeeth,
           };
         });
-
+        console.log(productsWithDiscounts, "productsWithDiscounts");
         const caseDataApi: any = caseData;
         setFormData((prevData) => ({
           ...prevData,
@@ -583,7 +560,7 @@ const UpdateCase: React.FC = () => {
             consultRequested: caseDataApi.enclosed_items?.consultRequested || 0,
           },
           otherItems: caseDataApi.otherItems || "",
-          isDueDateTBD: prevData.isDueDateTBD || false,
+          isDueDateTBD: caseDataApi.isDueDateTBD || false,
           notes: {
             ...prevData.notes,
             instructionNotes: caseDataApi.instruction_notes || "",
@@ -617,6 +594,7 @@ const UpdateCase: React.FC = () => {
             type: item?.product_type?.name || "",
             teeth: item?.teethProduct?.tooth_number || [],
             price: item?.discounted_price?.price,
+            pontic_teeth: item.teethProduct.pontic_teeth || [],
             shades: {
               body_shade: item.teethProduct?.body_shade_id || "",
               gingival_shade: item?.teethProduct?.gingival_shade_id || "",
@@ -651,26 +629,52 @@ const UpdateCase: React.FC = () => {
     return () => {
       null;
     };
-  }, [caseId, lab]);
+  }, [caseId, clients]);
 
-  console.log(caseDetail, "Case details");
-  console.log(errors, "errors");
   return (
-    <div className="p-6">
+    <div
+      className="p-6"
+      onClick={(e) => {
+        if (isAddingPan) {
+          setIsAddingPan(false);
+        }
+      }}
+    >
       <div className="space-y-4">
-        <h1 className="text-3xl font-semibold text-gray-800 mb-6">
-          Update a Case{" "}
-          <span
-            className="text-blue-500 underline cursor-pointer"
-            onClick={() => {
-              caseDetail?.case_number
-                ? navigate(`/cases/${caseDetail.id}`)
-                : null;
-            }}
-          >
-            {caseDetail?.case_number ?? "Loading..."}
-          </span>
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-semibold text-gray-800">
+            Update a Case{" "}
+            <span
+              className="text-blue-500 underline cursor-pointer"
+              onClick={() => {
+                caseDetail?.case_number
+                  ? navigate(`/cases/${caseDetail.id}`)
+                  : null;
+              }}
+            >
+              {caseDetail?.case_number ?? "Loading..."}
+            </span>
+          </h1>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => navigate(-1)}
+              disabled={loadingState.isLoading}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={loadingState.isLoading}>
+              {loadingState.isLoading && loadingState.action === "update" ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Updating...</span>
+                </div>
+              ) : (
+                "Update Case"
+              )}
+            </Button>
+          </div>
+        </div>
 
         <div className="bg-white shadow">
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -681,8 +685,17 @@ const UpdateCase: React.FC = () => {
               formData={formData}
               onChange={handleFormChange}
               errors={errors}
-              clients={clients}
+              clients={clients.map((item) => ({
+                id: item.id,
+                client_name: item.clientName,
+                doctors: item.doctors.map((item) => ({
+                  id: item.id as string,
+                  name: item.name,
+                })),
+              }))}
               loading={loading}
+              isAddingPan={isAddingPan}
+              setIsAddingPan={setIsAddingPan}
             />
           </div>
         </div>

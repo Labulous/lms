@@ -35,7 +35,7 @@ export interface FormData {
   workingPanColor?: string;
   patientLastName: string;
   orderDate: string;
-  status: typeof CASE_STATUSES[number];
+  status: (typeof CASE_STATUSES)[number];
   statusError?: string;
   deliveryMethod: "Pickup" | "Local Delivery" | "Shipping";
   dueDate?: string;
@@ -85,13 +85,14 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
   const { user, loading: authLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
+  const [isAddingPan, setIsAddingPan] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     clientId: "",
     patientFirstName: "",
     patientLastName: "",
     assignedTechnicians: [],
     orderDate: format(new Date(), "yyyy-MM-dd"),
-    status: "in_queue" as typeof CASE_STATUSES[number],
+    status: "in_queue" as (typeof CASE_STATUSES)[number],
     deliveryMethod: "Pickup" as DeliveryMethod,
     enclosedItems: defaultEnclosedItems,
     otherItems: "",
@@ -255,8 +256,17 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
             formData={formData}
             onChange={handleFormChange}
             errors={errors}
-            clients={clients}
+            clients={clients.map((item) => ({
+              id: item.id,
+              client_name: item.clientName,
+              doctors: item.doctors.map((item) => ({
+                id: item.id as string,
+                name: item.name,
+              })),
+            }))}
             loading={loading}
+            isAddingPan={isAddingPan}
+            setIsAddingPan={setIsAddingPan}
           />
         );
       case "products":
