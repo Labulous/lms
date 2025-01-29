@@ -1013,7 +1013,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <h2>Custom</h2>
                               </div>
                               <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="occlusal">Occlusal</Label>
+                                <Label htmlFor="occlusal">Incisal</Label>
                                 <Select
                                   value={shadeData[index]?.occlusal_shade || ""}
                                   onValueChange={(value) => {

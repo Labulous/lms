@@ -188,7 +188,6 @@ const ProductsServices: React.FC = () => {
         <TabsContent value="products" className="space-y-4">
           <ProductList
             products={products}
-            productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
             onBatchDelete={handleBatchDeleteClick}
@@ -218,7 +217,6 @@ const ProductsServices: React.FC = () => {
               updated_at: new Date().toISOString(),
               discount: service.discount as number,
             }))}
-            productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
             onBatchDelete={handleBatchDeleteClick}

@@ -35,15 +35,13 @@ import { toast } from "react-hot-toast";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
-  product_type: { name: string } | null;
   billing_type: { name: string; label: string | null } | null;
 };
 
 type Material = Database["public"]["Tables"]["materials"]["Row"];
-type ProductType = Database["public"]["Tables"]["product_types"]["Row"];
 type BillingType = Database["public"]["Tables"]["billing_types"]["Row"];
 
-const formSchema = z.object({
+const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
   price: z.coerce.number().min(0, "Price must be 0 or greater"),
   description: z.string().optional(),
@@ -51,7 +49,6 @@ const formSchema = z.object({
   is_client_visible: z.boolean().default(true),
   is_taxable: z.boolean().default(true),
   material_id: z.string().min(1, "Material is required"),
-  product_type_id: z.string().optional(),
   billing_type_id: z.string().min(1, "Billing type is required"),
   requires_shade: z.boolean().default(false),
 });
@@ -60,84 +57,43 @@ interface EditProductFormProps {
   product?: Product;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: z.infer<typeof formSchema>) => void;
+  onSave: (product: z.infer<typeof productSchema>) => void;
 }
 
 export function EditProductForm({ product, isOpen, onClose, onSave }: EditProductFormProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      description: "",
-      lead_time: undefined,
-      is_client_visible: true,
-      is_taxable: true,
-      material_id: "",
-      product_type_id: "",
-      billing_type_id: "",
-      requires_shade: false,
-    }
-  });
-
-  // Reset form with product data when product changes
-  useEffect(() => {
-    if (product) {
-      form.reset({
-        name: product.name,
-        price: product.price,
-        description: product.description || "",
-        lead_time: product.lead_time || undefined,
-        is_client_visible: product.is_client_visible,
-        is_taxable: product.is_taxable,
-        material_id: product.material_id || "",
-        product_type_id: product.product_type_id || "",
-        billing_type_id: product.billing_type_id || "",
-        requires_shade: product.requires_shade || false,
-      });
-    } else {
-      form.reset({
-        name: "",
-        price: 0,
-        description: "",
-        lead_time: undefined,
-        is_client_visible: true,
-        is_taxable: true,
-        material_id: "",
-        product_type_id: "",
-        billing_type_id: "",
-        requires_shade: false,
-      });
-    }
-  }, [product, form]);
 
   useEffect(() => {
     const fetchReferenceData = async () => {
-      try {
-        const [materialsData, productTypesData, billingTypesData] = await Promise.all([
-          supabase.from("materials").select("*").order("name"),
-          supabase.from("product_types").select("*").order("name"),
-          supabase.from("billing_types").select("*").order("name"),
-        ]);
+      const [materialsData, billingTypesData] = await Promise.all([
+        supabase.from("materials").select("*").order("name"),
+        supabase.from("billing_types").select("*").order("name"),
+      ]);
 
-        if (materialsData.data) setMaterials(materialsData.data);
-        if (productTypesData.data) setProductTypes(productTypesData.data);
-        if (billingTypesData.data) setBillingTypes(billingTypesData.data);
-      } catch (error) {
-        toast.error("Failed to load reference data");
-      }
+      if (materialsData.data) setMaterials(materialsData.data);
+      if (billingTypesData.data) setBillingTypes(billingTypesData.data);
     };
 
-    if (isOpen) {
-      fetchReferenceData();
-    }
-  }, [isOpen]);
+    fetchReferenceData();
+  }, []);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const form = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: product?.name || "",
+      description: product?.description || "",
+      material_id: product?.material_id || "",
+      billing_type_id: product?.billing_type_id || "",
+      price: product?.price || 0,
+      lead_time: product?.lead_time || 0,
+      is_client_visible: product?.is_client_visible ?? true,
+      is_taxable: product?.is_taxable ?? true,
+      requires_shade: product?.requires_shade ?? false,
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof productSchema>) {
     try {
       await onSave(values);
       onClose();
@@ -156,173 +112,149 @@ export function EditProductForm({ product, isOpen, onClose, onSave }: EditProduc
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="price"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Price</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        value={value || ''}
-                        onChange={(e) => onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Product name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="lead_time"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Lead Time (days)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        value={value || ''}
-                        onChange={(e) => onChange(parseFloat(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Product description" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="material_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Material</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select material" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {materials.map((material) => (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="billing_type_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing Type</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select billing type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {billingTypes.map((type) => (
+                            <SelectItem key={type.id} value={type.id}>
+                              {type.label || type.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lead_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lead Time (days)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="material_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Material</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select material" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {materials.map((material) => (
-                          <SelectItem key={material.id} value={material.id}>
-                            {material.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="product_type_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Type (Optional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a product type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {productTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="billing_type_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Billing Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select billing" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {billingTypes.map((type) => (
-                          <SelectItem key={type.id} value={type.id}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-6">
               <FormField
                 control={form.control}
                 name="is_client_visible"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-center space-x-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Visible to Clients</FormLabel>
-                      <FormDescription>
-                        Show this product to clients in the portal
-                      </FormDescription>
-                    </div>
+                    <FormLabel className="!mt-0">Visible to Clients</FormLabel>
                   </FormItem>
                 )}
               />
@@ -331,19 +263,14 @@ export function EditProductForm({ product, isOpen, onClose, onSave }: EditProduc
                 control={form.control}
                 name="is_taxable"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-center space-x-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Taxable</FormLabel>
-                      <FormDescription>
-                        Apply tax to this product
-                      </FormDescription>
-                    </div>
+                    <FormLabel className="!mt-0">Taxable</FormLabel>
                   </FormItem>
                 )}
               />
@@ -352,19 +279,14 @@ export function EditProductForm({ product, isOpen, onClose, onSave }: EditProduc
                 control={form.control}
                 name="requires_shade"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormItem className="flex flex-row items-center space-x-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Requires Shade</FormLabel>
-                      <FormDescription>
-                        Product requires shade selection
-                      </FormDescription>
-                    </div>
+                    <FormLabel className="!mt-0">Requires Shade</FormLabel>
                   </FormItem>
                 )}
               />

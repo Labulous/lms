@@ -10,7 +10,8 @@ import {
   Copy,
   ChevronRight,
 } from "lucide-react";
-import { Database } from "../../types/supabase";
+import { Database } from "@/types/supabase";
+import { ProductInput } from "@/services/productsService";
 import {
   Table,
   TableBody,
@@ -35,30 +36,32 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import BatchProductUpload from "./BatchProductUpload";
-import { ProductInput } from "@/services/productsService";
 import { EditProductForm } from "./EditProductForm";
 
-type Product = Database["public"]["Tables"]["products"]["Row"] & {};
-
 type SortConfig = {
-  key: keyof Product;
+  key: keyof Database["public"]["Tables"]["products"]["Row"];
   direction: "asc" | "desc";
 };
 
 interface ProductListProps {
-  products: Product[];
-  productTypes: { id: string; name: string }[];
-  onEdit?: (product: Product) => void;
-  onDelete?: (product: Product) => void;
-  onBatchDelete?: (products: Product[]) => void;
+  products: Database["public"]["Tables"]["products"]["Row"][];
+  onEdit?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
+  onDelete?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
+  onBatchDelete?: (products: Database["public"]["Tables"]["products"]["Row"][]) => void;
   onBatchAdd?: (products: ProductInput[]) => Promise<void>;
 }
 
 const ProductList: React.FC<ProductListProps> = ({
   products,
-  productTypes,
   onEdit,
   onDelete,
   onBatchDelete,
@@ -67,15 +70,25 @@ const ProductList: React.FC<ProductListProps> = ({
   // State
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [materialFilter, setMaterialFilter] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "name",
     direction: "asc",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [editingProduct, setEditingProduct] = useState<Database["public"]["Tables"]["products"]["Row"] | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Get unique materials from products
+  const materials = useMemo(() => {
+    const uniqueMaterials = new Set(
+      products
+        .map(p => p.material?.name)
+        .filter((name): name is string => name !== undefined && name !== null)
+    );
+    return Array.from(uniqueMaterials).map(name => ({ id: name, name }));
+  }, [products]);
 
   // Filtering
   const getFilteredProducts = () => {
@@ -89,27 +102,27 @@ const ProductList: React.FC<ProductListProps> = ({
       );
     }
 
-    if (typeFilter.length > 0) {
+    if (materialFilter.length > 0) {
       filtered = filtered.filter(
         (product) =>
-          product.product_type && typeFilter.includes(product.product_type.name)
+          product.material?.name && materialFilter.includes(product.material.name)
       );
     }
 
     return filtered;
   };
 
-  const filteredProducts = useMemo(() => getFilteredProducts(), [products, searchTerm, typeFilter]);
+  const filteredProducts = useMemo(() => getFilteredProducts(), [products, searchTerm, materialFilter]);
 
   // Sorting
-  const handleSort = (key: keyof Product) => {
+  const handleSort = (key: keyof Database["public"]["Tables"]["products"]["Row"]) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
-  const getSortIcon = (key: keyof Product) => {
+  const getSortIcon = (key: keyof Database["public"]["Tables"]["products"]["Row"]) => {
     if (sortConfig.key !== key)
       return <ChevronsUpDown className="ml-2 h-4 w-4" />;
     return sortConfig.direction === "asc" ? (
@@ -119,7 +132,7 @@ const ProductList: React.FC<ProductListProps> = ({
     );
   };
 
-  const sortData = (data: Product[]) => {
+  const sortData = (data: Database["public"]["Tables"]["products"]["Row"][]) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
@@ -207,52 +220,60 @@ const ProductList: React.FC<ProductListProps> = ({
           />
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline">Filter by Type</Button>
+              <Button variant="outline">Filter by Material</Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                  <span className="text-sm font-medium">Filter by Type</span>
-                  {typeFilter.length > 0 && (
+            <PopoverContent className="w-[200px] p-4" align="start">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="text-sm font-medium">Filter by Material</span>
+                  {materialFilter.length > 0 && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setTypeFilter([])}
+                      onClick={() => setMaterialFilter([])}
                       className="h-8 px-2 text-xs"
                     >
                       Clear
                     </Button>
                   )}
                 </div>
-                {productTypes.map((type) => (
-                  <div key={type.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`type-${type.id}`}
-                      checked={typeFilter.includes(type.name)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setTypeFilter((prev) => [...prev, type.name]);
-                        } else {
-                          setTypeFilter((prev) =>
-                            prev.filter((t) => t !== type.name)
-                          );
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor={`type-${type.id}`}
-                      className="flex items-center text-sm font-medium cursor-pointer"
-                    >
-                      <Badge variant={type.name as any} className="ml-1">
-                        {type.name}
-                      </Badge>
-                    </label>
-                  </div>
-                ))}
+                <div className="flex flex-col gap-2">
+                  {materials.map((material) => (
+                    <div key={material.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`material-${material.id}`}
+                        checked={materialFilter.includes(material.name)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setMaterialFilter((prev) => [...prev, material.name]);
+                          } else {
+                            setMaterialFilter((prev) =>
+                              prev.filter((t) => t !== material.name)
+                            );
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor={`material-${material.id}`}
+                        className="flex items-center text-sm font-medium cursor-pointer"
+                      >
+                        <Badge variant={material.name as any} className="ml-1">
+                          {material.name}
+                        </Badge>
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             </PopoverContent>
           </Popover>
-          {onBatchAdd && <BatchProductUpload onUpload={onBatchAdd} />}
+          {onBatchAdd && (
+            <BatchProductUpload 
+              onUpload={async (products) => {
+                await onBatchAdd(products);
+              }} 
+            />
+          )}
         </div>
       </div>
 
@@ -296,15 +317,18 @@ const ProductList: React.FC<ProductListProps> = ({
                   {getSortIcon("name")}
                 </div>
               </TableHead>
-              <TableHead className="cursor-pointer">
+              <TableHead
+                onClick={() => handleSort("material")}
+                className="cursor-pointer"
+              >
                 <Popover>
                   <PopoverTrigger asChild>
                     <div className="flex items-center hover:text-primary">
-                      Type
-                      {getSortIcon("product_type")}
-                      {typeFilter.length > 0 && (
+                      Material
+                      {getSortIcon("material")}
+                      {materialFilter.length > 0 && (
                         <Badge variant="filter" className="ml-2">
-                          {typeFilter.length}
+                          {materialFilter.length}
                         </Badge>
                       )}
                     </div>
@@ -313,43 +337,43 @@ const ProductList: React.FC<ProductListProps> = ({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between pb-2 mb-2 border-b">
                         <span className="text-sm font-medium">
-                          Filter by Type
+                          Filter by Material
                         </span>
-                        {typeFilter.length > 0 && (
+                        {materialFilter.length > 0 && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setTypeFilter([])}
+                            onClick={() => setMaterialFilter([])}
                             className="h-8 px-2 text-xs"
                           >
                             Clear
                           </Button>
                         )}
                       </div>
-                      {productTypes.map((type) => (
+                      {materials.map((material) => (
                         <div
-                          key={type.id}
+                          key={material.id}
                           className="flex items-center space-x-2"
                         >
                           <Checkbox
-                            id={`type-${type.id}`}
-                            checked={typeFilter.includes(type.name)}
+                            id={`material-header-${material.id}`}
+                            checked={materialFilter.includes(material.name)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setTypeFilter((prev) => [...prev, type.name]);
+                                setMaterialFilter((prev) => [...prev, material.name]);
                               } else {
-                                setTypeFilter((prev) =>
-                                  prev.filter((t) => t !== type.name)
+                                setMaterialFilter((prev) =>
+                                  prev.filter((name) => name !== material.name)
                                 );
                               }
                             }}
                           />
                           <label
-                            htmlFor={`type-${type.id}`}
+                            htmlFor={`material-header-${material.id}`}
                             className="flex items-center text-sm font-medium cursor-pointer"
                           >
-                            <Badge variant={type.name as any} className="ml-1">
-                              {type.name}
+                            <Badge variant={material.name as any} className="ml-1">
+                              {material.name}
                             </Badge>
                           </label>
                         </div>
@@ -357,15 +381,6 @@ const ProductList: React.FC<ProductListProps> = ({
                     </div>
                   </PopoverContent>
                 </Popover>
-              </TableHead>
-              <TableHead
-                onClick={() => handleSort("material")}
-                className="cursor-pointer"
-              >
-                <div className="flex items-center">
-                  Material
-                  {getSortIcon("material")}
-                </div>
               </TableHead>
               <TableHead
                 onClick={() => handleSort("price")}
@@ -424,17 +439,9 @@ const ProductList: React.FC<ProductListProps> = ({
                     <ChevronRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </TableCell>
-                <TableCell>
-                  {product.product_type && (
-                    <Badge variant={product.product_type.name as any}>
-                      {product.product_type.name}
-                    </Badge>
-                  )}
-                </TableCell>
                 <TableCell>{product.material?.name}</TableCell>
                 <TableCell className="text-right">
-                  $
-                  {product.price.toLocaleString("en-US", {
+                  ${product.price.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                   })}
                 </TableCell>
@@ -464,7 +471,6 @@ const ProductList: React.FC<ProductListProps> = ({
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
-                          e.stopPropagation();
                           setOpenMenuId(null);
                           // Implement duplicate
                         }}
@@ -513,10 +519,32 @@ const ProductList: React.FC<ProductListProps> = ({
 
       {/* Pagination controls */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-          {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of{" "}
-          {filteredProducts.length} products
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(Number(value));
+                setCurrentPage(1); // Reset to first page when changing items per page
+              }}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue placeholder="10" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="30">30</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">per page</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of{" "}
+            {filteredProducts.length} products
+          </div>
         </div>
         <div className="flex items-center space-x-2">
           <Button

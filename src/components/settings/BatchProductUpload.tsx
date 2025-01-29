@@ -58,7 +58,6 @@ const emptyProduct = (): ProductInput => ({
   is_client_visible: true,
   is_taxable: true,
   material_id: "",
-  product_type_id: "",
   billing_type_id: "",
   requires_shade: false,
   description: "",
@@ -78,7 +77,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
   // Reference data
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
 
   useEffect(() => {
@@ -164,9 +162,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
               case "material id":
                 product.material_id = value.trim();
                 break;
-              case "product type id":
-                product.product_type_id = value.trim();
-                break;
               case "billing type id":
                 product.billing_type_id = value.trim();
                 break;
@@ -233,7 +228,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       "Visible to Clients",
       "Taxable",
       "Material ID",
-      "Product Type ID",
       "Billing Type ID",
       "Requires Shade",
       "Description",
@@ -246,7 +240,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       "true",
       "true",
       "material_id_here",
-      "product_type_id_here",
       "billing_type_id_here",
       "false",
       "Sample description",
@@ -333,15 +326,13 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
   useEffect(() => {
     const fetchReferenceData = async () => {
-      const [materialsData, productTypesData, billingTypesData] =
+      const [materialsData, billingTypesData] =
         await Promise.all([
           supabase.from("materials").select("*").order("name"),
-          supabase.from("product_types").select("*").order("name"),
           supabase.from("billing_types").select("*").order("name"),
         ]);
 
       if (materialsData.data) setMaterials(materialsData.data as any);
-      if (productTypesData.data) setProductTypes(productTypesData.data as any);
       if (billingTypesData.data) setBillingTypes(billingTypesData.data as any);
     };
 
@@ -396,7 +387,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
               {products.map((product, index) => (
                 <div key={index} className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]">
                   <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-3 space-y-2">
+                    <div className="col-span-5 space-y-2">
                       <Label htmlFor={`name-${index}`} className="text-xs">Name</Label>
                       <Input
                         id={`name-${index}`}
@@ -406,28 +397,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                         }
                         className="bg-white"
                       />
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`productType-${index}`} className="text-xs">
-                        Product Type
-                      </Label>
-                      <Select
-                        value={product.product_type_id}
-                        onValueChange={(value) =>
-                          updateProduct(index, "product_type_id", value)
-                        }
-                      >
-                        <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {productTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
                     <div className="col-span-2 space-y-2">
                       <Label htmlFor={`material-${index}`} className="text-xs">Material</Label>
