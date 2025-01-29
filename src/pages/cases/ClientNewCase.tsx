@@ -33,7 +33,7 @@ const ClientNewCase: React.FC = () => {
     patientFirstName: "",
     patientLastName: "",
     orderDate: format(new Date(), "yyyy-MM-dd"),
-    status: "in_queue" as CaseStatus,
+    status: "draft" as CaseStatus,
     deliveryMethod: "Pickup" as DeliveryMethod,
     deliveryMethodError: "",
     enclosedItems: {
@@ -53,6 +53,10 @@ const ClientNewCase: React.FC = () => {
       instructionNotes: "",
       invoiceNotes: "",
     },
+    patient_id: "",
+    client_working_tag_id: "",
+    client_working_pan_name: "",
+    client_working_pan_color: "",
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -193,11 +197,9 @@ const ClientNewCase: React.FC = () => {
     // Validation
     const validationErrors: Partial<FormData> = {};
     if (!formData.clientId) validationErrors.clientId = "Client is required";
-    if (!formData.patientFirstName)
-      validationErrors.patientFirstName = "Patient first name is required";
-    if (!formData.patientLastName)
-      validationErrors.patientLastName = "Patient last name is required";
-    if (!formData.doctorId) validationErrors.doctorId = "doctor is required";
+    if (!formData.patient_id)
+      validationErrors.patient_id = "Patient is required";
+    if (!formData.doctorId) validationErrors.doctorId = "Doctor is required";
     if (!formData.deliveryMethod)
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)

@@ -38,6 +38,8 @@ import {
 import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HexColorPicker } from "react-colorful";
+import NewPatient from "@/components/ui/new-patient";
+import { Patient, patientsService } from "@/services/patientsService";
 const logger = createLogger({ module: "OrderDetailsStep" });
 
 const colors = [
@@ -88,6 +90,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const [pans, setPans] = useState<WorkingTag[]>([]);
   const [isLoading, setLoading] = useState<boolean>(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isAddingPatient, setIsAddingPatient] = useState(false);
   const [isCustomColor, setIsCustomColor] = useState(false);
   const [isAddingPan, setIsAddingPan] = useState(false);
   const addTagTriggerRef = useRef<HTMLButtonElement>(null);
@@ -95,6 +98,9 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const { user } = useAuth();
   const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
   const [isEditingTag, setIsEditingTag] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [patientsLoading, setPatientsLoading] = useState(true);
+  const [patientSearch, setPatientSearch] = useState("");
 
   const handleEditTag = async (tagId: string) => {
     const tag = tags.find((t) => t.id === tagId);
@@ -296,6 +302,41 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     );
   };
 
+  useEffect(() => {
+    try {
+      const fetchPatients = async () => {
+        const patients = await patientsService.getPatients();
+        setPatientsLoading(false);
+        setPatients(patients);
+      };
+
+      fetchPatients();
+    } catch (error) {
+      toast.error("Failed to fetch patients");
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      setPatientsLoading(true);
+      try {
+        const patientsData = await patientsService.getPatients(
+          patientSearch ?? ""
+        ); // Pass search term to API
+        setPatients(patientsData);
+      } catch (error) {
+        toast.error("Failed to fetch patients");
+      }
+      setPatientsLoading(false);
+    };
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchPatients();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [patientSearch]);
+
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -395,49 +436,79 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-0">
-              <Label htmlFor="patientFirstName" className="text-xs">
-                Patient Name <span className="text-red-500">*</span>
-              </Label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Input
-                    type="text"
-                    id="patientFirstName"
-                    name="patientFirstName"
-                    placeholder="First Name"
-                    value={formData.patientFirstName}
-                    onChange={handleInputChange}
+            <div className="flex flex-col">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="patientFirstName" className="text-xs">
+                  Patient <span className="text-red-500">*</span>
+                </Label>
+                <NewPatient
+                  onClose={() => setIsAddingPatient(false)}
+                  initiallyOpen={isAddingPatient}
+                  trigger={
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAddingPatient(!isAddingPatient);
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Add New Patient
+                    </button>
+                  }
+                  patients={patients}
+                  setPatients={setPatients}
+                />
+              </div>
+              <div className="grid grid-cols-1">
+                <Select
+                  name="patient_id"
+                  value={formData.patient_id}
+                  onValueChange={(value) => {
+                    onChange("patient_id", value);
+                  }}
+                  disabled={!selectedClient}
+                >
+                  <SelectTrigger
                     className={cn(
                       "bg-white",
-                      errors.patientFirstName ? "border-red-500" : ""
+                      errors.patient_id ? "border-red-500" : "",
+                      !selectedClient && "opacity-50"
                     )}
-                  />
-                  {errors.patientFirstName && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.patientFirstName}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Input
-                    type="text"
-                    id="patientLastName"
-                    name="patientLastName"
-                    placeholder="Last Name"
-                    value={formData.patientLastName}
-                    onChange={handleInputChange}
-                    className={cn(
-                      "bg-white",
-                      errors.patientLastName ? "border-red-500" : ""
+                  >
+                    <SelectValue placeholder="Select a patient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div className="p-2">
+                      <Input
+                        placeholder="Search..."
+                        className="mb-2"
+                        value={patientSearch}
+                        onChange={(e) => setPatientSearch(e.target.value)}
+                      />
+                    </div>
+                    {patients && patients.length > 0 ? (
+                      patients.map((patient) => (
+                        <SelectItem
+                          key={patient.id}
+                          value={patient.id || "_no_id"}
+                        >
+                          {patient.first_name} {patient.last_name} (
+                          {patient.email})
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="_no_patients" disabled>
+                        No patients available
+                      </SelectItem>
                     )}
-                  />
-                  {errors.patientLastName && (
-                    <p className="mt-1 text-sm text-red-600">
-                      {errors.patientLastName}
-                    </p>
-                  )}
-                </div>
+                  </SelectContent>
+                </Select>
+                {errors.patient_id && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.patient_id}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -582,14 +653,6 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <SelectItem value="in_queue">In Queue</SelectItem>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{CASE_STATUS_DESCRIPTIONS["in_queue"]}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
                         <SelectItem value="draft">Draft</SelectItem>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -639,7 +702,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-5 w-full">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs">Working Pan</Label>
                   {/* <ColorPicker
@@ -759,7 +822,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   )}
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs">Working Tag</Label>
                   <ColorPicker

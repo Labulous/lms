@@ -860,6 +860,10 @@ export interface FormData {
     invoiceNotes?: string;
   };
   itemsError?: string;
+  patient_id?: string;
+  client_working_tag_id?: string;
+  client_working_pan_name?: string;
+  client_working_pan_color?: string;
 }
 
 /**
