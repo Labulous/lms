@@ -8,7 +8,7 @@ import { labDetail, OfficeAddress } from '@/types/supabase';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from "@/components/ui/label";
-import { Building, Mail, MapPin, Pencil, Phone, Save, Upload, User, X } from 'lucide-react';
+import { Building, Building2, Mail, MapPin, Pencil, Phone, Save, Upload, User, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
@@ -33,7 +33,7 @@ export const LABProfile: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
 
     const [formData, setFormData] = useState<LabProfileFormData>({
@@ -205,22 +205,29 @@ export const LABProfile: React.FC = () => {
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        debugger;
         const file = e.target.files ? e.target.files[0] : null;
+
         if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+
             setFormData((prev) => ({
                 ...prev,
                 file,
             }));
+
             console.log("Selected file:", file);
         }
+
         e.target.value = "";
     };
 
     const triggerFileInput = () => {
         document.getElementById("fileInput")?.click();
     };
-
 
 
     return (
@@ -290,21 +297,40 @@ export const LABProfile: React.FC = () => {
                                                                     className="hidden"
                                                                     disabled={!isEditing}
                                                                 />
-                                                                <div className="space-y-4">
-                                                                    <div className="flex justify-center space-x-1">
+
+                                                                <div className="flex flex-col items-center justify-center space-y-4">
+                                                                    {selectedImage ? (
+                                                                        <div className="flex justify-center">
+                                                                            <img
+                                                                                src={selectedImage}
+                                                                                alt="Uploaded Preview"
+                                                                                className="w-[150px] h-[50px] object-contain border border-gray-300 rounded-md shadow-sm"
+                                                                            />
+                                                                        </div>
+                                                                    ) : formData?.attachements && formData.attachements.length > 0 ? (
+                                                                        <img
+                                                                            src={formData.attachements}
+                                                                            alt="Lab Logo"
+                                                                            className="w-[150px] h-[50px] object-contain border border-gray-300 rounded-md shadow-sm"
+                                                                        />
+                                                                    ) : (
+                                                                        <p className="text-sm text-gray-500">No image selected</p>
+                                                                    )}
+
+                                                                    <div className="flex justify-center space-x-2">
                                                                         <button
                                                                             type="button"
                                                                             onClick={triggerFileInput}
-                                                                            className="inline-flex items-center px-1 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                                                         >
-                                                                            <Upload className="h-2 w-5 mr-2" />
+                                                                            <Upload className="h-5 w-5 mr-2" />
                                                                             Upload Files
                                                                         </button>
                                                                     </div>
-                                                                    <p className="text-sm text-gray-500">
-                                                                        Click the button above to select lab logo
-                                                                    </p>
+
+                                                                    <p className="text-sm text-gray-500">Click the button above to select a lab logo</p>
                                                                 </div>
+
                                                             </div>
                                                             {formData.file && (
                                                                 <p className="mt-2 text-sm text-gray-600">
@@ -313,17 +339,14 @@ export const LABProfile: React.FC = () => {
                                                             )}
                                                         </div> :
                                                         <div>
-                                                            {formData?.attachements && formData?.attachements.length > 0 && (
+                                                            {formData?.attachements && formData.attachements.length > 0 ? (
                                                                 <img
-                                                                    src={
-                                                                        formData?.attachements
-                                                                            ? formData.attachements
-                                                                            : ""
-                                                                    }
+                                                                    src={formData.attachements}
                                                                     alt="Lab Logo"
-                                                                    className="mt-4"
-                                                                    style={{ width: "150px", height: "30px", objectFit: "contain" }}
+                                                                    className="mt-4 w-[150px] h-[50px] object-contain"
                                                                 />
+                                                            ) : (
+                                                                <Building2 className="h-6 w-6 text-gray-500" />
                                                             )}
                                                         </div>}
                                                 </div>
