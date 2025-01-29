@@ -411,7 +411,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return groupedTeeth.join(", ");
   };
 
-
   const handleProductSelect = (
     value: any,
     keepTeeth = false,
@@ -815,8 +814,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           )}
                           disabled={!row.type}
                         >
-                          {row.teeth.length > 0
-                            ? formatTeethRange(row.teeth)
+                          {row.type === "Bridge"
+                            ? row.teeth.length > 0
+                              ? formatTeethRange(row.teeth)
+                              : "Select Teeth"
+                            : row.teeth?.length > 0
+                            ? row.teeth?.join(",")
                             : "Select Teeth"}
                         </Button>
                       </PopoverTrigger>
@@ -1464,7 +1467,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           disabled={!row.id}
                           onClick={() => togglePercentPopover(index)}
                         >
-                         {selectedProducts?.[index]?.discount} <Percent className="h-4 w-4" />
+                          {selectedProducts?.[index]?.discount}{" "}
+                          <Percent className="h-4 w-4" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent

@@ -720,7 +720,9 @@ const InvoiceList: React.FC = () => {
         try {
           // Calculate the final price based on the quantity, unit price, and discount
           const finalPrice =
-            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+            item.quantity *
+            Number(item.unitPrice) *
+            (1 - (item.discount || 0) / 100);
 
           if (item.discountId && item.caseProductTeethId) {
             // Update the discounted_price table
@@ -750,8 +752,6 @@ const InvoiceList: React.FC = () => {
                 .eq("id", item.caseProductTeethId)
                 .select("*");
 
-            console.log("Updated discount row:", updatedDiscount);
-            console.log("Updated teeth row:", updateTeeth);
           } else {
             // Create a new discounted_price row
             const { data: newDiscount, error: newDiscountError } =

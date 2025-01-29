@@ -7,7 +7,7 @@ export interface InvoiceItem {
   id?: string;
   description: string;
   quantity: number;
-  unitPrice: number;
+  unitPrice: number | string;
   totalPrice?: number;
   caseId?: string;
   toothNumber: string;

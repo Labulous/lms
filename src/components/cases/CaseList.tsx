@@ -178,8 +178,9 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => {
         const color = row.getValue("working_pan_color") as string | null;
         const name = row.original.working_pan_name;
-        if (!color) return;
-        const initials = name ? name.slice(0, 2).toUpperCase() : "";
+        if (!name && !color) {
+          return;
+        }
 
         return (
           <div className="font-medium">
@@ -187,14 +188,14 @@ const CaseList: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger>
                   <div
-                    className="w-8 h-6 rounded flex items-center justify-center text-xs font-medium border"
+                    className="w-9 h-7 -leading-10 rounded flex items-center justify-center text-xs font-medium border"
                     style={{
-                      backgroundColor: color,
+                      backgroundColor: color || "white",
                       borderColor: "rgba(0,0,0,0.1)",
-                      color: getContrastColor(color),
+                      color: color ? getContrastColor(color) : "blue",
                     }}
                   >
-                    {initials}
+                    {name}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -676,9 +677,41 @@ const CaseList: React.FC = () => {
               </DropdownMenuItem>
             </Link>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => handlePrint(row.original as any)}>
+            {/* <DropdownMenuItem onClick={() => handlePrint(row.original as any)}>
               <PrinterIcon className="mr-2 h-4 w-4" />
               Print
+            </DropdownMenuItem> */}
+            <DropdownMenuItem
+              onClick={() => {
+                handlePrintOptionSelect("lab-slip", [row.original.id]);
+              }}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Lab Slip
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                handlePrintOptionSelect("address-label", [row.original.id])
+              }
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Address Label
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                handlePrintOptionSelect("qr-code", [row.original.id])
+              }
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              QR Code Label
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                handlePrintOptionSelect("patient-label", [row.original.id])
+              }
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Patient Label
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -1449,29 +1482,59 @@ const CaseList: React.FC = () => {
     console.log("Printing selected rows:", selectedRows);
   };
 
-  const handlePrintOptionSelect = (option: string) => {
+  const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
-
-    if (selectedCases.length === 0) return;
-
+    console.log(selectedId, "selectedId");
+    if (selectedCases.length === 0 && !selectedId) return;
+    console.log(
+      cases.filter((item) =>
+        selectedId && selectedId?.length > 0
+          ? selectedId?.includes(item.id)
+          : selectedCasesIds.includes(item.id)
+      ),
+      "hi"
+    );
     // Create the preview URL with state encoded in base64
     const previewState = {
       type: option,
       paperSize: "LETTER", // Default to letter size
-      caseData: selectedCases.map((caseItem) => ({
-        id: caseItem.id,
-        patient_name: caseItem.patient_name,
-        case_number: caseItem.case_number,
-        qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-        client: caseItem.client,
-        doctor: caseItem.doctor,
-        created_at: caseItem.created_at,
-        due_date: caseItem.due_date,
-        tag: caseItem.tag,
-      })),
-      caseDetails: cases.filter((item) => selectedCasesIds.includes(item.id)),
+      caseData:
+        selectedCases.length > 0
+          ? selectedCases.map((caseItem) => ({
+              id: caseItem.id,
+              patient_name: caseItem.patient_name,
+              case_number: caseItem.case_number,
+              qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+              client: caseItem.client,
+              doctor: caseItem.doctor,
+              created_at: caseItem.created_at,
+              due_date: caseItem.due_date,
+              tag: caseItem.tag,
+            }))
+          : cases
+              .filter((item) =>
+                selectedId && selectedId?.length > 0
+                  ? selectedId?.includes(item.id)
+                  : selectedCasesIds.includes(item.id)
+              )
+              .map((caseItem) => ({
+                id: caseItem.id,
+                patient_name: caseItem.patient_name,
+                case_number: caseItem.case_number,
+                qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+                client: caseItem.client,
+                doctor: caseItem.doctor,
+                created_at: caseItem.created_at,
+                due_date: caseItem.due_date,
+                tag: caseItem.tag,
+              })),
+      caseDetails: cases.filter((item) =>
+        selectedId && selectedId?.length > 0
+          ? selectedId?.includes(item.id)
+          : selectedCasesIds.includes(item.id)
+      ),
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
@@ -1644,7 +1707,7 @@ const CaseList: React.FC = () => {
 
 function getContrastColor(hexcolor: string): string {
   // Default to black text for empty or invalid colors
-  if (!hexcolor || hexcolor === "transparent") return "#000000";
+  if (!hexcolor || hexcolor === "transparent") return "red";
 
   // Convert hex to RGB
   const r = parseInt(hexcolor.slice(1, 3), 16);
