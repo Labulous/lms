@@ -659,6 +659,7 @@ export interface Database {
           billing_type_id: string;
           material: {
             name: string;
+            id?: string;
           } | null; // Adding the full object for material
           product_type: {
             name: string;
