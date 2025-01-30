@@ -33,6 +33,14 @@ import { ClientCaseActivity } from "./ClientCaseActivity";
 import { ClientBillingActivity } from "./ClientBillingActivity";
 import ClientSalesActivity from "./ClientSalesActivity";
 
+type Doctor = {
+    id?: string;
+    name: string;
+    email: string;
+    phone: string;
+    notes: string;
+};
+
 const ClientProfile: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -101,11 +109,14 @@ const ClientProfile: React.FC = () => {
 
     if (!client) {
         return (
-            <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            <div className="flex items-center justify-center h-screen bg-gray-100">
+                <div className="py-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
             </div>
         );
     }
+
 
 
     const handleCancel = () => {
@@ -141,7 +152,52 @@ const ClientProfile: React.FC = () => {
         });
     };
 
-    console.log(client.doctors);
+    console.log(client);
+
+    const addDoctor = () => {
+        setEditedData((prev: Client | null) => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                doctors: [
+                    ...(prev.doctors || []),
+                    { name: "", email: "", phone: "", notes: "" },
+                ],
+            };
+        });
+    };
+
+    const removeDoctor = (index: number) => {
+        setEditedData((prev: Client | null) => {
+            if (!prev) return null;
+            const updatedDoctors = [...(prev.doctors || [])];
+            updatedDoctors.splice(index, 1);
+            return {
+                ...prev,
+                doctors: updatedDoctors,
+            };
+        });
+    };
+
+    const handleDoctorChange = (
+        index: number,
+        field: keyof Doctor,
+        value: string
+    ) => {
+        setEditedData((prev: Client | null) => {
+            if (!prev) return null;
+            const updatedDoctors = [...(prev.doctors || [])];
+            if (!updatedDoctors[index]) {
+                updatedDoctors[index] = { name: "", email: "", phone: "", notes: "" };
+            }
+            updatedDoctors[index] = { ...updatedDoctors[index], [field]: value };
+            return {
+                ...prev,
+                doctors: updatedDoctors,
+            };
+        });
+    };
+
 
     return (
         <div className="container mx-auto px-4 py-6">
@@ -152,7 +208,7 @@ const ClientProfile: React.FC = () => {
                         <h2 className="text-2xl font-bold text-gray-900">
                             {client.clientName}
                         </h2>
-                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                        {/* <ChevronDown className="h-5 w-5 text-gray-500" /> */}
                     </DropdownMenuTrigger>
                 </DropdownMenu>
                 <div className="flex items-baseline gap-4">
@@ -405,33 +461,27 @@ const ClientProfile: React.FC = () => {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-
+                                                onClick={addDoctor}
                                             >
                                                 <UserPlus className="h-4 w-4 mr-2" />
                                                 Add Doctor
                                             </Button>
                                         )}
                                     </CardHeader>
-                                    {/* <CardContent>
+                                    <CardContent>
                                         {!client.doctors || client.doctors.length === 0 ? (
                                             <div className="text-muted-foreground text-center py-4">
                                                 No doctors assigned
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
-                                                {(isEditing ? editedData?.doctors : client.doctors)?.map(
-                                                    (doctor, index) => (
+                                                {Array.isArray(isEditing ? editedData?.doctors : client.doctors) &&
+                                                    (isEditing ? editedData?.doctors : client.doctors).map((doctor: Doctor, index: number) => (
                                                         <Card key={index}>
                                                             <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3">
-                                                                <CardTitle className="text-base">
-                                                                    Doctor #{index + 1}
-                                                                </CardTitle>
+                                                                <CardTitle className="text-base">Doctor #{index + 1}</CardTitle>
                                                                 {isEditing && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                    // onClick={() => removeDoctor(index)}
-                                                                    >
+                                                                    <Button variant="ghost" size="sm" onClick={() => removeDoctor(index)}>
                                                                         <UserMinus className="h-4 w-4" />
                                                                     </Button>
                                                                 )}
@@ -441,9 +491,7 @@ const ClientProfile: React.FC = () => {
                                                                     <Label>Name</Label>
                                                                     <Input
                                                                         value={doctor.name}
-                                                                        // onChange={(e) =>
-                                                                        //     handleDoctorChange(index, "name", e.target.value)
-                                                                        // }
+                                                                        onChange={(e) => handleDoctorChange(index, "name", e.target.value)}
                                                                         disabled={!isEditing}
                                                                     />
                                                                 </div>
@@ -452,9 +500,7 @@ const ClientProfile: React.FC = () => {
                                                                     <Input
                                                                         type="email"
                                                                         value={doctor.email}
-                                                                        // onChange={(e) =>
-                                                                        //     handleDoctorChange(index, "email", e.target.value)
-                                                                        // }
+                                                                        onChange={(e) => handleDoctorChange(index, "email", e.target.value)}
                                                                         disabled={!isEditing}
                                                                     />
                                                                 </div>
@@ -463,9 +509,7 @@ const ClientProfile: React.FC = () => {
                                                                     <Input
                                                                         type="tel"
                                                                         value={doctor.phone}
-                                                                        // onChange={(e) =>
-                                                                        //     handleDoctorChange(index, "phone", e.target.value)
-                                                                        // }
+                                                                        onChange={(e) => handleDoctorChange(index, "phone", e.target.value)}
                                                                         disabled={!isEditing}
                                                                     />
                                                                 </div>
@@ -473,19 +517,17 @@ const ClientProfile: React.FC = () => {
                                                                     <Label>Notes</Label>
                                                                     <Input
                                                                         value={doctor.notes ?? ""}
-                                                                        // onChange={(e) =>
-                                                                        //     handleDoctorChange(index, "notes", e.target.value)
-                                                                        // }
+                                                                        onChange={(e) => handleDoctorChange(index, "notes", e.target.value)}
                                                                         disabled={!isEditing}
                                                                     />
                                                                 </div>
                                                             </CardContent>
                                                         </Card>
-                                                    )
-                                                )}
+                                                    ))}
+
                                             </div>
                                         )}
-                                    </CardContent> */}
+                                    </CardContent>
                                 </Card >
                             </CardContent >
                         </Card >

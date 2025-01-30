@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Package, Users, CreditCard, Database } from "lucide-react";
+import { Package, Users, CreditCard, Database, Lock } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SettingsMenuProps {
   children: React.ReactNode;
@@ -17,13 +17,41 @@ interface SettingsMenuProps {
 
 const SettingsMenu: React.FC<SettingsMenuProps> = ({ children }) => {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Ensure user data is correctly accessed
 
-  const menuItems = [
-    { icon: Package, label: "Products & Services", href: "/products-services" },
-    { icon: Users, label: "User Management", href: "/settings/users" },
-    { icon: CreditCard, label: "Billing Settings", href: "/settings/billing" },
-    { icon: Database, label: "System Settings", href: "/settings/system" },
-  ];
+  // const menuItems = [
+  //   { icon: Package, label: "Products & Services", href: "/products-services" },
+  //   { icon: Users, label: "User Management", href: "/settings/users" },
+  //   { icon: CreditCard, label: "Billing Settings", href: "/settings/billing" },
+  //   { icon: Database, label: "System Settings", href: "/settings/system" },
+  // ];
+
+  // // Show "Change Password" only if user.role === "client"
+  // if (user?.role === "client") {
+  //   menuItems.push({
+  //     icon: Lock,
+  //     label: "Change Password",
+  //     href: "/change-password",
+  //   });
+  // }
+
+  const menuItems = [];
+
+  if (user?.role !== "client") {
+    menuItems.push(
+      { icon: Package, label: "Products & Services", href: "/products-services" },
+      { icon: Users, label: "User Management", href: "/settings/users" },
+      { icon: CreditCard, label: "Billing Settings", href: "/settings/billing" },
+      { icon: Database, label: "System Settings", href: "/settings/system" }
+    );
+  } else {
+    menuItems.push({
+      icon: Lock,
+      label: "Change Password",
+      href: "/change-password",
+    });
+  }
+
 
   return (
     <DropdownMenu>

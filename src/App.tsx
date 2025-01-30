@@ -33,6 +33,7 @@ import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import Home1 from "./pages/Home1";
+import ChangePasswordForm from "./components/settings/ChangePassword";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -242,6 +243,16 @@ const App: React.FC = () => {
               <ProtectedRoute requiredRole={["client"]}>
                 <Layout>
                   <ClientProfile />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ChangePasswordForm />
                 </Layout>
               </ProtectedRoute>
             }
