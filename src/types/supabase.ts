@@ -751,6 +751,31 @@ export interface Database {
         remaining_payment?: number;
         clients?: { client_name?: string };
       };
+      services: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          price: number;
+          is_client_visible: boolean;
+          is_taxable: boolean;
+          material_id: string;
+          lab_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          name: string;
+          description?: string;
+          price: number;
+          is_client_visible: boolean;
+          is_taxable: boolean;
+          material_id: string;
+          lab_id: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     working_tags: {
       row: WorkingTag[];
