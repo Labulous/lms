@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabase"; // Assuming you have initialized Supabase in this file
 import toast from "react-hot-toast";
+import FilePreview from "../modals/FilePreview";
 
 // Define the types for file status and progress
 export interface FileWithStatus {
@@ -51,6 +52,8 @@ const FilesStep: React.FC<FilesStepProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewFiles, setPreviewFiles] = useState<string[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleFileSelect = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -228,44 +231,61 @@ const FilesStep: React.FC<FilesStepProps> = ({
 
       {selectedFiles && selectedFiles.length > 0 && (
         <div className="mt-4">
-          <ul className="divide-y divide-gray-200">
-            {selectedFiles && selectedFiles.length > 0 && (
-              <div className="mt-4">
-                <ul className="divide-y divide-gray-200 grid grid-cols-4 gap-2">
-                  {selectedFiles.map((file, index) => (
-                    <li
-                      key={index}
-                      className="flex items-center justify-between p-2"
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {selectedFiles.map((file, index) => (
+              <div
+                key={index}
+                className="relative group bg-gray-50 rounded-lg p-2 hover:bg-gray-100 transition-colors"
+              >
+                {(file.status === "completed" || file?.url !== undefined) && (
+                  <div 
+                    className="relative aspect-[4/3] w-full overflow-hidden rounded-md cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log('Opening preview for files:', selectedFiles);
+                      const urls = selectedFiles
+                        .filter(f => f.url && f.status === "completed")
+                        .map(f => f.url as string);
+                      console.log('Preview URLs:', urls);
+                      setPreviewFiles(urls);
+                      setShowPreview(true);
+                    }}
+                  >
+                    <img
+                      src={file.url}
+                      alt={file.file?.name || 'Uploaded file'}
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity" />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFile(index);
+                      }}
+                      className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100"
+                      aria-label="Remove file"
                     >
-                      {/* Check if the file is completed or has a URL */}
-                      {(file.status === "completed" ||
-                        file?.url !== undefined) && (
-                        <div className="flex w-full">
-                          {file?.url && (
-                            <img
-                              src={file.url}
-                              height={100}
-                              width={100}
-                              alt="file"
-                              className="h-20 w-32 mb-1"
-                            />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveFile(index)}
-                            className="text-gray-400 hover:text-gray-500"
-                          >
-                            <X className="h-5 w-5" />
-                          </button>
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                      <X className="h-4 w-4 text-gray-500" />
+                    </button>
+                  </div>
+                )}
+                {file.file?.name && (
+                  <p className="mt-2 text-xs text-gray-500 truncate px-1">
+                    {file.file.name}
+                  </p>
+                )}
               </div>
-            )}
-          </ul>
+            ))}
+          </div>
         </div>
+      )}
+
+      {showPreview && (
+        <FilePreview
+          files={previewFiles}
+          onClose={() => setShowPreview(false)}
+        />
       )}
 
       <Separator className="my-6" />
@@ -301,7 +321,7 @@ const FilesStep: React.FC<FilesStepProps> = ({
               htmlFor="otherItems"
               className="block text-sm font-medium text-gray-700"
             >
-              Other items:
+              Other Enclosed Items:
             </label>
             <Textarea
               id="otherItems"

@@ -279,7 +279,7 @@ id
 
   return (
     <div className="relative">
-      <div className="space-y-8">
+      <div className="space-y-4">
         {steps.map((step, index) => {
           const isLast = index === steps.length - 1;
           const date = step?.date ? new Date(step?.date) : new Date();
@@ -1069,7 +1069,7 @@ id
           );
         })}
         <div className="flex justify-end items-end">
-          <Button onClick={() => handleNewWorkstation()}>
+          <Button size="sm" onClick={() => handleNewWorkstation()}>
             Create New Workstation
           </Button>
         </div>
