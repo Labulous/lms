@@ -131,3 +131,115 @@ export async function updateBalanceTracking() {
     console.error(error.stack);
   }
 }
+
+
+export async function updateBalanceTracking_new(clientId: string, creditAmount: number) {
+  try {
+    // Step 3: Fetch and categorize invoices for balance tracking
+    const { data: categorizedInvoices, error: fetchError } = await supabase
+      .from("invoices")
+      .select("due_amount, due_date")
+      .eq("client_id", clientId)
+      .in("status", ["unpaid", "partially_paid"])
+      .gt("due_amount", 0);
+
+    if (fetchError) {
+      throw new Error(
+        `Failed to fetch categorized invoices: ${fetchError.message}`
+      );
+    }
+
+    const balances = {
+      this_month: 0,
+      last_month: 0,
+      days_30_plus: 0,
+      days_60_plus: 0,
+      days_90_plus: 0,
+    };
+
+    const currentDate = new Date();
+
+    categorizedInvoices.forEach((invoice) => {
+      const dueDate = new Date(invoice.due_date);
+      const differenceInDays = Math.floor(
+        (currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+
+      if (differenceInDays <= 30) {
+        balances.this_month += invoice.due_amount;
+      } else if (differenceInDays <= 60) {
+        balances.last_month += invoice.due_amount;
+      } else if (differenceInDays <= 90) {
+        balances.days_30_plus += invoice.due_amount;
+      } else if (differenceInDays <= 120) {
+        balances.days_60_plus += invoice.due_amount;
+      } else {
+        balances.days_90_plus += invoice.due_amount;
+      }
+    });
+
+    // Calculate outstanding_balance as the sum of all balance fields
+    const outstandingBalance =
+      balances.this_month +
+      balances.last_month +
+      balances.days_30_plus +
+      balances.days_60_plus +
+      balances.days_90_plus;
+
+    // Step 4: Check if balance_tracking row exists and update or create it
+    const { data: existingBalanceTracking, error: checkError } =
+      await supabase
+        .from("balance_tracking")
+        .select("id")
+        .eq("client_id", clientId)
+        .single();
+
+    if (checkError && checkError.code !== "PGRST116") {
+      // PGRST116 indicates no rows found
+      throw new Error(
+        `Failed to check balance_tracking: ${checkError.message}`
+      );
+    }
+
+    const balanceUpdate = {
+      ...balances,
+      outstanding_balance: outstandingBalance,
+      credit: creditAmount || 0, // Update credit field
+      updated_at: new Date().toISOString(),
+      client_id: clientId,
+    };
+
+    if (existingBalanceTracking) {
+      // Update existing row
+      const { error: updateBalanceError } = await supabase
+        .from("balance_tracking")
+        .update(balanceUpdate)
+        .eq("id", existingBalanceTracking.id);
+
+      if (updateBalanceError) {
+        throw new Error(
+          `Failed to update balance_tracking: ${updateBalanceError.message}`
+        );
+      }
+
+      console.log("Balance tracking updated successfully.");
+    } else {
+      // Insert new row
+      const { error: insertBalanceError } = await supabase
+        .from("balance_tracking")
+        .insert(balanceUpdate);
+
+      if (insertBalanceError) {
+        throw new Error(
+          `Failed to insert balance_tracking: ${insertBalanceError.message}`
+        );
+      }
+
+      console.log("Balance tracking created successfully.");
+    }
+  } catch (error) {
+    console.error("Error updating balance tracking:", error);
+    throw error;
+  }
+
+};

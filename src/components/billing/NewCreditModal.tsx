@@ -241,7 +241,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
       if (creditType === "apply") {
         await onSubmit(paymentData);
       } else {
-        //await onSubmit(creditData);
+        await onSubmit(creditData);
       }
 
       toast.success("Credit created successfully");

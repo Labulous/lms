@@ -22,7 +22,7 @@ import { labDetail, PaymentListItem } from "@/types/supabase";
 import { isValid, parseISO, format } from "date-fns";
 import { Logger } from "html2canvas/dist/types/core/logger";
 import { formatDate } from "@/lib/formatedDate";
-import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
+import { updateBalanceTracking, updateBalanceTracking_new } from "@/lib/updateBalanceTracking";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
 import PaymentReceiptPreviewModal from "./print/PaymentReceiptPreviewModal";
@@ -31,6 +31,10 @@ import Payments from "@/pages/billing/Payments";
 interface SortConfig {
   key: keyof PaymentListItem;
   direction: "asc" | "desc";
+}
+
+interface Invoice {
+  case_number: string;
 }
 
 export function PaymentsList() {
@@ -64,6 +68,7 @@ export function PaymentsList() {
   const { user } = useAuth();
 
   const getPaymentList = async () => {
+    debugger;
     setLoading(true);
 
     try {
@@ -209,6 +214,7 @@ export function PaymentsList() {
   }, []);
 
   const handleNewPayment = async (paymentData: any) => {
+    debugger;
     console.log("New payment data:", paymentData);
 
     try {
@@ -227,6 +233,7 @@ export function PaymentsList() {
         return;
       }
 
+      const caseNumbers = updatedInvoices.map((inv: Invoice) => inv.case_number).join(",");
       // Step 1: Update invoices
       for (const invoice of updatedInvoices) {
         const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
@@ -275,8 +282,128 @@ export function PaymentsList() {
         throw new Error(`Failed to insert payment: ${paymentError.message}`);
       }
 
+
+      // Insert a new credit adjustment
+      if (paymentMethod == "credit form") {
+        const { error: insertError } = await supabase
+          .from("adjustments")
+          .insert({
+            client_id: client,
+            credit_amount: paymentAmount,
+            description: `Adjustment for the invoice ${caseNumbers}`,
+            lab_id: labData?.labId,
+            payment_date: date,
+          });
+      }
+
+
       console.log("Payment inserted successfully.", insertedPayment);
-      await updateBalanceTracking();
+      //await updateBalanceTracking();
+
+      // Step 3: Fetch and categorize invoices for balance tracking
+      const { data: categorizedInvoices, error: fetchError } = await supabase
+        .from("invoices")
+        .select("due_amount, due_date")
+        .eq("client_id", client)
+        .in("status", ["unpaid", "partially_paid"])
+        .gt("due_amount", 0);
+
+      if (fetchError) {
+        throw new Error(
+          `Failed to fetch categorized invoices: ${fetchError.message}`
+        );
+      }
+
+      const balances = {
+        this_month: 0,
+        last_month: 0,
+        days_30_plus: 0,
+        days_60_plus: 0,
+        days_90_plus: 0,
+      };
+
+      const currentDate = new Date();
+
+      categorizedInvoices.forEach((invoice) => {
+        const dueDate = new Date(invoice.due_date);
+        const differenceInDays = Math.floor(
+          (currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (differenceInDays <= 30) {
+          balances.this_month += invoice.due_amount;
+        } else if (differenceInDays <= 60) {
+          balances.last_month += invoice.due_amount;
+        } else if (differenceInDays <= 90) {
+          balances.days_30_plus += invoice.due_amount;
+        } else if (differenceInDays <= 120) {
+          balances.days_60_plus += invoice.due_amount;
+        } else {
+          balances.days_90_plus += invoice.due_amount;
+        }
+      });
+
+      // Calculate outstanding_balance as the sum of all balance fields
+      const outstandingBalance =
+        balances.this_month +
+        balances.last_month +
+        balances.days_30_plus +
+        balances.days_60_plus +
+        balances.days_90_plus;
+
+      // Step 4: Check if balance_tracking row exists and update or create it
+      const { data: existingBalanceTracking, error: checkError } =
+        await supabase
+          .from("balance_tracking")
+          .select("id,credit")
+          .eq("client_id", client)
+          .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        // PGRST116 indicates no rows found
+        throw new Error(
+          `Failed to check balance_tracking: ${checkError.message}`
+        );
+      }
+
+
+      const balanceUpdate = {
+        ...balances,
+        outstanding_balance: outstandingBalance,
+        credit: overpaymentAmount > 0 ? Math.max((existingBalanceTracking?.credit ?? 0) + overpaymentAmount, 0) : paymentMethod == "credit form" ? Math.max((existingBalanceTracking?.credit ?? 0) - paymentAmount, 0) : Math.max(existingBalanceTracking?.credit ?? 0),
+        updated_at: new Date().toISOString(),
+        client_id: client,
+      };
+
+      if (existingBalanceTracking) {
+        // Update existing row
+        const { error: updateBalanceError } = await supabase
+          .from("balance_tracking")
+          .update(balanceUpdate)
+          .eq("id", existingBalanceTracking.id);
+
+        if (updateBalanceError) {
+          throw new Error(
+            `Failed to update balance_tracking: ${updateBalanceError.message}`
+          );
+        }
+
+        console.log("Balance tracking updated successfully.");
+      } else {
+        // Insert new row
+        const { error: insertBalanceError } = await supabase
+          .from("balance_tracking")
+          .insert(balanceUpdate);
+
+        if (insertBalanceError) {
+          throw new Error(
+            `Failed to insert balance_tracking: ${insertBalanceError.message}`
+          );
+        }
+
+        console.log("Balance tracking created successfully.");
+      }
+
     } catch (err) {
       console.error("Error handling new payment:", err);
       toast.error("Failed to add payment or update balance tracking.");
@@ -533,13 +660,13 @@ export function PaymentsList() {
         </div>
       </div>
 
-      {/* {showNewPaymentModal && (
+      {showNewPaymentModal && (
         <NewPaymentModal
           onClose={() => setShowNewPaymentModal(false)}
           onSubmit={handleNewPayment}
         />
-      )} */}
-    
+      )}
+
       {isPreviewModalOpen && (
         <PaymentReceiptPreviewModal
           isOpen={isPreviewModalOpen}
