@@ -1,15 +1,19 @@
 import { parseISO, isValid } from "date-fns"; // To parse the ISO string
 import { formatInTimeZone, format } from "date-fns-tz"; // To format the date in a specific time zone
 
-export const formatDate = (dateString: string) => {
+export const formatDate = (dateString: string | null) => {
   try {
+    if (!dateString) return "-";
+    
+    // Parse the date string first to validate it
+    const parsedDate = new Date(dateString);
+    if (isNaN(parsedDate.getTime())) return "-";
+    
     // Format the date string in UTC with the "Jan 25, 2025" format
     const formattedUtcDate = formatInTimeZone(dateString, "UTC", "MMM d, yyyy");
-
-    // Return the formatted UTC date (e.g., Jan 25, 2025)
     return formattedUtcDate;
   } catch (err) {
-    return "Invalid Date";
+    return "-";
   }
 };
 export const formatDateWithTime = (dateString: string) => {

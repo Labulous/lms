@@ -92,6 +92,8 @@ import {
   HoverCardContent,
 } from "@/components/ui/hover-card";
 import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
+import { ExtendedCase } from "../cases/CaseDetails";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -175,266 +177,506 @@ const InvoiceList: React.FC = () => {
   const { user } = useAuth();
 
   // Initialize invoices
-  useEffect(() => {
-    const getCompletedInvoices = async () => {
-      setLoading(true);
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
 
-      try {
-        const lab = await getLabDataByUserId(user?.id as string);
-
-        if (!lab?.id) {
-          console.error("Lab ID not found.");
-          return;
-        }
-        setLab(lab);
-        const { data: casesData, error: casesError } = await supabase
+  if (labError) {
+    return <div>Loading!!!</div>;
+  }
+  const { data: query, error: caseError } = useQuery(
+    labIdData?.lab_id
+      ? supabase
           .from("cases")
           .select(
             `
+       id,
+        created_at,
+        received_date,
+        ship_date,
+        status,
+        patient_name,
+        due_date,
+        attachements,
+        case_number,
+        invoice:invoices!case_id (
+          id,
+          case_id,
+          amount,
+          status,
+          due_amount,
+          due_date
+        ),
+        client:clients!client_id (
+          id,
+          client_name,
+          phone,
+          street,
+          city,
+          state,
+          zip_code
+        ),
+        doctor:doctors!doctor_id (
+          id,
+          name,
+          client:clients!client_id (
             id,
-            created_at,
-            received_date,
-            ship_date,
-            status,
-            patient_name,
-            due_date,
-            client:clients!client_id (
-              id,
-              client_name,
-              phone,
-              street,
-              city,
-              state,
-              zip_code
-            ),
-            doctor:doctors!doctor_id (
-              id,
-              name,
-              client:clients!client_id (
-                id,
-                client_name,
-                phone
-              )
-            ),
-            tag:working_tags!working_tag_id (
-                name,
-                color
-              ),
-          working_pan_name,
-          working_pan_color,
-            rx_number,
-            isDueDateTBD,
-            appointment_date,
-            case_number,
-            otherItems,
-            invoice_notes,
-            occlusal_type,
-            contact_type,
-            pontic_type,
-            custom_contact_details,
-            custom_occulusal_details,
-            custom_pontic_details,
-            enclosed_items:enclosed_case!enclosed_case_id (
-              impression,
-              biteRegistration,
-              photos,
-              jig,
-              opposingModel,
-              articulator,
-              returnArticulator,
-              cadcamFiles,
-              consultRequested,
-              user_id
-            ),
-            invoice:invoices!case_id (
-              id,
-              case_id,
-              amount,
-              status,
-              due_amount,
-              due_date
-            ),
-            product_ids:case_products!id (
-              products_id,
-              id
-            )
-          `
+            client_name,
+            phone
           )
-          .eq("lab_id", lab.id)
-          .order("created_at", { ascending: false });
-
-        if (casesError) {
-          console.error("Error fetching invoices:", casesError);
-          return;
-        }
-
-        const enhancedCases = await Promise.all(
-          casesData.map(async (singleCase) => {
-            const productsIdArray =
-              singleCase?.product_ids?.map((p) => p.products_id) || [];
-            const caseProductIds =
-              singleCase?.product_ids?.map((p) => p.id) || [];
-
-            if (productsIdArray.length === 0) {
-              return { ...singleCase, products: [] }; // No products for this case
-            }
-
-            // Fetch products for the current case
-            const { data: productData, error: productsError } = await supabase
-              .from("products")
-              .select(
-                `
-                id,
-                name,
-                price,
-                lead_time,
-                is_client_visible,
-                is_taxable,
-                created_at,
-                updated_at,
-                requires_shade,
-                material:materials!material_id (
-                  name,
-                  description,
-                  is_active
-                ),
-                product_type:product_types!product_type_id (
-                  name,
-                  description,
-                  is_active
-                ),
-                billing_type:billing_types!billing_type_id (
-                  name,
-                  label,
-                  description,
-                  is_active
-                )
-              `
-              )
-              .eq("lab_id", lab.id)
-              .in("id", productsIdArray);
-
-            if (productsError) {
-              console.error("Error fetching products for case:", productsError);
-              return { ...singleCase, products: [] }; // Return empty products if there's an error
-            }
-
-            const { data: discountedPriceData, error: discountedPriceError } =
-              await supabase
-                .from("discounted_price")
-                .select(
-                  `
+        ),
+        tag:working_tags!working_tag_id (
+          name,
+          color
+        ),
+        working_pan_name,
+        working_pan_color,
+        rx_number,
+        received_date,
+        invoice_notes,
+        isDueDateTBD,
+        appointment_date,
+        instruction_notes,
+        otherItems,
+        occlusal_type,
+        contact_type,
+        pontic_type,
+        qr_code,
+        custom_contact_details,
+        custom_occulusal_details,
+        custom_pontic_details,
+        enclosed_items:enclosed_case!enclosed_case_id (
+          impression,
+          biteRegistration,
+          photos,
+          jig,
+          opposingModel,
+          articulator,
+          returnArticulator,
+          cadcamFiles,
+          consultRequested,
+          user_id
+        ),
+        created_by:users!created_by (
+          name,
+          id
+        ),
+        product_ids:case_products!id (
+          products_id,
+          id
+        ),
+         margin_design_type,
+        occlusion_design_type,
+        alloy_type,
+        custom_margin_design_type,
+        custom_occlusion_design_type,
+        custon_alloy_type,
+      discounted_price:discounted_price!id (
                 id,
                 product_id,
                 discount,
                 final_price,
                 price,
-                quantity
-              `
-                )
-                .in("product_id", productsIdArray)
-                .eq("case_id", singleCase.id);
+                quantity,
+                total
+          ),
+        teethProduct: case_product_teeth!id (
+          id,
+          is_range,
 
-            if (discountedPriceError) {
-              console.error(
-                "Error fetching discounted prices for case:",
-                discountedPriceError
-              );
-            }
+          tooth_number,
+          product_id,
+          occlusal_shade:shade_options!occlusal_shade_id (
+          name,
+          category,
+          is_active
+          ),
+           body_shade:shade_options!body_shade_id (
+           name,
+           category,
+            is_active
+            ),
+            gingival_shade:shade_options!gingival_shade_id (
+            name,
+            category,
+             is_active
+             ),
+             stump_shade:shade_options!stump_shade_id (
+               name,
+              category,
+              is_active
+                    ),
+                  pontic_teeth,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
+                  type,
+          product:products!product_id (
+                    id,
+                    name,
+                    price,
+                    lead_time,
+                    is_client_visible,
+                    is_taxable,
+                    created_at,
+                    updated_at,
+                    requires_shade,
+                    material:materials!material_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    product_type:product_types!product_type_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    billing_type:billing_types!billing_type_id (
+                      name,
+                      label,
+                      description,
+                      is_active
+                    )
+          )
+          )
+    `
+          )
+          .eq("lab_id", labIdData?.lab_id)
+          .order("created_at", { ascending: false })
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 5000,
+    }
+  );
+  if (caseError && labIdData?.lab_id) {
+    // toast.error("failed to fetech cases");
+  }
 
-            const { data: teethProductData, error: teethProductsError } =
-              await supabase
-                .from("case_product_teeth")
-                .select(
-                  `
-                id,
-                is_range,
-                tooth_number,
-                product_id,
-                occlusal_shade:shade_options!occlusal_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                body_shade:shade_options!body_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                gingival_shade:shade_options!gingival_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                stump_shade:shade_options!stump_shade_id (
-                  name,
-                  category,
-                  is_active
-                )
-              `
-                )
-                .in("product_id", productsIdArray)
-                .eq("case_product_id", singleCase?.product_ids[0]?.id);
+  const swrInvoices: Invoice[] | [] =
+    query?.map((item: any) => {
+      return {
+        ...item,
+        products: item.teethProduct.map((tp: any) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          billing_type: tp.product.billing_type,
+          discounted_price: item?.discounted_price.filter(
+            (item: any) => item.product_id === tp.product.id
+          )?.[0],
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            product_id: tp.product_id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+          },
+        })),
+      };
+    }) || [];
+  const getCompletedInvoices = async () => {
+    setLoading(true);
 
-            if (teethProductsError) {
-              console.error(
-                "Error fetching teeth products:",
-                teethProductsError
-              );
-            }
-            console.log(teethProductData, "teethProductData");
-            // Combine products with their relevant discounts and teeth products
-            const productsWithDiscounts = productData.flatMap(
-              (product: any) => {
-                const relevantDiscounts =
-                  discountedPriceData?.filter(
-                    (discount: { product_id: string }) =>
-                      discount.product_id === product.id
-                  ) || [];
+    try {
+      const lab = await getLabDataByUserId(user?.id as string);
 
-                const relevantTeethProducts =
-                  teethProductData?.filter(
-                    (teeth: any) => teeth.product_id === product.id
-                  ) || [];
-
-                return relevantTeethProducts
-                  .map((teeth: any, index: number) => {
-                    const discountedPrice = relevantDiscounts[index] || null;
-
-                    return {
-                      ...product,
-                      discounted_price: { ...discountedPrice },
-                      teethProduct: {
-                        ...teeth,
-                      },
-                    };
-                  })
-                  .filter((item) => item.teethProduct.tooth_number !== null);
-              }
-            );
-
-            return {
-              ...singleCase,
-              products: productsWithDiscounts,
-              labDetail: lab,
-            };
-          })
-        );
-
-        setInvoicesData(enhancedCases);
-      } catch (error) {
-        console.error("Error fetching invoices:", error);
-      } finally {
-        setLoading(false);
-        setRefreshData(false);
+      if (!lab?.id) {
+        console.error("Lab ID not found.");
+        return;
       }
-    };
+      setLab(lab);
+      const { data: casesData, error: casesError } = await supabase
+        .from("cases")
+        .select(
+          `
+          id,
+          created_at,
+          received_date,
+          ship_date,
+          status,
+          patient_name,
+          due_date,
+          client:clients!client_id (
+            id,
+            client_name,
+            phone,
+            street,
+            city,
+            state,
+            zip_code
+          ),
+          doctor:doctors!doctor_id (
+            id,
+            name,
+            client:clients!client_id (
+              id,
+              client_name,
+              phone
+            )
+          ),
+          tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+        working_pan_name,
+        working_pan_color,
+          rx_number,
+          isDueDateTBD,
+          appointment_date,
+          case_number,
+          otherItems,
+          invoice_notes,
+          occlusal_type,
+          contact_type,
+          pontic_type,
+          custom_contact_details,
+          custom_occulusal_details,
+          custom_pontic_details,
+          enclosed_items:enclosed_case!enclosed_case_id (
+            impression,
+            biteRegistration,
+            photos,
+            jig,
+            opposingModel,
+            articulator,
+            returnArticulator,
+            cadcamFiles,
+            consultRequested,
+            user_id
+          ),
+          invoice:invoices!case_id (
+            id,
+            case_id,
+            amount,
+            status,
+            due_amount,
+            due_date
+          ),
+          product_ids:case_products!id (
+            products_id,
+            id
+          )
+        `
+        )
+        .eq("lab_id", lab.id)
+        .order("created_at", { ascending: false });
 
-    getCompletedInvoices();
+      if (casesError) {
+        console.error("Error fetching invoices:", casesError);
+        return;
+      }
+
+      const enhancedCases = await Promise.all(
+        casesData.map(async (singleCase) => {
+          const productsIdArray =
+            singleCase?.product_ids?.map((p) => p.products_id) || [];
+          const caseProductIds =
+            singleCase?.product_ids?.map((p) => p.id) || [];
+
+          if (productsIdArray.length === 0) {
+            return { ...singleCase, products: [] }; // No products for this case
+          }
+
+          // Fetch products for the current case
+          const { data: productData, error: productsError } = await supabase
+            .from("products")
+            .select(
+              `
+              id,
+              name,
+              price,
+              lead_time,
+              is_client_visible,
+              is_taxable,
+              created_at,
+              updated_at,
+              requires_shade,
+              material:materials!material_id (
+                name,
+                description,
+                is_active
+              ),
+              product_type:product_types!product_type_id (
+                name,
+                description,
+                is_active
+              ),
+              billing_type:billing_types!billing_type_id (
+                name,
+                label,
+                description,
+                is_active
+              )
+            `
+            )
+            .eq("lab_id", lab.id)
+            .in("id", productsIdArray);
+
+          if (productsError) {
+            console.error("Error fetching products for case:", productsError);
+            return { ...singleCase, products: [] }; // Return empty products if there's an error
+          }
+
+          const { data: discountedPriceData, error: discountedPriceError } =
+            await supabase
+              .from("discounted_price")
+              .select(
+                `
+              id,
+              product_id,
+              discount,
+              final_price,
+              price,
+              quantity
+            `
+              )
+              .in("product_id", productsIdArray)
+              .eq("case_id", singleCase.id);
+
+          if (discountedPriceError) {
+            console.error(
+              "Error fetching discounted prices for case:",
+              discountedPriceError
+            );
+          }
+
+          const { data: teethProductData, error: teethProductsError } =
+            await supabase
+              .from("case_product_teeth")
+              .select(
+                `
+              id,
+              is_range,
+              tooth_number,
+              product_id,
+              occlusal_shade:shade_options!occlusal_shade_id (
+                name,
+                category,
+                is_active
+              ),
+              body_shade:shade_options!body_shade_id (
+                name,
+                category,
+                is_active
+              ),
+              gingival_shade:shade_options!gingival_shade_id (
+                name,
+                category,
+                is_active
+              ),
+              stump_shade:shade_options!stump_shade_id (
+                name,
+                category,
+                is_active
+              )
+            `
+              )
+              .in("product_id", productsIdArray)
+              .eq("case_product_id", singleCase?.product_ids[0]?.id);
+
+          if (teethProductsError) {
+            console.error("Error fetching teeth products:", teethProductsError);
+          }
+          console.log(teethProductData, "teethProductData");
+          // Combine products with their relevant discounts and teeth products
+          const productsWithDiscounts = productData.flatMap((product: any) => {
+            const relevantDiscounts =
+              discountedPriceData?.filter(
+                (discount: { product_id: string }) =>
+                  discount.product_id === product.id
+              ) || [];
+
+            const relevantTeethProducts =
+              teethProductData?.filter(
+                (teeth: any) => teeth.product_id === product.id
+              ) || [];
+
+            return relevantTeethProducts
+              .map((teeth: any, index: number) => {
+                const discountedPrice = relevantDiscounts[index] || null;
+
+                return {
+                  ...product,
+                  discounted_price: { ...discountedPrice },
+                  teethProduct: {
+                    ...teeth,
+                  },
+                };
+              })
+              .filter((item) => item.teethProduct.tooth_number !== null);
+          });
+
+          return {
+            ...singleCase,
+            products: productsWithDiscounts,
+            labDetail: lab,
+          };
+        })
+      );
+
+      setInvoicesData(enhancedCases);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    } finally {
+      setLoading(false);
+      setRefreshData(false);
+    }
+  };
+
+  useEffect(() => {
+    if (reFreshData) {
+      getCompletedInvoices();
+    }
     const initialInvoices = mockInvoices;
     setInvoices(initialInvoices);
     setFilteredInvoices(initialInvoices);
-  }, [user?.id, reFreshData]);
+    setInvoicesData(swrInvoices);
+    const getLabData = async () => {
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (lab) {
+        setLab(lab);
+      }
+    };
+    getLabData();
+  }, [user?.id, reFreshData, swrInvoices]);
 
   const [caseFilter, setCaseFilter] = useState<string>("");
 
@@ -474,12 +716,13 @@ const InvoiceList: React.FC = () => {
       if (updateCaseProductsError) {
         throw new Error(updateCaseProductsError.message);
       }
-      console.log(updatedCaseProducts, "updatedCaseProducts");
       for (const item of updatedInvoice?.items || []) {
         try {
           // Calculate the final price based on the quantity, unit price, and discount
           const finalPrice =
-            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+            item.quantity *
+            Number(item.unitPrice) *
+            (1 - (item.discount || 0) / 100);
 
           if (item.discountId && item.caseProductTeethId) {
             // Update the discounted_price table
@@ -509,8 +752,6 @@ const InvoiceList: React.FC = () => {
                 .eq("id", item.caseProductTeethId)
                 .select("*");
 
-            console.log("Updated discount row:", updatedDiscount);
-            console.log("Updated teeth row:", updateTeeth);
           } else {
             // Create a new discounted_price row
             const { data: newDiscount, error: newDiscountError } =
@@ -2060,9 +2301,12 @@ const InvoiceList: React.FC = () => {
           onClose={() => {
             setIsPreviewModalOpen(false);
           }}
-          caseDetails={invoicesData.filter((invoice: any) =>
-            selectedInvoices.includes(invoice.id)
-          )} // Filter selected invoices based on their IDs
+          caseDetails={invoicesData
+            .filter((invoice: any) => selectedInvoices.includes(invoice.id)) // Filter based on selected invoices
+            .map((invoice: any) => ({
+              ...invoice, // Spread the invoice data
+              lab, // Add the `lab` data to each invoice
+            }))}
         />
 
         {showNewPaymentModal && (

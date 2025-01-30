@@ -34,6 +34,7 @@ export interface FormData {
   workingTagName?: string;
   workingPanColor?: string;
   patientLastName: string;
+  is_appointment_TBD: boolean;
   orderDate: string;
   status: (typeof CASE_STATUSES)[number];
   statusError?: string;
@@ -101,6 +102,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     enclosedItems: defaultEnclosedItems,
     otherItems: "",
     isDueDateTBD: false,
+    is_appointment_TBD: false,
     notes: {
       instructionNotes: "",
       invoiceNotes: "",
@@ -260,7 +262,14 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
             formData={formData}
             onChange={handleFormChange}
             errors={errors}
-            clients={clients}
+            clients={clients.map((item) => ({
+              id: item.id,
+              client_name: item.clientName,
+              doctors: item.doctors.map((item) => ({
+                id: item.id as string,
+                name: item.name,
+              })),
+            }))}
             loading={loading}
             isAddingPan={isAddingPan}
             setIsAddingPan={setIsAddingPan}

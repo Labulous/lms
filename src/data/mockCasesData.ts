@@ -6,6 +6,8 @@ import { LoadingState } from "@/pages/cases/NewCase";
 import { SavedProduct } from "./mockProductData";
 import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
+import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import { getLabIdByUserId } from "@/services/authService";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -184,17 +186,28 @@ const saveCaseProduct = async (
     }));
 
     // Calculate discounted prices for products
-    const discountedPrice = cases.products.map((product: any) => ({
-      product_id: product.id,
-      price: product.price,
-      discount: product.discount,
-      quantity: product.quantity,
-      final_price:
-        (product.price - (product.price * product.discount) / 100) *
-        product.quantity,
-      case_id: savedCaseId as string,
-      user_id: cases.overview.created_by,
-    }));
+    const discountedPrice = cases.products.map((product: any) => {
+      // Calculate the price after discount
+      const priceAfterDiscount =
+        product.price - (product.price * product.discount) / 100;
+
+      // Calculate final price (after discount) for the given quantity
+      const final_price = priceAfterDiscount * product.quantity;
+
+      // Calculate amount by multiplying final_price by quantity and then by product.teeth.length
+      const amount = final_price * product.teeth.length;
+
+      return {
+        product_id: product.id,
+        price: product.price,
+        discount: product.discount,
+        quantity: product.quantity,
+        final_price: final_price, // price after discount
+        total: amount, // final price * quantity * teeth length
+        case_id: savedCaseId as string,
+        user_id: cases.overview.created_by,
+      };
+    });
 
     // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
@@ -237,10 +250,21 @@ const saveCaseProduct = async (
 const saveCases = async (
   cases: any,
   navigate?: any,
-  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>
+  setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
+  identifier?: string
 ) => {
   try {
     // Step 1: Save enclosed case details
+    const caseCount = await fetchCaseCount(cases.overview.lab_id); // Fetch current case count
+    const labData = await getLabIdByUserId(cases.overview.created_by as string);
+
+    if (!caseCount && typeof caseCount !== "number") {
+      toast.error("Unable to get Case Number");
+      setLoadingState && setLoadingState({ isLoading: false, action: "save" });
+      return;
+    }
+    setLoadingState && setLoadingState({ isLoading: true, action: "save" });
+
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,
       biteRegistration: cases.enclosedItems?.biteRegistration || 0,
@@ -265,11 +289,17 @@ const saveCases = async (
     }
 
     const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
+    const sequentialNumber = String(caseCount + 1).padStart(5, "0");
 
-    // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    const case_number = `${labData?.name
+      .substring(0, 3)
+      .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
+      case_number,
     };
 
     const { data, error } = await supabase
@@ -319,8 +349,8 @@ const saveCases = async (
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
-        due_amount: totalAmount,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };
@@ -334,6 +364,23 @@ const saveCases = async (
         console.error("Error creating invoice:", invoiceError);
       } else {
         console.log("Invoice created successfully:", invoiceData);
+        setLoadingState &&
+          setLoadingState({ isLoading: false, action: "save" });
+        await updateBalanceTracking();
+      }
+      const { data: count, error: caseCountError } = await supabase
+        .from("case_number_tracker")
+        .insert({
+          case_number: caseCount + 1,
+          case_id: savedCaseId,
+          lab_id: cases.overview.lab_id,
+        })
+        .select("*");
+      console.log(count, "count");
+      if (caseCountError) {
+        console.error("Error creating case count:", invoiceError);
+      } else {
+        console.log("case count created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
         await updateBalanceTracking();
@@ -417,41 +464,49 @@ const updateCases = async (
     // Calculate discounted prices for products
     for (const product of cases.products) {
       // Prepare the data row
+
+      // Calculate totalAmount by iterating over all products
+      const totalAmount = cases.products.reduce(
+        (sum: number, item: SavedProduct) => {
+          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
+          const finalPriceBeforeDiscount =
+            item.price * item.teeth.length * quantity; // Total before discount
+          const discountedTotal =
+            finalPriceBeforeDiscount -
+            (finalPriceBeforeDiscount * (item.discount || 0)) / 100; // Apply discount to total
+
+          // Add discounted total for this product to the sum
+          return sum + discountedTotal;
+        },
+        0
+      );
+
       const discountedPriceRow = {
         product_id: product.id,
         price: product.price || 0,
         discount: product.discount || 0,
         quantity: product.quantity,
+        // Calculate the final price after discount and considering quantity
         final_price:
           (product.price - (product.price * product.discount) / 100 || 0) *
-          (product?.quantity ? product?.quantity : 1),
+          (product?.quantity || 1),
         case_id: caseId,
+        total: Number(totalAmount) || 0,
         user_id: cases.overview.created_by || "",
       };
-      const totalAmount = cases.products.reduce(
-        (sum: number, item: SavedProduct) => {
-          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
-          const totalPerProduct = item.price * item.teeth.length * quantity; // Total before discount
-          const discountedTotal =
-            totalPerProduct - (totalPerProduct * (item.discount || 0)) / 100; // Apply discount
-          return sum + discountedTotal; // Add to the overall sum
-        },
-        0
-      );
-
       const UpdatedInvoice = {
         case_id: caseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
+        amount: Number(totalAmount),
         due_date: null,
       };
       const newInvoice = {
         case_id: caseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: totalAmount,
-        due_amount: totalAmount,
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };

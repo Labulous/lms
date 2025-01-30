@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { format, set } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "react-hot-toast";
 import OrderDetailsStep from "../../components/cases/wizard/steps/OrderDetailsStep";
 import ProductConfiguration from "../../components/cases/wizard/ProductConfiguration";
@@ -10,19 +10,27 @@ import FilesStep, {
 import NotesStep from "../../components/cases/wizard/steps/NotesStep";
 import { CaseStatus, FormData } from "@/types/supabase";
 import { addCase, DeliveryMethod } from "../../data/mockCasesData";
-import { Client, clientsService } from "../../services/clientsService";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../../components/ui/button";
 import { SavedProduct } from "../../data/mockProductData";
 import { getLabIdByUserId } from "@/services/authService";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 export interface LoadingState {
   action: "save" | "update" | null;
   isLoading: boolean;
   progress?: number;
 }
-
+interface Client {
+  id: string;
+  client_name: string;
+  doctors: {
+    id: string;
+    name: string;
+  }[];
+}
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -48,17 +56,15 @@ const NewCase: React.FC = () => {
     },
     otherItems: "",
     isDueDateTBD: false,
+    is_appointment_TBD: false,
     notes: {
       instructionNotes: "",
       invoiceNotes: "",
     },
   });
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
   const [selectedFiles, setSelectedFiles] = useState<FileWithStatus[]>([]);
-  const [lab, setLab] = useState<{ labId: string; name: string } | null>();
-  const [caseNumber, setCaseNumber] = useState<null | string>(null);
   const [selectedCategory, setSelectedCategory] = useState<SavedProduct | null>(
     null
   );
@@ -125,68 +131,68 @@ const NewCase: React.FC = () => {
       return newData;
     });
   };
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  const {
+    data: clients,
+    error: clientsError,
+    isLoading: clientLoading,
+  } = useQuery(
+    labIdData
+      ? supabase
+          .from("clients")
+          .select(
+            `
+             id,
+             client_name,
+             doctors:doctors!id (
+             id,
+             name
+             )
+            `
+          )
+          .eq("lab_id", labIdData.lab_id)
+          .order("client_name", { ascending: true })
+      : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  if (clientsError) {
+    return <div>Faild to fetch Clients!</div>;
+  }
 
-  useEffect(() => {
-    const getCasesLength = async () => {
-      try {
-        setLoading(true);
+  if (isLabLoading) {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-gray-500">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900"></div>
+        <span>Loading clients...</span>
+      </div>
+    );
+  }
 
-        const labData = await getLabIdByUserId(user?.id as string);
-        if (!labData) {
-          toast.error("Unable to get Lab Id");
-          return null;
-        }
+  if (labError) {
+    console.error("Error fetching lab ID:", labError);
+    toast.error("Failed to get labId");
+    return null;
+  }
 
-        const clients = await clientsService.getClients(labData?.labId ?? "");
-        if (Array.isArray(clients)) {
-          if (user?.role === "client") {
-            clients.filter((client) => {
-              if (client.email === user?.email) {
-                setFormData((prevData) => ({
-                  ...prevData,
-                  clientId: client.id,
-                }));
-              }
-            });
-            setClients(
-              clients.filter((client) => client.email === user?.email)
-            );
-          } else {
-            setClients(clients);
-          }
-        }
+  if (!labIdData || !labIdData.lab_id) {
+    console.warn("No lab ID found.");
+    return null;
+  }
 
-        setLab(labData);
-        const number = await fetchCaseCount(labData.labId); // Fetch current case count
-
-        if (typeof number === "number") {
-          // Generate case number
-          const identifier = labData?.name
-            ?.substring(0, 3)
-            .toUpperCase() as string;
-          const currentYear = new Date().getFullYear().toString().slice(-2);
-          const currentMonth = String(new Date().getMonth() + 1).padStart(
-            2,
-            "0"
-          );
-          const sequentialNumber = String(number + 1).padStart(5, "0");
-
-          const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
-          setCaseNumber(caseNumber);
-        } else {
-          setCaseNumber(null);
-        }
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        toast.error("Failed to load clients");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getCasesLength();
-  }, [user?.id]);
-
+  // If no match is found, return null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -245,76 +251,65 @@ const NewCase: React.FC = () => {
       return;
     }
 
-    if (caseNumber) {
-      try {
-        setLoadingState({ isLoading: true, action: "save" });
-        const transformedData = {
-          ...formData,
-          status: formData.status.toLowerCase() as CaseStatus | string,
-        };
-        const newCase: any = {
-          overview: {
-            client_id: transformedData.clientId,
-            doctor_id: transformedData.doctorId || "",
-            created_by: user?.id || "",
-            patient_name:
-              transformedData.patientFirstName +
-              " " +
-              transformedData.patientLastName,
-            rx_number: "",
-            received_date: transformedData.orderDate,
-            status: transformedData.status || "in_queue",
-            due_date: transformedData.isDueDateTBD
-              ? null
-              : transformedData.dueDate,
-            isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate,
-            otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.notes?.instructionNotes,
-            invoice_notes: transformedData.notes?.invoiceNotes,
-            occlusal_type: transformedData.caseDetails?.occlusalType,
-            contact_type: transformedData.caseDetails?.contactType,
-            pontic_type: transformedData.caseDetails?.ponticType,
-            custom_contact_details: transformedData.caseDetails?.customContact,
-            custom_occulusal_details:
-              transformedData.caseDetails?.customOcclusal,
-            custom_pontic_details: transformedData.caseDetails?.customPontic,
-            lab_id: lab?.labId,
-            case_number: caseNumber,
-            attachements: selectedFiles.map((item) => item.url),
-            working_pan_name: transformedData.workingPanName,
-            working_pan_color: transformedData.workingPanColor,
-            working_tag_id: transformedData.workingTagName,
-            margin_design_type: transformedData.caseDetails?.marginDesign,
-            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
-            alloy_type: transformedData.caseDetails?.alloyType,
-            custom_margin_design_type:
-              transformedData.caseDetails?.customMargin,
-            custom_occlusion_design_type:
-              transformedData.caseDetails?.customOcclusalDesign,
-            custon_alloy_type: transformedData.caseDetails?.customAlloy,
-          },
-          products: selectedProducts,
-
-          enclosedItems: transformedData.enclosedItems,
-        };
-        // Add case to database
-        await addCase(newCase, navigate, setLoadingState);
-      } catch (error) {
-        console.error("Error creating case:", error);
-        toast.error("Failed to create case");
-      }
-    } else {
-      toast.error("Unable to Create Case Number");
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+      const transformedData = {
+        ...formData,
+        status: formData.status.toLowerCase() as CaseStatus | string,
+      };
+      const newCase: any = {
+        overview: {
+          client_id: transformedData.clientId,
+          doctor_id: transformedData.doctorId || "",
+          created_by: user?.id || "",
+          patient_name:
+            transformedData.patientFirstName +
+            " " +
+            transformedData.patientLastName,
+          rx_number: "",
+          received_date: transformedData.orderDate,
+          status: transformedData.status || "in_queue",
+          due_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.dueDate,
+          isDueDateTBD: transformedData.isDueDateTBD || false,
+          appointment_date: transformedData.is_appointment_TBD
+            ? null
+            : transformedData.appointmentDate || null,
+          otherItems: transformedData.otherItems || "",
+          instruction_notes: transformedData.notes?.instructionNotes,
+          invoice_notes: transformedData.notes?.invoiceNotes,
+          occlusal_type: transformedData.caseDetails?.occlusalType,
+          contact_type: transformedData.caseDetails?.contactType,
+          pontic_type: transformedData.caseDetails?.ponticType,
+          custom_contact_details: transformedData.caseDetails?.customContact,
+          custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+          custom_pontic_details: transformedData.caseDetails?.customPontic,
+          lab_id: labIdData?.lab_id,
+          attachements: selectedFiles.map((item) => item.url),
+          working_pan_name: transformedData.workingPanName,
+          working_pan_color: transformedData.workingPanColor,
+          working_tag_id: transformedData.workingTagName,
+          margin_design_type: transformedData.caseDetails?.marginDesign,
+          occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+          alloy_type: transformedData.caseDetails?.alloyType,
+          custom_margin_design_type: transformedData.caseDetails?.customMargin,
+          is_appointment_TBD: transformedData.is_appointment_TBD,
+          custom_occlusion_design_type:
+            transformedData.caseDetails?.customOcclusalDesign,
+          custon_alloy_type: transformedData.caseDetails?.customAlloy,
+        },
+        products: selectedProducts,
+        enclosedItems: transformedData.enclosedItems,
+      };
+      // Add case to database
+      await addCase(newCase, navigate, setLoadingState);
+    } catch (error) {
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     }
   };
-  useEffect(() => {
-    if (errors && mainDivRef.current) {
-      mainDivRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [errors]);
-
-  console.log(formData, "formData");
+  console.log(selectedProducts, "products");
   return (
     <div
       className="p-6"
@@ -339,7 +334,7 @@ const NewCase: React.FC = () => {
               formData={formData}
               onChange={handleFormChange}
               errors={errors}
-              clients={clients}
+              clients={clients as Client[]}
               loading={loading}
               isAddingPan={isAddingPan}
               setIsAddingPan={setIsAddingPan}

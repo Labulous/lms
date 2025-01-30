@@ -661,6 +661,7 @@ export interface Database {
           billing_type_id: string;
           material: {
             name: string;
+            id?: string;
           } | null; // Adding the full object for material
           product_type: {
             name: string;
@@ -828,6 +829,7 @@ export interface FormData {
   workingPanName?: string;
   workingTagName?: string;
   workingPanColor?: string;
+  is_appointment_TBD: boolean;
   enclosedItems: {
     impression: number;
     biteRegistration: number;
@@ -873,4 +875,21 @@ export interface CaseFilters {
   dueDate: string;
   status: string;
   searchTerm: string;
+}
+
+/**
+ * User management interfaces
+ */
+export interface Users {
+  id: string;
+  role: string;
+  name: string;
+  email: string;
+  phone: string;
+  street: string;
+  city: string;
+  state: string;
+  zipcode: string;
+  created_at: string;
+  updated_at: string;
 }

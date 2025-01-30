@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, SetStateAction } from "react";
 import {
   Calendar,
   dateFnsLocalizer,
@@ -48,6 +48,8 @@ const localizer = dateFnsLocalizer({
 interface DueDatesCalendarProps {
   events?: CalendarEvents[];
   height?: number;
+  filterType: string;
+  setFilterType: React.Dispatch<SetStateAction<string>>;
 }
 
 interface CustomToolbarProps {
@@ -138,13 +140,13 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
     <div className="rbc-date-cell">
       <div className="custom-date-cell">
         <span className="date-number">{format(date, "d")}</span>
-        {events.length > 0 && (
+        {events.length + 1 > 0 && (
           <div className="badge-container">
             <span
               className="count-badge "
               style={{ backgroundColor: "green !important" }}
             >
-              {events.length}
+              {events.length + 1}
             </span>
           </div>
         )}
@@ -156,6 +158,8 @@ const CustomDateCell = ({ date, events }: { date: Date; events: any[] }) => {
 const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   events = [],
   height = 500,
+  filterType,
+  setFilterType,
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
@@ -163,7 +167,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     "left" | "right" | null
   >(null);
   const navigate = useNavigate();
-  const [filterType, setFilterType] = useState("due_date");
 
   const filteredEvents = events.filter((event) => {
     const start = new Date(event.start);
@@ -172,25 +175,20 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       return false;
     }
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    const todayDateString = today.toISOString().split("T")[0]; // 'YYYY-MM-DD'
-
     // Filter based on filterType
     if (filterType === "due_date") {
-      return !event.onHold;
+      return event.isActive;
     } else if (filterType === "on_hold") {
       return event.onHold;
     } else if (filterType === "today_cell") {
-      // Compare the date part of the event's start with today's date
-      const eventStartDateString = start.toISOString().split("T")[0]; // 'YYYY-MM-DD'
-      return eventStartDateString === todayDateString;
+
+      // Return events where either isAllOnHold OR isTommorow is true
+      return !event.isActive && !event.onHold;
     }
 
     return true;
   });
 
-  console.log(events, "Event");
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
       let newDate = new Date(currentDate);
@@ -288,200 +286,184 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             title=""
             className="w--full grid"
           >
-            {event.onHold &&
-              event.title &&
-              event.title !== "0" &&
-              filterType !== "today_cell" && (
-                <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                  {event.title}
-                </div>
-              )}
-            {!event.onHold &&
-              event.title !== "0" &&
-              filterType !== "today_cell" && (
-                <div
-                  className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
-                >
-                  {event.title}
-                </div>
-              )}
-
-            {filterType === "today_cell" && (
-              <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                {event.title}
-              </div>
+            {filterType !== "today_cell" && (
+              <>
+                {event.onHold && event.title && event.title !== "0" && (
+                  <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                    {event.title}
+                  </div>
+                )}
+                {!event.onHold && event.title !== "0" && (
+                  <div
+                    className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                  >
+                    {event.title}
+                  </div>
+                )}
+              </>
             )}
+
+            <div>
+              {filterType === "today_cell" && (
+                <div>
+                  {/* {event.isTommorow && (
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.title}
+                    </div>
+                  )} */}
+                  <div
+                    className={` ${"bg-yellow-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                  >
+                    {/* {event.title !=="" && event.title} */}
+                    {event.id === 2 && event.title}
+                  </div>
+                  {
+                    <div className="bg-red-500 col-span-4 w text-sm absolute bottom-[5px] left-1 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {!event.isTommorow && event.title}
+                    </div>
+                  }
+                  {
+                    <div className="bg-blue-500 col-span-4 w text-sm absolute bottom-[5px] left-8 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.isPastDue && event.title}
+                    </div>
+                  }
+                  {
+                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.id===1 && event.title}
+                    </div>
+                  }
+                </div>
+              )}
+            </div>
           </div>
         </HoverCardTrigger>
         <HoverCardContent
-          className="w-80"
           align="end"
           onMouseLeave={() => handleEventHover(null)}
         >
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h4 className="font-medium">
+                <h3 className="text-lg font-semibold">
                   {format(event.start, "MMMM d, yyyy")}
-                </h4>
-
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   {event.title} {events.length === 1 ? "case" : "cases"} due
                 </p>
               </div>
-              <div>
-                <Button onClick={() => handleEventClick(event)}>
-                  View CaseList
-                </Button>
-              </div>
+              <Button
+                onClick={() => handleEventClick(event.formattedCases[0].due_date)}
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                View CaseList
+              </Button>
             </div>
 
             <Separator />
 
-            <ScrollArea className="h-[200px] pr-4">
-              <div className="space-y-2">
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="grid grid-cols-2 gap-4">
                 {event.formattedCases.map((event: any, index: number) => (
                   <div
                     key={index}
-                    className="flex flex-col space-y-1 rounded-md p-2 hover:bg-muted/50 cursor-pointer border"
+                    className="group flex flex-col rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
                     onClick={() => navigate(`/cases/${event.case_id}`)}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">#{event.case_number}</span>
-                      <Badge
-                        variant={
-                          event.status === "in_progress"
-                            ? "default"
-                            : event.status === "on_hold"
-                            ? "secondary"
-                            : "outline"
-                        }
-                        className="text-xs"
-                      >
-                        {event.status}
-                      </Badge>
+                    {/* Header Section */}
+                    <div className="mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">#{event.case_number}</span>
+                        <Badge
+                          variant={
+                            event.status === "in_progress"
+                              ? "default"
+                              : event.status === "on_hold"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className="text-[10px] px-2 py-0"
+                        >
+                          {event.status}
+                        </Badge>
+                      </div>
+                      {/* <span className="text-xs text-muted-foreground">{event.due_date}</span> */}
                     </div>
-                    <h4 className="font-medium">{event.due_date}</h4>
 
-                    <div className="flex flex-col text-sm text-muted-foreground">
-                      <div className="flex justify-between">
-                        <span>Client:</span>
-                        <span className="font-medium text-foreground">
-                          {event.client_name}
-                        </span>
-                      </div>
-                      {event.doctor?.name && (
-                        <div className="flex justify-between">
-                          <span>Doctor:</span>
-                          <span className="font-medium text-foreground">
-                            {event.doctor.name}
+                    {/* Main Content */}
+                    <div className="space-y-3 text-sm">
+                      {/* Client & Doctor Section */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Client</span>
+                          <span className="font-medium truncate max-w-[180px]" title={event.client_name}>
+                            {event.client_name}
                           </span>
                         </div>
-                      )}
+                        {event.doctor?.name && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Doctor</span>
+                            <span className="font-medium truncate max-w-[180px]" title={event.doctor.name}>
+                              {event.doctor.name}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Products Section */}
                       {event.case_products?.[0]?.name && (
-                        <div className="flex justify-between">
-                          <span>Product:</span>
-                          <span className="font-medium text-foreground">
-                            {event.case_products[0].name}
-                            {event.case_products.length > 1 &&
-                              ` +${event.case_products.length - 1}`}
-                          </span>
+                        <div className="pt-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">Product</span>
+                            <span className="font-medium truncate max-w-[180px]" title={event.case_products[0].name}>
+                              {event.case_products[0].name}
+                              {event.case_products.length > 1 && (
+                                <span className="ml-1 text-xs text-muted-foreground">
+                                  +{event.case_products.length - 1}
+                                </span>
+                              )}
+                            </span>
+                          </div>
                         </div>
                       )}
 
-                      <div>
-                        {event.invoicesData?.length > 0 && (
-                          <div className="flex justify-between">
-                            <span className="font-bold">Invoices:</span>
-                            <span className="font-medium text-foreground">
-                              {""}
-                            </span>
+                      {/* Invoice Section */}
+                      {event.invoicesData?.length > 0 && (
+                        <div className="rounded-md bg-muted/50 p-2 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium">Invoice Details</span>
                           </div>
-                        )}
-
-                        {event.invoicesData?.[0]?.status && (
-                          <div className="flex justify-between">
-                            <span>Status:</span>
-                            <span className="font-medium text-foreground">
-                              {event.invoicesData?.[0]?.status}
-                            </span>
-                          </div>
-                        )}
-                        {event.invoicesData?.[0]?.amount && (
-                          <div className="flex justify-between">
-                            <span>Total Amount:</span>
-                            <span className="font-medium text-foreground">
-                              ${event.invoicesData?.[0]?.amount}
-                            </span>
-                          </div>
-                        )}
-                        {event.invoicesData?.[0]?.due_amount && (
-                          <div className="flex justify-between">
-                            <span>Due Amount:</span>
-                            <span className="font-medium text-foreground">
-                              ${event.invoicesData?.[0]?.due_amount}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                          {event.invoicesData?.[0]?.status && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Status</span>
+                              <span className="font-medium">
+                                {event.invoicesData[0].status}
+                              </span>
+                            </div>
+                          )}
+                          {event.invoicesData?.[0]?.amount && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Total</span>
+                              <span className="font-medium">
+                                ${event.invoicesData[0].amount}
+                              </span>
+                            </div>
+                          )}
+                          {event.invoicesData?.[0]?.due_amount && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">Due</span>
+                              <span className="font-medium text-destructive">
+                                ${event.invoicesData[0].due_amount}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             </ScrollArea>
-
-            <Separator />
-
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="space-y-1">
-                <p className="font-medium text-start">Status Breakdown</p>
-                {Object.entries(
-                  event.formattedCases.reduce(
-                    (acc: Record<string, number>, event: any) => {
-                      acc[event.status] = (acc[event.status] || 0) + 1;
-                      return acc;
-                    },
-                    {}
-                  )
-                ).map(([status, count]) => (
-                  <div
-                    key={status}
-                    className="flex justify-between text-muted-foreground"
-                  >
-                    <span className="capitalize">
-                      {status.replace("_", " ")}
-                    </span>
-                    <span>{count}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-1 px-4">
-                <p className="font-medium text-start">Product Types</p>
-                {Object.entries(
-                  event.formattedCases.reduce(
-                    (acc: Record<string, number>, currentCase: any) => {
-                      currentCase.case_products?.forEach((cp: any) => {
-                        const productTypeName = cp.product_type?.name;
-                        if (productTypeName) {
-                          acc[productTypeName] =
-                            (acc[productTypeName] || 0) + 1;
-                        }
-                      });
-                      return acc;
-                    },
-                    {}
-                  )
-                ).map(([type, count]) => (
-                  <div
-                    key={type}
-                    className="flex justify-between text-muted-foreground"
-                  >
-                    <span>{type}</span>
-                    <span>{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </HoverCardContent>
       </HoverCard>
@@ -505,13 +487,15 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   };
 
   const handleEventClick = (event: any) => {
-    const date = event.start.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+    // Convert to ISO string and extract only the date part (YYYY-MM-DD)
+    const date = new Date(event).toISOString().split("T")[0];
+
+    // Pass the formatted date to the URL
     navigate(`/cases?dueDate=${date}&status=in_progress%2Cin_queue`);
   };
 
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
-    console.log(event, "event");
   };
 
   return (
@@ -524,13 +508,13 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
         >
           <Calendar
             localizer={localizer}
-            events={filteredEvents}
+            events={events}
             startAccessor="start"
             endAccessor="end"
             style={{ height }}
-            views={["month"]}
+            views={["month"]} // Make sure to include the right views
             components={components}
-            onNavigate={calendarNavigate}
+            // onNavigate={calendarNavigate}
             date={currentDate}
             toolbar={true}
             defaultDate={new Date()}

@@ -31,6 +31,8 @@ import ClientAdjustments from "./pages/billing/ClientAdjustments";
 import ClientStatements from "./pages/billing/ClientStatements";
 import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
+import { UserManagement } from "./pages/settings/UserManagement";
+import Home1 from "./pages/Home1";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -41,6 +43,7 @@ const App: React.FC = () => {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route path="/home1" element={<Home1 />} />
           <Route path="/login" element={<Login />} />
           <Route
             path="/dashboard"
@@ -126,6 +129,7 @@ const App: React.FC = () => {
                     path="products-services"
                     element={<ProductsServices />}
                   />
+                  <Route path="user-management" element={<UserManagement />} />
                   <Route path="*" element={<Settings />} />
                 </Routes>
               </ProtectedRoute>
@@ -240,8 +244,8 @@ const App: React.FC = () => {
                   {/* <ClientProfile /> */}
                   <ClientProfile
                     client={null} // Pass null or the required client data
-                    onEdit={() => { }}
-                    onDelete={() => { }}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
                     loading={false}
                     error={null}
                   />

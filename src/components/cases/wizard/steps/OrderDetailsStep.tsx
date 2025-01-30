@@ -7,7 +7,6 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { DELIVERY_METHODS } from "../../../../data/mockCasesData";
-import { Client } from "../../../../services/clientsService";
 import { createLogger } from "../../../../utils/logger";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,7 +70,14 @@ const colors = [
   "#00BCD4", // Cerulean Blue
   "#FFEB3B", // Lemon Yellow
 ];
-
+interface Client {
+  id: string;
+  client_name: string;
+  doctors: {
+    id: string;
+    name: string;
+  }[];
+}
 interface OrderDetailsStepProps {
   formData: CaseFormData;
   onChange: (
@@ -396,7 +402,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         {clients && clients.length > 0 ? (
                           clients.map((client) => (
                             <SelectItem key={client.id} value={client.id}>
-                              {client.clientName || "Unnamed Client"}
+                              {client.client_name || "Unnamed Client"}
                             </SelectItem>
                           ))
                         ) : (
@@ -577,40 +583,62 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               )}
             </div>
 
-            <div className="space-y-0">
-              <Label htmlFor="appointmentDate" className="text-xs">
-                Appointment Date & Time
-              </Label>
-              <div className="w-full">
-                <DateTimePicker
-                  date={
-                    formData.appointmentDate
-                      ? new Date(formData.appointmentDate)
-                      : undefined
-                  }
-                  onSelect={(date) =>
-                    onChange("appointmentDate", date?.toISOString())
-                  }
-                  className={cn(errors.appointmentDate ? "border-red-500" : "")}
-                  minDate={
-                    formData.orderDate
-                      ? new Date(formData.orderDate)
-                      : undefined
-                  }
-                  dateFormat="MM/dd/yyyy h:mm aa"
-                  placeholder="Select appointment date & time"
-                  updatedDate={
-                    formData.appointmentDate
-                      ? new Date(formData.appointmentDate)
-                      : undefined
-                  }
-                />
-                {errors.appointmentDate && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.appointmentDate}
-                  </p>
-                )}
+            <div className="space-y-0 ">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="appointmentDate" className="text-xs">
+                  Appointment Date & Time
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="is_appointment_TBD" className="text-xs">
+                    TBD
+                  </Label>
+                  <Checkbox
+                    id="is_appointment_TBD"
+                    name="is_appointment_TBD"
+                    checked={formData.is_appointment_TBD}
+                    onCheckedChange={(checked) => {
+                      onChange("is_appointment_TBD", checked);
+                      if (checked) {
+                        onChange("dueDate", undefined);
+                      }
+                    }}
+                  />
+                </div>
               </div>
+              {!formData.is_appointment_TBD && (
+                <div className="w-full">
+                  <DateTimePicker
+                    date={
+                      formData.appointmentDate
+                        ? new Date(formData.appointmentDate)
+                        : undefined
+                    }
+                    onSelect={(date) =>
+                      onChange("appointmentDate", date?.toISOString())
+                    }
+                    className={cn(
+                      errors.appointmentDate ? "border-red-500" : ""
+                    )}
+                    minDate={
+                      formData.orderDate
+                        ? new Date(formData.orderDate)
+                        : undefined
+                    }
+                    dateFormat="MM/dd/yyyy h:mm aa"
+                    placeholder="Select appointment date & time"
+                    updatedDate={
+                      formData.appointmentDate
+                        ? new Date(formData.appointmentDate)
+                        : undefined
+                    }
+                  />
+                  {errors.appointmentDate && (
+                    <p className="mt-1 text-sm text-red-600">
+                      {errors.appointmentDate}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -759,6 +787,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       name="text"
                       placeholder="Enter the Pan"
                       value={formData.workingPanName}
+                      maxLength={4}
                       onChange={(e) =>
                         onChange(
                           "workingPanName",

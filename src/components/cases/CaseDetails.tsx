@@ -22,7 +22,6 @@ import {
   WorkstationForm,
   labDetail,
 } from "@/types/supabase";
-
 import CaseProgress, { CaseStep } from "./CaseProgress";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +83,7 @@ import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { LoadingState } from "@/pages/cases/NewCase";
 import OnCancelModal from "./wizard/modals/onCancelModal";
 import FilePreview from "./wizard/modals/FilePreview";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 interface CaseFile {
   id: string;
@@ -165,7 +165,7 @@ export interface ExtendedCase {
       phone: string;
     };
   };
-  case_products: CaseProduct[];
+  case_products?: CaseProduct[];
   product_ids: {
     id: string;
     products_id: string[];
@@ -247,27 +247,27 @@ const TYPE_COLORS = {
   Onlay: "rgb(234 179 8)", // yellow-500
 };
 
-const formatTeethRange = (teeth: number[]): string => {
-  if (!teeth || teeth.length === 0) return "";
+// const formatTeethRange = (teeth: number[]): string => {
+//   if (!teeth || teeth.length === 0) return "";
 
-  const ranges: string[] = [];
-  let start = teeth[0];
-  let end = teeth[0];
+//   const ranges: string[] = [];
+//   let start = teeth[0];
+//   let end = teeth[0];
 
-  for (let i = 1; i <= teeth.length; i++) {
-    if (i < teeth.length && teeth[i] === end + 1) {
-      end = teeth[i];
-    } else {
-      ranges.push(start === end ? start.toString() : `${start}-${end}`);
-      if (i < teeth.length) {
-        start = teeth[i];
-        end = teeth[i];
-      }
-    }
-  }
+//   for (let i = 1; i <= teeth.length; i++) {
+//     if (i < teeth.length && teeth[i] === end + 1) {
+//       end = teeth[i];
+//     } else {
+//       ranges.push(start === end ? start.toString() : `${start}-${end}`);
+//       if (i < teeth.length) {
+//         start = teeth[i];
+//         end = teeth[i];
+//       }
+//     }
+//   }
 
-  return ranges.join(", ");
-};
+//   return ranges.join(", ");
+// };
 
 const CaseDetails: React.FC<CaseDetailsProps> = ({
   drawerMode,
@@ -287,8 +287,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }
   };
 
-  const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [caseDetail1, setCaseDetail] = useState<ExtendedCase | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
   const [editingInvoice, setEditingInvoice] = useState<ExtendedCase | null>(
@@ -340,7 +340,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.error("Lab ID not found.");
         return;
       }
-
+      setLab(lab);
       const { data: workStationData, error: workStationError } = await supabase
         .from("workstation_log")
         .select(
@@ -455,6 +455,228 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     } finally {
     }
   };
+  const { data: caseDataa, error: caseError } = useQuery(
+    activeCaseId
+      ? supabase
+          .from("cases")
+          .select(
+            `
+        id,
+        created_at,
+        received_date,
+        ship_date,
+        status,
+        patient_name,
+        due_date,
+        attachements,
+        case_number,
+        invoice:invoices!case_id (
+          id,
+          case_id,
+          amount,
+          status,
+          due_amount,
+          due_date
+        ),
+        client:clients!client_id (
+          id,
+          client_name,
+          phone,
+          street,
+          city,
+          state,
+          zip_code
+        ),
+        doctor:doctors!doctor_id (
+          id,
+          name,
+          client:clients!client_id (
+            id,
+            client_name,
+            phone
+          )
+        ),
+        tag:working_tags!working_tag_id (
+          name,
+          color
+        ),
+        working_pan_name,
+        working_pan_color,
+        rx_number,
+        received_date,
+        invoice_notes,
+        isDueDateTBD,
+        appointment_date,
+        instruction_notes,
+        otherItems,
+        occlusal_type,
+        contact_type,
+        pontic_type,
+        qr_code,
+        custom_contact_details,
+        custom_occulusal_details,
+        custom_pontic_details,
+        enclosed_items:enclosed_case!enclosed_case_id (
+          impression,
+          biteRegistration,
+          photos,
+          jig,
+          opposingModel,
+          articulator,
+          returnArticulator,
+          cadcamFiles,
+          consultRequested,
+          user_id
+        ),
+        created_by:users!created_by (
+          name,
+          id
+        ),
+        product_ids:case_products!id (
+          products_id,
+          id
+        ),
+         margin_design_type,
+        occlusion_design_type,
+        alloy_type,
+        custom_margin_design_type,
+        custom_occlusion_design_type,
+        custon_alloy_type,
+      discounted_price:discounted_price!id (
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity,
+                total
+          ),
+        teethProduct: case_product_teeth!id (
+          id,
+          is_range,
+
+          tooth_number,
+          product_id,
+          occlusal_shade:shade_options!occlusal_shade_id (
+          name,
+          category,
+          is_active
+          ),
+           body_shade:shade_options!body_shade_id (
+           name,
+           category,
+            is_active
+            ),
+            gingival_shade:shade_options!gingival_shade_id (
+            name,
+            category,
+             is_active
+             ),
+             stump_shade:shade_options!stump_shade_id (
+               name,
+              category,
+              is_active
+                    ),
+                  pontic_teeth,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
+                  type,
+          product:products!product_id (
+                    id,
+                    name,
+                    price,
+                    lead_time,
+                    is_client_visible,
+                    is_taxable,
+                    created_at,
+                    updated_at,
+                    requires_shade,
+                    material:materials!material_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    product_type:product_types!product_type_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    billing_type:billing_types!billing_type_id (
+                      name,
+                      label,
+                      description,
+                      is_active
+                    )
+          )
+          )
+      `
+          )
+          .eq("id", activeCaseId)
+          .single()
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  // Error handling
+  if (caseError) {
+    return <div>Error fetching case data: {caseError.message}</div>;
+  }
+  let caseItem: any = caseDataa;
+  const caseDetail: ExtendedCase | null = caseItem
+    ? {
+        ...caseItem,
+        labDetail: lab,
+        custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        products: caseItem?.teethProduct.map((tp: any) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          billing_type: tp.product.billing_type,
+          discounted_price: caseItem?.discounted_price.filter(
+            (item: any) => item.product_id === tp.product.id
+          )?.[0],
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            product_id: tp.product_id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+          },
+        })),
+      }
+    : null;
 
   const fetchCaseData = async (refetch?: boolean) => {
     try {
@@ -628,7 +850,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 discount,
                 final_price,
                 price,
-                quantity
+                quantity,
+                total
               `
               )
               .in("product_id", productsIdArray)
@@ -747,19 +970,18 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
   useEffect(() => {
     if (!activeCaseId) {
+      if (caseDataa) {
+        setCaseDetail(caseDetail);
+      }
       setError("No case ID provided");
       setLoading(false);
       return;
     }
 
     if (activeCaseId) {
-      fetchCaseData();
+      getWorkStationDetails(caseDataa?.created_at);
     }
-    return () => {
-      document.body.style.pointerEvents = "auto";
-    };
-  }, [activeCaseId]);
-
+  }, []);
   const handleCompleteStage = async (stageName: string) => {
     console.log(`Completing stage: ${stageName}`);
   };
@@ -786,7 +1008,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         due_date: caseDetail.due_date,
         tag: caseDetail.tag,
       },
-      caseDetails: [caseDetail],
+      caseDetails: [{ ...caseDetail, lab }],
     };
 
     const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
@@ -1092,7 +1314,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       setEditingInvoice(null);
     }, 0);
   };
-
+console.log(caseDetail,"case deatail")
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
@@ -1114,7 +1336,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         try {
           // Calculate the final price based on the quantity, unit price, and discount
           const finalPrice =
-            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+            item.quantity *
+            Number(item.unitPrice) *
+            (1 - (item.discount || 0) / 100);
 
           if (item.discountId && item.caseProductTeethId) {
             // Update the discounted_price table
@@ -1248,6 +1472,57 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
 
   console.log(caseDetail, "CaseDetails");
+
+  const formatTeethRange = (teeth: number[]): string => {
+    if (!teeth.length) return "";
+
+    // Define the sequence for upper and lower teeth based on the provided data
+    const teethArray = [
+      // Upper right to upper left
+      18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+      // Lower left to lower right
+      38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+    ];
+
+    // Function to group consecutive teeth based on the sequence
+    const getConsecutiveGroups = (teeth: number[]): string[] => {
+      if (teeth.length === 0) return [];
+
+      // Sort the teeth based on the order in teethArray
+      const sortedTeeth = [...teeth].sort(
+        (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+      );
+
+      let groups: string[] = [];
+      let groupStart = sortedTeeth[0];
+      let prev = sortedTeeth[0];
+
+      for (let i = 1; i <= sortedTeeth.length; i++) {
+        const current = sortedTeeth[i];
+
+        // Check if the current tooth is consecutive to the previous one in the sequence
+        if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+          // End of a group
+          if (groupStart === prev) {
+            groups.push(groupStart.toString());
+          } else {
+            groups.push(`${groupStart}-${prev}`);
+          }
+          groupStart = current; // Start a new group
+        }
+        prev = current;
+      }
+
+      return groups;
+    };
+
+    // Get consecutive groups of teeth
+    const groupedTeeth = getConsecutiveGroups(teeth);
+
+    // If there's only one group, return it
+    return groupedTeeth.join(", ");
+  };
+  console.log(lab, "lab");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1431,9 +1706,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-xs font-medium">
-                    {caseDetail?.received_date
-                      ? formatDate(caseDetail?.received_date)
-                      : "TBD"}
+                    {formatDate(
+                      caseDetail?.received_date || caseDetail?.created_at
+                    )}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -1601,11 +1876,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-1">
                               {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade || product?.teethProduct?.manual_occlusal_shade ? (
+                              product?.teethProduct?.custom_occlusal_shade ||
+                              product?.teethProduct?.manual_occlusal_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
-                                      Occlusal:
+                                      Incisal:
                                     </span>
                                     <div className="flex gap-2">
                                       <p>
@@ -1944,7 +2220,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     {product?.discounted_price?.discount}%
                                   </span>
                                 ) : (
-                                  <span className="text-gray-400">-</span>
+                                  <span className="text-gray-400">0%</span>
                                 )}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
@@ -1954,7 +2230,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                ${product?.discounted_price?.final_price}
+                                $
+                                {product?.discounted_price?.final_price.toLocaleString()}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -1963,7 +2240,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                ${subtotal.toFixed(2)}
+                                $
+                                {product?.discounted_price?.total.toLocaleString()}
                               </TableCell>
                             </TableRow>
                           );
@@ -1983,7 +2261,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         </TableCell>
 
                         <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
-                          Total: ${caseDetail.invoice[0].amount}
+                          Total: $
+                          {caseDetail.invoice[0].amount.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     </TableBody>
@@ -2002,7 +2281,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {caseDetail?.custom_occlusal_details ? (
                     <div>
-                      <p className="text-gray-600">Occlusal Details</p>
+                      <p className="text-gray-600">Incisal Details</p>
                       <p className="font-medium">
                         {caseDetail.custom_occlusal_details}
                       </p>
@@ -2087,7 +2366,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-gray-600 capitalize">
-                                  Occlusal Shade:
+                                  Incisal Shade:
                                 </span>
                                 <span>
                                   {product.occlusal_shade?.name || "N/A"}
@@ -2172,7 +2451,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         <div className="space-y-4">
                           <div>
                             <p className="text-sm text-gray-500">
-                              Occlusal Type
+                              Incisal Type
                             </p>
                             <p className="font-medium">
                               {caseDetail?.occlusal_type
@@ -2216,7 +2495,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           </div>
                           <div>
                             <p className="text-sm text-gray-500">
-                              Occlusal Design
+                              Incisal Design
                             </p>
                             <p className="font-medium">
                               {caseDetail?.occlusion_design_type
@@ -2258,10 +2537,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <p className="text-sm text-gray-500">
                             Instruction Notes
                           </p>
-                          <p className="font-medium">
-                            {caseDetail.instruction_notes ||
-                              "No Instruction notes"}
-                          </p>
+                          <div className="text-sm whitespace-pre-wrap break-words overflow-hidden border rounded p-3 bg-gray-50">
+                            {caseDetail.instruction_notes}
+                          </div>
                         </div>
                         <div>
                           <p className="text-sm text-gray-500">
@@ -2373,59 +2651,63 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       <p className="text-sm text-gray-500">Files and photos</p>
 
                       <div className="flex flex-col gap-2">
-                        {caseDetail?.attachements?.map((file, index) => {
-                          const fileName = decodeURIComponent(
-                            file.split("/").pop()?.split("?")[0] || ""
-                          );
-                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
-                            fileName
-                          );
+                        {caseDetail?.attachements
+                          ?.filter((file) => file)
+                          ?.map((file, index) => {
+                            const fileName = file
+                              ? decodeURIComponent(
+                                  file.split("/").pop()?.split("?")[0] || ""
+                                )
+                              : "";
+                            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              fileName
+                            );
 
-                          return (
-                            <div
-                              key={index}
-                              className="border rounded-lg p-4 space-y-2"
-                            >
-                              {isImage ? (
-                                <div
-                                  className="relative aspect-video w-full overflow-hidden rounded-md"
-                                  onClick={() => {
-                                    setIsFilePreview(true);
-                                    setFiles((files) => {
-                                      const filteredFiles = files.filter(
-                                        (f) => f !== file
-                                      );
+                            return (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-4 space-y-2"
+                              >
+                                {isImage ? (
+                                  <div
+                                    className="relative aspect-video w-full overflow-hidden rounded-md"
+                                    onClick={() => {
+                                      setIsFilePreview(true);
+                                      setFiles((files) => {
+                                        const filteredFiles = files.filter(
+                                          (f) => f !== file
+                                        );
 
-                                      return [file, ...filteredFiles];
-                                    });
-                                  }}
-                                >
-                                  <img
-                                    src={file}
-                                    alt={fileName}
-                                    className="object-contain w-full h-full"
-                                  />
+                                        return [file, ...filteredFiles];
+                                      });
+                                    }}
+                                  >
+                                    <img
+                                      src={file}
+                                      alt={fileName}
+                                      className="object-contain w-full h-full"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-gray-500">
+                                    <FileText className="h-8 w-8" />
+                                    <span className="text-sm">{fileName}</span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownloadFile(file)}
+                                    className="gap-2"
+                                  >
+                                    Download
+                                  </Button>
                                 </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-gray-500">
-                                  <FileText className="h-8 w-8" />
-                                  <span className="text-sm">{fileName}</span>
-                                </div>
-                              )}
-
-                              <div className="flex justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDownloadFile(file)}
-                                  className="gap-2"
-                                >
-                                  Download
-                                </Button>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                         {(!caseDetail?.attachements ||
                           caseDetail.attachements.length === 0) && (
                           <p className="text-sm text-gray-500">
@@ -2458,7 +2740,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             tax: caseDetail.invoice?.[0]?.tax || 0,
             notes: caseDetail.invoice?.[0]?.notes || "",
           }}
-          caseDetails={[caseDetail]}
+          caseDetails={[{ ...caseDetail, labDetail: lab as labDetail }]}
         />
       )}
       {activePrintType && caseDetail && (

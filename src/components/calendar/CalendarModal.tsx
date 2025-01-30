@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
-import DueDatesCalendar from './DueDatesCalendar';
-import { Case } from '../../data/mockCasesData';
-import { CalendarEvents } from '@/pages/Home';
+import React, { useEffect } from "react";
+import { X } from "lucide-react";
+import DueDatesCalendar from "./DueDatesCalendar";
+import { Case } from "../../data/mockCasesData";
+import { CalendarEvents } from "@/pages/Home";
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -10,11 +10,15 @@ interface CalendarModalProps {
   events: CalendarEvents[];
 }
 
-const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, events }) => {
+const CalendarModal: React.FC<CalendarModalProps> = ({
+  isOpen,
+  onClose,
+  events,
+}) => {
   useEffect(() => {
-    console.log('CalendarModal mounted, isOpen:', isOpen);
+    console.log("CalendarModal mounted, isOpen:", isOpen);
     return () => {
-      console.log('CalendarModal unmounted');
+      console.log("CalendarModal unmounted");
     };
   }, [isOpen]);
 
@@ -23,7 +27,10 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, events }
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+          onClick={onClose}
+        ></div>
 
         <div className="relative inline-block w-full max-w-6xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           <div className="absolute top-0 right-0 pt-4 pr-4">
@@ -37,9 +44,20 @@ const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose, events }
           </div>
 
           <div className="mt-2">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">Due Dates Calendar</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              Due Dates Calendar
+            </h2>
             <div className="h-[800px]">
-              <DueDatesCalendar events={events} height={800} />
+              <DueDatesCalendar
+                events={events}
+                height={800}
+                filterType={""}
+                setFilterType={function (
+                  value: React.SetStateAction<string>
+                ): void {
+                  throw new Error("Function not implemented.");
+                }}
+              />
             </div>
           </div>
         </div>

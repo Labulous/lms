@@ -11,6 +11,8 @@ import { Database } from "../../types/supabase";
 import { toast } from "react-hot-toast";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageHeader } from "@/components/ui/page-header";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
@@ -29,12 +31,15 @@ const ProductsServices: React.FC = () => {
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
-  const [productToDelete, setProductToDelete] = useState<Product | undefined>();
+  const [productsToDelete, setProductsToDelete] = useState<Product[]>([]);
+  const [activeTab, setActiveTab] = useState("products");
 
   useEffect(() => {
     loadProductsAndTypes();
   }, []);
+
   const { user } = useAuth();
+
   const loadProductsAndTypes = async () => {
     try {
       setLoading(true);
@@ -87,23 +92,52 @@ const ProductsServices: React.FC = () => {
     setIsWizardOpen(true);
   };
 
-  const handleDeleteClick = (product: Product) => {
-    setProductToDelete(product);
+  const handleDeleteClick = async (product: Product) => {
+    try {
+      // Check if we're trying to delete a service (services have no material_id)
+      if (!product.material_id && activeTab === "services") {
+        setServices(prev => prev.filter(service => service.id !== product.id));
+        toast.success("Service deleted successfully");
+        return;
+      }
+      
+      // For products, show confirmation dialog
+      setProductsToDelete([product]);
+      setIsDeleteModalOpen(true);
+    } catch (error) {
+      console.error("Error in handleDeleteClick:", error);
+      toast.error("An error occurred while processing your request");
+    }
+  };
+
+  const handleBatchDeleteClick = async (products: Product[]) => {
+    // Show confirmation dialog for batch delete
+    setProductsToDelete(products);
     setIsDeleteModalOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!productToDelete) return;
+    if (productsToDelete.length === 0) return;
 
     try {
-      await productsService.deleteProduct(productToDelete.id);
-      await loadProductsAndTypes();
-      setIsDeleteModalOpen(false);
-      setProductToDelete(undefined);
-      toast.success("Product deleted successfully");
-    } catch (error) {
+      // Delete all products in the array
+      for (const product of productsToDelete) {
+        await productsService.deleteProduct(product.id);
+      }
+      
+      // Update local state immediately
+      setProducts(prev => prev.filter(p => !productsToDelete.map(d => d.id).includes(p.id)));
+      
+      const message = productsToDelete.length === 1 
+        ? "Product deleted successfully" 
+        : `${productsToDelete.length} products deleted successfully`;
+      toast.success(message);
+    } catch (error: any) {
       console.error("Error deleting product:", error);
-      toast.error("Failed to delete product. Please try again.");
+      toast.error(error.message || "Failed to delete product. Please try again.");
+    } finally {
+      setIsDeleteModalOpen(false);
+      setProductsToDelete([]);
     }
   };
 
@@ -116,6 +150,7 @@ const ProductsServices: React.FC = () => {
     try {
       // Create products one by one to ensure proper error handling
       for (const product of products) {
+        console.log('Adding product:', product); // Debug log
         await productsService.addProduct(product);
       }
 
@@ -138,46 +173,29 @@ const ProductsServices: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-semibold text-gray-800">
-          Products & Services
-        </h1>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setIsServiceModalOpen(true)}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
-          >
-            <Plus className="mr-2" size={20} />
-            Add Service
-          </button>
-          <button
-            onClick={() => {
-              setSelectedProduct(undefined);
-              setIsWizardOpen(true);
-            }}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-flex items-center"
-          >
-            <Plus className="mr-2" size={20} />
-            Add Product
-          </button>
-        </div>
-      </div>
+    <div className="container mx-auto px-4 py-4">
+      <PageHeader
+        heading="Products & Services"
+        description="Manage your product catalog and service offerings."
+      />
 
-      <div className="space-y-8">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Products</h2>
+      <Tabs defaultValue="products" className="space-y-4 mt-6" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="services">Services</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="products" className="space-y-4">
           <ProductList
             products={products}
-            productTypes={productTypes}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
+            onBatchDelete={handleBatchDeleteClick}
             onBatchAdd={handleBatchAdd}
           />
-        </div>
+        </TabsContent>
 
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Services</h2>
+        <TabsContent value="services" className="space-y-4">
           <ProductList
             products={services.map((service) => ({
               id: service.id,
@@ -199,42 +217,43 @@ const ProductsServices: React.FC = () => {
               updated_at: new Date().toISOString(),
               discount: service.discount as number,
             }))}
-            productTypes={productTypes}
-            onEdit={() => {}}
-            onDelete={() => {}}
+            onEdit={handleEditProduct}
+            onDelete={handleDeleteClick}
+            onBatchDelete={handleBatchDeleteClick}
+            onBatchAdd={handleBatchAdd}
           />
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
 
-      {isWizardOpen && (
-        <ProductWizard
-          isOpen={isWizardOpen}
-          onClose={() => {
-            setIsWizardOpen(false);
-            setSelectedProduct(undefined);
-          }}
-          onSave={() => handleSaveProduct()}
-          product={selectedProduct}
-        />
-      )}
+      <ProductWizard
+        isOpen={isWizardOpen}
+        onClose={() => {
+          setIsWizardOpen(false);
+          setSelectedProduct(undefined);
+        }}
+        onSave={handleSaveProduct}
+        product={selectedProduct}
+      />
 
-      {isServiceModalOpen && (
-        <ServiceModal
-          isOpen={isServiceModalOpen}
-          onClose={() => setIsServiceModalOpen(false)}
-          onSave={handleAddService}
-        />
-      )}
+      <ServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        onSave={handleAddService}
+      />
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
-          setProductToDelete(undefined);
+          setProductsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title="Delete Product"
-        message={`Are you sure you want to delete "${productToDelete?.name}"? This action cannot be undone.`}
+        title={productsToDelete.length === 1 ? "Delete Product" : "Delete Products"}
+        message={
+          productsToDelete.length === 1
+            ? "Are you sure you want to delete this product? This action cannot be undone."
+            : `Are you sure you want to delete ${productsToDelete.length} products? This action cannot be undone.`
+        }
       />
     </div>
   );

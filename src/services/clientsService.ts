@@ -128,7 +128,7 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
       account_number: client.accountNumber, // Keep the account number when updating
-      lab_id: client.lab_id
+      lab_id: client.lab_id,
     };
   }
 
@@ -182,13 +182,17 @@ class ClientsService {
 
       const userRole: any = userRoleData;
 
-      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
+      if (
+        !["admin", "technician", "super_admin", "client"].includes(
+          userRole.role
+        )
+      ) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
         throw new Error("Insufficient permissions to view clients");
       }
-      
+
       logger.debug("Fetching all clients...");
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
@@ -205,7 +209,7 @@ class ClientsService {
         });
         throw new Error(`Failed to fetch clients: ${clientsError.message}`);
       }
-      
+
       if (!clients) {
         logger.warn("No clients found in database");
         return [];
@@ -216,7 +220,7 @@ class ClientsService {
         clients,
         clientsError,
       });
-      
+
       const clientsWithDoctors = await Promise.all(
         clients.map(async (client: any) => {
           try {
@@ -270,7 +274,7 @@ class ClientsService {
         .select("*")
         .eq("id", id)
         .single();
-      
+
       if (error) {
         logger.error("Error fetching client from database", { id, error });
         throw new Error(`Error fetching client: ${error.message}`);
@@ -340,10 +344,10 @@ class ClientsService {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
             (doctor) =>
-            ({
-              ...this.transformDoctorToDB(doctor),
-              client_id: clients.id,
-            } as any)
+              ({
+                ...this.transformDoctorToDB(doctor),
+                client_id: clients.id,
+              } as any)
           )
         );
 
@@ -382,16 +386,21 @@ class ClientsService {
 
         // Compare current doctors with new doctors to see if we need to update
         const currentDoctorsSet = new Set(
-          currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+          currentDoctors.map(
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+          )
         );
         const newDoctorsSet = new Set(
-          clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+          clientData.doctors.map(
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+          )
         );
 
         // Only update if there are actual changes
-        if (currentDoctors.length !== clientData.doctors.length ||
-          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
-
+        if (
+          currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every((d) => newDoctorsSet.has(d))
+        ) {
           // First try to update existing doctors instead of deleting
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
@@ -429,12 +438,15 @@ class ClientsService {
 
           // Remove any excess doctors
           if (currentDoctors.length > clientData.doctors.length) {
-            const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
+            const doctorsToKeep = currentDoctors.slice(
+              0,
+              clientData.doctors.length
+            );
             const { error: deleteError } = await supabase
               .from("doctors")
               .delete()
               .eq("client_id", id)
-              .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
+              .not("id", "in", `(${doctorsToKeep.map((d) => d.id).join(",")})`);
 
             if (deleteError) {
               logger.error("Error removing excess doctors", { deleteError });
@@ -504,7 +516,11 @@ class ClientsService {
 
       const userRole: any = userRoleData;
 
-      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
+      if (
+        !["admin", "technician", "super_admin", "client"].includes(
+          userRole.role
+        )
+      ) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
@@ -514,7 +530,7 @@ class ClientsService {
       logger.debug("Fetching client...");
       const { data: client, error: clientError } = await supabase
         .from("clients")
-        .select("id")  // Only select `id`
+        .select("id") // Only select `id`
         .eq("email", email)
         .single();
 
@@ -535,7 +551,7 @@ class ClientsService {
 
       logger.debug("Client found", { clientId: client.id });
 
-      return client.id;  // Return only the client `id`
+      return client.id; // Return only the client `id`
     } catch (error) {
       logger.error("Unexpected error in getClient", {
         error:
@@ -588,7 +604,11 @@ class ClientsService {
 
       const userRole: any = userRoleData;
 
-      if (!["admin", "technician", "super_admin", "client"].includes(userRole.role)) {
+      if (
+        !["admin", "technician", "super_admin", "client"].includes(
+          userRole.role
+        )
+      ) {
         logger.error("User does not have required role", {
           role: userRole.role,
         });
@@ -631,7 +651,9 @@ class ClientsService {
         return this.transformClientFromDB(client, []);
       }
 
-      logger.info("Successfully fetched client and doctors", { clientId: client.id });
+      logger.info("Successfully fetched client and doctors", {
+        clientId: client.id,
+      });
 
       return this.transformClientFromDB(client, doctors || []);
     } catch (error) {
@@ -644,7 +666,6 @@ class ClientsService {
       throw error;
     }
   }
-
 }
 
 export const clientsService = new ClientsService();

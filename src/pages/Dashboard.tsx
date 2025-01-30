@@ -18,6 +18,8 @@ import DueDatesCalendar from "@/components/calendar/DueDatesCalendar";
 import SalesDashboard from "@/components/dashboard/SalesDashboard";
 import DailyCountsCard from "../components/operations/DailyCountsCard";
 import PerformanceMetricsCard from "../components/operations/PerformanceMetricsCard";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import CaseList from "@/components/cases/CaseList";
 
 interface WorkstationIssue {
   id: string;
@@ -35,11 +37,15 @@ export interface CalendarEvents {
   start: Date;
   end: Date;
   onHold?: boolean;
+  isAllOnHold?: boolean;
+  isPastDue?: boolean;
+  isActive?: boolean;
   resource: any;
   formattedCases: {
     case_id: string;
     client_name: string;
     doctor: { name: string };
+    due_date?: string;
     case_products: { name: string; product_type: { name: string } }[];
     invoicesData:
       | {
@@ -80,6 +86,7 @@ const Dashboard: React.FC = () => {
     WorkstationIssue[]
   >([]);
   const [casesList, setCasesList] = useState<CasesDues[]>([]);
+  const [filterType, setFilterType] = useState("due_date");
 
   const [totalWorkstations, setTotalWorkstations] = useState(0);
   const [metrics, setMetrics] = useState({
@@ -90,20 +97,28 @@ const Dashboard: React.FC = () => {
   });
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvents[]>([]);
 
-  useEffect(() => {
-    const getCompletedInvoices = async () => {
-      try {
-        const lab = await getLabIdByUserId(user?.id as string);
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
 
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
+  if (labError) {
+    return <div>Loading!!!</div>;
+  }
 
-        const { data: casesData, error: casesError } = await supabase
+  const { data: query, error: caseError } = useQuery(
+    labIdData?.lab_id
+      ? supabase
           .from("cases")
           .select(
-            `   
+            `
                   case_number,
                   id,
                   status,
@@ -123,62 +138,132 @@ const Dashboard: React.FC = () => {
                     status,
                     due_amount,
                     created_at
-                  )
-                `
-          )
-          .eq("lab_id", lab.labId)
-          .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
-          .order("created_at", { ascending: true });
-
-        if (casesError) {
-          console.error("Error fetching completed invoices:", casesError);
-          return;
-        }
-
-        const enhancedCases = await Promise.all(
-          casesData.map(async (singleCase) => {
-            const productsIdArray =
-              singleCase.product_ids?.map((p) => p.products_id) || [];
-
-            if (productsIdArray.length === 0) {
-              return { ...singleCase, products: [] }; // No products for this case
-            }
-
-            // Fetch products for the current case
-            const { data: productData, error: productsError } = await supabase
-              .from("products")
-              .select(
-                `
-                      id,
+                  ),
+                   teethProduct: case_product_teeth!id (
+                  id,
+                  products:products!product_id (
+                    id,
                       name,
                       product_type:product_types!product_type_id (
                         name
-                      )
-                    `
-              )
-              .eq("lab_id", lab.labId)
-              .in("id", productsIdArray);
+                    )
+                    )
+                  )
+    `
+          )
+          .eq("lab_id", labIdData.lab_id)
+          .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
+          .order("created_at", { ascending: true })
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 5000,
+    }
+  );
+  if (caseError && labIdData?.lab_id) {
+    // toast.error("failed to fetech cases");
+  }
+  let casesListData: any = query;
+  const casesList1: CasesDues[] | [] =
+    casesListData?.map((item: any) => ({
+      ...item,
+      products: item.teethProduct.map((item: any) => item.products),
+    })) || [];
+  useEffect(() => {
+    if (casesList1) {
+      setCasesList(casesList1);
+    }
+  }, [casesList1.length]);
+  // useEffect(() => {
+  //   const getCompletedInvoices = async () => {
+  //     try {
+  //       const lab = await getLabIdByUserId(user?.id as string);
 
-            if (productsError) {
-              console.error(
-                `Error fetching products for case ${singleCase.id}:`,
-                productsError
-              );
-            }
+  //       if (!lab?.labId) {
+  //         console.error("Lab ID not found.");
+  //         return;
+  //       }
 
-            return { ...singleCase, products: productData || [] };
-          })
-        );
+  //       const { data: casesData, error: casesError } = await supabase
+  //         .from("cases")
+  //         .select(
+  //           `
+  //                 case_number,
+  //                 id,
+  //                 status,
+  //                 due_date,
+  //                 client_name:clients!client_id (
+  //                   client_name
+  //                 ),
+  //                 product_ids:case_products!id (
+  //                   products_id
+  //                 ),
+  //                 doctor:doctors!doctor_id (
+  //                   name
+  //                 ),
+  //                 invoicesData:invoices!case_id (
+  //                 id,
+  //                   amount,
+  //                   status,
+  //                   due_amount,
+  //                   created_at
+  //                 )
 
-        setCasesList(enhancedCases as any); // Set the enhanced cases list
-      } catch (error) {
-        console.error("Error fetching completed invoices:", error);
-      } finally {
-        // setLoading(false);
-      }
-    };
-    getCompletedInvoices();
-  }, [user]);
+  //               `
+  //         )
+  //         .eq("lab_id", lab.labId)
+  //         .in("status", ["in_queue", "in_progress", "on_hold"])
+  //         .order("created_at", { ascending: true });
+
+  //       if (casesError) {
+  //         console.error("Error fetching completed invoices:", casesError);
+  //         return;
+  //       }
+
+  //       const enhancedCases = await Promise.all(
+  //         casesData.map(async (singleCase) => {
+  //           const productsIdArray =
+  //             singleCase.product_ids?.map((p) => p.products_id) || [];
+
+  //           if (productsIdArray.length === 0) {
+  //             return { ...singleCase, products: [] };
+  //           }
+
+  //           const { data: productData, error: productsError } = await supabase
+  //             .from("products")
+  //             .select(
+  //               `
+  //                     id,
+  //                     name,
+  //                     product_type:product_types!product_type_id (
+  //                       name
+  //                     )
+  //                   `
+  //             )
+  //             .eq("lab_id", lab.labId)
+  //             .in("id", productsIdArray);
+
+  //           if (productsError) {
+  //             console.error(
+  //               `Error fetching products for case ${singleCase.id}:`,
+  //               productsError
+  //             );
+  //           }
+
+  //           return { ...singleCase, products: productData || [] };
+  //         })
+  //       );
+
+  //       setCasesList(enhancedCases as any);
+  //     } catch (error) {
+  //       console.error("Error fetching completed invoices:", error);
+  //     } finally {
+  //       // setLoading(false);
+  //     }
+  //   };
+  //   getCompletedInvoices();
+  // }, [user]);
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
@@ -188,14 +273,27 @@ const Dashboard: React.FC = () => {
         if (!labData?.labId) return;
 
         // Fetch case metrics and calendar events
-        const todayDate = new Date();
-        const today = new Date();
+        // Get today's date in UTC
+        const today = new Date(
+          Date.UTC(
+            new Date().getUTCFullYear(),
+            new Date().getUTCMonth(),
+            new Date().getUTCDate()
+          )
+        );
+
+        // Get tomorrow's date in UTC
         const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1); // Set tomorrow's date
+        tomorrow.setUTCDate(today.getUTCDate() + 1); // Set tomorrow's date in UTC
+        // Set tomorrow's date
 
         // Set the start and end of today to compare full date range
-        const startOfToday = new Date(today.setHours(0, 0, 0, 0)); // 12:00 AM today
-        const endOfToday = new Date(today.setHours(23, 59, 59, 999)); // 11:59 PM today
+        const startOfToday = new Date(today);
+        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+
+        // End of today in UTC (11:59:59.999 PM UTC)
+        const endOfToday = new Date(today);
+        endOfToday.setUTCHours(23, 59, 59, 999); //
 
         // Function to check if a date is due today
         const isDueToday = (dueDate: string) => {
@@ -230,7 +328,6 @@ const Dashboard: React.FC = () => {
         const onHold = casesList.filter(
           (caseItem) => caseItem.status === "on_hold"
         );
-        console.log(dueTomorrow, dueToday, onHold, "onHold");
         // Set the metriccos
         setMetrics({
           pastDue: pastDue || 0,
@@ -274,7 +371,6 @@ const Dashboard: React.FC = () => {
               const dueDate = new Date(caseItem.due_date)
                 .toISOString()
                 .split("T")[0];
-              console.log(dueDate, "dueDatedueDate");
               acc[dueDate] = acc[dueDate] || [];
               acc[dueDate].push(caseItem);
             }
@@ -289,7 +385,6 @@ const Dashboard: React.FC = () => {
             const year = eventDate.getFullYear(); // Local year
             const month = eventDate.getMonth(); // Local month (0-based)
             const day = eventDate.getDate(); // Local day of the month
-            console.log(new Date("2025-01-28 18:30:00").getDate(), "day");
             // Set the event start and end times in local time (12:00 AM to 11:59 PM)
             const start = new Date(year, month, day, 0, 0); // 12:00 AM Local Time
             const end = new Date(year, month, day, 23, 59, 59, 999); // 11:59 PM Local Time
@@ -337,6 +432,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -355,6 +451,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -373,6 +470,7 @@ const Dashboard: React.FC = () => {
                 client_name: caseItem.client_name.client_name,
                 doctor: caseItem.doctor,
                 status: caseItem.status,
+                due_date: caseItem.due_date,
                 case_products: caseItem.products.map((product) => ({
                   name: product.name,
                   product_type: product.product_type,
@@ -384,17 +482,12 @@ const Dashboard: React.FC = () => {
 
             // Create the event for active cases
             const activeEvent = {
-              title: `${
-                formattedActiveCases.filter(
-                  (caseItem) => caseItem.due_day === day
-                ).length
-              }`, // Example: "3 active cases"
+              title: `${formattedActiveCases.length}`, // Example: "3 active cases"
               start,
               end,
+              isActive: true,
               resource: { count: activeCases.length, isPastDue: isPastDue },
-              formattedCases: formattedActiveCases.filter(
-                (caseItem) => caseItem.due_day === day
-              ), // Filter cases to only show on the correct day
+              formattedCases: formattedActiveCases, // Filter cases to only show on the correct day
             };
 
             // Create the event for "on_hold" cases
@@ -415,40 +508,59 @@ const Dashboard: React.FC = () => {
               ), // Filter cases to only show on the correct day
             };
 
-            //  const pastDueEvent = {
-            //    title: `${
-            //      formattedOnHoldCases.length > 0
-            //        ? formattedActiveCases.filter(
-            //            (caseItem) => caseItem.due_day < day
-            //          ).length
-            //        : ""
-            //    }`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isPastDue: true,
-            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedActiveCases.filter(
-            //      (caseItem) => caseItem.due_day < day
-            //    ), // Filter cases to only show on the correct day
-            //  };
-            //  const tomorowEvent = {
-            //    title: `${formattedDueTommorwCases.length || ""}`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isTommorow: true,
-            //    resource: { count: onHoldCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedDueTommorwCases,
-            //  };
-            //  const onHoldAllEvent = {
-            //    title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
-            //    start: startOfToday,
-            //    end: endOfToday,
-            //    isAllOnHold: true,
-            //    resource: { count: activeCases.length, isPastDue: isPastDue },
-            //    formattedCases: formattedOnholdCases,
-            //  };
+            const pastDueEvent = {
+              title: `${
+                formattedOnHoldCases.length > 0
+                  ? formattedActiveCases.filter(
+                      (caseItem) => caseItem.due_day < day
+                    ).length
+                  : ""
+              }`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              isPastDue: true,
+              resource: { count: onHoldCases.length, isPastDue: isPastDue },
+              formattedCases: formattedActiveCases.filter(
+                (caseItem) => caseItem.due_day < day
+              ), // Filter cases to only show on the correct day
+            };
+            const tomorowEvent = {
+              title: `${formattedDueTommorwCases.length || ""}`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              isTommorow: true,
+              isAllOnHold: false,
+              id: 1,
+              resource: { count: 0, isPastDue: false },
+              formattedCases: formattedDueTommorwCases,
+            };
+            const onHoldAllEvent = {
+              title: `${formattedOnholdCases.length ?? ""}`, // Example: "2 on hold"
+              start: startOfToday,
+              end: endOfToday,
+              id: 2,
+              // isAllOnHold: true,
+              resource: { count: 0, isPastDue: false },
+              formattedCases: formattedOnholdCases,
+            };
             // Return both events (active and on hold)
-            return [activeEvent, onHoldEvent];
+            if (filterType === "on_hold") {
+              return [onHoldEvent];
+            } else if (filterType === "today_cell") {
+              // Assuming tomorowEvent and onHoldAllEvent are arrays or objects that contain events
+              const allEvents = [
+                ...tomorowEvent.formattedCases, // assuming formattedCases is an array in tomorowEvent
+                ...onHoldAllEvent.formattedCases, // assuming formattedCases is an array in onHoldAllEvent
+              ];
+              const tommorow = [tomorowEvent][0];
+              const onHOld = [onHoldAllEvent][0];
+
+              return [tommorow, onHOld];
+            } else {
+              return [activeEvent];
+            }
+
+            // return [activeEvent, onHoldEvent, tomorowEvent, onHoldAllEvent];
           })
           .flat(); // Flatten the array because we have two events per date (active and on hold)
 
@@ -493,7 +605,7 @@ const Dashboard: React.FC = () => {
       }
     };
     fetchDashboardData();
-  }, [user, casesList]);
+  }, [user, casesList, filterType]);
 
   const getTimeAgo = (dateString: string) => {
     const date = new Date(dateString);
@@ -624,7 +736,12 @@ const Dashboard: React.FC = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="px-0">
-                  <DueDatesCalendar events={calendarEvents} height={400} />
+                  <DueDatesCalendar
+                    events={calendarEvents}
+                    height={400}
+                    filterType={filterType}
+                    setFilterType={setFilterType}
+                  />
                 </CardContent>
               </Card>
             </div>
