@@ -57,6 +57,7 @@ const ClientNewCase: React.FC = () => {
     client_working_tag_id: "",
     client_working_pan_name: "",
     client_working_pan_color: "",
+    is_appointment_TBD: false,
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
