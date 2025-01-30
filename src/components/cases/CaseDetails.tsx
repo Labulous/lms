@@ -228,6 +228,20 @@ export interface ExtendedCase {
   }[];
   labDetail?: labDetail;
   isDueDateTBD?: boolean;
+  patient: {
+    id: string;
+    first_name: string;
+    phone: string;
+    email: string;
+    last_name: string;
+  };
+  client_working_pan_color?: string;
+  client_working_pan_name?: string;
+  client_working_tag: {
+    color: string;
+    name: string;
+    id: string;
+  };
 }
 
 interface CaseDetailsProps {
@@ -1314,7 +1328,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       setEditingInvoice(null);
     }, 0);
   };
-console.log(caseDetail,"case deatail")
+  console.log(caseDetail, "case deatail");
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");

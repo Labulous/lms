@@ -73,6 +73,9 @@ const ClientNewCase: React.FC = () => {
     action: null,
     isLoading: false,
   });
+
+  const rxFormRef = useRef<HTMLDivElement>(null);
+
   const mainDivRef = useRef<HTMLDivElement>(null);
   const handleSaveProduct = (product: SavedProduct) => {
     setSelectedProducts((prev) => [...prev, product]);
@@ -210,9 +213,11 @@ const ClientNewCase: React.FC = () => {
     if (!formData.orderDate)
       validationErrors.orderDate = "Order date is required";
     if (!formData.status) validationErrors.statusError = "Status is Required";
+
     if (
-      (selectedProducts.length === 1 && selectedProducts[0].id === "") ||
-      selectedProducts[0].type === ""
+      ((selectedProducts.length === 1 && selectedProducts[0].id === "") ||
+        selectedProducts[0].type === "") &&
+      !formData.notes.instructionNotes
     )
       validationErrors.itemsError = "Atleast One Item Required";
 
@@ -256,6 +261,7 @@ const ClientNewCase: React.FC = () => {
           ...formData,
           status: formData.status.toLowerCase() as CaseStatus | string,
         };
+
         const newCase: any = {
           overview: {
             client_id: transformedData.clientId,
@@ -274,7 +280,7 @@ const ClientNewCase: React.FC = () => {
             isDueDateTBD: transformedData.isDueDateTBD || false,
             appointment_date: transformedData.appointmentDate,
             otherItems: transformedData.otherItems || "",
-            instruction_notes: transformedData.instructionNotes,
+            instruction_notes: transformedData.notes?.instructionNotes,
             invoice_notes: transformedData.notes?.invoiceNotes,
             occlusal_type: transformedData.caseDetails?.occlusalType,
             contact_type: transformedData.caseDetails?.contactType,
@@ -286,9 +292,9 @@ const ClientNewCase: React.FC = () => {
             lab_id: lab?.labId,
             case_number: caseNumber,
             attachements: selectedFiles.map((item) => item.url),
-            working_pan_name: transformedData.workingPanName,
-            working_pan_color: transformedData.workingPanColor,
-            working_tag_id: transformedData.workingTagName,
+            working_pan_name: null,
+            working_pan_color: null,
+            working_tag_id: null,
             margin_design_type: transformedData.caseDetails?.marginDesign,
             occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
             alloy_type: transformedData.caseDetails?.alloyType,
@@ -299,6 +305,11 @@ const ClientNewCase: React.FC = () => {
             custon_alloy_type: transformedData.caseDetails?.customAlloy,
             is_approved: false,
             created_from: "Client",
+            client_working_tag_id: transformedData.workingTagName,
+            client_working_pan_name: transformedData.workingPanName,
+            client_working_pan_color: transformedData.workingPanColor,
+            patient_id: transformedData.patient_id,
+            is_appointment_TBD: false,
           },
           products: selectedProducts,
 
@@ -356,15 +367,18 @@ const ClientNewCase: React.FC = () => {
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
             formErrors={errors}
+            scrollToSection={rxFormRef}
           />
         </div>
 
         {/* Files and Notes Section Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div ref={rxFormRef} className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
           <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
-              <h2 className="text-sm font-medium text-white">Notes</h2>
+              <h2 className="text-sm font-medium text-white">
+                Notes / Rx Form
+              </h2>
             </div>
             <div className="p-6 bg-slate-50">
               <NotesStep

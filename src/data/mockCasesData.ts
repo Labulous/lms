@@ -315,21 +315,25 @@ const saveCases = async (
 
     console.log("Cases saved successfully:", data);
 
+    let productIdsCount = 0;
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
+      productIdsCount = cases.products.filter((item: any) => item.id).length;
 
       // Step 3: Save case products
-      try {
-        const caseProduct = {
-          user_id: cases.overview.created_by,
-          case_id: savedCaseId,
-          products_id: productIds,
-        };
-        await saveCaseProduct(caseProduct, cases, navigate, savedCaseId); // Save each case product
-        console.log("All case products saved successfully.");
-      } catch (productError) {
-        console.error("Error saving case products:", productError);
+      if (productIds.length > 0) {
+        try {
+          const caseProduct = {
+            user_id: cases.overview.created_by,
+            case_id: savedCaseId,
+            products_id: productIds,
+          };
+          await saveCaseProduct(caseProduct, cases, navigate, savedCaseId); // Save each case product
+          console.log("All case products saved successfully.");
+        } catch (productError) {
+          console.error("Error saving case products:", productError);
+        }
       }
 
       // Step 4: Create invoice for the case
@@ -388,8 +392,13 @@ const saveCases = async (
     }
 
     // Step 5: Save the overview to localStorage
-
     localStorage.setItem("cases", JSON.stringify(cases));
+
+    //Redirect to cases page
+    if (productIdsCount === 0) {
+      toast.success("Case created successfully");
+      navigate && navigate(`/cases/${data[0]?.id}`);
+    }
   } catch (error) {
     console.error("Error in saveCases function:", error);
   }
