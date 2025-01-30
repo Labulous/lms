@@ -205,16 +205,16 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           <div className="space-x-2">
             {!isEditing ? (
               <>
-                {user.role !== "client" &&
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleEditClick}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                }
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditClick}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+
                 {user.role !== "client" && (
                   <Button
                     variant="destructive"

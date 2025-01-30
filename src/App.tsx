@@ -241,14 +241,7 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requiredRole={["client"]}>
                 <Layout>
-                  {/* <ClientProfile /> */}
-                  <ClientProfile
-                    client={null} // Pass null or the required client data
-                    onEdit={() => {}}
-                    onDelete={() => {}}
-                    loading={false}
-                    error={null}
-                  />
+                  <ClientProfile />
                 </Layout>
               </ProtectedRoute>
             }
