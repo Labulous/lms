@@ -181,7 +181,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     } else if (filterType === "on_hold") {
       return event.onHold;
     } else if (filterType === "today_cell") {
-      console.log(event, "event");
 
       // Return events where either isAllOnHold OR isTommorow is true
       return !event.isActive && !event.onHold;
@@ -190,8 +189,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     return true;
   });
 
-  console.log(filteredEvents, "filteredEvents");
-  console.log(events, "events");
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
       let newDate = new Date(currentDate);
@@ -390,7 +387,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                           {event.status}
                         </Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground">{event.due_date}</span>
+                      {/* <span className="text-xs text-muted-foreground">{event.due_date}</span> */}
                     </div>
 
                     {/* Main Content */}
@@ -499,7 +496,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
-    console.log(event, "event");
   };
 
   return (

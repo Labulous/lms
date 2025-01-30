@@ -36,22 +36,43 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(
     null
   );
-  // console.log(products, "products her");
   // Filter products based on search query and selected material
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return products.filter((product) => {
-      const matchesSearch =
-        !query ||
-        product.name.toLowerCase().includes(query) ||
-        product.material?.name?.toLowerCase().includes(query);
+    const sortable_material_ids = [
+      "b006eee6-d923-4e97-8b86-2e162e93df9b",
+      "48440949-51c9-4495-af13-8ce7076ea2ad",
+      "93852615-0d83-4933-b086-1cd89c80237a",
+      "75212f1d-7098-475f-8bc3-a35a4626a8be",
+      "66b17b2d-cbbc-4f4b-ae25-2bb6a11e821b",
+      "b87016e5-5b52-46c6-aeca-4f5895307eab",
+      "61e95140-9f3e-453b-9639-171f84abea7a",
+      "504def23-c786-4a43-b52f-debae9310fac",
+    ];
 
-      const matchesMaterial =
-        !selectedMaterial || product.material?.name === selectedMaterial;
+    return products
+      .filter((product) => {
+        const matchesSearch =
+          !query ||
+          product.name.toLowerCase().includes(query) ||
+          product.material?.name?.toLowerCase().includes(query);
 
-      return matchesSearch && matchesMaterial;
-    });
+        const matchesMaterial =
+          !selectedMaterial || product.material?.name === selectedMaterial;
+
+        return matchesSearch && matchesMaterial;
+      })
+      .sort((a, b) => {
+        const indexA = sortable_material_ids.indexOf(a.material?.id ?? "");
+        const indexB = sortable_material_ids.indexOf(b.material?.id ?? "");
+
+        return (
+          (indexA === -1 ? Infinity : indexA) -
+          (indexB === -1 ? Infinity : indexB)
+        );
+      });
   }, [products, searchQuery, selectedMaterial]);
+
   // Group products by material for the count
 
   const productCountByMaterial = useMemo(() => {
@@ -62,6 +83,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
       return acc;
     }, {} as Record<MaterialType, number>);
   }, [materials, products]);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>

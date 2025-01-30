@@ -1314,7 +1314,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       setEditingInvoice(null);
     }, 0);
   };
-
+console.log(caseDetail,"case deatail")
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
@@ -1336,7 +1336,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         try {
           // Calculate the final price based on the quantity, unit price, and discount
           const finalPrice =
-            item.quantity * item.unitPrice * (1 - (item.discount || 0) / 100);
+            item.quantity *
+            Number(item.unitPrice) *
+            (1 - (item.discount || 0) / 100);
 
           if (item.discountId && item.caseProductTeethId) {
             // Update the discounted_price table
@@ -1704,7 +1706,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-xs font-medium">
-                    {formatDate(caseDetail?.received_date || caseDetail?.created_at)}
+                    {formatDate(
+                      caseDetail?.received_date || caseDetail?.created_at
+                    )}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -2647,59 +2651,63 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       <p className="text-sm text-gray-500">Files and photos</p>
 
                       <div className="flex flex-col gap-2">
-                        {caseDetail?.attachements?.filter(file => file)?.map((file, index) => {
-                          const fileName = file ? decodeURIComponent(
-                            file.split("/").pop()?.split("?")[0] || ""
-                          ) : "";
-                          const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
-                            fileName
-                          );
+                        {caseDetail?.attachements
+                          ?.filter((file) => file)
+                          ?.map((file, index) => {
+                            const fileName = file
+                              ? decodeURIComponent(
+                                  file.split("/").pop()?.split("?")[0] || ""
+                                )
+                              : "";
+                            const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
+                              fileName
+                            );
 
-                          return (
-                            <div
-                              key={index}
-                              className="border rounded-lg p-4 space-y-2"
-                            >
-                              {isImage ? (
-                                <div
-                                  className="relative aspect-video w-full overflow-hidden rounded-md"
-                                  onClick={() => {
-                                    setIsFilePreview(true);
-                                    setFiles((files) => {
-                                      const filteredFiles = files.filter(
-                                        (f) => f !== file
-                                      );
+                            return (
+                              <div
+                                key={index}
+                                className="border rounded-lg p-4 space-y-2"
+                              >
+                                {isImage ? (
+                                  <div
+                                    className="relative aspect-video w-full overflow-hidden rounded-md"
+                                    onClick={() => {
+                                      setIsFilePreview(true);
+                                      setFiles((files) => {
+                                        const filteredFiles = files.filter(
+                                          (f) => f !== file
+                                        );
 
-                                      return [file, ...filteredFiles];
-                                    });
-                                  }}
-                                >
-                                  <img
-                                    src={file}
-                                    alt={fileName}
-                                    className="object-contain w-full h-full"
-                                  />
+                                        return [file, ...filteredFiles];
+                                      });
+                                    }}
+                                  >
+                                    <img
+                                      src={file}
+                                      alt={fileName}
+                                      className="object-contain w-full h-full"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-gray-500">
+                                    <FileText className="h-8 w-8" />
+                                    <span className="text-sm">{fileName}</span>
+                                  </div>
+                                )}
+
+                                <div className="flex justify-end">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownloadFile(file)}
+                                    className="gap-2"
+                                  >
+                                    Download
+                                  </Button>
                                 </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-gray-500">
-                                  <FileText className="h-8 w-8" />
-                                  <span className="text-sm">{fileName}</span>
-                                </div>
-                              )}
-
-                              <div className="flex justify-end">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDownloadFile(file)}
-                                  className="gap-2"
-                                >
-                                  Download
-                                </Button>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
                         {(!caseDetail?.attachements ||
                           caseDetail.attachements.length === 0) && (
                           <p className="text-sm text-gray-500">

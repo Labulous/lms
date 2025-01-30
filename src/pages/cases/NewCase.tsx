@@ -56,6 +56,7 @@ const NewCase: React.FC = () => {
     },
     otherItems: "",
     isDueDateTBD: false,
+    is_appointment_TBD: false,
     notes: {
       instructionNotes: "",
       invoiceNotes: "",
@@ -272,7 +273,9 @@ const NewCase: React.FC = () => {
             ? null
             : transformedData.dueDate,
           isDueDateTBD: transformedData.isDueDateTBD || false,
-          appointment_date: transformedData.appointmentDate,
+          appointment_date: transformedData.is_appointment_TBD
+            ? null
+            : transformedData.appointmentDate || null,
           otherItems: transformedData.otherItems || "",
           instruction_notes: transformedData.notes?.instructionNotes,
           invoice_notes: transformedData.notes?.invoiceNotes,
@@ -291,6 +294,7 @@ const NewCase: React.FC = () => {
           occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
           alloy_type: transformedData.caseDetails?.alloyType,
           custom_margin_design_type: transformedData.caseDetails?.customMargin,
+          is_appointment_TBD: transformedData.is_appointment_TBD,
           custom_occlusion_design_type:
             transformedData.caseDetails?.customOcclusalDesign,
           custon_alloy_type: transformedData.caseDetails?.customAlloy,
@@ -305,7 +309,7 @@ const NewCase: React.FC = () => {
       toast.error("Failed to create case");
     }
   };
-
+  console.log(selectedProducts, "products");
   return (
     <div
       className="p-6"

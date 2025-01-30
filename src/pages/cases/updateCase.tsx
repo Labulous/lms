@@ -55,6 +55,7 @@ const UpdateCase: React.FC = () => {
       cadcamFiles: 0,
       consultRequested: 0,
     },
+    is_appointment_TBD: false,
     otherItems: "",
     isDueDateTBD: false,
     notes: {
@@ -235,11 +236,12 @@ const UpdateCase: React.FC = () => {
             ? null
             : transformedData.dueDate,
           isDueDateTBD: transformedData.isDueDateTBD || false,
-          appointment_date: transformedData.isDueDateTBD
+          appointment_date: transformedData.is_appointment_TBD
             ? null
             : transformedData.appointmentDate || null,
           otherItems: transformedData.otherItems || "",
           invoice_notes: transformedData.notes?.invoiceNotes,
+          is_appointment_TBD: transformedData.is_appointment_TBD,
           instruction_notes: transformedData.notes?.instructionNotes,
           occlusal_type: transformedData.caseDetails?.occlusalType,
           contact_type: transformedData.caseDetails?.contactType,
@@ -325,6 +327,7 @@ const UpdateCase: React.FC = () => {
               id,
               color,name),
              working_pan_name,
+             is_appointment_TBD,
              working_pan_color,
               rx_number,
               isDueDateTBD,
@@ -545,7 +548,7 @@ const UpdateCase: React.FC = () => {
           workingPanName: caseDataApi.working_pan_name || "",
           workingTagName: caseDataApi.tags?.id || null,
           workingPanColor: caseDataApi.working_pan_color || "",
-
+          is_appointment_TBD: caseDataApi.is_appointment_TBD,
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
             impression: caseDataApi.enclosed_items?.impression || 0,
@@ -575,6 +578,7 @@ const UpdateCase: React.FC = () => {
             customContact: caseData.custom_contact_details || "",
             marginDesign: caseData?.margin_design_type || "",
             occlusalDesign: caseData?.occlusion_design_type || "",
+
             alloyType: caseData?.alloy_type || "",
             customMargin: caseData?.custom_margin_design_type || "",
             customOcclusalDesign: caseData?.custom_occlusion_design_type || "",
