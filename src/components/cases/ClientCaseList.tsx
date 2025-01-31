@@ -158,7 +158,7 @@ const ClientCaseList: React.FC = () => {
       enableHiding: false,
     },
     {
-      accessorKey: "working_pan_color",
+      accessorKey: "client_working_pan_color",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
@@ -177,8 +177,10 @@ const ClientCaseList: React.FC = () => {
         </Popover>
       ),
       cell: ({ row }) => {
-        const color = row.getValue("working_pan_color") as string | null;
-        const name = row.original.working_pan_name;
+        console.log(row);
+
+        const color = row.getValue("client_working_pan_color") as string | null;
+        const name = row.original.client_working_pan_name;
         if (!color) return;
         const initials = name ? name.slice(0, 2).toUpperCase() : "";
 
@@ -208,7 +210,7 @@ const ClientCaseList: React.FC = () => {
       },
     },
     {
-      accessorKey: "tag",
+      accessorKey: "client_working_tag",
       header: ({ column }) => (
         <Popover>
           <PopoverTrigger asChild>
@@ -302,7 +304,10 @@ const ClientCaseList: React.FC = () => {
         </Popover>
       ),
       cell: ({ row }) => {
-        const tag = row.getValue("tag") as { name: string; color: string };
+        const tag = row.getValue("client_working_tag") as {
+          name: string;
+          color: string;
+        };
         if (!tag?.name) return null;
 
         const color = tag.color || "#f3f4f6";
@@ -787,6 +792,8 @@ const ClientCaseList: React.FC = () => {
             custom_occulusal_details,
             custom_pontic_details,
             instruction_notes,
+            client_working_pan_name,
+            client_working_pan_color,
             enclosed_items:enclosed_case!enclosed_case_id (
               impression,
               biteRegistration,
@@ -809,6 +816,18 @@ const ClientCaseList: React.FC = () => {
             ),
             product_ids:case_products!id (
               products_id,
+              id
+            ),
+            patient:patients!patient_id (
+              id,
+              first_name,
+              last_name,
+              email,
+              phone
+            ),
+            client_working_tag:working_tags!client_working_tag_id (
+              name,
+              color,
               id
             )
           `
@@ -908,7 +927,6 @@ const ClientCaseList: React.FC = () => {
         const { data: casesData, error: casesError } = await query;
 
         if (casesError) {
-          console.error("Supabase error:", casesError);
           throw casesError;
         }
 
@@ -917,6 +935,7 @@ const ClientCaseList: React.FC = () => {
           setFilteredCases([]);
           return;
         }
+
         const transformedCases = await Promise.all(
           casesData.map(async (item) => {
             // Handle client data
@@ -932,6 +951,16 @@ const ClientCaseList: React.FC = () => {
               doctorData?.client && Array.isArray(doctorData.client)
                 ? doctorData.client[0]
                 : doctorData?.client;
+
+            const patientData = item.patient;
+            if (patientData) {
+              return {
+                ...item,
+                patient_name: patientData
+                  ? patientData.first_name + " " + patientData.last_name
+                  : null,
+              };
+            }
 
             // Handle tag data
             const tagData = Array.isArray(item.tag) ? item.tag[0] : item.tag;
@@ -1217,11 +1246,7 @@ const ClientCaseList: React.FC = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
-  console.log(selectedCasesIds, "Selected");
-  console.log(
-    cases.filter((item) => selectedCasesIds.includes(item.id)),
-    "Selected"
-  );
+
   return (
     <div className="space-y-6">
       <PageHeader

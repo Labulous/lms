@@ -1275,7 +1275,7 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">INV #:</span>
                     {caseDetail.is_approved ? (
-                        <div
+                      <div
                         className="text-sm font-medium text-primary cursor-pointer"
                         onClick={() => setIsPreviewModalOpen(true)}
                       >
@@ -1284,11 +1284,8 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                           : "N/A"}
                       </div>
                     ) : (
-                      <div className="text-sm font-medium">
-                        TBA
-                      </div>
+                      <div className="text-sm font-medium">TBA</div>
                     )}
-                    
                   </div>
                 </div>
                 <div className="mt-2">
@@ -1314,11 +1311,6 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                         >
                           {caseDetail.status.toLowerCase().replace(/_/g, " ")}
                         </Badge>
-                        {caseDetail.is_approved ? (
-                            <Badge className="bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit bg-green-500 text-green-500 hover:bg-green-500">Approved</Badge>
-                        ) : (
-                            <Badge className="bg-opacity-10 capitalize hover:bg-opacity-10 hover:text-inherit bg-red-500 text-red-500 hover:bg-red-500">Pending</Badge>
-                        )}
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>
@@ -1408,7 +1400,6 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                     </DropdownMenuItem> */}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                
               </div>
 
               <div className="flex items-center space-x-4">
@@ -1774,225 +1765,225 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                       <FileText className="mr-2" size={20} /> Invoice
                     </CardTitle>
                     {caseDetail.is_approved && (
-                        <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-2">
                         <span className="text-sm text-gray-500">INV #:</span>
                         <div
-                            className="text-sm font-medium text-primary cursor-pointer"
-                            onClick={() => setIsPreviewModalOpen(true)}
+                          className="text-sm font-medium text-primary cursor-pointer"
+                          onClick={() => setIsPreviewModalOpen(true)}
                         >
-                            {caseDetail?.invoice.length > 0
+                          {caseDetail?.invoice.length > 0
                             ? caseDetail.case_number.replace(/^.{3}/, "INV")
                             : "N/A"}
                         </div>
-                        </div>
+                      </div>
                     )}
                   </div>
                   <div>
-                  {caseDetail.is_approved && (
-                    <Button
-                      variant={"default"}
-                      onClick={() => handleOpenEditModal(caseDetail, "edit")}
-                    >
-                      Edit Invoice
-                    </Button>
-                  )}
+                    {caseDetail.is_approved && (
+                      <Button
+                        variant={"default"}
+                        onClick={() => handleOpenEditModal(caseDetail, "edit")}
+                      >
+                        Edit Invoice
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="py-2 px-3">
-              {caseDetail.is_approved ? (
-                <div className="border rounded-lg bg-white">
-                  <Table>
-                    <TableHeader className="bg-slate-100 border-b border-slate-200">
-                      <TableRow>
-                        <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
-                          Tooth
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="text-xs py-0.5 pl-4 pr-0">
-                          Billing Item
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
-                          Quantity
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
-                          Price
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
-                          Discount
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
-                          Final Price
-                        </TableHead>
-                        <TableHead className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
-                          Subtotal
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {caseDetail?.products &&
-                        caseDetail?.products?.map((product, index) => {
-                          const price = product?.discounted_price?.price || 0;
-                          const discount =
-                            product?.discounted_price?.discount || 0;
-                          const finalPrice =
-                            product?.discounted_price?.final_price || price;
-                          const quantity =
-                            product?.discounted_price.quantity || 1;
-                          const subtotal = finalPrice * quantity;
+                {caseDetail.is_approved ? (
+                  <div className="border rounded-lg bg-white">
+                    <Table>
+                      <TableHeader className="bg-slate-100 border-b border-slate-200">
+                        <TableRow>
+                          <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
+                            Tooth
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="text-xs py-0.5 pl-4 pr-0">
+                            Billing Item
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                            Quantity
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                            Price
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                            Discount
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                            Final Price
+                          </TableHead>
+                          <TableHead className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableHead>
+                          <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                            Subtotal
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {caseDetail?.products &&
+                          caseDetail?.products?.map((product, index) => {
+                            const price = product?.discounted_price?.price || 0;
+                            const discount =
+                              product?.discounted_price?.discount || 0;
+                            const finalPrice =
+                              product?.discounted_price?.final_price || price;
+                            const quantity =
+                              product?.discounted_price.quantity || 1;
+                            const subtotal = finalPrice * quantity;
 
-                          return (
-                            <TableRow key={index}>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.teethProduct.tooth_number?.length > 1
-                                  ? formatTeethRange(
-                                      product.teethProduct?.tooth_number
-                                    )
-                                  : product.teethProduct?.tooth_number[0]}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.name || "-"}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product?.discounted_price?.quantity || "-"}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product?.discounted_price?.price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {discount > 0 ? (
-                                  <span className="text-green-600">
-                                    {product?.discounted_price?.discount}%
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                ${product?.discounted_price?.final_price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                ${subtotal.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
+                            return (
+                              <TableRow key={index}>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product.teethProduct.tooth_number?.length > 1
+                                    ? formatTeethRange(
+                                        product.teethProduct?.tooth_number
+                                      )
+                                    : product.teethProduct?.tooth_number[0]}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product.name || "-"}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product?.discounted_price?.quantity || "-"}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  ${product?.discounted_price?.price}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {discount > 0 ? (
+                                    <span className="text-green-600">
+                                      {product?.discounted_price?.discount}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                  ${product?.discounted_price?.final_price}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                  ${subtotal.toFixed(2)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
 
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
-                        <TableCell className="w-[1px] p-0">
-                          <Separator
-                            orientation="vertical"
-                            className="h-full"
-                          />
-                        </TableCell>
-                        <TableCell
-                          colSpan={9}
-                          className="text-xs py-2 pl-4 pr-0 text-right"
-                        >
-                          Total:
-                        </TableCell>
-                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
-                          $
-                          {caseDetail.products
-                            ?.reduce((total, product) => {
-                              const finalPrice =
-                                product.discounted_price?.final_price ||
-                                product.price ||
-                                0;
-                              return total + finalPrice;
-                            }, 0)
-                            .toFixed(2)}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="bg-white">To be announced</div>
-              )}
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell className="w-[1px] p-0">
+                            <Separator
+                              orientation="vertical"
+                              className="h-full"
+                            />
+                          </TableCell>
+                          <TableCell
+                            colSpan={9}
+                            className="text-xs py-2 pl-4 pr-0 text-right"
+                          >
+                            Total:
+                          </TableCell>
+                          <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                            $
+                            {caseDetail.products
+                              ?.reduce((total, product) => {
+                                const finalPrice =
+                                  product.discounted_price?.final_price ||
+                                  product.price ||
+                                  0;
+                                return total + finalPrice;
+                              }, 0)
+                              .toFixed(2)}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="bg-white">To be announced</div>
+                )}
               </CardContent>
             </Card>
 
@@ -2022,7 +2013,7 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                     </div>
                   ) : null}
                   <div className="mb-4">
-                    <p className="text-gray-600">Instruction Notes</p>
+                    <p className="text-gray-600">Instruction / Rx Form</p>
                     <p className="font-medium">
                       {caseDetail?.instruction_notes || "No Instruction notes"}
                     </p>
@@ -2260,7 +2251,7 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-gray-500">
-                            Instruction Notes
+                            Instruction / Rx Form
                           </p>
                           <p className="font-medium">
                             {caseDetail.instruction_notes ||

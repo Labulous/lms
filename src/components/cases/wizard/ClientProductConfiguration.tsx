@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, Percent } from "lucide-react";
+import { X, Plus, StickyNote, Percent, AlertCircle } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -68,6 +68,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { FormData as CaseFormData } from "./CaseWizard";
 import { spawn } from "child_process";
+
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -189,6 +190,7 @@ interface ProductConfigurationProps {
   setselectedProducts: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
+  scrollToSection: React.RefObject<HTMLDivElement>;
 }
 
 interface ProductRow {
@@ -214,6 +216,7 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
   initialCaseDetails,
   setselectedProducts,
   formErrors,
+  scrollToSection,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
@@ -702,12 +705,32 @@ const ClientProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
 
+  const handleScroll = () => {
+    scrollToSection.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
         <h3 className="text-sm font-medium text-white">
           Product Configuration
         </h3>
+      </div>
+      <div className="flex flex-col justify-center bg-slate-50 p-6 pb-0">
+        <div className="w-full relative bg-white p-2 rounded-lg shadow-lg text-gray-800 transition-all flex items-center gap-2">
+          <AlertCircle size={16} color="#e12323" />
+          <p className="text-sm text-gray-600">
+            <span className="text-red-500">
+              If you want to create a Rx Form manually,{" "}
+            </span>
+            <span
+              className="cursor-pointer text-blue-500"
+              onClick={handleScroll}
+            >
+              Click here
+            </span>
+          </p>
+        </div>
       </div>
       <div className="p-6 bg-slate-50">
         <div className="border rounded-lg bg-white mb-6">
