@@ -516,7 +516,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
           <div className="space-y-4">
             <div className="space-y-0">
               <Label htmlFor="orderDate" className="text-xs">
-                Order Date *
+                Received Date *
               </Label>
               <DatePicker
                 date={
@@ -538,7 +538,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-1">
                 <Label htmlFor="dueDate" className="text-xs">
                   Due Date
                 </Label>
@@ -584,7 +584,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0 ">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-1">
                 <Label htmlFor="appointmentDate" className="text-xs">
                   Appointment Date & Time
                 </Label>
@@ -753,7 +753,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-5 w-full">
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs">Working Pan</Label>
                   {/* <ColorPicker
@@ -782,10 +782,11 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   /> */}
                 </div>
                 <div className="relative">
-                  <div className="flex gap-2 relative">
+                  <div className="flex gap-1 relative items-center">
                     <Input
                       name="text"
                       placeholder="Enter the Pan"
+                      className="bg-white"
                       value={formData.workingPanName}
                       maxLength={4}
                       onChange={(e) =>
@@ -796,12 +797,23 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       }
                     />
                     <div
-                      className="flex h-10 w-12 bg-gray-300 rounded-md cursor-pointer"
+                      className={`flex h-8 w-10 rounded-md cursor-pointer relative bg-white`}
                       style={{
-                        backgroundColor: formData.workingPanColor,
+                        backgroundColor: formData.workingPanColor || "white",
+                        border: "2px solid rgba(0,0,0,0.4)",
                       }}
                       onClick={() => setIsAddingPan(!isAddingPan)}
-                    ></div>
+                    >
+                      {!formData.workingPanColor && (
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            content: '""',
+                            background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                   {isAddingPan && (
                     <div
@@ -841,6 +853,22 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         </div>
                         {!isCustomColor ? (
                           <div className="grid grid-cols-5 gap-2 bg-white z-50">
+                            <div
+                              className={`h-12 w-12 rounded-md cursor-pointer relative bg-white ${
+                                !formData.workingPanColor
+                                  ? "border-2 border-black"
+                                  : "border-2 border-gray-200"
+                              }`}
+                              onClick={() => onChange("workingPanColor", undefined)}
+                            >
+                              <div
+                                className="absolute inset-0"
+                                style={{
+                                  content: '""',
+                                  background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                                }}
+                              />
+                            </div>
                             {colors.map((item, key) => {
                               return (
                                 <div
@@ -874,7 +902,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   )}
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1">
                 <div className="flex justify-between items-center">
                   <Label className="text-xs">Working Tag</Label>
                   <ColorPicker
