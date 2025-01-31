@@ -56,8 +56,11 @@ interface ProductListProps {
   products: Database["public"]["Tables"]["products"]["Row"][];
   onEdit?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
   onDelete?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
-  onBatchDelete?: (products: Database["public"]["Tables"]["products"]["Row"][]) => void;
+  onBatchDelete?: (
+    products: Database["public"]["Tables"]["products"]["Row"][]
+  ) => void;
   onBatchAdd?: (products: ProductInput[]) => Promise<void>;
+  activeTab?: string;
 }
 
 const ProductList: React.FC<ProductListProps> = ({
@@ -66,6 +69,7 @@ const ProductList: React.FC<ProductListProps> = ({
   onDelete,
   onBatchDelete,
   onBatchAdd,
+  activeTab,
 }) => {
   // State
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -77,17 +81,19 @@ const ProductList: React.FC<ProductListProps> = ({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [editingProduct, setEditingProduct] = useState<Database["public"]["Tables"]["products"]["Row"] | null>(null);
+  const [editingProduct, setEditingProduct] = useState<
+    Database["public"]["Tables"]["products"]["Row"] | null
+  >(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Get unique materials from products
   const materials = useMemo(() => {
     const uniqueMaterials = new Set(
       products
-        .map(p => p.material?.name)
+        .map((p) => p.material?.name)
         .filter((name): name is string => name !== undefined && name !== null)
     );
-    return Array.from(uniqueMaterials).map(name => ({ id: name, name }));
+    return Array.from(uniqueMaterials).map((name) => ({ id: name, name }));
   }, [products]);
 
   // Filtering
@@ -105,24 +111,32 @@ const ProductList: React.FC<ProductListProps> = ({
     if (materialFilter.length > 0) {
       filtered = filtered.filter(
         (product) =>
-          product.material?.name && materialFilter.includes(product.material.name)
+          product.material?.name &&
+          materialFilter.includes(product.material.name)
       );
     }
 
     return filtered;
   };
 
-  const filteredProducts = useMemo(() => getFilteredProducts(), [products, searchTerm, materialFilter]);
+  const filteredProducts = useMemo(
+    () => getFilteredProducts(),
+    [products, searchTerm, materialFilter]
+  );
 
   // Sorting
-  const handleSort = (key: keyof Database["public"]["Tables"]["products"]["Row"]) => {
+  const handleSort = (
+    key: keyof Database["public"]["Tables"]["products"]["Row"]
+  ) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
-  const getSortIcon = (key: keyof Database["public"]["Tables"]["products"]["Row"]) => {
+  const getSortIcon = (
+    key: keyof Database["public"]["Tables"]["products"]["Row"]
+  ) => {
     if (sortConfig.key !== key)
       return <ChevronsUpDown className="ml-2 h-4 w-4" />;
     return sortConfig.direction === "asc" ? (
@@ -132,7 +146,9 @@ const ProductList: React.FC<ProductListProps> = ({
     );
   };
 
-  const sortData = (data: Database["public"]["Tables"]["products"]["Row"][]) => {
+  const sortData = (
+    data: Database["public"]["Tables"]["products"]["Row"][]
+  ) => {
     return [...data].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
@@ -160,9 +176,11 @@ const ProductList: React.FC<ProductListProps> = ({
 
   const handleBatchDelete = () => {
     if (!onBatchDelete || selectedProducts.length === 0) return;
-    
+
     // Get the selected product objects
-    const productsToDelete = products.filter(p => selectedProducts.includes(p.id));
+    const productsToDelete = products.filter((p) =>
+      selectedProducts.includes(p.id)
+    );
     onBatchDelete(productsToDelete);
   };
 
@@ -225,7 +243,9 @@ const ProductList: React.FC<ProductListProps> = ({
             <PopoverContent className="w-[200px] p-4" align="start">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b pb-2">
-                  <span className="text-sm font-medium">Filter by Material</span>
+                  <span className="text-sm font-medium">
+                    Filter by Material
+                  </span>
                   {materialFilter.length > 0 && (
                     <Button
                       variant="ghost"
@@ -245,7 +265,10 @@ const ProductList: React.FC<ProductListProps> = ({
                         checked={materialFilter.includes(material.name)}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setMaterialFilter((prev) => [...prev, material.name]);
+                            setMaterialFilter((prev) => [
+                              ...prev,
+                              material.name,
+                            ]);
                           } else {
                             setMaterialFilter((prev) =>
                               prev.filter((t) => t !== material.name)
@@ -268,10 +291,10 @@ const ProductList: React.FC<ProductListProps> = ({
             </PopoverContent>
           </Popover>
           {onBatchAdd && (
-            <BatchProductUpload 
+            <BatchProductUpload
               onUpload={async (products) => {
                 await onBatchAdd(products);
-              }} 
+              }}
             />
           )}
         </div>
@@ -360,7 +383,10 @@ const ProductList: React.FC<ProductListProps> = ({
                             checked={materialFilter.includes(material.name)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setMaterialFilter((prev) => [...prev, material.name]);
+                                setMaterialFilter((prev) => [
+                                  ...prev,
+                                  material.name,
+                                ]);
                               } else {
                                 setMaterialFilter((prev) =>
                                   prev.filter((name) => name !== material.name)
@@ -372,7 +398,10 @@ const ProductList: React.FC<ProductListProps> = ({
                             htmlFor={`material-header-${material.id}`}
                             className="flex items-center text-sm font-medium cursor-pointer"
                           >
-                            <Badge variant={material.name as any} className="ml-1">
+                            <Badge
+                              variant={material.name as any}
+                              className="ml-1"
+                            >
                               {material.name}
                             </Badge>
                           </label>
@@ -441,13 +470,19 @@ const ProductList: React.FC<ProductListProps> = ({
                 </TableCell>
                 <TableCell>{product.material?.name}</TableCell>
                 <TableCell className="text-right">
-                  ${product.price.toLocaleString("en-US", {
+                  $
+                  {product.price.toLocaleString("en-US", {
                     minimumFractionDigits: 2,
                   })}
                 </TableCell>
                 <TableCell>{product.billing_type?.label}</TableCell>
                 <TableCell>
-                  <DropdownMenu open={openMenuId === product.id} onOpenChange={(open) => setOpenMenuId(open ? product.id : null)}>
+                  <DropdownMenu
+                    open={openMenuId === product.id}
+                    onOpenChange={(open) =>
+                      setOpenMenuId(open ? product.id : null)
+                    }
+                  >
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
@@ -458,7 +493,11 @@ const ProductList: React.FC<ProductListProps> = ({
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-[160px]" onCloseAutoFocus={(e) => e.preventDefault()}>
+                    <DropdownMenuContent
+                      align="end"
+                      className="w-[160px]"
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                    >
                       <DropdownMenuItem
                         onClick={() => {
                           setOpenMenuId(null);

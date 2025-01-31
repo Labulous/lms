@@ -1,11 +1,15 @@
 export interface Service {
-  id: string;
+  id?: string;
   name: string;
   price: number;
-  isClientVisible: boolean;
-  isTaxable: boolean;
+  is_client_visible: boolean;
+  is_taxable: boolean;
   categories: string[];
   discount?: number;
+  description?: string;
+  material?: {
+    name: string;
+  };
 }
 
 export const mockServices: Service[] = [
@@ -13,8 +17,8 @@ export const mockServices: Service[] = [
     id: "1",
     name: "Custom Shade Matching",
     price: 75.0,
-    isClientVisible: true,
-    isTaxable: true,
+    is_client_visible: true,
+    is_taxable: true,
     categories: ["Zirconia", "E.Max", "PFM"],
     discount: 0,
   },
@@ -22,8 +26,8 @@ export const mockServices: Service[] = [
     id: "2",
     name: "Rush Service",
     price: 99.99,
-    isClientVisible: true,
-    isTaxable: true,
+    is_client_visible: true,
+    is_taxable: true,
     discount: 0,
     categories: [
       "Acrylic",
