@@ -1,4 +1,4 @@
-import { useState, useEffect, SetStateAction } from "react";
+import { useState, useEffect, SetStateAction, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   User,
@@ -84,7 +84,6 @@ import { LoadingState } from "@/pages/cases/NewCase";
 import OnCancelModal from "./wizard/modals/onCancelModal";
 import FilePreview from "./wizard/modals/FilePreview";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
-
 interface CaseFile {
   id: string;
   file_name: string;
@@ -287,7 +286,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }
   };
 
-  const [caseDetail1, setCaseDetail] = useState<ExtendedCase | null>(null);
+  const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
@@ -310,6 +309,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [workstationLoading, setWorkstationLoading] = useState<boolean>(false);
   const [isScheduleModal, setIsScheduleModal] = useState<boolean>(false);
   const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
+  const [caseRefresh, setCaseRefresh] = useState<boolean>(false);
   const [files, setFiles] = useState<string[]>([]);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
@@ -633,12 +633,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     return <div>Error fetching case data: {caseError.message}</div>;
   }
   let caseItem: any = caseDataa;
-  const caseDetail: ExtendedCase | null = caseItem
+  const caseDetailApi: ExtendedCase | null = caseItem
     ? {
         ...caseItem,
         labDetail: lab,
         custom_occlusal_details: caseDataa?.custom_occulusal_details,
-        products: caseItem?.teethProduct.map((tp: any) => ({
+        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
           id: tp.product.id,
           name: tp.product.name,
           price: tp.product.price,
@@ -651,9 +651,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           material: tp.product.material,
           product_type: tp.product.product_type,
           billing_type: tp.product.billing_type,
-          discounted_price: caseItem?.discounted_price.filter(
-            (item: any) => item.product_id === tp.product.id
-          )?.[0],
+          discounted_price: caseItem?.discounted_price[index],
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -954,6 +952,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             ...(caseData as any),
             products: productsWithDiscounts,
             labDetail: lab,
+            discounted_price: discountedPriceData,
           });
         }
       }
@@ -968,10 +967,17 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }
   };
 
+  const hasRun = useRef(false);
+  console.log(caseDetailApi, "caseDetailApi");
+
   useEffect(() => {
+    // Ensure `caseDetailApi` is not null or undefined and hasn't run before
+    if (hasRun.current || !caseDetailApi) return;
+
     if (!activeCaseId) {
-      if (caseDataa) {
-        setCaseDetail(caseDetail);
+      if (caseDetailApi) {
+        console.log(caseDetailApi, "caseDetailApi");
+        setCaseDetail(caseDetailApi);
       }
       setError("No case ID provided");
       setLoading(false);
@@ -981,7 +987,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
     }
-  }, []);
+    console.log("use effect run");
+    setCaseDetail(caseDetailApi);
+
+    setCaseRefresh(false);
+    hasRun.current = true; // Mark as executed
+  }, [caseDetailApi]); // Dependency
   const handleCompleteStage = async (stageName: string) => {
     console.log(`Completing stage: ${stageName}`);
   };
@@ -1314,7 +1325,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       setEditingInvoice(null);
     }, 0);
   };
-console.log(caseDetail,"case deatail")
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
@@ -1348,8 +1358,8 @@ console.log(caseDetail,"case deatail")
                 .update({
                   discount: item.discount,
                   quantity: item.quantity || 1,
-                  price: item.unitPrice,
-                  final_price: finalPrice,
+                  price: Number(item.unitPrice),
+                  final_price: Number(finalPrice),
                 })
                 .eq("id", item.discountId)
                 .select();
@@ -1439,12 +1449,29 @@ console.log(caseDetail,"case deatail")
       if (updateCasesError) {
         throw new Error(updateCasesError.message);
       }
+      function updateInvoice(
+        old_amount: number,
+        new_amount: number,
+        due_amount: number
+      ) {
+        let paid_amount = old_amount - due_amount;
+        let new_due_amount = Math.max(0, new_amount - paid_amount);
+
+        return {
+          amount: new_amount,
+          due_amount: new_due_amount,
+        };
+      }
 
       const { error: updateInvoicesError } = await supabase
         .from("invoices")
-        .update({
-          amount: updatedInvoice.totalAmount,
-        })
+        .update(
+          updateInvoice(
+            Number(updatedInvoice.oldTotalAmount),
+            Number(updatedInvoice.totalAmount),
+            Number(updatedInvoice.totalDue)
+          )
+        )
         .eq("case_id", updatedInvoice.id);
 
       if (updateInvoicesError) {
@@ -1454,6 +1481,7 @@ console.log(caseDetail,"case deatail")
       toast.success("Invoice and related data updated successfully");
 
       handleCloseEditModal();
+      setCaseRefresh(true);
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast.error("Failed to update invoice");
@@ -1731,7 +1759,9 @@ console.log(caseDetail,"case deatail")
                 </div>
                 <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
-                  <span className="text-xs text-gray-500">Appointment Date</span>
+                  <span className="text-xs text-gray-500">
+                    Appointment Date
+                  </span>
                   <span className="text-sm font-medium">
                     {caseDetail.isDueDateTBD
                       ? "TBD"
@@ -2093,7 +2123,6 @@ console.log(caseDetail,"case deatail")
                       onClick={() => handleOpenEditModal(caseDetail, "edit")}
                     >
                       Edit Invoice
-                      
                     </Button>
                   </div>
                 </div>
