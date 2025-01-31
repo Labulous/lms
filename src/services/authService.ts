@@ -419,6 +419,7 @@ export const createUserByAdmins = async (
   }
 };
 
+//Create Client in users table
 export const createClientByAdmin = async (
   labId: string,
   name: string,
@@ -618,6 +619,25 @@ export const checkEmailExists = async (email: string): Promise<boolean> => {
     return userData && userData.length > 0;
   } catch (error) {
     console.error("Error in checkEmailExists function:", error);
+    throw error;
+  }
+};
+
+//Chanage Password by Client
+export const changeUserPasswordById = async (userId: string, newPassword: string): Promise<void> => {
+  try {
+    const { error } = await supabaseServiceRole.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    });
+
+    if (error) {
+      console.error("Error changing password:", error);
+      throw new Error("Failed to change password.");
+    }
+
+    console.log("Password changed successfully!");
+  } catch (error) {
+    console.error("Error in changeUserPasswordById function:", error);
     throw error;
   }
 };

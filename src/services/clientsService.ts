@@ -344,10 +344,10 @@ class ClientsService {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
             (doctor) =>
-              ({
-                ...this.transformDoctorToDB(doctor),
-                client_id: clients.id,
-              } as any)
+            ({
+              ...this.transformDoctorToDB(doctor),
+              client_id: clients.id,
+            } as any)
           )
         );
 
@@ -493,81 +493,81 @@ class ClientsService {
 
 
       // Only update doctors if the 'doctors' array is explicitly provided
-      // if (clientData.doctors !== undefined) {
-      //   // Fetch current doctors to check if we need to update
-      //   const { data: currentDoctors, error: fetchError } = await supabase
-      //     .from("doctors")
-      //     .select("*")
-      //     .eq("client_id", id);
+      if (clientData.doctors !== undefined) {
+        // Fetch current doctors to check if we need to update
+        const { data: currentDoctors, error: fetchError } = await supabaseServiceRole
+          .from("doctors")
+          .select("*")
+          .eq("client_id", id);
 
-      //   if (fetchError) {
-      //     logger.error("Error fetching current doctors", { fetchError });
-      //     throw fetchError;
-      //   }
+        if (fetchError) {
+          logger.error("Error fetching current doctors", { fetchError });
+          throw fetchError;
+        }
 
-      //   // Compare current doctors with new doctors to see if we need to update
-      //   const currentDoctorsSet = new Set(
-      //     currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
-      //   );
-      //   const newDoctorsSet = new Set(
-      //     clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
-      //   );
+        // Compare current doctors with new doctors to see if we need to update
+        const currentDoctorsSet = new Set(
+          currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+        );
+        const newDoctorsSet = new Set(
+          clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+        );
 
-      //   // Only update if there are actual changes
-      //   if (currentDoctors.length !== clientData.doctors.length ||
-      //     ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
+        // Only update if there are actual changes
+        if (currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
 
-      //     // Update or insert doctors
-      //     for (let i = 0; i < clientData.doctors.length; i++) {
-      //       const doctor = clientData.doctors[i];
-      //       const currentDoctor = currentDoctors[i];
+          // Update or insert doctors
+          for (let i = 0; i < clientData.doctors.length; i++) {
+            const doctor = clientData.doctors[i];
+            const currentDoctor = currentDoctors[i];
 
-      //       if (currentDoctor) {
-      //         // Update existing doctor
-      //         const { error: updateError } = await supabase
-      //           .from("doctors")
-      //           .update({
-      //             ...this.transformDoctorToDB(doctor),
-      //             client_id: id,
-      //           })
-      //           .eq("id", currentDoctor.id);
+            if (currentDoctor) {
+              // Update existing doctor
+              const { error: updateError } = await supabaseServiceRole
+                .from("doctors")
+                .update({
+                  ...this.transformDoctorToDB(doctor),
+                  client_id: id,
+                })
+                .eq("id", currentDoctor.id);
 
-      //         if (updateError) {
-      //           logger.error("Error updating doctor", { updateError, doctor });
-      //           throw updateError;
-      //         }
-      //       } else {
-      //         // Insert new doctor
-      //         const { error: insertError } = await supabase
-      //           .from("doctors")
-      //           .insert({
-      //             ...this.transformDoctorToDB(doctor),
-      //             client_id: id,
-      //           });
+              if (updateError) {
+                logger.error("Error updating doctor", { updateError, doctor });
+                throw updateError;
+              }
+            } else {
+              // Insert new doctor
+              const { error: insertError } = await supabaseServiceRole
+                .from("doctors")
+                .insert({
+                  ...this.transformDoctorToDB(doctor),
+                  client_id: id,
+                });
 
-      //         if (insertError) {
-      //           logger.error("Error inserting doctor", { insertError, doctor });
-      //           throw insertError;
-      //         }
-      //       }
-      //     }
+              if (insertError) {
+                logger.error("Error inserting doctor", { insertError, doctor });
+                throw insertError;
+              }
+            }
+          }
 
-      //     // Remove any excess doctors
-      //     if (currentDoctors.length > clientData.doctors.length) {
-      //       const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
-      //       const { error: deleteError } = await supabase
-      //         .from("doctors")
-      //         .delete()
-      //         .eq("client_id", id)
-      //         .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
+          // Remove any excess doctors
+          if (currentDoctors.length > clientData.doctors.length) {
+            const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
+            const { error: deleteError } = await supabaseServiceRole
+              .from("doctors")
+              .delete()
+              .eq("client_id", id)
+              .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
 
-      //       if (deleteError) {
-      //         logger.error("Error removing excess doctors", { deleteError });
-      //         throw deleteError;
-      //       }
-      //     }
-      //   }
-      // }
+            if (deleteError) {
+              logger.error("Error removing excess doctors", { deleteError });
+              throw deleteError;
+            }
+          }
+        }
+      }
 
       // Return the updated client after the changes
       return this.getClientById(id) as Promise<Client>;
