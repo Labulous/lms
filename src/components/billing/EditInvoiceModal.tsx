@@ -65,13 +65,14 @@ export function EditInvoiceModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
+  console.log(invoice, "invoice ere");
   useEffect(() => {
     if (invoice) {
-      const transformedItems = invoice?.products?.map((item) => ({
+      const transformedItems = invoice?.products?.map((item, index) => ({
         unitPrice: (item?.discounted_price?.price ?? 0).toFixed(2),
-        discount: item?.discounted_price?.discount ?? 0,
-        quantity: item?.discounted_price?.quantity ?? 0,
-        discountId: item?.discounted_price?.id,
+        discount: invoice?.discounted_price?.[index].discount ?? 0,
+        quantity: invoice?.discounted_price?.[index].quantity ?? 0,
+        discountId: invoice?.discounted_price?.[index].id ?? 0,
         caseProductTeethId: item.teethProduct.id,
         toothNumber: item.teethProduct?.tooth_number
           .map((item) => item)
@@ -179,8 +180,10 @@ export function EditInvoiceModal({
             (discount / 100),
         },
         id: invoice.id,
+        totalDue: invoice.invoice?.[0].due_amount,
         updatedAt: new Date().toISOString(),
         totalAmount: calculateTotal(),
+        oldTotalAmount: invoice.invoice?.[0].amount,
       };
 
       await onSave(updatedInvoice);
@@ -579,10 +582,7 @@ export function EditInvoiceModal({
             <div className="w-1/3 space-y-4 h-[150px] flex justify-end items-end gap-5">
               <div className="flex border-t-2 border-b-2 py-5 font-bold ">
                 <span>Due Amount:</span>
-                <span>
-                  $
-                  {items.reduce((sum, item) => sum + (item.due_amount || 0), 0)}{" "}
-                </span>
+                <span>${invoice?.invoice?.[0].due_amount} </span>
               </div>
               <div className="flex border-t-2 border-b-2 py-5 font-bold">
                 <span>Total:</span>

@@ -414,15 +414,7 @@ const InvoiceList: React.FC = () => {
     }) || [];
   const getCompletedInvoices = async () => {
     setLoading(true);
-
     try {
-      const lab = await getLabDataByUserId(user?.id as string);
-
-      if (!lab?.id) {
-        console.error("Lab ID not found.");
-        return;
-      }
-      setLab(lab);
       const { data: casesData, error: casesError } = await supabase
         .from("cases")
         .select(
@@ -496,7 +488,7 @@ const InvoiceList: React.FC = () => {
           )
         `
         )
-        .eq("lab_id", lab.id)
+        .eq("lab_id", labIdData?.lab_id)
         .order("created_at", { ascending: false });
 
       if (casesError) {
@@ -547,7 +539,7 @@ const InvoiceList: React.FC = () => {
               )
             `
             )
-            .eq("lab_id", lab.id)
+            .eq("lab_id", labIdData?.lab_id)
             .in("id", productsIdArray);
 
           if (productsError) {
@@ -664,11 +656,14 @@ const InvoiceList: React.FC = () => {
   useEffect(() => {
     if (reFreshData) {
       getCompletedInvoices();
+      setRefreshData(false);
     }
     const initialInvoices = mockInvoices;
     setInvoices(initialInvoices);
     setFilteredInvoices(initialInvoices);
     setInvoicesData(swrInvoices);
+  }, [user?.id, reFreshData, swrInvoices]);
+  useEffect(() => {
     const getLabData = async () => {
       const lab = await getLabDataByUserId(user?.id as string);
       if (lab) {
@@ -676,8 +671,7 @@ const InvoiceList: React.FC = () => {
       }
     };
     getLabData();
-  }, [user?.id, reFreshData, swrInvoices]);
-
+  }, []);
   const [caseFilter, setCaseFilter] = useState<string>("");
 
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -751,7 +745,6 @@ const InvoiceList: React.FC = () => {
                 })
                 .eq("id", item.caseProductTeethId)
                 .select("*");
-
           } else {
             // Create a new discounted_price row
             const { data: newDiscount, error: newDiscountError } =
@@ -817,13 +810,29 @@ const InvoiceList: React.FC = () => {
       if (updateCasesError) {
         throw new Error(updateCasesError.message);
       }
+      function updateInvoice(
+        old_amount: number,
+        new_amount: number,
+        due_amount: number
+      ) {
+        let paid_amount = old_amount - due_amount;
+        let new_due_amount = Math.max(0, new_amount - paid_amount);
+
+        return {
+          amount: new_amount,
+          due_amount: new_due_amount,
+        };
+      }
 
       const { error: updateInvoicesError } = await supabase
         .from("invoices")
-        .update({
-          amount: updatedInvoice.totalAmount,
-          due_amount: updatedInvoice.totalAmount,
-        })
+        .update(
+          updateInvoice(
+            Number(updatedInvoice.oldTotalAmount),
+            Number(updatedInvoice.totalAmount),
+            Number(updatedInvoice.totalDue)
+          )
+        )
         .eq("case_id", updatedInvoice.id);
 
       if (updateInvoicesError) {
