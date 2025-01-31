@@ -5,7 +5,7 @@ import ServiceModal from "../../components/settings/ServiceModal";
 import DeleteConfirmationModal from "../../components/settings/DeleteConfirmationModal";
 import { mockServices, Service } from "../../data/mockServiceData";
 import ProductList from "../../components/settings/ProductList";
-import { productsService } from "../../services/productsService";
+import { productsService, ServiceInput } from "../../services/productsService";
 import { supabase } from "../../lib/supabase";
 import { Database, Materials } from "../../types/supabase";
 import { toast } from "react-hot-toast";
@@ -31,6 +31,7 @@ import {
 } from "@radix-ui/react-popover";
 import { Checkbox } from "@radix-ui/react-checkbox";
 import { Badge } from "@/components/ui/badge";
+import BatchServiceUpload from "@/components/settings/BatchServiceUpload";
 export interface ServicesFormData {
   categories: string[];
   price_error?: string;
@@ -565,7 +566,11 @@ const ProductsServices: React.FC = () => {
         onSave={() => handleSaveProduct()}
         product={selectedProduct}
       />
-
+      <BatchServiceUpload
+        onUpload={function (services: ServiceInput[]): Promise<void> {
+          throw new Error("Function not implemented.");
+        }}
+      />
       <ServiceModal
         isOpen={isServiceModalOpen}
         onClose={() => setIsServiceModalOpen(false)}
