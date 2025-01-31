@@ -886,6 +886,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="w-[200px]">Type</TableHead>
                 <TableHead className="w-[200px]">Teeth</TableHead>
                 <TableHead>Material/Item</TableHead>
+                <TableHead>Services</TableHead>
                 <TableHead>Shades</TableHead>
                 <TableHead>Note</TableHead>
                 <TableHead>Percent</TableHead>
@@ -2112,7 +2113,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   index
                                                 ]?.subRows?.map((subRow) => ({
                                                   ...subRow,
-                                                  discount: 0, // Apply the same discount to each subRow
+                                                  discount: updatedDiscount, // Apply the same discount to each subRow
                                                 })) ?? [], // Default to an empty array if subRows is undefined or null
                                             };
 
@@ -2164,7 +2165,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   updatedProducts[index]?.subRows?.map(
                                     (subRow) => ({
                                       ...subRow,
-                                      quantity: 1,
+                                      quantity: updatedQuantity,
                                     })
                                   ) ?? [],
                               };
@@ -3293,7 +3294,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     togglePercentPopover(subIndex + index + 100)
                                   }
                                 >
-                                  {row_sub.discount + row.discount}
+                                  {row_sub.discount}
                                   <Percent className="h-4 w-4" />
                                 </Button>
                               </PopoverTrigger>
@@ -3426,15 +3427,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </Popover>
                           </TableCell>
                           <TableCell className="border-b relative">
-                            <div className="absolute -right-2 top-4">
-                              ={" "}
-                              {(row_sub?.quantity && row_sub.quantity >= 1
-                                ? row_sub.quantity
-                                : 0) +
-                                (row?.quantity && row?.quantity > 1
-                                  ? row?.quantity
-                                  : 0)}
-                            </div>
                             <Input
                               type="number"
                               value={row_sub.quantity}

@@ -148,11 +148,6 @@ const saveCaseProduct = async (
     console.log(cases.products, "cases.products");
     const caseProductTeethRows = cases.products.flatMap((main: any) => {
       return main.subRows.map((product: any) => {
-        const totalQuantity =
-          main.quantity > 1
-            ? main.quantity + product.quantity
-            : product.quantity;
-
         return {
           case_product_id: caseProductId, // Replace with the actual dynamic ID
           is_range: cases.products.length > 0,
@@ -161,21 +156,25 @@ const saveCaseProduct = async (
           product_id: product.id,
           type: product.type || "",
           lab_id: cases.overview.lab_id || "",
-          quantity: totalQuantity > 1 ? totalQuantity : 1, // Ensure at least 1
+          quantity: product.quantity || 1, // Ensure at least 1
           occlusal_shade_id:
-            product.shades.occlusal_shade !== "manual" && product.shades.custom_occlusal_shade!==""
+            product.shades.occlusal_shade !== "manual" &&
+            product.shades.custom_occlusal_shade !== ""
               ? product.shades.occlusal_shade
               : null,
           body_shade_id:
-            product.shades.body_shade !== "manual" && product.shades.custom_body_shade!==""
+            product.shades.body_shade !== "manual" &&
+            product.shades.custom_body_shade !== ""
               ? product.shades.body_shade
               : null,
           gingival_shade_id:
-            product.shades.gingival_shade !== "manual" && product.shades.custom_gingival_shade!==""
+            product.shades.gingival_shade !== "manual" &&
+            product.shades.custom_gingival_shade !== ""
               ? product.shades.gingival_shade
               : null,
           stump_shade_id:
-            product.shades.stump_shade !== "manual" && product.shades.custom_stump_shade!==""
+            product.shades.stump_shade !== "manual" &&
+            product.shades.custom_stump_shade !== ""
               ? product.shades.stump_shade
               : null,
           manual_body_shade: product?.shades.manual_body || null,
@@ -198,23 +197,15 @@ const saveCaseProduct = async (
     const discountedPrice = cases.products.flatMap((main: any) => {
       return main.subRows.map((product: any) => {
         // Calculate the final discount
-        const finalDiscount =
-          product.discount === 0
-            ? main.discount // If product discount is 0, use the main discount
-            : main.discount + product.discount; // Otherwise, add both main and product discounts
 
         // Calculate the price after final discount
         const priceAfterDiscount =
-          product.price - (product.price * finalDiscount) / 100;
+          product.price - (product.price * product.discount) / 100;
 
         // Calculate the total quantity based on main.quantity and product.quantity
-        const totalQuantity =
-          main.quantity > 1
-            ? main.quantity + product.quantity
-            : product.quantity;
 
         // Calculate final price (after discount) for the given quantity
-        const final_price = priceAfterDiscount * totalQuantity;
+        const final_price = priceAfterDiscount * product.quantity;
 
         // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
         const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
@@ -222,8 +213,8 @@ const saveCaseProduct = async (
         return {
           product_id: product.id,
           price: product.price,
-          discount: finalDiscount, // use the final discount
-          quantity: totalQuantity, // final quantity after adding main.quantity
+          discount: product.discount, // use the final discount
+          quantity: product.quantity, // final quantity after adding main.quantity
           final_price: final_price, // price after final discount
           total: amount, // final price * total quantity * teeth length
           case_id: savedCaseId as string,
