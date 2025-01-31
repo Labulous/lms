@@ -322,16 +322,7 @@ const ProductsServices: React.FC = () => {
   };
   console.log(services, "service");
   console.log(formData, "Form");
-  const handleAddService = async (newService: Service) => {
-    const {
-      name,
-      description,
-      categories,
-      is_client_visible,
-      price,
-      is_taxable,
-      material_id,
-    } = newService;
+  const handleAddService = async (newService: Service[]) => {
     // Log the new service object
     console.log(newService, "handleAddService");
 
@@ -340,18 +331,7 @@ const ProductsServices: React.FC = () => {
       // Insert the new service into the 'services' table on Supabase
       const { data, error } = await supabase
         .from("services")
-        .insert([
-          {
-            name,
-            description,
-            categories,
-            is_client_visible,
-            is_taxable,
-            price,
-            lab_id: labIdData?.lab_id,
-            material_id,
-          },
-        ])
+        .insert(newService)
         .select("*");
       setServiceInsertLoading(false);
       setServiceInsertLoading(false);
@@ -567,18 +547,9 @@ const ProductsServices: React.FC = () => {
         product={selectedProduct}
       />
       <BatchServiceUpload
-        onUpload={function (services: ServiceInput[]): Promise<void> {
-          throw new Error("Function not implemented.");
-        }}
-      />
-      <ServiceModal
         isOpen={isServiceModalOpen}
-        onClose={() => setIsServiceModalOpen(false)}
-        onSave={handleAddService}
-        isLoading={serviceInsertLoading}
-        formData={formData}
-        setFormData={setFormData}
-        materials={materialsData}
+        setIsOpen={setIsServiceModalOpen}
+        onUpload={(services) => handleAddService(services)}
       />
 
       <DeleteConfirmationModal
