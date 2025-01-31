@@ -257,6 +257,8 @@ export const createUserByAdmins = async (
   // role: "admin" | "technician" | "client",
   role: string,
   name: string,
+  firstname: string,
+  lastname: string,
   email: string,
   password: string,
   additionalClientFields?: {

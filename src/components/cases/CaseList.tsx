@@ -187,15 +187,25 @@ const CaseList: React.FC = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                  <div
-                    className="w-9 h-7 -leading-10 rounded flex items-center justify-center text-xs font-medium border"
-                    style={{
-                      backgroundColor: color || "white",
-                      borderColor: "rgba(0,0,0,0.1)",
-                      color: color ? getContrastColor(color) : "blue",
-                    }}
-                  >
-                    {name}
+                  <div className="flex items-center gap-2 justify-end w-full">
+                    <div
+                      className="w-4 h-4 rounded-sm border relative"
+                      style={{
+                        backgroundColor: color || "white",
+                        borderColor: "rgba(0,0,0,0.4)",
+                      }}
+                    >
+                      {!color && (
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            content: '""',
+                            background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span className="text-sm">{name}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -864,10 +874,6 @@ const CaseList: React.FC = () => {
                   custom_occlusal_shade,
                   custom_gingival_shade,
                   custom_stump_shade,
-                  manual_body_shade,
-                  manual_occlusal_shade,
-                  manual_gingival_shade,
-                  manual_stump_shade,
                   type,
           product:products!product_id (
                     id,

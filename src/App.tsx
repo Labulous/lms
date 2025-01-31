@@ -27,6 +27,8 @@ import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
+import { LABProfile } from "./pages/settings/lab-profile";
+
 import Home1 from "./pages/Home1";
 
 const App: React.FC = () => {
@@ -119,6 +121,10 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
+                     <Route
+                    path="lab-profile"
+                    element={<LABProfile />}
+                  />
                   <Route path="*" element={<Settings />} />
                 </Routes>
               </ProtectedRoute>

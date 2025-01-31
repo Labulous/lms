@@ -9,14 +9,15 @@ const tabs = [
   { id: 'product-catalog', label: 'Product Catalog', href: '/settings/product-catalog' },
   { id: 'case-workflow', label: 'Case Workflow', href: '/settings/case-workflow' },
   { id: 'working-tags', label: 'Working Tags', href: '/settings/working-tags' },
-  { id: 'working-Pans', label: 'Working Pans', href: '/settings/working-pans' },  
+  { id: 'working-Pans', label: 'Working Pans', href: '/settings/working-pans' },
   { id: 'user-management', label: 'User Management', href: '/settings/user-management' },
+  { id: 'lab-profile', label: 'Lab Profile', href: '/settings/lab-profile' },
 ] as const;
 
 export const SettingsTabs: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const currentTab = tabs.find(tab => location.pathname === tab.href)?.id || 'system';
 
   return (

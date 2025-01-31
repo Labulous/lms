@@ -21,12 +21,29 @@ export interface ProductInput {
   requires_shade?: boolean;
   lab_id: string;
 }
+
 export interface ProductTypes {
   id: string;
   description: string;
   name: string;
 }
+
 export type Product = ProductRow;
+
+// Service types
+type ServiceRow = Database["public"]["Tables"]["services"]["Row"];
+
+export interface ServiceInput {
+  description: string;
+  name: string;
+  price: number;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  material_id: string;
+  lab_id: string;
+}
+
+export type Service = ServiceRow;
 
 class ProductsService {
   async getProducts(labId: string): Promise<Product[]> {
@@ -57,6 +74,7 @@ class ProductsService {
       throw error;
     }
   }
+
   async getProductTypes(labId: string): Promise<ProductTypes[]> {
     try {
       logger.debug("Starting to fetch products from Supabase");
@@ -205,6 +223,142 @@ class ProductsService {
       logger.debug("Product deleted successfully", { id });
     } catch (error) {
       logger.error("Error in deleteProduct", { error });
+      throw error;
+    }
+  }
+
+  // Service-related methods
+  async getServices(labId: string): Promise<Service[]> {
+    try {
+      logger.debug("Starting to fetch services from Supabase");
+      const { data: services, error } = await supabase
+        .from("services")
+        .select(
+          `
+          *,
+          material:materials(name)
+        `
+        )
+        .order("name")
+        .eq("lab_id", labId);
+
+      if (error) {
+        logger.error("Error fetching services from Supabase", { error });
+        throw error;
+      }
+
+      logger.debug("Raw services from Supabase:", { services });
+      return services || [];
+    } catch (error) {
+      logger.error("Error in getServices", { error });
+      throw error;
+    }
+  }
+
+  async addService(input: ServiceInput): Promise<Service> {
+    try {
+      logger.debug("Adding new service", input);
+
+      const { data, error } = await supabase
+        .from("services")
+        .insert({
+          name: input.name,
+          description: input.description || "", // Ensure description is provided
+          price: input.price,
+          is_client_visible: input.is_client_visible,
+          is_taxable: input.is_taxable,
+          material_id: input.material_id,
+          lab_id: input.lab_id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) {
+        logger.error("Error adding service", { error });
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error("Error in addService", { error });
+      throw error;
+    }
+  }
+
+  async updateService(
+    id: string,
+    input: Partial<ServiceInput>
+  ): Promise<Service> {
+    try {
+      logger.debug("Updating service", { id, input });
+
+      const { data, error } = await supabase
+        .from("services")
+        .update({
+          name: input.name,
+          description: input.description,
+          price: input.price,
+          is_client_visible: input.is_client_visible,
+          is_taxable: input.is_taxable,
+          material_id: input.material_id,
+        })
+        .eq("id", id)
+        .select(
+          `
+          *,
+          material:materials(name)
+        `
+        )
+        .single();
+
+      if (error) {
+        logger.error("Error updating service", { error });
+        throw error;
+      }
+
+      return data;
+    } catch (error) {
+      logger.error("Error in updateService", { error });
+      throw error;
+    }
+  }
+
+  async deleteService(id: string): Promise<void> {
+    try {
+      logger.debug("Attempting to delete service", { id });
+
+      const { error } = await supabase
+        .from("services")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        logger.error("Error deleting service", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+
+        if (error.code === '23503') {
+          const tableMatch = error.message?.match(/table "([^"]+)"/g);
+          const referencingTable = tableMatch?.[1]?.replace(/^table "|"$/g, '') || '';
+          
+          const formattedTable = referencingTable
+            .replace(/_/g, ' ')
+            .toLowerCase();
+
+          throw new Error(
+            `Cannot delete this service as it is being used in ${formattedTable}`
+          );
+        }
+        
+        throw error;
+      }
+    } catch (error) {
+      logger.error("Error in deleteService", { error });
       throw error;
     }
   }

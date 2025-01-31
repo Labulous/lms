@@ -671,7 +671,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <div className="space-y-0.5">
             <h2 className="text-2xl font-bold tracking-tight">

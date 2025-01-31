@@ -68,7 +68,7 @@ const NotesStep: React.FC<NotesStepProps> = ({
           name="invoiceNotes"
           value={formData.notes?.invoiceNotes || ""}
           onChange={handleInputChange}
-          placeholder="Enter any specific instructions or notes for the technician..."
+          placeholder="Enter any special instructions or details regarding the invoice for the lab admin..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">

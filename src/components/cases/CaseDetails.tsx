@@ -1526,9 +1526,9 @@ console.log(caseDetail,"case deatail")
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
-        <div className="w-full px-16 py-6">
+        <div className="w-full px-9 py-6">
           <div className="flex justify-between items-start">
-            <div className="flex items-start space-x-6">
+            <div className="flex items-start space-x-4">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
                   value={`/${location.pathname}`}
@@ -1538,23 +1538,23 @@ console.log(caseDetail,"case deatail")
                 />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight mb-4">
+                <h1 className="text-3xl font-semibold tracking-tight mb-4">
                   {caseDetail.patient_name
                     ? caseDetail.patient_name
                     : "Unknown Patient"}
                 </h1>
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Case #:</span>
-                    <span className="text-sm font-medium text-primary">
+                    <span className="text-xs text-gray-500">Case #:</span>
+                    <span className="text-xs font-medium text-primary">
                       {caseDetail?.case_number || "N/A"}
                     </span>
                   </div>
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">INV #:</span>
+                    <span className="text-xs text-gray-500">INV #:</span>
                     <div
-                      className="text-sm font-medium text-primary cursor-pointer"
+                      className="text-xs font-medium text-primary cursor-pointer"
                       onClick={() => setIsPreviewModalOpen(true)}
                     >
                       {caseDetail?.invoice.length > 0
@@ -1602,7 +1602,7 @@ console.log(caseDetail,"case deatail")
               </div>
             </div>
 
-            <div className="flex flex-col items-end space-y-6">
+            <div className="flex flex-col items-end space-y-5">
               <div className="flex items-center space-x-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1705,7 +1705,7 @@ console.log(caseDetail,"case deatail")
               <div className="flex items-center space-x-4">
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
-                  <span className="text-xs font-medium">
+                  <span className="text-sm font-medium">
                     {formatDate(
                       caseDetail?.received_date || caseDetail?.created_at
                     )}
@@ -1714,7 +1714,7 @@ console.log(caseDetail,"case deatail")
                 <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Due Date</span>
-                  <span className="text-xs font-medium">
+                  <span className="text-sm font-medium">
                     {caseDetail.isDueDateTBD
                       ? "TBD"
                       : formatDate(caseDetail.due_date)}
@@ -1723,7 +1723,7 @@ console.log(caseDetail,"case deatail")
                 <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Ship Date</span>
-                  <span className="text-xs font-medium">
+                  <span className="text-sm font-medium">
                     {caseDetail.ship_date
                       ? formatDate(caseDetail.ship_date)
                       : "Not Shipped"}
@@ -1731,8 +1731,8 @@ console.log(caseDetail,"case deatail")
                 </div>
                 <Separator orientation="vertical" className="h-6" />
                 <div className="flex flex-col items-center">
-                  <span className="text-xs text-gray-500">Appointment</span>
-                  <span className="text-xs font-medium">
+                  <span className="text-xs text-gray-500">Appointment Date</span>
+                  <span className="text-sm font-medium">
                     {caseDetail.isDueDateTBD
                       ? "TBD"
                       : formatDateWithTime(caseDetail.appointment_date)}
@@ -1745,12 +1745,12 @@ console.log(caseDetail,"case deatail")
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
-            <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 ">
+          <div className="md:col-span-2 space-y-6 ">
+            <Card className="bg-gradient-to-b from-slate-100 to-slate-50">
               <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <CircleDot className="mr-2" size={20} /> Case Progress
+                <CardTitle className="flex items-center text-lg ">
+                  <CircleDot className="mr-2" size={18} /> Case Progress
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
@@ -1778,8 +1778,8 @@ console.log(caseDetail,"case deatail")
 
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-xl">
-                  <Package className="mr-2" size={20} /> Case Items
+                <CardTitle className="flex items-center text-lg">
+                  <Package className="mr-2" size={18} /> Case Items
                 </CardTitle>
               </CardHeader>
               <CardContent className="py-2 px-3">
@@ -1874,7 +1874,7 @@ console.log(caseDetail,"case deatail")
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            <div className="space-y-1">
+                            <div className="space-y-0">
                               {product?.teethProduct?.occlusal_shade?.name ||
                               product?.teethProduct?.custom_occlusal_shade ||
                               product?.teethProduct?.manual_occlusal_shade ? (
@@ -2089,9 +2089,11 @@ console.log(caseDetail,"case deatail")
                   <div>
                     <Button
                       variant={"default"}
+                      size="sm"
                       onClick={() => handleOpenEditModal(caseDetail, "edit")}
                     >
                       Edit Invoice
+                      
                     </Button>
                   </div>
                 </div>
