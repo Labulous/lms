@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -62,6 +62,7 @@ const ClientUpdateCase: React.FC = () => {
       instructionNotes: "",
       invoiceNotes: "",
     },
+    is_appointment_TBD: false,
   });
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +81,8 @@ const ClientUpdateCase: React.FC = () => {
     action: null,
     isLoading: false,
   });
+
+  const rxFormRef = useRef<HTMLDivElement>(null);
 
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("caseId");
@@ -207,11 +210,9 @@ const ClientUpdateCase: React.FC = () => {
     // Validation
     const validationErrors: Partial<FormData> = {};
     if (!formData.clientId) validationErrors.clientId = "Client is required";
-    if (!formData.patientFirstName)
-      validationErrors.patientFirstName = "Patient first name is required";
-    if (!formData.patientLastName)
-      validationErrors.patientLastName = "Patient last name is required";
-    if (!formData.doctorId) validationErrors.doctorId = "doctor is required";
+    if (!formData.patient_id)
+      validationErrors.patient_id = "Patient is required";
+    if (!formData.doctorId) validationErrors.doctorId = "Doctor is required";
     if (!formData.deliveryMethod)
       validationErrors.deliveryMethodError = "Delivery method is required";
     if (!formData.isDueDateTBD && !formData.dueDate)
@@ -221,6 +222,13 @@ const ClientUpdateCase: React.FC = () => {
     if (!formData.status) validationErrors.statusError = "Status is Required";
     if (!formData.appointmentDate)
       validationErrors.appointmentDate = "Appointment date is Required";
+
+    if (
+      ((selectedProducts.length === 1 && selectedProducts[0].id === "") ||
+        selectedProducts[0].type === "") &&
+      !formData.notes.instructionNotes
+    )
+      validationErrors.itemsError = "Atleast One Item Required";
 
     if (
       !formData.caseDetails?.contactType ||
@@ -290,12 +298,17 @@ const ClientUpdateCase: React.FC = () => {
               transformedData.caseDetails?.customOcclusalDesign,
             custon_alloy_type: transformedData.caseDetails?.customAlloy,
             lab_id: lab?.labId,
-            working_tag_id: formData.workingTagName,
-            working_pan_name: formData.workingPanName,
-            working_pan_color: formData.workingPanColor,
+            working_tag_id: null,
+            working_pan_name: null,
+            working_pan_color: null,
             case_number: caseNumber,
             enclosed_case_id: formData.enclosed_case_id,
             attachements: selectedFiles.map((item) => item.url),
+            client_working_tag_id: transformedData.workingTagName,
+            client_working_pan_name: transformedData.workingPanName,
+            client_working_pan_color: transformedData.workingPanColor,
+            patient_id: transformedData.patient_id,
+            is_appointment_TBD: false,
           },
           products: selectedProducts.filter((item) => item.id && item.type),
           enclosedItems: transformedData.enclosedItems,
@@ -339,6 +352,7 @@ const ClientUpdateCase: React.FC = () => {
               case_number,
               due_date,
               attachements,
+              patient_id,
               invoice:invoices!case_id (
                 id,
                 case_id,
@@ -402,6 +416,13 @@ const ClientUpdateCase: React.FC = () => {
               product_ids:case_products!id (
                 products_id,
                 id
+              ),
+              client_working_pan_name,
+              client_working_pan_color,
+              client_working_tags:working_tags!client_working_tag_id (
+                id,
+                color,
+                name
               )
             `
           )
@@ -427,7 +448,6 @@ const ClientUpdateCase: React.FC = () => {
             })
           : [];
         setSelectedFiles(files);
-        console.log(caseDetails, "caseDetails  ");
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
 
@@ -582,9 +602,9 @@ const ClientUpdateCase: React.FC = () => {
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
-          workingPanName: caseDataApi.working_pan_name || "",
-          workingTagName: caseDataApi.tags?.id || null,
-          workingPanColor: caseDataApi.working_pan_color || "",
+          workingPanName: caseDataApi.client_working_pan_name || "",
+          workingTagName: caseDataApi.client_working_tags?.id || null,
+          workingPanColor: caseDataApi.client_working_pan_color || "",
 
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
@@ -621,6 +641,7 @@ const ClientUpdateCase: React.FC = () => {
             customAlloy: caseData?.custon_alloy_type || "",
           },
           enclosed_case_id: caseDataApi.enclosed_items.id,
+          patient_id: caseDataApi.patient_id,
         }));
 
         setCaseDetail({
@@ -672,8 +693,6 @@ const ClientUpdateCase: React.FC = () => {
     };
   }, [caseId, lab]);
 
-  console.log(caseDetail, "Case details");
-  console.log(errors, "errors");
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -720,11 +739,12 @@ const ClientUpdateCase: React.FC = () => {
             setselectedProducts={setSelectedProducts}
             formData={formData}
             formErrors={errors}
+            scrollToSection={rxFormRef}
           />
         </div>
 
         {/* Files and Notes Section Grid */}
-        <div className="grid grid-cols-2 gap-4">
+        <div ref={rxFormRef} className="grid grid-cols-2 gap-4">
           {/* Notes Section */}
           <div className="bg-white shadow">
             <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">

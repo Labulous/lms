@@ -71,6 +71,28 @@ class PatientsService {
       throw error;
     }
   }
+
+  async getPatientById(patientId: string): Promise<Patient | null> {
+    try {
+      const { data: patient, error } = await supabase
+        .from("patients")
+        .select("*")
+        .eq("id", patientId)
+        .single();
+
+      if (error) {
+        throw new Error(`Error fetching client: ${error.message}`);
+      }
+
+      if (!patient) {
+        return null;
+      }
+
+      return this.transformPatientFromDB(patient);
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const patientsService = new PatientsService();

@@ -306,6 +306,23 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     try {
       const fetchPatients = async () => {
         const patients = await patientsService.getPatients();
+        const foundPatient = patients.filter(
+          (p) => p.id === formData.patient_id
+        );
+
+        if (formData.patient_id && foundPatient.length === 0) {
+          try {
+            const selectedPatient = await patientsService.getPatientById(
+              formData.patient_id
+            );
+            if (selectedPatient) {
+              patients.unshift(selectedPatient);
+            }
+            setPatients(patients);
+          } catch (error) {
+            toast.error("Failed to fetch patient");
+          }
+        }
         setPatientsLoading(false);
         setPatients(patients);
       };
@@ -314,7 +331,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     } catch (error) {
       toast.error("Failed to fetch patients");
     }
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const fetchPatients = async () => {
