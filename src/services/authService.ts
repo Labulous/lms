@@ -642,6 +642,70 @@ export const changeUserPasswordById = async (userId: string, newPassword: string
   }
 };
 
+//Fetch the client's new email, pending approval.
+export const fetchPendingApprovals = async () => {
+  const { data, error } = await supabaseServiceRole
+    .from("pending_approvals")
+    .select("*");
+
+  if (error) {
+    console.error("Error fetching pending approvals:", error);
+    return [];
+  }
+
+  return data;
+};
+
+//The admin has approved the client's new email address
+export const approvePendingApproval = async (
+  approvalId: string,
+  clientId: string,
+  userId: string,
+  newEmail: string
+) => {
+  try {
+    // Update the pending_approvals table
+    const { error } = await supabaseServiceRole
+      .from("pending_approvals")
+      .update({
+        status: "approved", // Set the status to approved
+      })
+      .eq("id", approvalId) // Match the approvalId
+      .eq("client_id", clientId) // Match the clientId
+      .eq("user_id", userId); // Match the userId
+
+    // Update the email for the client table
+    const { error: clientError } = await supabaseServiceRole
+      .from("clients")
+      .update({ email: newEmail })
+      .eq("id", clientId);
+
+    // Update the email for the users table
+    const { error: userError } = await supabaseServiceRole
+      .from("users")
+      .update({ email: newEmail })
+      .eq("id", userId);
+
+    // ✅ Update the email in the Supabase Auth system
+    const { error: authError } = await supabaseServiceRole.auth.admin.updateUserById(userId, {
+      email: newEmail,
+    });
+
+    if (error || clientError || userError || authError) {
+      console.error("Error updating email:", error || clientError || userError || authError);
+      throw new Error("Failed to update email.");
+    }
+
+    console.log("Approval and email updated successfully.");
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error("Error in approval process:", error);
+    return { success: false, error }; // Return error response if any issues occur
+  }
+};
+
+
+
 // Listen to auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
   logger.debug("Auth state changed", { event, userId: session?.user?.id });

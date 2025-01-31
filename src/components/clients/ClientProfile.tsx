@@ -97,7 +97,7 @@ const ClientProfile: React.FC = () => {
             }
 
             // Call API to save edited data using the fetched client ID
-            await clientsService.updateClientUserDetails(fetchedClientID, editedData); // Pass fetchedClientID instead of client?.id
+            await clientsService.updateClientUserDetails(fetchedClientID, user.id, editedData); // Pass fetchedClientID instead of client?.id
             toast.success("Client data saved successfully");
             setIsEditing(false);
             setClient(editedData); // Update the client with the saved data
@@ -121,7 +121,7 @@ const ClientProfile: React.FC = () => {
 
     const handleCancel = () => {
         setIsEditing(false);
-        setEditedData(null);
+        //setEditedData(null);
     };
 
     const handleInputChange = (
@@ -152,7 +152,7 @@ const ClientProfile: React.FC = () => {
         });
     };
 
-    console.log(client);
+    //console.log(client);
 
     const addDoctor = () => {
         setEditedData((prev: Client | null) => {
@@ -366,11 +366,11 @@ const ClientProfile: React.FC = () => {
                                                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                                                     <Input
                                                         name="email"
-                                                        //value={isEditing ? editedData?.email ?? "" : client.email}
-                                                        //onChange={handleInputChange}
-                                                        //disabled={!isEditing}
-                                                        value={client.email}
-                                                        disabled
+                                                        value={isEditing ? editedData?.email ?? "" : client.email}
+                                                        onChange={handleInputChange}
+                                                        disabled={!isEditing}
+                                                        // value={client.email}
+                                                        // disabled
                                                         className="pl-10"
                                                     />
                                                 </div>
