@@ -331,7 +331,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     } catch (error) {
       toast.error("Failed to fetch patients");
     }
-  }, [user?.id]);
+  }, [formData.patient_id]);
 
   useEffect(() => {
     const fetchPatients = async () => {

@@ -556,7 +556,14 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
             custom_occlusion_design_type,
             custon_alloy_type,
             is_approved,
-            created_from
+            created_from,
+            patient:patients!patient_id (
+              id,
+              first_name,
+              last_name,
+              email,
+              phone
+            )
           `
         )
         .eq("id", activeCaseId)
@@ -1260,8 +1267,10 @@ const ClientCaseDetails: React.FC<CaseDetailsProps> = ({
               </div>
               <div>
                 <h1 className="text-2xl font-semibold tracking-tight mb-4">
-                  {caseDetail.patient_name
-                    ? caseDetail.patient_name
+                  {caseDetail.patient
+                    ? caseDetail.patient.first_name +
+                      " " +
+                      caseDetail.patient.last_name
                     : "Unknown Patient"}
                 </h1>
                 <div className="flex items-center space-x-4">

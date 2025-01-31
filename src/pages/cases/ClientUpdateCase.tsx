@@ -174,25 +174,6 @@ const ClientUpdateCase: React.FC = () => {
             setClients(clients);
           }
         }
-        const number = await fetchCaseCount(labData.labId); // Fetch current case count
-
-        if (typeof number === "number") {
-          // Generate case number
-          const identifier = labData?.name
-            ?.substring(0, 3)
-            .toUpperCase() as string;
-          const currentYear = new Date().getFullYear().toString().slice(-2);
-          const currentMonth = String(new Date().getMonth() + 1).padStart(
-            2,
-            "0"
-          );
-          const sequentialNumber = String(number + 1).padStart(5, "0");
-
-          const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
-          setCaseNumber(caseNumber);
-        } else {
-          setCaseNumber(null);
-        }
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
@@ -224,11 +205,14 @@ const ClientUpdateCase: React.FC = () => {
       validationErrors.appointmentDate = "Appointment date is Required";
 
     if (
-      ((selectedProducts.length === 1 && selectedProducts[0].id === "") ||
-        selectedProducts[0].type === "") &&
+      ((selectedProducts.length > 0 &&
+        selectedProducts.length === 1 &&
+        selectedProducts[0].id === "") ||
+        (selectedProducts.length > 0 && selectedProducts[0].type === "")) &&
       !formData.notes.instructionNotes
-    )
+    ) {
       validationErrors.itemsError = "Atleast One Item Required";
+    }
 
     if (
       !formData.caseDetails?.contactType ||
@@ -255,73 +239,65 @@ const ClientUpdateCase: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
-    if (caseNumber) {
-      try {
-        setLoadingState({ isLoading: true, action: "save" });
-        const transformedData = {
-          ...formData,
-          status: formData.status.toLowerCase() as CaseStatus,
-        };
-        const newCase: any = {
-          overview: {
-            client_id: transformedData.clientId,
-            doctor_id: transformedData.doctorId || "",
-            created_by: user?.id || "",
-            patient_name:
-              transformedData.patientFirstName +
-              " " +
-              transformedData.patientLastName,
-            rx_number: "",
-            received_date: transformedData.orderDate,
-            status: transformedData.status,
-            due_date: transformedData.isDueDateTBD
-              ? null
-              : transformedData.dueDate,
-            isDueDateTBD: transformedData.isDueDateTBD || false,
-            appointment_date: transformedData.appointmentDate,
-            otherItems: transformedData.otherItems || "",
-            invoice_notes: transformedData.notes?.invoiceNotes,
-            instruction_notes: transformedData.notes?.instructionNotes,
-            occlusal_type: transformedData.caseDetails?.occlusalType,
-            contact_type: transformedData.caseDetails?.contactType,
-            pontic_type: transformedData.caseDetails?.ponticType,
-            custom_contact_details: transformedData.caseDetails?.customContact,
-            custom_occulusal_details:
-              transformedData.caseDetails?.customOcclusal,
-            custom_pontic_details: transformedData.caseDetails?.customPontic,
-            margin_design_type: transformedData.caseDetails?.marginDesign,
-            occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
-            alloy_type: transformedData.caseDetails?.alloyType,
-            custom_margin_design_type:
-              transformedData.caseDetails?.customMargin,
-            custom_occlusion_design_type:
-              transformedData.caseDetails?.customOcclusalDesign,
-            custon_alloy_type: transformedData.caseDetails?.customAlloy,
-            lab_id: lab?.labId,
-            working_tag_id: null,
-            working_pan_name: null,
-            working_pan_color: null,
-            case_number: caseNumber,
-            enclosed_case_id: formData.enclosed_case_id,
-            attachements: selectedFiles.map((item) => item.url),
-            client_working_tag_id: transformedData.workingTagName,
-            client_working_pan_name: transformedData.workingPanName,
-            client_working_pan_color: transformedData.workingPanColor,
-            patient_id: transformedData.patient_id,
-            is_appointment_TBD: false,
-          },
-          products: selectedProducts.filter((item) => item.id && item.type),
-          enclosedItems: transformedData.enclosedItems,
-          files: selectedFiles,
-        };
-        console.log(newCase, "newCase");
-        await updateCase(newCase, navigate, setLoadingState, caseId as string);
-      } catch (error) {
-        console.error("Error creating case:", error);
-        toast.error("Failed to create case");
-      }
-    } else {
-      toast.error("Unable to Create Case Number");
+    try {
+      setLoadingState({ isLoading: true, action: "save" });
+      const transformedData = {
+        ...formData,
+        status: formData.status.toLowerCase() as CaseStatus,
+      };
+      const newCase: any = {
+        overview: {
+          client_id: transformedData.clientId,
+          doctor_id: transformedData.doctorId || "",
+          created_by: user?.id || "",
+          patient_name:
+            transformedData.patientFirstName +
+            " " +
+            transformedData.patientLastName,
+          rx_number: "",
+          received_date: transformedData.orderDate,
+          status: transformedData.status,
+          due_date: transformedData.isDueDateTBD
+            ? null
+            : transformedData.dueDate,
+          isDueDateTBD: transformedData.isDueDateTBD || false,
+          appointment_date: transformedData.appointmentDate,
+          otherItems: transformedData.otherItems || "",
+          invoice_notes: transformedData.notes?.invoiceNotes,
+          instruction_notes: transformedData.notes?.instructionNotes,
+          occlusal_type: transformedData.caseDetails?.occlusalType,
+          contact_type: transformedData.caseDetails?.contactType,
+          pontic_type: transformedData.caseDetails?.ponticType,
+          custom_contact_details: transformedData.caseDetails?.customContact,
+          custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
+          custom_pontic_details: transformedData.caseDetails?.customPontic,
+          margin_design_type: transformedData.caseDetails?.marginDesign,
+          occlusion_design_type: transformedData.caseDetails?.occlusalDesign,
+          alloy_type: transformedData.caseDetails?.alloyType,
+          custom_margin_design_type: transformedData.caseDetails?.customMargin,
+          custom_occlusion_design_type:
+            transformedData.caseDetails?.customOcclusalDesign,
+          custon_alloy_type: transformedData.caseDetails?.customAlloy,
+          lab_id: lab?.labId,
+          working_tag_id: null,
+          working_pan_name: null,
+          working_pan_color: null,
+          enclosed_case_id: formData.enclosed_case_id,
+          attachements: selectedFiles.map((item) => item.url),
+          client_working_tag_id: transformedData.workingTagName,
+          client_working_pan_name: transformedData.workingPanName,
+          client_working_pan_color: transformedData.workingPanColor,
+          patient_id: transformedData.patient_id,
+          is_appointment_TBD: false,
+        },
+        products: selectedProducts.filter((item) => item.id && item.type),
+        enclosedItems: transformedData.enclosedItems,
+        files: selectedFiles,
+      };
+      await updateCase(newCase, navigate, setLoadingState, caseId as string);
+    } catch (error) {
+      console.error("Error creating case:", error);
+      toast.error("Failed to create case");
     }
   };
 
@@ -448,8 +424,12 @@ const ClientUpdateCase: React.FC = () => {
             })
           : [];
         setSelectedFiles(files);
-        const productsIdArray = caseDetails?.product_ids[0].products_id;
-        const caseProductId = caseDetails?.product_ids[0]?.id;
+        const productsIdArray =
+          caseDetails?.product_ids.length > 0 &&
+          caseDetails?.product_ids[0].products_id;
+        const caseProductId =
+          caseDetails?.product_ids.length > 0 &&
+          caseDetails?.product_ids[0]?.id;
 
         let products: Product[] = [];
         let teethProducts: ToothInfo[] = [];
@@ -589,8 +569,8 @@ const ClientUpdateCase: React.FC = () => {
           ...prevData,
           clientId: caseDataApi?.client?.id || "",
           doctorId: caseDataApi?.doctor?.id || "",
-          patientFirstName: caseDataApi?.patient_name?.split(" ")[0] || "hi",
-          patientLastName: caseDataApi?.patient_name?.split(" ")[1] || "hi2",
+          patientFirstName: caseDataApi?.patient_name?.split(" ")[0] || "",
+          patientLastName: caseDataApi?.patient_name?.split(" ")[1] || "",
           orderDate: caseDataApi?.received_date
             ? new Date(caseDataApi.received_date).toISOString()
             : new Date().toISOString(),
@@ -603,7 +583,7 @@ const ClientUpdateCase: React.FC = () => {
           deliveryMethodError: "",
           appointmentDate: caseData.appointment_date || "",
           workingPanName: caseDataApi.client_working_pan_name || "",
-          workingTagName: caseDataApi.client_working_tags?.id || null,
+          workingTagName: caseDataApi.client_working_tags?.id || "",
           workingPanColor: caseDataApi.client_working_pan_color || "",
 
           enclosedItems: {
@@ -692,6 +672,7 @@ const ClientUpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, lab]);
+  console.log(formData);
 
   return (
     <div className="p-6">

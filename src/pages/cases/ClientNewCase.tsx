@@ -164,7 +164,8 @@ const ClientNewCase: React.FC = () => {
         }
 
         setLab(labData);
-        const number = await fetchCaseCount(labData.labId); // Fetch current case count
+        const number = await fetchCaseCount(labData.labId);
+        // Fetch current case count
 
         if (typeof number === "number") {
           // Generate case number
@@ -179,12 +180,13 @@ const ClientNewCase: React.FC = () => {
           const sequentialNumber = String(number + 1).padStart(5, "0");
 
           const caseNumber = `${identifier}-${currentYear}${currentMonth}-${sequentialNumber}`;
+          console.log(caseNumber);
+
           setCaseNumber(caseNumber);
         } else {
           setCaseNumber(null);
         }
       } catch (error) {
-        console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
       } finally {
         setLoading(false);
@@ -215,11 +217,14 @@ const ClientNewCase: React.FC = () => {
     if (!formData.status) validationErrors.statusError = "Status is Required";
 
     if (
-      ((selectedProducts.length === 1 && selectedProducts[0].id === "") ||
-        selectedProducts[0].type === "") &&
+      ((selectedProducts.length > 0 &&
+        selectedProducts.length === 1 &&
+        selectedProducts[0].id === "") ||
+        (selectedProducts.length > 0 && selectedProducts[0].type === "")) &&
       !formData.notes.instructionNotes
-    )
+    ) {
       validationErrors.itemsError = "Atleast One Item Required";
+    }
 
     if (
       !validationErrors.caseDetails ||
