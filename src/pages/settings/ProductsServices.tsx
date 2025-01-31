@@ -7,7 +7,7 @@ import { mockServices, Service } from "../../data/mockServiceData";
 import ProductList from "../../components/settings/ProductList";
 import { productsService } from "../../services/productsService";
 import { supabase } from "../../lib/supabase";
-import { Database } from "../../types/supabase";
+import { Database, Materials } from "../../types/supabase";
 import { toast } from "react-hot-toast";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,7 @@ export interface ServicesFormData {
   is_taxable: boolean;
   discount?: number;
   description?: string;
+  material_id?: string;
 }
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
@@ -64,6 +65,7 @@ const ProductsServices: React.FC = () => {
   const [searhTerm, setSearchTerm] = useState("");
   const [serviceInsertLoading, setServiceInsertLoading] = useState(false);
   const [materialFilter, setMaterialFilter] = useState<string[]>([]);
+  const [materialsData, setMaterials] = useState<Materials[]>([]);
   const [formData, setFormData] = useState<ServicesFormData>({
     name: "",
     description: "",
@@ -73,6 +75,7 @@ const ProductsServices: React.FC = () => {
     is_client_visible: false,
     is_taxable: false,
     categories: [],
+    material_id: "",
   });
   const { user } = useAuth();
 
@@ -151,6 +154,24 @@ const ProductsServices: React.FC = () => {
       refreshInterval: 5000,
     }
   );
+  const { data: materialsApi, error: materialsError } = useQuery(
+    productTypes1 && labIdData?.lab_id
+      ? supabase
+          .from("materials")
+          .select(
+            `
+           *
+          `
+          )
+
+          .eq("lab_id", labIdData?.lab_id)
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 5000,
+    }
+  );
   if (productTypesError && labIdData?.lab_id) {
     // toast.error("failed to fetech cases");
   }
@@ -167,7 +188,10 @@ const ProductsServices: React.FC = () => {
   useEffect(() => {
     if (activeTab === "services" && servicesApi) {
       setServices(servicesApi);
-      console.log(servicesApi, "servicesApi");
+    }
+    if (materialsApi) {
+      console.log("hi");
+      setMaterials(materialsApi);
     }
   }, [activeTab]);
 
@@ -295,6 +319,8 @@ const ProductsServices: React.FC = () => {
       console.log("faild to fetch Services", err);
     }
   };
+  console.log(services, "service");
+  console.log(formData, "Form");
   const handleAddService = async (newService: Service) => {
     const {
       name,
@@ -303,6 +329,7 @@ const ProductsServices: React.FC = () => {
       is_client_visible,
       price,
       is_taxable,
+      material_id,
     } = newService;
     // Log the new service object
     console.log(newService, "handleAddService");
@@ -321,6 +348,7 @@ const ProductsServices: React.FC = () => {
             is_taxable,
             price,
             lab_id: labIdData?.lab_id,
+            material_id,
           },
         ])
         .select("*");
@@ -381,6 +409,8 @@ const ProductsServices: React.FC = () => {
     );
     return Array.from(uniqueMaterials).map((name) => ({ id: name, name }));
   }, [products]);
+
+  console.log(materialsData, "materialsData");
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader
@@ -543,6 +573,7 @@ const ProductsServices: React.FC = () => {
         isLoading={serviceInsertLoading}
         formData={formData}
         setFormData={setFormData}
+        materials={materialsData}
       />
 
       <DeleteConfirmationModal

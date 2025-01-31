@@ -3,6 +3,15 @@ import { X, HelpCircle } from "lucide-react";
 import { Service } from "../../data/mockServiceData";
 import { PRODUCT_TYPES } from "../../data/mockProductData";
 import { ServicesFormData } from "@/pages/settings/ProductsServices";
+import { Materials } from "@/types/supabase";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -11,6 +20,7 @@ interface ServiceModalProps {
   isLoading: boolean;
   setFormData: React.Dispatch<SetStateAction<ServicesFormData>>;
   formData: ServicesFormData;
+  materials: Materials[];
 }
 
 const ServiceModal: React.FC<ServiceModalProps> = ({
@@ -20,6 +30,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   isLoading,
   formData,
   setFormData,
+  materials,
 }) => {
   const [errors, setErrors] = useState<Partial<ServicesFormData>>({});
 
@@ -48,6 +59,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Partial<ServicesFormData> = {};
     if (!formData.name.trim()) newErrors.name = "Service name is required";
+    if (!formData?.description?.trim())
+      newErrors.description = "Service Description is required";
+    if (!formData?.material_id?.trim())
+      newErrors.material_id = "Service material is required";
     if (formData.price <= 0)
       newErrors.price_error = "Price must be greater than 0";
     if (formData.categories.length === 0)
@@ -59,7 +74,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
   const handleSubmit = () => {
     if (!validateForm()) return;
-
+    console.log("calling");
     const newService: Service = {
       ...formData,
     };
@@ -145,8 +160,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                   }`}
                 />
               </div>
-              {errors.price && (
-                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+              {errors.price_error && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.price_error}
+                </p>
               )}
             </div>
             <div>
@@ -171,6 +188,48 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               {errors.name && (
                 <p className="mt-1 text-sm text-red-600">
                   {errors.description}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-4"
+              >
+                Select Material
+              </label>
+              <Select
+                name="material_id"
+                value={formData.material_id}
+                onValueChange={(value) => {
+                  setFormData((form) => ({ ...form, material_id: value }));
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "bg-white",
+                    errors.material_id ? "border-red-500" : ""
+                  )}
+                >
+                  <SelectValue placeholder="Select a Material" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials && materials.length > 0 ? (
+                    materials.map((material) => (
+                      <SelectItem key={material.id} value={material.id}>
+                        {material.name || "Unnamed material"}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="_no_clients" disabled>
+                      No clients available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.material_id && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.material_id}
                 </p>
               )}
             </div>
@@ -211,7 +270,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-4">
                 Apply to Categories *
                 <span
                   className="ml-1 inline-block"
@@ -240,8 +299,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                   </div>
                 ))}
               </div>
-              {errors.categories && (
-                <p className="mt-1 text-sm text-red-600">{errors.categories}</p>
+              {errors.category_error && (
+                <p className="mt-1 text-sm text-red-600">{errors.category_error}</p>
               )}
             </div>
           </div>

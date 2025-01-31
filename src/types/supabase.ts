@@ -196,6 +196,15 @@ export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
   completed: "Case has been finished and is ready for delivery",
   cancelled: "Case has been cancelled and will not be processed",
 };
+export interface Materials {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string; // Or Date if you prefer to use Date type
+  updated_at: string; // Or Date if you prefer to use Date type
+  lab_id: string;
+}
 
 /**
  * Shade data structure for dental products

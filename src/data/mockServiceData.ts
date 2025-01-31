@@ -10,6 +10,7 @@ export interface Service {
   material?: {
     name: string;
   };
+  material_id?: string;
 }
 
 export const mockServices: Service[] = [
