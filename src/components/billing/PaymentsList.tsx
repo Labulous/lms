@@ -666,6 +666,7 @@ export function PaymentsList() {
           onSubmit={handleNewPayment}
         />
       )}
+      
 
       {isPreviewModalOpen && (
         <PaymentReceiptPreviewModal
