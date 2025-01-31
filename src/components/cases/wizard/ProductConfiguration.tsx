@@ -328,7 +328,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         `
         )
         .order("name")
-        .eq("product_type_id", selectedId?.id)
         .eq("lab_id", lab?.labId);
 
       if (error) {
@@ -2195,6 +2194,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     </TableCell>
                   </TableRow>
                   {expandedRows.includes(row.id) &&
+                    row?.subRows &&
+                    row?.subRows?.length > 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
                       let originalIndex = subIndex;
                       subIndex = subIndex + 100;
@@ -2346,6 +2347,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     shadeData[index]?.manual_body ||
                                     shadeData[index]?.manual_stump ||
                                     shadeData[index]?.custom_stump ||
+                                    (row?.subRows &&
+                                      row?.subRows?.length > 0) ||
                                     shadeData[index]?.stump_shade ? (
                                       <div>
                                         {shadeData[index]?.subRow?.[
@@ -2505,22 +2508,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem,
-                                                          occlusal_shade: value,
-                                                          manual_occlusal: "",
-                                                          custom_occlusal: "",
-                                                        };
-                                                      }
-                                                      return subRowItem;
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        occlusal_shade: value,
+                                                        manual_occlusal: "",
+                                                        custom_occlusal: "",
+                                                      };
                                                     }
-                                                  ) ?? [],
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    occlusal_shade: value,
+                                                    manual_occlusal: "",
+                                                    custom_occlusal: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2556,30 +2564,42 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        // Only update the specific subRow at originalIndex
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          manual_occlusal:
-                                                            e.target.value,
-                                                          occlusal_shade: e
-                                                            .target.value
-                                                            ? "manual"
-                                                            : "",
-                                                          custom_occlusal: e
-                                                            .target.value
-                                                            ? ""
-                                                            : "",
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      // Only update the specific subRow at originalIndex
+                                                      return {
+                                                        ...subRowItem, // Keep existing subRow data
+                                                        manual_occlusal:
+                                                          e.target.value,
+                                                        occlusal_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_occlusal: e
+                                                          .target.value
+                                                          ? ""
+                                                          : "",
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem; // Keep other subRow items unchanged
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_occlusal:
+                                                      e.target.value,
+                                                    occlusal_shade: e.target
+                                                      .value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_occlusal: e.target
+                                                      .value
+                                                      ? ""
+                                                      : "",
+                                                  },
+                                                ], // Default to an empty array if subRow is undefined or null
                                               };
 
                                               return updatedShadeData;
@@ -2647,22 +2667,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem,
-                                                          body_shade: value,
-                                                          manual_body: "",
-                                                          custom_body: "",
-                                                        };
-                                                      }
-                                                      return subRowItem;
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        body_shade: value,
+                                                        manual_body: "",
+                                                        custom_body: "",
+                                                      };
                                                     }
-                                                  ) ?? [],
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    body_shade: value,
+                                                    manual_body: "",
+                                                    custom_body: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2699,27 +2724,35 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          manual_body:
-                                                            e.target.value,
-                                                          id: row_sub.id,
-                                                          body_shade: e.target
-                                                            .value
-                                                            ? "manual"
-                                                            : "", // Update based on the value
-                                                          custom_body: "", // Optionally clear custom_body when updating manual_body
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem, // Keep existing subRow data
+                                                        manual_body:
+                                                          e.target.value,
+                                                        id: row_sub.id,
+                                                        body_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_body: "",
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem; // Keep other subRow items unchanged
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_body: e.target.value,
+                                                    id: row_sub.id,
+                                                    body_shade: e.target.value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_body: "",
+                                                  },
+                                                ], // Default to an empty array if subRow is undefined or null
                                               };
 
                                               return updatedShadeData;
@@ -2742,24 +2775,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem,
-                                                          custom_body:
-                                                            e.target.value.toUpperCase(),
-                                                          id: row_sub.id,
-                                                          body_shade: "",
-                                                          manual_body: "",
-                                                        };
-                                                      }
-                                                      return subRowItem;
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_body:
+                                                          e.target.value.toUpperCase(),
+                                                        id: row_sub.id,
+                                                        body_shade: "",
+                                                        manual_body: "",
+                                                      };
                                                     }
-                                                  ) ?? [],
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_body:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row_sub.id,
+                                                    body_shade: "",
+                                                    manual_body: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2788,23 +2828,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem,
-                                                          gingival_shade: value,
-                                                          manual_gingival: "",
-                                                          custom_gingival: "",
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem;
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        gingival_shade: value,
+                                                        manual_gingival: "",
+                                                        custom_gingival: "",
+                                                      };
                                                     }
-                                                  ) ?? [],
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    gingival_shade: value,
+                                                    manual_gingival: "",
+                                                    custom_gingival: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2841,25 +2885,32 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          manual_gingival:
-                                                            e.target.value,
-                                                          gingival_shade:
-                                                            "manual", // Optionally set gingival_shade to "manual" when manual_gingival is provided
-                                                          custom_gingival: "", // Optionally clear custom_gingival when updating manual_gingival
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_gingival:
+                                                          e.target.value,
+                                                        gingival_shade:
+                                                          "manual",
+                                                        custom_gingival: "",
+                                                        id: row_sub.id,
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_gingival:
+                                                      e.target.value,
+                                                    gingival_shade: "manual",
+                                                    custom_gingival: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2882,24 +2933,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          custom_gingival:
-                                                            e.target.value.toUpperCase(),
-                                                          gingival_shade: "", // Optionally clear gingival_shade when updating custom_gingival
-                                                          manual_gingival: "", // Optionally clear manual_gingival when updating custom_gingival
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_gingival:
+                                                          e.target.value.toUpperCase(),
+                                                        gingival_shade: "",
+                                                        manual_gingival: "",
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_gingival:
+                                                      e.target.value.toUpperCase(),
+                                                    gingival_shade: "",
+                                                    manual_gingival: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2926,23 +2982,27 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          stump_shade: value,
-                                                          manual_stump: "", // Optionally clear manual_stump when updating stump_shade
-                                                          custom_stump: "", // Optionally clear custom_stump when updating stump_shade
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        stump_shade: value,
+                                                        manual_stump: "",
+                                                        custom_stump: "",
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    stump_shade: value,
+                                                    manual_stump: "",
+                                                    custom_stump: "",
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -2979,27 +3039,36 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          manual_stump:
-                                                            e.target.value,
-                                                          stump_shade: e.target
-                                                            .value
-                                                            ? "manual"
-                                                            : "", // Set stump_shade to "manual" if value is entered
-                                                          custom_stump: "", // Optionally clear custom_stump when updating manual_stump
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_stump:
+                                                          e.target.value,
+                                                        stump_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_stump: "",
+                                                        id: row_sub.id,
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_stump:
+                                                      e.target.value,
+                                                    stump_shade: e.target.value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_stump: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -3022,24 +3091,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                                               updatedShadeData[index] = {
                                                 ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
-                                                          custom_stump:
-                                                            e.target.value.toUpperCase(), // Convert to uppercase
-                                                          stump_shade: "", // Optionally clear stump_shade when updating custom_stump
-                                                          manual_stump: "", // Optionally clear manual_stump when updating custom_stump
-                                                          id: row_sub.id,
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_stump:
+                                                          e.target.value.toUpperCase(),
+                                                        stump_shade: "",
+                                                        manual_stump: "",
+                                                        id: row_sub.id,
+                                                      };
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_stump:
+                                                      e.target.value.toUpperCase(),
+                                                    stump_shade: "",
+                                                    manual_stump: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
                                               };
 
                                               return updatedShadeData;
@@ -3401,10 +3477,34 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               variant="ghost"
                               size="sm"
                               onClick={() => {
-                                const updatedProducts = selectedProducts.filter(
-                                  (_, i) => i !== index
+                                setselectedProducts(
+                                  (prevProducts: SavedProduct[]) => {
+                                    return prevProducts.map((product, idx) => {
+                                      if (idx === index) {
+                                        const updatedSubRows =
+                                          product.subRows?.filter(
+                                            (_, i) => i !== originalIndex
+                                          ) || [];
+
+                                        const removedTeeth =
+                                          product.subRows?.[originalIndex]
+                                            ?.teeth?.[0];
+
+                                        const updatedTeeth =
+                                          product.teeth?.filter(
+                                            (tooth) => tooth !== removedTeeth
+                                          ) || [];
+
+                                        return {
+                                          ...product,
+                                          subRows: updatedSubRows,
+                                          teeth: updatedTeeth,
+                                        };
+                                      }
+                                      return product;
+                                    });
+                                  }
                                 );
-                                setselectedProducts(updatedProducts);
                               }}
                             >
                               <X className="h-4 w-4" />
