@@ -226,11 +226,13 @@ export interface OfficeAddress {
   zip_postal?: string;
   country?: string;
   phone_number?: string;
+  email?: string;
 }
 
 export interface labDetail {
   name: string;
   id?: string;
+  attachements? : string,
   office_address: OfficeAddress; // office_address should be an array of objects
 }
 
@@ -453,22 +455,22 @@ export interface Database {
             };
           };
           product:
-            | {
-                id: string;
-                name: string;
-                price: number;
-                lead_time: string | null; // Assuming the lead time can be a string or null
-                is_client_visible: boolean;
-                is_taxable: boolean;
-                created_at: string; // ISO date string
-                updated_at: string; // ISO date string
-                requires_shade: boolean;
-                material: ProductMaterial;
-                product_type: ProductProductType;
-                billing_type: ProductBillingType;
-                discounted_price?: DiscountedPrice;
-              }[]
-            | [];
+          | {
+            id: string;
+            name: string;
+            price: number;
+            lead_time: string | null; // Assuming the lead time can be a string or null
+            is_client_visible: boolean;
+            is_taxable: boolean;
+            created_at: string; // ISO date string
+            updated_at: string; // ISO date string
+            requires_shade: boolean;
+            material: ProductMaterial;
+            product_type: ProductProductType;
+            billing_type: ProductBillingType;
+            discounted_price?: DiscountedPrice;
+          }[]
+          | [];
           enclosed_items: {
             jig: number;
             photos: number;
@@ -908,13 +910,26 @@ export interface CaseFilters {
 export interface Users {
   id: string;
   role: string;
-  name: string;
+  name: string,
+  firstname: string,
+  lastname: string,
   email: string;
   phone: string;
-  street: string;
-  city: string;
-  state: string;
-  zipcode: string;
+  address: {
+    street: string,
+    city: string,
+    state: string,
+    zipCode: string,
+  };
+  clinicRegistrationNumber: string;
+  notes: string;
+  doctors: [{ name: string, phone: string, email: string, notes: string }],
+  contactName: string;
+  password: string;
+  confirmPassword: string;
   created_at: string;
   updated_at: string;
+
+
+
 }

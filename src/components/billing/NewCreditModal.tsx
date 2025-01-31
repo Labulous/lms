@@ -213,6 +213,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
   console.log(selectedClient, "selectedClient");
   const handleSubmit = async () => {
+    debugger;
     try {
       setLoading(true);
 
@@ -234,6 +235,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
         overpaymentAmount,
         remainingBalance,
         updatedInvoices,
+        labId: lab?.labId,
         type: "apply",
       };
       if (creditType === "apply") {
@@ -255,6 +257,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   console.log(creditType, "creditType");
 
   const handlePaymentAmountChange = (newAmount: number) => {
+    debugger;
     let remainingAmount = newAmount; // Payment amount to be allocated
     let tempNewAmount = newAmount;
 
@@ -329,6 +332,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugger;
     const value = e.target.value;
     setPaymentAmount(Number(value));
     if (!isNaN(Number(value)) && Number(value) >= 0) {
@@ -342,6 +346,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     checked: boolean,
     reducePayment?: number | null
   ) => {
+    debugger;
     console.log("select");
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {
@@ -390,14 +395,14 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                 invoicesData: updatedInvoices[existingInvoiceIndex]
                   ?.invoicesData?.[0]
                   ? [
-                      {
-                        ...updatedInvoices[existingInvoiceIndex]
-                          .invoicesData[0],
-                        due_amount:
-                          updatedInvoices[existingInvoiceIndex].invoicesData[0]
-                            .due_amount - allocatedAmount,
-                      },
-                    ]
+                    {
+                      ...updatedInvoices[existingInvoiceIndex]
+                        .invoicesData[0],
+                      due_amount:
+                        updatedInvoices[existingInvoiceIndex].invoicesData[0]
+                          .due_amount - allocatedAmount,
+                    },
+                  ]
                   : [],
               };
             } else {
@@ -405,12 +410,12 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                 ...invoice,
                 invoicesData: invoice?.invoicesData
                   ? [
-                      {
-                        ...invoice.invoicesData[0],
-                        due_amount:
-                          invoice.invoicesData[0].due_amount - allocatedAmount,
-                      },
-                    ]
+                    {
+                      ...invoice.invoicesData[0],
+                      due_amount:
+                        invoice.invoicesData[0].due_amount - allocatedAmount,
+                    },
+                  ]
                   : [],
               });
             }
@@ -477,7 +482,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                 <DatePicker
                   date={date}
                   onSelect={setDate}
-                  // error={errors.date}
+                // error={errors.date}
                 />
               </div>
 
@@ -489,7 +494,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  // error={errors.description}
+                // error={errors.description}
                 />
               </div>
 
@@ -592,7 +597,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                         <TableCell>{invoice.case_number}</TableCell>
                         <TableCell>{invoice.patient_name}</TableCell>
                         <TableCell className="text-right">
-                          ${invoice.invoicesData[0].amount  || 0}
+                          ${invoice.invoicesData[0].amount || 0}
                         </TableCell>
                         <TableCell className="text-right">
                           ${invoice.invoicesData[0].due_amount || 0}

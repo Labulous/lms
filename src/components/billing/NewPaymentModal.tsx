@@ -82,6 +82,7 @@ const PAYMENT_METHODS = [
   "Bank Transfer",
   "Cash",
   "PayPal",
+  "Credit Form",
   "Other",
 ];
 
@@ -104,6 +105,7 @@ export function NewPaymentModal({
   const [remainingBalance, setRemainingBalance] = useState(0);
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [invoices, setInvoices] = useState<Case[]>([]);
+  const [error, setError] = useState(false);
   const [updatedInvoices, setUpdatedInvoices] = useState<Case[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [balanceSummary, setBalanceSummary] =
@@ -112,10 +114,16 @@ export function NewPaymentModal({
   const { user } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugger;
     const value = e.target.value;
 
     // Allow only valid numbers
     if (!isNaN(Number(value)) && Number(value) >= 0) {
+      setError(false);
+      if (paymentMethod == "credit form" && (Number(value) > Number(balanceSummary?.credit))) {
+        setError(true);
+        return;
+      }
       setPaymentAmount(Number(value));
     }
   };
@@ -179,15 +187,15 @@ export function NewPaymentModal({
               ...updatedInvoices[existingInvoiceIndex],
               invoicesData: updatedInvoices[existingInvoiceIndex]?.invoicesData
                 ? [
-                    {
-                      ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
-                      due_amount: Math.max(
-                        0,
-                        updatedInvoices[existingInvoiceIndex].invoicesData[0]
-                          .due_amount - allocated
-                      ),
-                    },
-                  ]
+                  {
+                    ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
+                    due_amount: Math.max(
+                      0,
+                      updatedInvoices[existingInvoiceIndex].invoicesData[0]
+                        .due_amount - allocated
+                    ),
+                  },
+                ]
                 : [],
             };
           } else {
@@ -195,11 +203,11 @@ export function NewPaymentModal({
               ...invoice,
               invoicesData: invoice?.invoicesData
                 ? [
-                    {
-                      ...invoice.invoicesData[0],
-                      due_amount: Math.max(0, due_amount - allocated),
-                    },
-                  ]
+                  {
+                    ...invoice.invoicesData[0],
+                    due_amount: Math.max(0, due_amount - allocated),
+                  },
+                ]
                 : [],
             });
           }
@@ -516,6 +524,13 @@ export function NewPaymentModal({
                   Remaining Balance: ${remainingBalance.toFixed(2)}
                 </div>
               )}
+
+              {error && (
+                <div className="text-sm text-orange-600">
+                  Payment amount cannot exceed the available credit.
+                </div>
+              )}
+
             </div>
           </div>
         </div>

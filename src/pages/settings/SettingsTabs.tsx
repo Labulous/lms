@@ -1,22 +1,41 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-export type SettingsTab = 'system' | 'product-catalog' | 'case-workflow' | 'working-tags';
+export type SettingsTab =
+  | "system"
+  | "product-catalog"
+  | "case-workflow"
+  | "working-tags";
 
 const tabs = [
-  { id: 'system', label: 'System', href: '/settings/system' },
-  { id: 'product-catalog', label: 'Product Catalog', href: '/settings/product-catalog' },
-  { id: 'case-workflow', label: 'Case Workflow', href: '/settings/case-workflow' },
-  { id: 'working-tags', label: 'Working Tags', href: '/settings/working-tags' },
-  { id: 'working-Pans', label: 'Working Pans', href: '/settings/working-pans' },
+  { id: "system", label: "System", href: "/settings/system" },
+  {
+    id: "product-catalog",
+    label: "Product Catalog",
+    href: "/settings/product-catalog",
+  },
+  {
+    id: "case-workflow",
+    label: "Case Workflow",
+    href: "/settings/case-workflow",
+  },
+  { id: "working-tags", label: "Working Tags", href: "/settings/working-tags" },
+  { id: "working-Pans", label: "Working Pans", href: "/settings/working-pans" },
+  {
+    id: "user-management",
+    label: "User Management",
+    href: "/settings/user-management",
+  },
+  { id: "lab-profile", label: "Lab Profile", href: "/settings/lab-profile" },
 ] as const;
 
 export const SettingsTabs: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const currentTab = tabs.find(tab => location.pathname === tab.href)?.id || 'system';
+
+  const currentTab =
+    tabs.find((tab) => location.pathname === tab.href)?.id || "system";
 
   return (
     <div className="w-64 border-r min-h-[calc(100vh-4rem)] bg-white">

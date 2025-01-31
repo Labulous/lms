@@ -32,6 +32,8 @@ import ClientStatements from "./pages/billing/ClientStatements";
 import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
+import { LABProfile } from "./pages/settings/lab-profile";
+
 import Home1 from "./pages/Home1";
 import ChangePasswordForm from "./components/settings/ChangePassword";
 
@@ -131,6 +133,10 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
+                     <Route
+                    path="lab-profile"
+                    element={<LABProfile />}
+                  />
                   <Route path="*" element={<Settings />} />
                 </Routes>
               </ProtectedRoute>

@@ -256,6 +256,8 @@ export const createUserByAdmins = async (
   labId: string,
   role: "admin" | "technician" | "client",
   name: string,
+  firstname: string,
+  lastname: string,
   email: string,
   password: string,
   additionalClientFields?: {
