@@ -146,66 +146,90 @@ const saveCaseProduct = async (
 
     // Step 3: Map cases.products and create rows for case_product_teeth
     console.log(cases.products, "cases.products");
-    const caseProductTeethRows = cases.products.map((product: any) => ({
-      case_product_id: caseProductId,
-      is_range: cases.products.length > 0,
-      tooth_number: product.teeth || "",
-      pontic_teeth: product.pontic_teeth || [],
-      product_id: product.id,
-      type: product.type || "",
-      lab_id: cases.overview.lab_id || "",
-      quantity: product.quantity || 1,
-      occlusal_shade_id:
-        product.shades.occlusal_shade === "manual"
-          ? null
-          : product.shades.occlusal_shade || null,
-      body_shade_id:
-        product.shades.body_shade === "manual"
-          ? null
-          : product.shades.body_shade || null,
-      gingival_shade_id:
-        product.shades.gingival_shade === "manual"
-          ? null
-          : product.shades.gingival_shade || null,
-      stump_shade_id:
-        product.shades.stump_shade === "manual"
-          ? null
-          : product.shades.stump_shade || null,
+    const caseProductTeethRows = cases.products.flatMap((main: any) => {
+      return main.subRows.map((product: any) => {
+        const totalQuantity =
+          main.quantity > 1
+            ? main.quantity + product.quantity
+            : product.quantity;
 
-      manual_body_shade: product?.shades.manual_body || null,
-      manual_occlusal_shade: product?.shades.manual_occlusal || null,
-      manual_gingival_shade: product?.shades.manual_gingival || null,
-      manual_stump_shade: product?.shades.manual_stump || null,
-      custom_body_shade: product?.shades.custom_body || null,
-      custom_occlusal_shade: product?.shades.custom_occlusal || null,
-      custom_gingival_shade: product?.shades.custom_gingival || null,
-      custom_stump_shade: product?.shades.custom_stump || null,
-      notes: product.notes || "",
-      case_id: savedCaseId,
-    }));
+        return {
+          case_product_id: caseProductId, // Replace with the actual dynamic ID
+          is_range: cases.products.length > 0,
+          tooth_number: product.teeth || "",
+          pontic_teeth: product.pontic_teeth || [],
+          product_id: product.id,
+          type: product.type || "",
+          lab_id: cases.overview.lab_id || "",
+          quantity: totalQuantity > 1 ? totalQuantity : 1, // Ensure at least 1
+          occlusal_shade_id:
+            product.shades.occlusal_shade !== "manual" && product.shades.custom_occlusal_shade!==""
+              ? product.shades.occlusal_shade
+              : null,
+          body_shade_id:
+            product.shades.body_shade !== "manual" && product.shades.custom_body_shade!==""
+              ? product.shades.body_shade
+              : null,
+          gingival_shade_id:
+            product.shades.gingival_shade !== "manual" && product.shades.custom_gingival_shade!==""
+              ? product.shades.gingival_shade
+              : null,
+          stump_shade_id:
+            product.shades.stump_shade !== "manual" && product.shades.custom_stump_shade!==""
+              ? product.shades.stump_shade
+              : null,
+          manual_body_shade: product?.shades.manual_body || null,
+          manual_occlusal_shade: product?.shades.manual_occlusal || null,
+          manual_gingival_shade: product?.shades.manual_gingival || null,
+          manual_stump_shade: product?.shades.manual_stump || null,
+          custom_body_shade: product?.shades.custom_body || null,
+          custom_occlusal_shade: product?.shades.custom_occlusal || null,
+          custom_gingival_shade: product?.shades.custom_gingival || null,
+          custom_stump_shade: product?.shades.custom_stump || null,
+          notes: product.notes || "",
+          case_id: savedCaseId,
+        };
+      });
+    });
 
+    console.log("api calling");
+    console.log(caseProductTeethRows, "caseProductTeethRows");
     // Calculate discounted prices for products
-    const discountedPrice = cases.products.map((product: any) => {
-      // Calculate the price after discount
-      const priceAfterDiscount =
-        product.price - (product.price * product.discount) / 100;
+    const discountedPrice = cases.products.flatMap((main: any) => {
+      return main.subRows.map((product: any) => {
+        // Calculate the final discount
+        const finalDiscount =
+          product.discount === 0
+            ? main.discount // If product discount is 0, use the main discount
+            : main.discount + product.discount; // Otherwise, add both main and product discounts
 
-      // Calculate final price (after discount) for the given quantity
-      const final_price = priceAfterDiscount * product.quantity;
+        // Calculate the price after final discount
+        const priceAfterDiscount =
+          product.price - (product.price * finalDiscount) / 100;
 
-      // Calculate amount by multiplying final_price by quantity and then by product.teeth.length
-      const amount = final_price * product.teeth.length;
+        // Calculate the total quantity based on main.quantity and product.quantity
+        const totalQuantity =
+          main.quantity > 1
+            ? main.quantity + product.quantity
+            : product.quantity;
 
-      return {
-        product_id: product.id,
-        price: product.price,
-        discount: product.discount,
-        quantity: product.quantity,
-        final_price: final_price, // price after discount
-        total: amount, // final price * quantity * teeth length
-        case_id: savedCaseId as string,
-        user_id: cases.overview.created_by,
-      };
+        // Calculate final price (after discount) for the given quantity
+        const final_price = priceAfterDiscount * totalQuantity;
+
+        // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
+        const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
+
+        return {
+          product_id: product.id,
+          price: product.price,
+          discount: finalDiscount, // use the final discount
+          quantity: totalQuantity, // final quantity after adding main.quantity
+          final_price: final_price, // price after final discount
+          total: amount, // final price * total quantity * teeth length
+          case_id: savedCaseId as string,
+          user_id: cases.overview.created_by,
+        };
+      });
     });
 
     // Insert case_product_teeth rows
@@ -333,23 +357,44 @@ const saveCases = async (
 
       // Step 4: Create invoice for the case
 
-      const totalAmount = cases.products.reduce(
-        (sum: number, item: SavedProduct) => {
-          const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
-          const totalPerProduct = item.price * item.teeth.length * quantity; // Total before discount
-          const discountedTotal =
-            totalPerProduct - (totalPerProduct * (item.discount || 0)) / 100; // Apply discount
-          return sum + discountedTotal; // Add to the overall sum
-        },
-        0
-      );
+      const totalAmount = cases.products.reduce((sum: number, main: any) => {
+        return (
+          sum +
+          main.subRows.reduce((subSum: number, product: any) => {
+            // Calculate the final discount for each product
+            const finalDiscount =
+              product.discount === 0
+                ? main.discount // If product discount is 0, use the main discount
+                : main.discount + product.discount; // Otherwise, add both main and product discounts
+
+            // Calculate price after the final discount
+            const priceAfterDiscount =
+              product.price - (product.price * finalDiscount) / 100;
+
+            // Calculate total quantity for the product (main.quantity + product.quantity)
+            const totalQuantity =
+              main.quantity > 1
+                ? main.quantity + product.quantity
+                : product.quantity;
+
+            // Calculate the final price (after discount) for the given quantity
+            const final_price = priceAfterDiscount * totalQuantity;
+
+            // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
+            const amount = final_price * (product.teeth?.length || 1);
+
+            // Add the amount to the overall sum
+            return subSum + amount;
+          }, 0)
+        );
+      }, 0);
 
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: Number(totalAmount),
-        due_amount: Number(totalAmount),
+        amount: Number(totalAmount), // Total amount for the invoice after discount
+        due_amount: Number(totalAmount), // Same as amount since it's unpaid
         status: "unpaid",
         due_date: null,
       };
@@ -629,44 +674,44 @@ const updateCases = async (
     }
     // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
     // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
-    const caseProductTeethRows = cases.products.map((product: any) => ({
-      case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
-      is_range: cases.products.length > 0,
-      product_id: product.id,
-      type: product.type || "",
-      lab_id: cases.overview.lab_id || "",
-      quantity: product.quantity || 1,
-      notes: product.notes || "",
-      tooth_number: product.teeth || [],
-      pontic_teeth: product.pontic_teeth || [],
-      occlusal_shade_id:
-        product.shades.occlusal_shade === "manual"
-          ? null
-          : product.shades.occlusal_shade || null,
-      body_shade_id:
-        product.shades.body_shade === "manual"
-          ? null
-          : product.shades.body_shade || null,
-      gingival_shade_id:
-        product.shades.gingival_shade === "manual"
-          ? null
-          : product.shades.gingival_shade || null,
-      stump_shade_id:
-        product.shades.stump_shade === "manual"
-          ? null
-          : product.shades.stump_shade || null,
-
-      manual_body_shade: product?.shades.manual_body || null,
-      manual_occlusal_shade: product?.shades.manual_occlusal || null,
-      manual_gingival_shade: product?.shades.manual_gingival || null,
-      manual_stump_shade: product?.shades.manual_stump || null,
-      custom_body_shade: product?.shades.custom_body || null,
-      custom_occlusal_shade: product?.shades.custom_occlusal || null,
-      custom_gingival_shade: product?.shades.custom_gingival || null,
-      custom_stump_shade: product?.shades.custom_stump || null,
-
-      case_id: caseId,
-    }));
+    const caseProductTeethRows = cases.products.map((main: any) => {
+      return main.subRows.map((product: any) => ({
+        case_product_id: caseProductData && caseProductData[0].id, // Use the ID of the updated/inserted case product
+        is_range: cases.products.length > 0,
+        product_id: product.id,
+        type: product.type || "",
+        lab_id: cases.overview.lab_id || "",
+        quantity: product.quantity + main.quantity || 1,
+        notes: product.notes || "",
+        tooth_number: product.teeth || [],
+        pontic_teeth: product.pontic_teeth || [],
+        occlusal_shade_id:
+          product.shades.occlusal_shade === "manual"
+            ? null
+            : product.shades.occlusal_shade || null,
+        body_shade_id:
+          product.shades.body_shade === "manual"
+            ? null
+            : product.shades.body_shade || null,
+        gingival_shade_id:
+          product.shades.gingival_shade === "manual"
+            ? null
+            : product.shades.gingival_shade || null,
+        stump_shade_id:
+          product.shades.stump_shade === "manual"
+            ? null
+            : product.shades.stump_shade || null,
+        manual_body_shade: product?.shades.manual_body || null,
+        manual_occlusal_shade: product?.shades.manual_occlusal || null,
+        manual_gingival_shade: product?.shades.manual_gingival || null,
+        manual_stump_shade: product?.shades.manual_stump || null,
+        custom_body_shade: product?.shades.custom_body || null,
+        custom_occlusal_shade: product?.shades.custom_occlusal || null,
+        custom_gingival_shade: product?.shades.custom_gingival || null,
+        custom_stump_shade: product?.shades.custom_stump || null,
+        case_id: caseId,
+      }));
+    });
 
     // Step to check if rows exist for product_id before inserting
     for (const row of caseProductTeethRows) {
