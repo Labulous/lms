@@ -2279,19 +2279,28 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         })}
                       <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
                         <TableCell
-                          colSpan={9}
+                          colSpan={6}
+                          className="text-xs py-2 pl-4 pr-0 text-right"
+                        >
+                          Paid Amount: ${caseDetail.invoice[0].amount - Number(caseDetail?.invoice?.[0]?.due_amount || 0) }
+                        </TableCell>
+                        <TableCell
+                          colSpan={3}
                           className="text-xs py-2 pl-4 pr-0 text-right"
                         >
                           Due Amount:
                         </TableCell>
                         <TableCell
-                          colSpan={3}
+                          colSpan={2}
                           className="text-xs py-2 pl-4 pr-0 font-medium"
                         >
                           ${caseDetail.invoice[0].due_amount}
                         </TableCell>
 
-                        <TableCell className="text-xs py-2 pl-4 pr-0 font-medium">
+                        <TableCell
+                          colSpan={2}
+                          className="text-xs py-2 pl-4 pr-0 font-medium"
+                        >
                           Total: $
                           {caseDetail.invoice[0].amount.toLocaleString()}
                         </TableCell>
