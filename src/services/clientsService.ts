@@ -464,37 +464,93 @@ class ClientsService {
     }
   }
 
-  async updateClientUserDetails(id: string, clientData: ClientInput): Promise<Client> {
+  async updateClientUserDetails(id: string, userId: string, clientData: ClientInput): Promise<Client> {
     try {
       console.log("test=>" + JSON.stringify(clientData, null, 2));
       console.log(clientData.clientName);
-      // First, update the client data in the 'clients' table
+
+      // Fetch the current client data to check if the email is changing
+      const { data: existingClient, error: fetchError } = await supabaseServiceRole
+        .from("clients")
+        .select("email")
+        .eq("id", id)
+        .single();
+
+      if (fetchError) {
+        console.error("Error fetching existing client data:", fetchError);
+        throw fetchError;
+      }
+
+      const currentEmail = existingClient?.email;
+      const newEmail = clientData.email;
+
+      if (currentEmail !== newEmail) {
+        // Check if a pending approval already exists
+        const { data: existingApproval, error: approvalFetchError } = await supabaseServiceRole
+          .from("pending_approvals")
+          .select("id, status")
+          .eq("client_id", id)
+          .eq("user_id", userId)
+          .eq("new_email", newEmail)
+          .maybeSingle(); // Returns null if no record found
+
+        if (approvalFetchError) {
+          console.error("Error fetching pending approvals:", approvalFetchError);
+          throw approvalFetchError;
+        }
+
+        if (!existingApproval || existingApproval.status === "approved") {
+          // Insert a new approval request only if no pending record exists or previous request was approved
+          const { error: approvalError } = await supabaseServiceRole
+            .from("pending_approvals")
+            .insert({
+              client_id: id,
+              user_id: userId,
+              new_email: newEmail,
+              status: "pending",
+              previous_email: currentEmail,
+              client_name: clientData.clientName,
+              requested_at: new Date(),
+            });
+
+          if (approvalError) {
+            console.error("Error inserting into pending approvals:", approvalError);
+            throw approvalError;
+          }
+
+          console.log("New email change request added to pending approvals.");
+        } else {
+          console.log("Pending approval request already exists. Skipping insertion.");
+        }
+      }
+
+      // Update client details (excluding email if it has changed)
       const { error: clientError } = await supabaseServiceRole
         .from("clients")
         .update({
           client_name: clientData.clientName,
           contact_name: clientData.contactName,
           phone: clientData.phone,
-          email: clientData.email,
           street: clientData.address?.street,
           city: clientData.address?.city,
           state: clientData.address?.state,
           zip_code: clientData.address?.zipCode,
           clinic_registration_number: clientData.clinicRegistrationNumber,
           notes: clientData.notes,
-          account_number: clientData.accountNumber, // Keep the account number when updating
+          account_number: clientData.accountNumber,
+          ...(currentEmail === newEmail && { email: newEmail }), // Only update email if unchanged
         })
-        .eq("id", '0537e7f6-53da-433f-be1d-a1367ac0b48b');
+        .eq("id", id);
 
       if (clientError) {
-        console.error("Error updating client data:", clientError);  // Log the error to see if there are any issues
-        throw clientError; // Throw the error to stop execution
+        console.error("Error updating client data:", clientError);
+        throw clientError;
       }
 
+      console.log("Client details updated successfully.");
 
-      // Only update doctors if the 'doctors' array is explicitly provided
+      // Proceed with updating doctors if provided
       if (clientData.doctors !== undefined) {
-        // Fetch current doctors to check if we need to update
         const { data: currentDoctors, error: fetchError } = await supabaseServiceRole
           .from("doctors")
           .select("*")
@@ -505,7 +561,6 @@ class ClientsService {
           throw fetchError;
         }
 
-        // Compare current doctors with new doctors to see if we need to update
         const currentDoctorsSet = new Set(
           currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
         );
@@ -513,17 +568,14 @@ class ClientsService {
           clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
         );
 
-        // Only update if there are actual changes
         if (currentDoctors.length !== clientData.doctors.length ||
           ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
 
-          // Update or insert doctors
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
             const currentDoctor = currentDoctors[i];
 
             if (currentDoctor) {
-              // Update existing doctor
               const { error: updateError } = await supabaseServiceRole
                 .from("doctors")
                 .update({
@@ -537,7 +589,6 @@ class ClientsService {
                 throw updateError;
               }
             } else {
-              // Insert new doctor
               const { error: insertError } = await supabaseServiceRole
                 .from("doctors")
                 .insert({
@@ -552,7 +603,6 @@ class ClientsService {
             }
           }
 
-          // Remove any excess doctors
           if (currentDoctors.length > clientData.doctors.length) {
             const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
             const { error: deleteError } = await supabaseServiceRole
@@ -569,7 +619,6 @@ class ClientsService {
         }
       }
 
-      // Return the updated client after the changes
       return this.getClientById(id) as Promise<Client>;
     } catch (error) {
       logger.error("Error updating client", { error });
