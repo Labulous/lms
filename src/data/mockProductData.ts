@@ -20,6 +20,7 @@ export interface SavedProduct {
   shades: ShadeData;
   discount: number;
   notes: string;
+  additional_service_id: string;
   quantity?: number;
   subRows?: SavedProduct[];
   pontic_teeth?: number[];
@@ -62,7 +63,8 @@ export type ProductType =
   | "Removable"
   | "Implant"
   | "Coping"
-  | "Appliance";
+  | "Appliance"
+  | "Service";
 
 export const BILLING_TYPES = [
   {
@@ -113,6 +115,7 @@ export const PRODUCT_TYPES: ProductType[] = [
   "Implant",
   "Coping",
   "Appliance",
+  "Service",
 ];
 
 export const mockProducts: Product[] = [

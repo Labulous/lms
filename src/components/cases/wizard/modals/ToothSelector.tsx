@@ -859,7 +859,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                     {groupSelectedTeethState.map((item, groupIndex) => {
                       // Filter items based on selectedPontic
                       const filteredTeeth = item.filter((tooth) =>
-                        selectedProduct.selectedPontic.includes(tooth)
+                        selectedProduct?.selectedPontic?.includes(tooth)
                       );
 
                       // Get selectedPontic that are not in filteredTeeth
