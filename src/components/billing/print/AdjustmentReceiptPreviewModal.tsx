@@ -86,7 +86,6 @@ const AdjustmentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
     console.log("invoiceRef.current after mount:", invoiceRef.current);
   }, []);
   const handlePrint = (type: string) => {
-    debugger;
 
     // Create the preview URL with state encoded in base64
     const previewState = {
@@ -158,7 +157,6 @@ const AdjustmentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
 
   const handleDownloadPDF = async () => {
-    debugger;
     if (!invoiceRef.current) {
       console.log("Invoice reference is missing");
       return;

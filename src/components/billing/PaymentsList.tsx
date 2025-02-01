@@ -68,7 +68,6 @@ export function PaymentsList() {
   const { user } = useAuth();
 
   const getPaymentList = async () => {
-    debugger;
     setLoading(true);
 
     try {
@@ -214,7 +213,6 @@ export function PaymentsList() {
   }, []);
 
   const handleNewPayment = async (paymentData: any) => {
-    debugger;
     console.log("New payment data:", paymentData);
 
     try {

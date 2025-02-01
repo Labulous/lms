@@ -114,7 +114,6 @@ export function NewPaymentModal({
   const { user } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    debugger;
     const value = e.target.value;
 
     // Allow only valid numbers

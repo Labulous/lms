@@ -118,7 +118,6 @@ export const UserManagement: React.FC = () => {
     }
 
     const fetchUsers = async () => {
-        debugger;
         try {
             setLoading(true);
             const labData = await getLabIdByUserId(user?.id as string);
@@ -194,7 +193,6 @@ export const UserManagement: React.FC = () => {
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
-        debugger;
         console.log(formData);
         setLoading(true);
         e.preventDefault();
