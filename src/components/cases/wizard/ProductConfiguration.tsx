@@ -554,7 +554,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return updated;
     });
   };
-
   const handleProductTypeChange = (
     type: { name: string; id: string },
     index: number
@@ -563,12 +562,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
-        updatedProducts[index] = {
-          ...updatedProducts[index],
-          type: type.name,
-          id: "",
-          name: "",
-        };
+        if (
+          updatedProducts[index].subRows &&
+          updatedProducts[index].subRows!.length > 0
+        ) {
+          updatedProducts[index].subRows = updatedProducts[index].subRows!.map(
+            (subRow) => ({
+              ...subRow,
+              type: type.name,
+            })
+          );
+        } else {
+          return prevSelectedProducts; // Do nothing if subRows don't exist
+        }
 
         return updatedProducts;
       } else {
@@ -1084,7 +1090,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
                       <Select
-                        disabled={loading || row.teeth.length === 0}
+                        disabled={
+                          loading ||
+                          (row.teeth.length === 0 && row.type === "Service")
+                        }
                         onValueChange={(value) => {
                           setselectedProducts(
                             (prevSelectedProducts: SavedProduct[]) => {
