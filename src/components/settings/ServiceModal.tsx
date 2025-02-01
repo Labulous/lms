@@ -222,7 +222,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                     ))
                   ) : (
                     <SelectItem value="_no_clients" disabled>
-                      No clients available
+                      No materials available
                     </SelectItem>
                   )}
                 </SelectContent>

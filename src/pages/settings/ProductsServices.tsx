@@ -197,28 +197,58 @@ const ProductsServices: React.FC = () => {
   }, [activeTab]);
 
   const loadProductsAndTypes = async () => {
-    try {
-      setLoading(true);
-      const labData = await getLabIdByUserId(user?.id as string);
-      if (!labData) {
-        toast.error("Unable to get Lab Id");
-        return null;
-      }
-      const [productsResult, typesResult] = await Promise.all([
-        productsService.getProducts(labData.labId),
-        supabase.from("product_types").select("*").order("name"),
-      ]);
-      if (typesResult.error) throw typesResult.error;
+    setLoading(true); // ✅ Always set loading state first
 
-      setProducts(productsResult);
-      setProductTypes(typesResult.data as any[]);
+    if (!labIdData?.lab_id) {
+      toast.error("Unable to get Lab ID");
+      setLoading(false); // ✅ Ensure loading is reset before exiting
+      return;
+    }
+
+    try {
+      // ✅ Fetch products
+      const { data: productsResult, error: productsError } = await supabase
+        .from("products")
+        .select(
+          `
+          *,
+          material:materials(name),
+          product_type:product_types(name),
+          billing_type:billing_types(name, label)
+          `
+        )
+        .eq("lab_id", labIdData.lab_id)
+        .order("name");
+
+      if (productsError) {
+        toast.error("Failed to fetch products.");
+        throw new Error("Failed to fetch products.");
+      }
+
+      // ✅ Fetch product types
+      const { data: productTypesData, error: productTypesError } =
+        await supabase.from("product_types").select("*").order("name");
+
+      if (productTypesError) {
+        toast.error("Failed to fetch product types.");
+        throw new Error("Failed to fetch product types.");
+      }
+
+      // ✅ Update state only after both API calls
+      setProducts(productsResult || []);
+      setProductTypes(productTypesData || []);
+
+      console.log(productsResult, "products api");
+      console.log(productTypesData, "product_types api");
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error(
-        "Failed to load products and types. Please try refreshing the page."
+        error instanceof Error
+          ? error.message
+          : "Failed to load products and types. Please refresh."
       );
     } finally {
-      setLoading(false);
+      setLoading(false); // ✅ Ensure loading state updates
     }
   };
 
@@ -243,9 +273,31 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-  const handleEditProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setIsWizardOpen(true);
+  const handleEditProduct = async (product: Product) => {
+    console.log(product, "ProductList");
+
+    const { data, error } = await supabase
+      .from("products")
+      .update({
+        name: product.name,
+        price: product.price,
+        description: product.description,
+        lead_time: product.lead_time,
+        is_client_visible: product.is_client_visible,
+        is_taxable: product.is_taxable,
+        material_id: product.material_id,
+        billing_type_id: product.billing_type_id,
+        requires_shade: product.requires_shade,
+      })
+      .eq("id", product.id)
+      .select();
+
+    if (error) {
+      toast.error("Error updating product:");
+    } else if (data) {
+      toast.success("Product updated successfully:");
+      // await loadProductsAndTypes();
+    }
   };
 
   const handleDeleteClick = async (product: Product) => {

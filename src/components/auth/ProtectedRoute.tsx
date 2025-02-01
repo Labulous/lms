@@ -51,16 +51,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, []);
 
   // Show loading state while auth is being determined
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
-      </div>
-    );
-  }
+  // if (authLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen bg-white">
+  //       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
+  //     </div>
+  //   );
+  // }
 
   // Redirect to login if no user
-  if (!user) {
+  if (!user && !authLoading) {
     logger.info("Redirecting to login - no authenticated user", {
       path: location.pathname,
       from: location.state?.from?.pathname || location.pathname,
@@ -71,22 +71,22 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Check role requirements if specified
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
-    const userRole = user.role as Role;
+    const userRole = user?.role as Role;
 
     if (!roles.includes(userRole) && userRole !== "admin") {
       logger.warn("Insufficient role for access", {
         userRole,
         requiredRole,
         path: location.pathname,
-        userId: user.id,
+        userId: user?.id,
       });
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
   logger.debug("Access granted", {
-    userId: user.id,
-    userRole: user.role,
+    userId: user?.id,
+    userRole: user?.role,
     requiredRole,
     path: location.pathname,
   });

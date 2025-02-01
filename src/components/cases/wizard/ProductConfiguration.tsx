@@ -69,6 +69,7 @@ import { supabase } from "@/lib/supabase";
 import { FormData as CaseFormData } from "./CaseWizard";
 import { spawn } from "child_process";
 import React from "react";
+import { Service } from "@/data/mockServiceData";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -253,6 +254,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
+  const [services, setServices] = useState<{ name: string; id: string }[]>([]);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
     number[][]
@@ -276,6 +278,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const toggleRowExpansion = (rowId: string) => {
     setExpandedRows((prev) => {
       const newArray = [...prev];
+      // Check if the length is 1 and the value is an empty string
+      if (newArray.length === 1 && newArray[0] === "") {
+        newArray[0] = rowId; // Replace the empty string with the incoming rowId
+        return newArray;
+      }
       const index = newArray.indexOf(rowId);
       if (index > -1) {
         newArray.splice(index, 1); // Remove the rowId if it's already in the array
@@ -285,7 +292,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return newArray;
     });
   };
-  console.log(selectedProduct, "selected");
+
+  console.log(expandedRows, "expandedRows");
   useEffect(() => {
     const fetchProductTypes = async () => {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -351,9 +359,37 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setLoading(false);
     }
   };
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const { data: fetchedServices, error } = await supabase
+        .from("services")
+        .select(
+          `
+          id,name
+        `
+        )
+        .order("name")
+        .eq("lab_id", lab?.labId);
+
+      if (error) {
+        toast.error("Error fetching products from Supabase");
+        throw error;
+      }
+      const servicesWithNone = [{ id: null, name: "None" }, ...fetchedServices];
+
+      setServices(servicesWithNone);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     if (selectedType) {
       fetchedProducts(selectedType);
+      fetchServices();
     }
   }, [selectedType]);
 
@@ -434,6 +470,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     console.log(product, "product");
 
     if (!product) return;
+    if (!index) {
+      toggleRowExpansion(product.id);
+    }
     setSelectedProduct(product);
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
@@ -515,7 +554,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return updated;
     });
   };
-
   const handleProductTypeChange = (
     type: { name: string; id: string },
     index: number
@@ -524,12 +562,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
+        // Update the main row type
         updatedProducts[index] = {
           ...updatedProducts[index],
           type: type.name,
-          id: "",
-          name: "",
         };
+
+        // If subRows exist, update them as well
+        if (
+          updatedProducts[index].subRows &&
+          updatedProducts[index].subRows!.length > 0
+        ) {
+          updatedProducts[index].subRows = updatedProducts[index].subRows!.map(
+            (subRow) => ({
+              ...subRow,
+              type: type.name,
+            })
+          );
+        }
 
         return updatedProducts;
       } else {
@@ -758,6 +808,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         type: "",
         teeth: [],
         price: 0,
+        additional_service_id: "",
         shades: {
           body_shade: "",
           gingival_shade: "",
@@ -847,6 +898,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         type: "",
         teeth: [],
         price: 0,
+        additional_service_id: "",
         shades: {
           body_shade: "",
           gingival_shade: "",
@@ -869,7 +921,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-  console.log(shadeData, "Shade data");
+  console.log(services, "services data");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -916,6 +968,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         open={openTypePopover === row.id}
                         onOpenChange={(open) => {
                           setOpenTypePopover(open ? row.id : null);
+                          setExpandedRows([row.id]);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -971,7 +1024,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
                               row.teeth.length === 0 && "text-muted-foreground"
                             )}
-                            disabled={!row.type}
+                            disabled={!row.type || row.type === "Service"}
                           >
                             {row.type === "Bridge"
                               ? row.teeth.length > 0
@@ -1007,7 +1060,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 index
                               );
                             }}
-                            disabled={!row.type}
+                            disabled={!row.type || row.type === "Service"}
                             selectedProduct={{
                               type: row.type ? [row.type] : [],
                               selectedPontic: row.pontic_teeth as number[],
@@ -1040,6 +1093,56 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         onClick={() => fetchedProducts(row.type)}
                       />
                     </TableCell>
+                    <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                      <Select
+                        disabled={
+                          loading ||
+                          (row.teeth.length === 0 && row.type === "Service")
+                        }
+                        onValueChange={(value) => {
+                          setselectedProducts(
+                            (prevSelectedProducts: SavedProduct[]) => {
+                              const updatedProducts = [...prevSelectedProducts];
+
+                              if (
+                                index >= 0 &&
+                                index < updatedProducts.length
+                              ) {
+                                updatedProducts[index] = {
+                                  ...updatedProducts[index],
+                                  additional_service_id: value, // Update the main row's note
+                                  subRows: updatedProducts?.[
+                                    index
+                                  ]?.subRows?.map((subRow) => ({
+                                    ...subRow,
+                                    additional_service_id: value, // Update the note for each subRow
+                                  })),
+                                };
+                              }
+
+                              return updatedProducts;
+                            }
+                          );
+                        }}
+                      >
+                        <SelectTrigger className={cn("bg-white")}>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {services && services.length > 0 ? (
+                            services.map((service) => (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.name || "Unnamed material"}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="_no_clients" disabled>
+                              No Service available
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
 
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
                       <div className="flex flex-col space-y-0.5">
@@ -1056,7 +1159,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   ? "text-blue-600"
                                   : ""
                               }`}
-                              disabled={row.teeth.length === 0}
+                              disabled={
+                                row.teeth.length === 0 && row.type !== "Service"
+                              }
                               onClick={() => toggleShadePopover(index)}
                             >
                               {row.shades?.body_shade ||
@@ -1929,7 +2034,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               row.notes ? "text-blue-600" : "",
                               "hover:text-blue-600"
                             )}
-                            disabled={!row.id}
+                            disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleNotePopover(index)}
                           >
                             <StickyNote className="h-4 w-4" />
@@ -2022,7 +2127,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 : "",
                               "hover:text-blue-600"
                             )}
-                            disabled={!row.id}
+                            disabled={!row.id && row.type !== "Service"}
                             onClick={() => togglePercentPopover(index)}
                           >
                             {selectedProducts?.[index]?.discount}{" "}
@@ -2309,6 +2414,65 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               size="xs"
                               onClick={() => fetchedProducts(row_sub.type)}
                             />
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                            <Select
+                              disabled={loading || row.teeth.length === 0}
+                              value={row_sub.additional_service_id}
+                              onValueChange={(value) => {
+                                setselectedProducts(
+                                  (prevSelectedProducts: SavedProduct[]) => {
+                                    const updatedProducts = [
+                                      ...prevSelectedProducts,
+                                    ];
+
+                                    if (
+                                      index >= 0 &&
+                                      index < updatedProducts.length
+                                    ) {
+                                      updatedProducts[index] = {
+                                        ...updatedProducts[index],
+                                        subRows:
+                                          updatedProducts[index]?.subRows?.map(
+                                            (subRow, subIndex) => {
+                                              if (subIndex === originalIndex) {
+                                                // Only update the specific subRow at originalIndex
+                                                return {
+                                                  ...subRow,
+                                                  additional_service_id: value,
+                                                };
+                                              }
+                                              return subRow; // Keep other subRows unchanged
+                                            }
+                                          ) ?? [], // In case subRows is undefined or null, default to an empty array
+                                      };
+                                    }
+
+                                    return updatedProducts;
+                                  }
+                                );
+                              }}
+                            >
+                              <SelectTrigger className={cn("bg-white")}>
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {services && services.length > 0 ? (
+                                  services.map((service) => (
+                                    <SelectItem
+                                      key={service.id}
+                                      value={service.id}
+                                    >
+                                      {service.name || "Unnamed material"}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="_no_clients" disabled>
+                                    No Service available
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
                           </TableCell>
 
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
