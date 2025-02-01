@@ -358,7 +358,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   </p>
                                 </div>
                               </div>
-                              <div className="border-b border-gray-300 pb-0.5">
+                              {/* <div className="border-b border-gray-300 pb-0.5">
                                 <div className="grid grid-cols-[auto_1fr] gap-4">
                                   <p className="text-right font-medium whitespace-nowrap text-sm">
                                     Pan #:
@@ -367,7 +367,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     {invoice?.working_pan_name || ""}
                                   </p>
                                 </div>
-                              </div>
+                              </div> */}
                             </div>
                           </div>
                         </div>
