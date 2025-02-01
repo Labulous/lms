@@ -864,7 +864,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
                       // Get selectedPontic that are not in filteredTeeth
                       const remainingPontic =
-                        selectedProduct.selectedPontic.filter(
+                        selectedProduct?.selectedPontic?.filter(
                           (pontic) => !item.includes(pontic)
                         );
 
@@ -874,12 +874,12 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
                           className="flex flex-wrap justify-center"
                         >
                           {/* Display filteredTeeth */}
-                          {filteredTeeth.length > 0
+                          {filteredTeeth?.length > 0
                             ? filteredTeeth.join(",") // Join filtered teeth with commas
                             : "---"}{""}
                           {/* Display remainingPontic not in selected teeth */}
                           <div className="left-0">
-                            {remainingPontic.length > 0
+                            {remainingPontic?.length > 0
                               ? `,${remainingPontic.join(",")}` // Join remainingPontic with commas
                               : "---"}
                           </div>

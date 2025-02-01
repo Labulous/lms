@@ -562,6 +562,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
+        // Update the main row type
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          type: type.name,
+        };
+
+        // If subRows exist, update them as well
         if (
           updatedProducts[index].subRows &&
           updatedProducts[index].subRows!.length > 0
@@ -572,8 +579,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               type: type.name,
             })
           );
-        } else {
-          return prevSelectedProducts; // Do nothing if subRows don't exist
         }
 
         return updatedProducts;
