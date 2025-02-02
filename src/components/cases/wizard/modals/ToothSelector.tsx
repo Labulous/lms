@@ -772,16 +772,31 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       )}
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-gray-700">
-            Crown and Bridge
-          </span>
-          <span className="text-xs text-gray-500 mt-0.5">
-            {billingType === "perTooth"
-              ? "Per Tooth"
-              : billingType === "perArch"
-              ? "Click any tooth to select/deselect an arch"
-              : "Generic"}
-          </span>
+          <div className="flex flex-col gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                onSelectionChange([
+                  11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
+                ])
+              }
+            >
+              Select Upper Arc
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                onSelectionChange([
+                  31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
+                ])
+              }
+            >
+              Select Lower Arc
+            </Button>
+          </div>
+
         </div>
         {selectedTeeth.length > 0 && (
           <Button
@@ -1071,40 +1086,23 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
         </svg>
       </div>
 
-      {/* <Button
-        variant="ghost"
-        size="sm"
-        className="text-blue-500 hover:text-blue-600 hover:bg-blue-50 mt-4"
-        onClick={handleAddToShadeTable}
-      >
-        Add to Shade Table
-      </Button> */}
-
-      {selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge") && (
-        <div className="flex ">
-          <h2 className="text-gray-700">Toggle to Select Pontic</h2>
-          <div className="flex items-center space-x-3 ml-2">
-            <button
-              onClick={() => {
-                setPonticMode(!ponticMode);
-                if (ponticMode) {
-                  setPonticTeeth(new Set());
-                  onSelectionChange(selectedTeeth, []);
-                }
-              }}
-              className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                ponticMode ? " bg-[#a855f7] p-0.5" : "bg-gray-400"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${
-                  ponticMode ? "translate-x-6" : "translate-x-0"
-                }`}
-              ></div>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Save & Close Button */}
+      <div className="mt-2 w-full">
+        <Button
+          className="w-full"
+          variant={selectedTeeth.length > 0 ? 'default' : 'outline'}
+          disabled={selectedTeeth.length === 0}
+          onClick={() => {
+            // Close the modal by finding the closest parent dialog
+            const modal = document.querySelector('[role="dialog"]');
+            if (modal) {
+              (modal as HTMLElement).style.display = 'none';
+            }
+          }}
+        >
+          Save & Close
+        </Button>
+      </div>
     </div>
   );
 };
