@@ -915,7 +915,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       };
       setselectedProducts([newProduct]);
     }
-  }, []);
+  }, [selectedProducts]);
 
   console.log(shadesItems, "shadeData");
 
@@ -925,7 +925,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-  console.log(services, "services data");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
