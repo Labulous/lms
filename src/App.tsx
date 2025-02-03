@@ -28,6 +28,7 @@ import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
+import ClientPricing from "./pages/settings/ClientPricing";
 
 import Home1 from "./pages/Home1";
 
@@ -121,12 +122,22 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                     <Route
+                  <Route
                     path="lab-profile"
                     element={<LABProfile />}
                   />
                   <Route path="*" element={<Settings />} />
                 </Routes>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client-pricing"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+                <Layout>
+                  <ClientPricing />
+                </Layout>
               </ProtectedRoute>
             }
           />

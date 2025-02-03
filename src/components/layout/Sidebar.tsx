@@ -118,6 +118,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       label: "Clients",
       href: "/clients",
       roles: ["admin", "super_admin", "technician"],
+      subItems: [
+        { label: "Profile", href: "/clients", icon: Users },
+        { label: "Pricing", href: "/client-pricing", icon: DollarSign },
+      ],
     },
     {
       icon: DollarSign,
