@@ -183,14 +183,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       className={`bg-slate-100 text-gray-600 w-56 min-h-screen border-r border-slate-200 flex flex-col transition-all duration-300 ${isOpen ? "translate-x-0" : "-translate-x-44"
         } md:translate-x-0`}
     >
-      <div className="flex items-center justify-between px-4 py-6">
+      <div className="flex items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center space-x-2">
-          <img src={logomark} alt="Labulous Logo" className="h-6 w-6" />
+          <img
+            src={logomark}
+            alt="dentalms logo logomark"
+            className={`h-7  w-auto transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+              }`}
+          />
           <img
             src={logotext}
-            alt="Labulous"
-            className={`h-5 transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`}
+            alt="dentalms logo logotext"
+            className={`h-7 w-auto transition-opacity duration-200 transform ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"}`}
+            style={{ transform: "translateY(2px)" }}
           />
         </Link>
         <button
@@ -204,15 +209,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </button>
       </div>
 
-      <div className="mx-4 mb-6">
-        <div className="  p-2.5 rounded-lg border border-slate-200 bg-white/50"
-          style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="mx-4 py-4">
+        <div className="px-2 py-3 rounded-lg border border-slate-200 bg-white/50"
+          style={{ display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "center" }}>
           {labs[0]?.attachements ? (
             <img
               src={labs[0].attachements}
               alt="Lab Logo"
-              className="h-4 w-4 text-gray-500 mt-0.5"
-              style={{ width: "50px", height: "30px", objectFit: "contain" }}
+              className="h-4 w-4 text-gray-500 mt-0.5 mr-1"
+              style={{ width: "30px", height: "30px", objectFit: "contain" }}
             />
           ) : (
             <Building2 className="h-4 w-4 text-gray-500 " />

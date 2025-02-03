@@ -118,7 +118,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
 
         <div className="flex divide-x h-[400px]">
           {/* Materials Column (1/3 width) */}
-          <div className="w-1/3 p-2">
+          <div className="w-1/4 p-2 bg-slate-50">
             <div className="font-medium text-sm mb-2 px-2">Materials</div>
             <ScrollArea className="h-[350px]">
               <div className="space-y-1">
@@ -158,7 +158,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
           </div>
 
           {/* Products Column (2/3 width) */}
-          <div className="w-2/3 p-2">
+          <div className="w-3/4 p-2">
             <div className="font-medium text-sm mb-2 px-2">
               Products
               {filteredProducts.length > 0 && (
