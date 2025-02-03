@@ -74,6 +74,7 @@ const UpdateCase: React.FC = () => {
   const [isAddingPan, setIsAddingPan] = useState(false);
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdate, setIsUpdate] = useState<boolean>(false);
 
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -674,6 +675,7 @@ const UpdateCase: React.FC = () => {
             })
           );
         });
+        setIsUpdate(true)
       } catch (error) {
         console.error("Error fetching case data:", error);
         setError(
@@ -695,6 +697,7 @@ const UpdateCase: React.FC = () => {
     };
   }, [caseId, clients]);
   console.log(caseDetail, "case Detail");
+
   return (
     <div
       className="p-6"
@@ -777,6 +780,8 @@ const UpdateCase: React.FC = () => {
             setselectedProducts={setSelectedProducts}
             formData={formData}
             formErrors={errors}
+            isUpdate={isUpdate}
+            setIsUpdate={setIsUpdate}
           />
         </div>
 
