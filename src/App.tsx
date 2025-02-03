@@ -30,6 +30,7 @@ import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
 
 import Home1 from "./pages/Home1";
+import { MyAccount } from "./pages/settings/my-account";
 
 const App: React.FC = () => {
   return (
@@ -121,10 +122,17 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                     <Route
+                  <Route
                     path="lab-profile"
                     element={<LABProfile />}
                   />
+
+                  <Route
+                    path="user-profile"
+                    element={<MyAccount />}
+                  />
+
+
                   <Route path="*" element={<Settings />} />
                 </Routes>
               </ProtectedRoute>

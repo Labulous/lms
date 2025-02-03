@@ -2,7 +2,7 @@
 import { SettingsTabs } from './SettingsTabs';
 import { CaseWorkflowSettingsContent } from './SettingsContent';
 import React, { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -105,13 +105,13 @@ export const UserManagement: React.FC = () => {
 
     const roles = {
         super_admin: [
-            { label: "admin", role: "Admin" },
+            { label: "Admin", role: "admin" },
             { label: "Client", role: "client" },
             { label: "Technician", role: "technician" },
         ],
         admin: [
 
-            { label: "admin", role: "Admin" },
+            { label: "Admin", role: "admin" },
             { label: "Technician", role: "technician" },
 
         ]
@@ -193,6 +193,7 @@ export const UserManagement: React.FC = () => {
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
+        debugger;
         console.log(formData);
         setLoading(true);
         e.preventDefault();
@@ -204,46 +205,68 @@ export const UserManagement: React.FC = () => {
         }
         try {
             if (editingUser) {
-                const { error } = await supabase
+                // const { error } = await supabase
+                //     .from("users")
+                //     .update({
+                //         name: formData.name,
+                //         firstname: formData.firstname,
+                //         lastname: formData.lastname,
+                //         lab_id: labData.labId,
+                //         email: formData.email,
+                //         //updated_at: new Date().toISOString(),
+                //     })
+                //     .eq("id", editingUser.id);
+
+                const { data, error } = await supabase
                     .from("users")
                     .update({
                         name: formData.name,
                         firstname: formData.firstname,
                         lastname: formData.lastname,
-                        //color: formData.color,
-                        updated_at: new Date().toISOString(),
+                        lab_id: labData.labId,
+                        email: formData.email,
+                        phone: formData.phone,
+                        //updated_at: new Date().toISOString(),
                     })
-                    .eq("id", editingUser.id);
+                    .eq("id", editingUser.id).select("*")
+                console.log(data)
 
-                if (error) throw error;
+
+                if (error) {
+                    console.error("Supabase update error:", error);
+                    throw error;
+                }
+                //if (error) throw error;
                 toast.success("User updated successfully");
                 setLoading(false);
             } else {
 
-                if (formData.role == "client") {
-                    await createUserByAdmins(labData.labId,
-                        formData.role,
-                        formData.name,
-                        formData.firstname,
-                        formData.lastname,
-                        formData.email,
-                        formData.password,
-                        {
-                            accountNumber: nextAccountNumber,
-                            clientName: formData.name,
-                            contactName: formData.contactName,
-                            phone: formData.phone,
-                            street: formData.address.street,
-                            city: formData.address.city,
-                            state: formData.address.state,
-                            zipCode: formData.address.zipCode,
-                            clinicRegistrationNumber: formData.clinicRegistrationNumber,
-                            notes: formData.notes,
-                        });
-                }
-                else {
-                    await createUserByAdmins(labData.labId, formData.role, formData.name, formData.firstname, formData.lastname, formData.email, formData.password);
-                }
+                await createUserByAdmins(labData.labId, formData.role, formData.name, formData.firstname, formData.lastname, formData.email, formData.phone, formData.password);
+
+                // if (formData.role == "client") {
+                //     await createUserByAdmins(labData.labId,
+                //         formData.role,
+                //         formData.name,
+                //         formData.firstname,
+                //         formData.lastname,
+                //         formData.email,
+                //         formData.password,
+                //         {
+                //             accountNumber: nextAccountNumber,
+                //             clientName: formData.name,
+                //             contactName: formData.contactName,
+                //             phone: formData.phone,
+                //             street: formData.address.street,
+                //             city: formData.address.city,
+                //             state: formData.address.state,
+                //             zipCode: formData.address.zipCode,
+                //             clinicRegistrationNumber: formData.clinicRegistrationNumber,
+                //             notes: formData.notes,
+                //         });
+                // }
+                // else {
+                //     await createUserByAdmins(labData.labId, formData.role, formData.name, formData.firstname, formData.lastname, formData.email, formData.password);
+                // }
                 //if (error) throw error;
                 toast.success("User created successfully");
             }
