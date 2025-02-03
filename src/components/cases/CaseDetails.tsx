@@ -625,6 +625,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateOnMount: true,
     }
   );
 
@@ -1734,9 +1735,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-sm font-medium">
-                    {formatDate(
-                      caseDetail?.received_date || caseDetail?.created_at
-                    )}
+                    {caseDetail?.received_date &&
+                      formatDate(caseDetail?.received_date)}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -1895,7 +1895,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             />
                           </TableCell>
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.material?.name || "-"}
+                            {product.material?.name || "-"} - {product.name}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
                             <Separator
@@ -2282,7 +2282,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           colSpan={6}
                           className="text-xs py-2 pl-4 pr-0 text-right"
                         >
-                          Paid Amount: ${caseDetail.invoice[0].amount - Number(caseDetail?.invoice?.[0]?.due_amount || 0) }
+                          Paid Amount: $
+                          {caseDetail.invoice[0].amount -
+                            Number(caseDetail?.invoice?.[0]?.due_amount || 0)}
                         </TableCell>
                         <TableCell
                           colSpan={3}
