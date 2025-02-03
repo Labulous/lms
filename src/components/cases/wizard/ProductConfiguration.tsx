@@ -814,10 +814,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         price: 0,
         additional_service_id: "",
         shades: {
-          body_shade: "",
-          gingival_shade: "",
-          stump_shade: "",
-          occlusal_shade: "",
+          body_shade: null,
+          gingival_shade: null,
+          stump_shade: null,
+          occlusal_shade: null,
         },
         discount: 0,
         notes: "",
@@ -849,75 +849,116 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     if (selectedProducts.length > 0) {
-      const shades = selectedProducts.map((item) => {
-        const obj = {
+      const shades: ShadeData[] = selectedProducts.map((item) => {
+        const baseShades: ShadeData = {
+          id: item.id,
           body_shade: item.shades?.body_shade
-            ? item.shades?.body_shade
+            ? item.shades.body_shade
             : item.shades?.manual_body &&
               !item.shades.custom_body &&
               !item.shades?.body_shade
             ? "manual"
-            : "",
-
+            : null,
           gingival_shade: item.shades?.gingival_shade
-            ? item.shades?.gingival_shade
+            ? item.shades.gingival_shade
             : item.shades?.manual_gingival &&
-              !item.shades.custom_body &&
+              !item.shades.custom_gingival &&
               !item.shades?.gingival_shade
             ? "manual"
-            : "",
+            : null,
           occlusal_shade: item.shades?.occlusal_shade
-            ? item.shades?.occlusal_shade
+            ? item.shades.occlusal_shade
             : item.shades?.manual_occlusal &&
               !item.shades.custom_occlusal &&
               !item.shades?.occlusal_shade
             ? "manual"
-            : "",
+            : null,
           stump_shade: item.shades?.stump_shade
-            ? item.shades?.stump_shade
+            ? item.shades.stump_shade
             : item.shades?.manual_stump &&
               !item.shades.custom_stump &&
               !item.shades?.stump_shade
             ? "manual"
-            : "",
-          id: item.id,
-          custom_body: item.shades?.custom_body,
-          custom_gingival: item.shades?.custom_gingival,
-          custom_occlusal: item.shades?.custom_occlusal,
-          custom_stump: item.shades?.custom_stump,
+            : null,
+          custom_body: item.shades?.custom_body || "",
+          custom_gingival: item.shades?.custom_gingival || "",
+          custom_occlusal: item.shades?.custom_occlusal || "",
+          custom_stump: item.shades?.custom_stump || "",
           manual_body: item.shades?.manual_body || "",
           manual_gingival: item.shades?.manual_gingival || "",
           manual_occlusal: item.shades?.manual_occlusal || "",
           manual_stump: item.shades?.manual_stump || "",
         };
 
-        return obj;
+        return {
+          ...baseShades,
+          subRow:
+            item?.subRows?.map((item) => ({
+              body_shade: item.shades?.body_shade
+                ? item.shades.body_shade
+                : item.shades?.manual_body &&
+                  !item.shades.custom_body &&
+                  !item.shades?.body_shade
+                ? "manual"
+                : null,
+              gingival_shade: item.shades?.gingival_shade
+                ? item.shades.gingival_shade
+                : item.shades?.manual_gingival &&
+                  !item.shades.custom_gingival &&
+                  !item.shades?.gingival_shade
+                ? "manual"
+                : null,
+              occlusal_shade: item.shades?.occlusal_shade
+                ? item.shades.occlusal_shade
+                : item.shades?.manual_occlusal &&
+                  !item.shades.custom_occlusal &&
+                  !item.shades?.occlusal_shade
+                ? "manual"
+                : null,
+              stump_shade: item.shades?.stump_shade
+                ? item.shades.stump_shade
+                : item.shades?.manual_stump &&
+                  !item.shades.custom_stump &&
+                  !item.shades?.stump_shade
+                ? "manual"
+                : null,
+              custom_body: item.shades?.custom_body || "",
+              custom_gingival: item.shades?.custom_gingival || "",
+              custom_occlusal: item.shades?.custom_occlusal || "",
+              custom_stump: item.shades?.custom_stump || "",
+              manual_body: item.shades?.manual_body || "",
+              manual_gingival: item.shades?.manual_gingival || "",
+              manual_occlusal: item.shades?.manual_occlusal || "",
+              manual_stump: item.shades?.manual_stump || "",
+            })) || [],
+        };
       });
 
       setShadeData(shades);
     } else {
-      const newProduct: SavedProduct = {
-        id: "",
-        name: "",
-        type: "",
-        teeth: [],
-        price: 0,
-        additional_service_id: "",
-        shades: {
-          body_shade: "",
-          gingival_shade: "",
-          stump_shade: "",
-          occlusal_shade: "",
+      setselectedProducts([
+        {
+          id: "",
+          name: "",
+          type: "",
+          teeth: [],
+          price: 0,
+          additional_service_id: "",
+          shades: {
+            body_shade: null,
+            gingival_shade: null,
+            stump_shade: null,
+            occlusal_shade: null,
+          },
+          discount: 0,
+          notes: "",
+          quantity: 1,
         },
-        discount: 0,
-        notes: "",
-        quantity: 1,
-      };
-      setselectedProducts([newProduct]);
+      ]);
     }
   }, [selectedProducts]);
 
-  console.log(shadesItems, "shadeData");
+  console.log(shadeData, "shadeData");
 
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
@@ -1395,7 +1436,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             ...updatedShadeData[index],
                                             manual_occlusal: "",
                                             id: row.id,
-                                            occlusal_shade: "",
+                                            occlusal_shade: null,
                                             subRow:
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
@@ -1406,7 +1447,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                       return {
                                                         ...subRowItem,
                                                         manual_occlusal: "",
-                                                        occlusal_shade: "",
+                                                        occlusal_shade: null,
                                                       };
                                                     }
                                                   )
@@ -1414,7 +1455,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     index
                                                   ].teeth.map((item) => ({
                                                     manual_occlusal: "",
-                                                    occlusal_shade: "",
+                                                    occlusal_shade: null,
                                                   })),
                                           };
                                         }
@@ -1437,7 +1478,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             e.target.value.toUpperCase(),
                                           id: row.id,
                                           manual_occlusal: "",
-                                          occlusal_shade: "",
+                                          occlusal_shade: null,
 
                                           subRow:
                                             updatedShadeData?.[index]?.subRow
@@ -1452,7 +1493,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         e.target.value.toUpperCase(),
                                                       id: row.id,
                                                       manual_occlusal: "",
-                                                      occlusal_shade: "",
+                                                      occlusal_shade: null,
                                                     };
                                                   }
                                                 )
@@ -1463,7 +1504,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     e.target.value.toUpperCase(),
                                                   id: row.id,
                                                   manual_occlusal: "",
-                                                  occlusal_shade: "",
+                                                  occlusal_shade: null,
                                                 })),
                                         };
                                         return updatedShadeData;
@@ -1575,14 +1616,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             ...updatedShadeData[index],
                                             manual_body: "",
                                             id: row.id,
-                                            body_shade: "",
+                                            body_shade: null,
                                             subRow:
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? selectedProducts[0].teeth.map(
                                                     (item) => ({
                                                       manual_body: "",
-                                                      body_shade: "",
+                                                      body_shade: null,
                                                     })
                                                   )
                                                 : selectedProducts[
@@ -1590,7 +1631,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   ].teeth.map((item) => ({
                                                     manual_body: "",
                                                     id: row.id,
-                                                    body_shade: "",
+                                                    body_shade: null,
                                                   })),
                                           };
                                         }
@@ -1610,7 +1651,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           custom_body:
                                             e.target.value.toUpperCase(),
                                           id: row.id,
-                                          body_shade: "",
+                                          body_shade: null,
                                           manual_body: "",
                                           subRow:
                                             updatedShadeData?.[index]?.subRow
@@ -1624,7 +1665,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                       custom_body:
                                                         e.target.value.toUpperCase(),
                                                       id: row.id,
-                                                      body_shade: "",
+                                                      body_shade: null,
                                                       manual_body: "",
                                                     };
                                                   }
@@ -1635,7 +1676,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   custom_body:
                                                     e.target.value.toUpperCase(),
                                                   id: row.id,
-                                                  body_shade: "",
+                                                  body_shade: null,
                                                   manual_body: "",
                                                 })),
                                         };
@@ -1754,7 +1795,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             ...updatedShadeData[index],
                                             manual_gingival: "",
                                             id: row.id,
-                                            gingival_shade: "",
+                                            gingival_shade: null,
                                             subRow:
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
@@ -1766,7 +1807,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         ...subRowItem,
                                                         manual_gingival: "",
                                                         id: row.id,
-                                                        gingival_shade: "",
+                                                        gingival_shade: null,
                                                       };
                                                     }
                                                   )
@@ -1775,7 +1816,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   ].teeth.map((item) => ({
                                                     manual_gingival: "",
                                                     id: row.id,
-                                                    gingival_shade: "",
+                                                    gingival_shade: null,
                                                   })),
                                           };
                                         }
@@ -1795,7 +1836,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           custom_gingival:
                                             e.target.value.toUpperCase(),
                                           id: row.id,
-                                          gingival_shade: "",
+                                          gingival_shade: null,
                                           manual_gingival: "",
                                           subRow:
                                             updatedShadeData?.[index]?.subRow
@@ -1809,7 +1850,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                       custom_gingival:
                                                         e.target.value.toUpperCase(),
                                                       id: row.id,
-                                                      gingival_shade: "",
+                                                      gingival_shade: null,
                                                       manual_gingival: "",
                                                     };
                                                   }
@@ -1820,7 +1861,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   custom_gingival:
                                                     e.target.value.toUpperCase(),
                                                   id: row.id,
-                                                  gingival_shade: "",
+                                                  gingival_shade: null,
                                                   manual_gingival: "",
                                                 })),
                                         };
@@ -1935,7 +1976,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             ...updatedShadeData[index],
                                             manual_stump: "",
                                             id: row.id,
-                                            stump_shade: "",
+                                            stump_shade: null,
                                             subRow:
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
@@ -1947,7 +1988,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         ...subRowItem,
                                                         manual_stump: "",
                                                         id: row.id,
-                                                        stump_shade: "",
+                                                        stump_shade: null,
                                                       };
                                                     }
                                                   )
@@ -1956,7 +1997,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   ].teeth.map((item) => ({
                                                     manual_stump: "",
                                                     id: row.id,
-                                                    stump_shade: "",
+                                                    stump_shade: null,
                                                   })),
                                           };
                                         }
@@ -1976,7 +2017,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           custom_stump:
                                             e.target.value.toUpperCase(),
                                           id: row.id,
-                                          stump_shade: "",
+                                          stump_shade: null,
                                           manual_stump: "",
                                           subRow:
                                             updatedShadeData?.[index]?.subRow
@@ -1990,7 +2031,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                       custom_stump:
                                                         e.target.value.toUpperCase(),
                                                       id: row.id,
-                                                      stump_shade: "",
+                                                      stump_shade: null,
                                                       manual_stump: "",
                                                     };
                                                   }
@@ -2001,7 +2042,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   custom_stump:
                                                     e.target.value.toUpperCase(),
                                                   id: row.id,
-                                                  stump_shade: "",
+                                                  stump_shade: null,
                                                   manual_stump: "",
                                                 })),
                                         };
@@ -2810,7 +2851,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                           ...subRowItem, // Keep existing subRow data
                                                           custom_occlusal:
                                                             e.target.value.toUpperCase(),
-                                                          occlusal_shade: "", // Optional: You can decide whether to clear or keep it
+                                                          occlusal_shade: null, // Optional: You can decide whether to clear or keep it
                                                           manual_occlusal: "", // Optional: You can decide whether to clear or keep it
                                                         };
                                                       }
@@ -2961,7 +3002,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         custom_body:
                                                           e.target.value.toUpperCase(),
                                                         id: row_sub.id,
-                                                        body_shade: "",
+                                                        body_shade: null,
                                                         manual_body: "",
                                                       };
                                                     }
@@ -2972,7 +3013,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     custom_body:
                                                       e.target.value.toUpperCase(),
                                                     id: row_sub.id,
-                                                    body_shade: "",
+                                                    body_shade: null,
                                                     manual_body: "",
                                                   },
                                                 ],
@@ -3118,7 +3159,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         ...subRowItem,
                                                         custom_gingival:
                                                           e.target.value.toUpperCase(),
-                                                        gingival_shade: "",
+                                                        gingival_shade: null,
                                                         manual_gingival: "",
                                                       };
                                                     }
@@ -3128,7 +3169,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {
                                                     custom_gingival:
                                                       e.target.value.toUpperCase(),
-                                                    gingival_shade: "",
+                                                    gingival_shade: null,
                                                     manual_gingival: "",
                                                   },
                                                 ],
@@ -3276,7 +3317,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         ...subRowItem,
                                                         custom_stump:
                                                           e.target.value.toUpperCase(),
-                                                        stump_shade: "",
+                                                        stump_shade: null,
                                                         manual_stump: "",
                                                         id: row_sub.id,
                                                       };
@@ -3287,7 +3328,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                   {
                                                     custom_stump:
                                                       e.target.value.toUpperCase(),
-                                                    stump_shade: "",
+                                                    stump_shade: null,
                                                     manual_stump: "",
                                                     id: row_sub.id,
                                                   },

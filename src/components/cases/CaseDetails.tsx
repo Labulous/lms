@@ -625,6 +625,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateOnMount: true,
     }
   );
 

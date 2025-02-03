@@ -240,7 +240,7 @@ const UpdateCase: React.FC = () => {
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-  case_product_id,
+          case_product_id,
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -335,12 +335,12 @@ const UpdateCase: React.FC = () => {
           product_type: tp.product.product_type,
           billing_type: tp.product.billing_type,
           discounted_price: caseItem?.discounted_price[index],
-          case_product_id: tp.case_product_id,
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
             tooth_number: tp.tooth_number,
             product_id: tp.product_id,
+            case_product_id: tp.id,
             occlusal_shade: tp.occlusal_shade,
             body_shade: tp.body_shade,
             gingival_shade: tp.gingival_shade,
@@ -484,6 +484,7 @@ const UpdateCase: React.FC = () => {
           enclosed_case_id: transformedData.enclosed_case_id,
           attachements: selectedFiles.map((item) => item.url),
         },
+        invoiceId: caseDetailApi?.invoice?.[0].id,
         products: selectedProducts.filter((item) => item.id && item.type),
         enclosedItems: transformedData.enclosedItems,
         enclosed_item_id: transformedData.enclosed_case_id,
@@ -636,7 +637,7 @@ const UpdateCase: React.FC = () => {
                 quantity: item.discounted_price.quantity,
                 discount: item?.discounted_price?.discount || 0,
                 discounted_price_id: item.discounted_price?.id,
-                case_product_id: item.case_product_id,
+                case_product_id: item.teethProduct.case_product_id,
                 teeth: [tooth], // Single tooth per subRow
                 pontic_teeth: item.teethProduct?.pontic_teeth?.includes(tooth)
                   ? [tooth]

@@ -445,15 +445,15 @@ const updateCases = async (
     );
     // Step 1: Update enclosed case details
     const enclosedCaseRow = {
-      impression: cases.enclosed_items?.impression || 0,
-      biteRegistration: cases.enclosed_items?.biteRegistration || 0,
-      photos: cases.enclosed_items?.photos || 0,
-      jig: cases.enclosed_items?.jig || 0,
-      opposingModel: cases.enclosed_items?.opposingModel || 0,
-      articulator: cases.enclosed_items?.articulator || 0,
-      returnArticulator: cases.enclosed_items?.returnArticulator || 0,
-      cadcamFiles: cases.enclosed_items?.cadcamFiles || 0,
-      consultRequested: cases.enclosed_items?.consultRequested || 0,
+      impression: cases.enclosedItems?.impression || 0,
+      biteRegistration: cases.enclosedItems?.biteRegistration || 0,
+      photos: cases.enclosedItems?.photos || 0,
+      jig: cases.enclosedItems?.jig || 0,
+      opposingModel: cases.enclosedItems?.opposingModel || 0,
+      articulator: cases.enclosedItems?.articulator || 0,
+      returnArticulator: cases.enclosedItems?.returnArticulator || 0,
+      cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
+      consultRequested: cases.enclosedItems?.consultRequested || 0,
       user_id: cases.overview.created_by,
     };
 
@@ -554,7 +554,6 @@ const updateCases = async (
       }))
     );
 
-    console.log(caseProductTeethRows, "caseProductTeethRows");
     // Step to check if rows exist for product_id before inserting
     for (const row of caseProductTeethRows) {
       const { data: existingTeethRows, error: fetchError } = await supabase
@@ -562,7 +561,7 @@ const updateCases = async (
         .select("*")
         .eq("product_id", row.product_id)
         .eq("case_id", caseId)
-        .eq("case_product_id", row.case_product_id); // Check for the combination of case_product_id and product_id
+        .eq("id", row.case_product_id); // Check for the combination of case_product_id and product_id
 
       if (fetchError) {
         console.error("Error fetching case_product_teeth rows:", fetchError);
@@ -589,9 +588,9 @@ const updateCases = async (
             `New case_product_teeth row created for product_id: ${row.product_id}`
           );
 
-          toast.success("Case updated successfully 1");
+          toast.success("Case updated successfully");
           if (navigate && caseId) {
-            // navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
           }
           return;
         }
@@ -615,9 +614,9 @@ const updateCases = async (
             `Existing case_product_teeth row updated for product_id: ${row.product_id}`
           );
 
-          toast.success("Case updated successfully 2");
+          toast.success("Case updated successfully");
           if (navigate && caseId) {
-            // navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
           }
         }
       }
@@ -637,6 +636,7 @@ const updateCases = async (
         due_amount: new_due_amount,
       };
     }
+
     const totalAmount = cases.products.reduce((sum: number, main: any) => {
       return (
         sum +
@@ -685,14 +685,14 @@ const updateCases = async (
 
     const { data: invoiceData, error: invoiceError } = await supabase
       .from("invoices")
-      .insert(newInvoice)
+      .update(newInvoice)
+      .eq("id", cases.invoiceId)
       .select("*");
 
     if (invoiceError) {
       toast.error("failed to update Invoice Data");
       return;
     }
-
     cases.products.flatMap((main: any) => {
       return main.subRows.map((product: any) => {
         // Calculate the final discount
@@ -744,7 +744,7 @@ const updateCases = async (
     console.error("Error in updateCases function:", error);
     toast.error("Failed to update case");
   } finally {
-    setLoadingState && setLoadingState({ isLoading: false, action: "update" });
+    // setLoadingState && setLoadingState({ isLoading: false, action: "update" });
   }
 };
 
