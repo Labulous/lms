@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,8 @@ type Material = Database["public"]["Tables"]["materials"]["Row"];
 
 interface BatchServiceUploadProps {
   onUpload: (services: ServiceInput[]) => Promise<void>;
+  setIsOpen: React.Dispatch<SetStateAction<boolean>>;
+  isOpen: boolean;
 }
 
 const emptyService = (): ServiceInput => ({
@@ -51,8 +53,11 @@ const emptyService = (): ServiceInput => ({
   lab_id: "",
 });
 
-const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
+  onUpload,
+  setIsOpen,
+  isOpen,
+}) => {
   const [services, setServices] = useState<ServiceInput[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("manual");
@@ -131,7 +136,10 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
       try {
         const text = e.target?.result as string;
         const lines = text.split("\n");
-        const headers = lines[0].toLowerCase().split(",").map((h) => h.trim());
+        const headers = lines[0]
+          .toLowerCase()
+          .split(",")
+          .map((h) => h.trim());
 
         const newServices: ServiceInput[] = [];
         const errors: string[] = [];
@@ -193,14 +201,18 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
           return;
         }
 
-        setServices(newServices.map(service => ({ ...service, lab_id: labId })));
+        setServices(
+          newServices.map((service) => ({ ...service, lab_id: labId }))
+        );
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
         toast.success(`Successfully parsed ${newServices.length} services`);
       } catch (error) {
         console.error("Error parsing CSV:", error);
-        toast.error("Error parsing CSV file. Please check the format and try again.");
+        toast.error(
+          "Error parsing CSV file. Please check the format and try again."
+        );
       }
     };
     reader.readAsText(file);
@@ -247,7 +259,7 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
       if (!service.material_id?.trim()) {
         errors.push(`Row ${index + 1}: Material is required`);
       }
-      if (typeof service.price !== 'number') {
+      if (typeof service.price !== "number") {
         errors.push(`Row ${index + 1}: Price must be a number`);
       }
     });
@@ -263,39 +275,43 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
       }
 
       // Validate services before submitting
-      const invalidServices = services.filter(service => 
-        !service.name || !service.material_id || service.price <= 0
+      const invalidServices = services.filter(
+        (service) => !service.name || !service.material_id || service.price <= 0
       );
 
       if (invalidServices.length > 0) {
-        toast.error("Please fill in all required fields (Name, Material, Price) for all services.");
+        toast.error(
+          "Please fill in all required fields (Name, Material, Price) for all services."
+        );
         return;
       }
 
       setIsSubmitting(true);
 
       // Ensure all services have lab_id
-      const servicesWithLabId = services.map(service => ({
+      const servicesWithLabId = services.map((service) => ({
         ...service,
-        lab_id: labId
+        lab_id: labId,
       }));
 
       await onUpload(servicesWithLabId);
-      toast.success("Services added successfully!");
+      console.log(servicesWithLabId, "servicesWithLabId");
       setIsOpen(false);
-      setServices([{ ...emptyService(), lab_id: labId }]);
-      setActiveTab("manual");
+      // setServices([{ ...emptyService(), lab_id: labId }]);
+      // setActiveTab("manual");
     } catch (error: any) {
       console.error("Error uploading services:", error);
-      toast.error(error?.message || "Failed to add services. Please try again.");
+      toast.error(
+        error?.message || "Failed to add services. Please try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog 
-      open={isOpen} 
+    <Dialog
+      open={isOpen}
       onOpenChange={(open) => {
         if (!open && !isSubmitting) {
           // Reset state when closing
@@ -313,7 +329,7 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
           Add Services
         </Button>
       </DialogTrigger>
-      <DialogContent 
+      <DialogContent
         className="max-w-4xl max-h-[80vh] overflow-y-auto"
         onOpenAutoFocus={(e) => {
           e.preventDefault();
@@ -395,7 +411,10 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
                             </SelectTrigger>
                             <SelectContent>
                               {materials.map((material) => (
-                                <SelectItem key={material.id} value={material.id}>
+                                <SelectItem
+                                  key={material.id}
+                                  value={material.id}
+                                >
                                   {material.name}
                                 </SelectItem>
                               ))}
@@ -406,7 +425,11 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
                           <Input
                             value={service.description}
                             onChange={(e) =>
-                              updateService(index, "description", e.target.value)
+                              updateService(
+                                index,
+                                "description",
+                                e.target.value
+                              )
                             }
                           />
                         </TableCell>
@@ -424,7 +447,9 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
                                   )
                                 }
                               />
-                              <Label htmlFor={`visible-${index}`}>Visible</Label>
+                              <Label htmlFor={`visible-${index}`}>
+                                Visible
+                              </Label>
                             </div>
                             <div className="flex items-center space-x-2">
                               <Checkbox
@@ -434,7 +459,9 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({ onUpload }) => 
                                   updateService(index, "is_taxable", checked)
                                 }
                               />
-                              <Label htmlFor={`taxable-${index}`}>Taxable</Label>
+                              <Label htmlFor={`taxable-${index}`}>
+                                Taxable
+                              </Label>
                             </div>
                           </div>
                         </TableCell>

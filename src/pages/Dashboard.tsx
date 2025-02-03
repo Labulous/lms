@@ -102,7 +102,9 @@ const Dashboard: React.FC = () => {
     error: labError,
     isLoading: isLabLoading,
   } = useQuery(
-    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    user?.id
+      ? supabase.from("users").select("lab_id").eq("id", user?.id).single()
+      : null,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,

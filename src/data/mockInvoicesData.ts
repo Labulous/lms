@@ -79,6 +79,7 @@ export interface Invoice {
     state: string;
     zipCode: string;
   };
+  discounted_price?: any[];
   date?: string;
   dueDate?: string;
   case?: Case;
@@ -95,6 +96,8 @@ export interface Invoice {
     amount: number;
   };
   totalAmount?: number;
+  totalDue?: number;
+  oldTotalAmount?: number;
   amount?: number;
   balance?: number;
   status: string;

@@ -198,6 +198,15 @@ export const CASE_STATUS_DESCRIPTIONS: Record<CaseStatus, string> = {
   cancelled: "Case has been cancelled and will not be processed",
   draft: "Case is in draft mode and has not been submitted",
 };
+export interface Materials {
+  id: string;
+  name: string;
+  description: string;
+  is_active: boolean;
+  created_at: string; // Or Date if you prefer to use Date type
+  updated_at: string; // Or Date if you prefer to use Date type
+  lab_id: string;
+}
 
 /**
  * Shade data structure for dental products
@@ -216,6 +225,21 @@ export interface ShadeData {
   manual_gingival?: string;
   manual_stump?: string;
   manual_body?: string;
+  subRow?: {
+    occlusal_shade?: string;
+    body_shade?: string;
+    gingival_shade?: string;
+    stump_shade?: string;
+    id?: string;
+    custom_occlusal?: string;
+    custom_gingival?: string;
+    custom_stump?: string;
+    custom_body?: string;
+    manual_occlusal?: string;
+    manual_gingival?: string;
+    manual_stump?: string;
+    manual_body?: string;
+  }[];
 }
 
 export interface OfficeAddress {
