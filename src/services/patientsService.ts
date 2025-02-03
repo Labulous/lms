@@ -5,7 +5,7 @@ export interface Patient {
   first_name: string;
   last_name: string;
   email: string;
-  phone: string;
+  phone?: string;
 }
 
 class PatientsService {
@@ -93,6 +93,25 @@ class PatientsService {
       throw error;
     }
   }
+}
+
+export interface PatientFormData {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string;
+  dob?: string;
+  gender?: string;
+  provider?: string;
+  carrier_number?: string;
+  contract_number?: string;
+  member_id?: string;
+  other_info?: string;
+  emergency_first_name?: string;
+  emergency_last_name?: string;
+  emergency_relationship?: string;
+  emergency_phone?: string;
+  memo?: string;
 }
 
 export const patientsService = new PatientsService();
