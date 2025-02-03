@@ -634,17 +634,21 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
 
-        // Generate subRows by duplicating the product with each tooth individually
-        const subRows = teeth.map((tooth) => ({
+        // Combine teeth and pontic_teeth without duplicates
+        const uniqueTeeth = Array.from(new Set([...teeth, ...pontic_teeth]));
+
+        // Generate subRows including both teeth and pontic_teeth
+        const subRows = uniqueTeeth.map((tooth) => ({
           ...updatedProducts[index],
-          teeth: [tooth], // Assigning a single tooth in an array
+          teeth: [tooth], // Assigning a single tooth
+          pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
         }));
 
         updatedProducts[index] = {
           ...updatedProducts[index],
           teeth,
           pontic_teeth,
-          subRows, // Update the subRows field dynamically
+          subRows, // Updated subRows with unique teeth and pontic_teeth
         };
 
         return updatedProducts;
