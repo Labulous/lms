@@ -1330,14 +1330,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       <SelectValue placeholder="N/A" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {sortedShadesItems.map((shade) => (
-                                        <SelectItem
-                                          key={shade.id}
-                                          value={shade.id}
-                                        >
-                                          {shade.name}
-                                        </SelectItem>
-                                      ))}
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
                                     </SelectContent>
                                   </Select>
 
@@ -1515,14 +1517,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       <SelectValue placeholder="N/A" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {sortedShadesItems.map((shade) => (
-                                        <SelectItem
-                                          key={shade.id}
-                                          value={shade.id}
-                                        >
-                                          {shade.name}
-                                        </SelectItem>
-                                      ))}
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
                                     </SelectContent>
                                   </Select>
 
@@ -1688,14 +1692,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       <SelectValue placeholder="N/A" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {sortedShadesItems.map((shade) => (
-                                        <SelectItem
-                                          key={shade.id}
-                                          value={shade.id}
-                                        >
-                                          {shade.name}
-                                        </SelectItem>
-                                      ))}
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
                                     </SelectContent>
                                   </Select>
 
@@ -1868,14 +1874,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       <SelectValue placeholder="N/A" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {sortedShadesItems.map((shade) => (
-                                        <SelectItem
-                                          key={shade.id}
-                                          value={shade.id}
-                                        >
-                                          {shade.name}
-                                        </SelectItem>
-                                      ))}
+                                      <ScrollArea className="h-[200px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
                                     </SelectContent>
                                   </Select>
 

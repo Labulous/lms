@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, ChevronDown, ChevronUp, ChevronsUpDown, MoreVertical, Pencil, Trash } from "lucide-react";
 import ProductWizard from "../../components/settings/ProductWizard";
 import ServiceModal from "../../components/settings/ServiceModal";
 import DeleteConfirmationModal from "../../components/settings/DeleteConfirmationModal";
-import { mockServices, Service } from "../../data/mockServiceData";
+import { mockServices } from "../../data/mockServiceData";
 import ProductList from "../../components/settings/ProductList";
 import { productsService, ServiceInput } from "../../services/productsService";
 import { supabase } from "../../lib/supabase";
@@ -32,6 +32,8 @@ import {
 import { Checkbox } from "@radix-ui/react-checkbox";
 import { Badge } from "@/components/ui/badge";
 import BatchServiceUpload from "@/components/settings/BatchServiceUpload";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 export interface ServicesFormData {
   categories: string[];
   price_error?: string;
@@ -44,6 +46,7 @@ export interface ServicesFormData {
   description?: string;
   material_id?: string;
 }
+
 type Product = Database["public"]["Tables"]["products"]["Row"] & {
   material: { name: string } | null;
   product_type: { name: string } | null;
@@ -51,6 +54,28 @@ type Product = Database["public"]["Tables"]["products"]["Row"] & {
 };
 
 type ProductType = Database["public"]["Tables"]["product_types"]["Row"];
+
+type ServiceBase = {
+  name: string;
+  description: string;
+  price: number;
+  is_client_visible: boolean;
+  is_taxable: boolean;
+  material_id?: string;
+  lab_id: string;
+  material?: { name: string } | null;
+};
+
+type Service = ServiceBase & {
+  id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+interface SortConfig {
+  key: keyof Service;
+  direction: "asc" | "desc";
+}
 
 const ProductsServices: React.FC = () => {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -61,7 +86,7 @@ const ProductsServices: React.FC = () => {
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
-  const [productsToDelete, setProductsToDelete] = useState<Product[]>([]);
+  const [itemsToDelete, setItemsToDelete] = useState<(Product | Service)[]>([]);
   const [activeTab, setActiveTab] = useState("products");
   const [searhTerm, setSearchTerm] = useState("");
   const [serviceInsertLoading, setServiceInsertLoading] = useState(false);
@@ -78,6 +103,12 @@ const ProductsServices: React.FC = () => {
     categories: [],
     material_id: "",
   });
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "name",
+    direction: "asc",
+  });
+
   const { user } = useAuth();
 
   const {
@@ -197,16 +228,16 @@ const ProductsServices: React.FC = () => {
   }, [activeTab]);
 
   const loadProductsAndTypes = async () => {
-    setLoading(true); // ✅ Always set loading state first
+    setLoading(true); // 
 
     if (!labIdData?.lab_id) {
       toast.error("Unable to get Lab ID");
-      setLoading(false); // ✅ Ensure loading is reset before exiting
+      setLoading(false); // 
       return;
     }
 
     try {
-      // ✅ Fetch products
+      // 
       const { data: productsResult, error: productsError } = await supabase
         .from("products")
         .select(
@@ -225,7 +256,7 @@ const ProductsServices: React.FC = () => {
         throw new Error("Failed to fetch products.");
       }
 
-      // ✅ Fetch product types
+      // 
       const { data: productTypesData, error: productTypesError } =
         await supabase.from("product_types").select("*").order("name");
 
@@ -234,7 +265,7 @@ const ProductsServices: React.FC = () => {
         throw new Error("Failed to fetch product types.");
       }
 
-      // ✅ Update state only after both API calls
+      // 
       setProducts(productsResult || []);
       setProductTypes(productTypesData || []);
 
@@ -248,7 +279,7 @@ const ProductsServices: React.FC = () => {
           : "Failed to load products and types. Please refresh."
       );
     } finally {
-      setLoading(false); // ✅ Ensure loading state updates
+      setLoading(false); // 
     }
   };
 
@@ -300,61 +331,73 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = async (product: Product) => {
+  const handleDeleteConfirm = async () => {
     try {
-      // Check if we're trying to delete a service (services have no material_id)
-      if (!product.material_id && activeTab === "services") {
-        setServices((prev) =>
-          prev.filter((service) => service.id !== product.id)
-        );
-        toast.success("Service deleted successfully");
-        return;
+      if (itemsToDelete.length === 0) return;
+
+      // Close modal first to prevent UI freeze
+      setIsDeleteModalOpen(false);
+
+      for (const item of itemsToDelete) {
+        if ('lead_time' in item) {
+          // It's a product
+          const { error } = await supabase
+            .from("products")
+            .delete()
+            .eq("id", item.id);
+
+          if (error) throw error;
+        } else {
+          // It's a service
+          const { error } = await supabase
+            .from("services")
+            .delete()
+            .eq("id", item.id);
+
+          if (error) throw error;
+        }
       }
 
-      // For products, show confirmation dialog
-      setProductsToDelete([product]);
-      setIsDeleteModalOpen(true);
+      // Update local state based on what was deleted
+      const deletedIds = itemsToDelete.map(item => item.id);
+      if ('lead_time' in itemsToDelete[0]) {
+        // Products were deleted
+        setProducts(prev => prev.filter(item => !deletedIds.includes(item.id)));
+        toast.success(`Successfully deleted ${itemsToDelete.length} product(s)`);
+      } else {
+        // Services were deleted
+        setServices(prev => prev.filter(item => !deletedIds.includes(item.id)));
+        toast.success(`Successfully deleted ${itemsToDelete.length} service(s)`);
+      }
+
+      // Clear delete state
+      setItemsToDelete([]);
+      setSelectedServices([]);
     } catch (error) {
-      console.error("Error in handleDeleteClick:", error);
+      console.error("Error in handleDeleteConfirm:", error);
       toast.error("An error occurred while processing your request");
+      // Make sure modal is closed even on error
+      setIsDeleteModalOpen(false);
     }
   };
 
-  const handleBatchDeleteClick = async (products: Product[]) => {
-    // Show confirmation dialog for batch delete
-    setProductsToDelete(products);
+  const handleDeleteClick = async (item: Product | Service) => {
+    setItemsToDelete([item]);
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (productsToDelete.length === 0) return;
+  // Batch delete function for services
+  const handleBatchDelete = async () => {
+    if (selectedServices.length === 0) return;
 
-    try {
-      // Delete all products in the array
-      for (const product of productsToDelete) {
-        await productsService.deleteProduct(product.id);
-      }
-
-      // Update local state immediately
-      setProducts((prev) =>
-        prev.filter((p) => !productsToDelete.map((d) => d.id).includes(p.id))
-      );
-
-      const message =
-        productsToDelete.length === 1
-          ? "Product deleted successfully"
-          : `${productsToDelete.length} products deleted successfully`;
-      toast.success(message);
-    } catch (error: any) {
-      console.error("Error deleting product:", error);
-      toast.error(
-        error.message || "Failed to delete product. Please try again."
-      );
-    } finally {
-      setIsDeleteModalOpen(false);
-      setProductsToDelete([]);
-    }
+    const servicesToDelete = services.filter(service => 
+      selectedServices.includes(service.id)
+    );
+    setItemsToDelete(servicesToDelete);
+    setIsDeleteModalOpen(true);
+    setSelectedServices([]); // Clear selection after setting items to delete
   };
+
   const fetchServices = async () => {
     try {
       const { data: services, error: errorServices } = await supabase
@@ -372,40 +415,34 @@ const ProductsServices: React.FC = () => {
       console.log("faild to fetch Services", err);
     }
   };
-  console.log(services, "service");
-  console.log(formData, "Form");
-  const handleAddService = async (newService: Service[]) => {
-    // Log the new service object
-    console.log(newService, "handleAddService");
 
+  const handleAddService = async (newServices: ServiceInput[]) => {
     try {
-      setServiceInsertLoading(true);
-      // Insert the new service into the 'services' table on Supabase
+      if (!labIdData?.lab_id) {
+        toast.error("Unable to get Lab ID");
+        return;
+      }
+
+      const servicesToAdd = newServices.map((service) => ({
+        ...service,
+        lab_id: labIdData.lab_id,
+      }));
+
       const { data, error } = await supabase
         .from("services")
-        .insert(newService)
-        .select("*");
-      setServiceInsertLoading(false);
-      setServiceInsertLoading(false);
-      setFormData({
-        name: "",
-        description: "",
-        price_error: "",
-        category_error: "",
-        price: 0,
-        is_client_visible: false,
-        is_taxable: false,
-        categories: [],
-      });
-      // Check if there was an error
+        .insert(servicesToAdd)
+        .select();
+
       if (error) {
-        throw new Error(error.message);
+        throw error;
       }
-      setIsServiceModalOpen(false);
+
+      toast.success("Service added successfully");
       fetchServices();
-    } catch (err) {
-      setServiceInsertLoading(false);
-      toast.error("Error inserting service:");
+      setIsServiceModalOpen(false);
+    } catch (error) {
+      console.error("Error adding service:", error);
+      toast.error("Failed to add service");
     }
   };
 
@@ -427,6 +464,84 @@ const ProductsServices: React.FC = () => {
     }
   };
 
+  const handleBatchServiceUpload = async (
+    services: Omit<Service, "id" | "created_at" | "updated_at">[]
+  ) => {
+    try {
+      if (!labIdData?.lab_id) {
+        toast.error("Unable to get Lab ID");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("services")
+        .insert(
+          services.map((service) => ({
+            ...service,
+            lab_id: labIdData.lab_id,
+          }))
+        )
+        .select();
+
+      if (error) throw error;
+
+      toast.success(`Successfully added ${services.length} services`);
+      fetchServices();
+    } catch (error) {
+      console.error("Error adding services:", error);
+      toast.error("Failed to add services. Please try again.");
+    }
+  };
+
+  // Sorting functions
+  const handleSort = (key: keyof Service) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const getSortIcon = (key: keyof Service) => {
+    if (sortConfig.key !== key) return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="ml-2 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-2 h-4 w-4" />
+    );
+  };
+
+  const sortServices = (services: Service[]) => {
+    return [...services].sort((a, b) => {
+      // Special handling for material name
+      if (sortConfig.key === "material_id") {
+        const aValue = a.material?.name ?? "";
+        const bValue = b.material?.name ?? "";
+        const comparison = aValue.toLowerCase() < bValue.toLowerCase() ? -1 : 
+                         aValue.toLowerCase() > bValue.toLowerCase() ? 1 : 0;
+        return sortConfig.direction === "asc" ? comparison : -comparison;
+      }
+
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
+
+      // Handle null/undefined values
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+
+      // Handle boolean values
+      if (typeof aValue === 'boolean') {
+        return sortConfig.direction === "asc"
+          ? (aValue === bValue ? 0 : aValue ? -1 : 1)
+          : (aValue === bValue ? 0 : aValue ? 1 : -1);
+      }
+
+      // Handle string/number values
+      const comparison = String(aValue).toLowerCase() < String(bValue).toLowerCase() ? -1 : 
+                        String(aValue).toLowerCase() > String(bValue).toLowerCase() ? 1 : 0;
+      return sortConfig.direction === "asc" ? comparison : -comparison;
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -434,16 +549,20 @@ const ProductsServices: React.FC = () => {
       </div>
     );
   }
+
   const materials = useMemo(() => {
     const uniqueMaterials = new Set(
       products
-        .map((p) => p.material?.name)
-        .filter((name): name is string => name !== undefined && name !== null)
+        .map((product) => product.material?.name)
+        .filter((name): name is string => name !== null && name !== undefined)
     );
-    return Array.from(uniqueMaterials).map((name) => ({ id: name, name }));
+    return Array.from(uniqueMaterials);
   }, [products]);
 
   console.log(materialsData, "materialsData");
+
+  const [isServiceUploadOpen, setIsServiceUploadOpen] = useState(false);
+
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader
@@ -466,15 +585,27 @@ const ProductsServices: React.FC = () => {
             products={products}
             onEdit={handleEditProduct}
             onDelete={handleDeleteClick}
-            onBatchDelete={handleBatchDeleteClick}
+            onBatchDelete={handleBatchDelete}
             onBatchAdd={handleBatchAdd}
             activeTab={activeTab}
           />
         </TabsContent>
 
         <TabsContent value="services" className="space-y-4 w-full">
-          <div className="">
-            <div className="flex justify-end items-end pb-4">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                {selectedServices.length > 0 && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBatchDelete}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete Selected
+                  </Button>
+                )}
+              </div>
               <div className="flex items-center space-x-2">
                 <Input
                   placeholder="Search Services..."
@@ -489,7 +620,7 @@ const ProductsServices: React.FC = () => {
                   <PopoverContent className="w-[200px] p-4" align="start">
                     <div className="flex flex-col gap-4 bg-white border p-2">
                       <div className="flex items-center justify-between border-b pb-2">
-                        <span className="text-sm font-medium ">
+                        <span className="text-sm font-medium">
                           Filter by Material
                         </span>
                         {materialFilter.length > 0 && (
@@ -506,34 +637,34 @@ const ProductsServices: React.FC = () => {
                       <div className="flex flex-col gap-2 bg-white">
                         {materials.map((material: any) => (
                           <div
-                            key={material.id}
+                            key={material}
                             className="flex items-center gap-2"
                           >
                             <Checkbox
-                              id={`material-${material.id}`}
-                              checked={materialFilter.includes(material.name)}
+                              id={`material-${material}`}
+                              checked={materialFilter.includes(material)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
                                   setMaterialFilter((prev) => [
                                     ...prev,
-                                    material.name,
+                                    material,
                                   ]);
                                 } else {
                                   setMaterialFilter((prev) =>
-                                    prev.filter((t) => t !== material.name)
+                                    prev.filter((t) => t !== material)
                                   );
                                 }
                               }}
                             />
                             <label
-                              htmlFor={`material-${material.id}`}
+                              htmlFor={`material-${material}`}
                               className="flex items-center text-sm font-medium cursor-pointer"
                             >
                               <Badge
-                                variant={material.name as any}
+                                variant={material}
                                 className="ml-1"
                               >
-                                {material.name}
+                                {material}
                               </Badge>
                             </label>
                           </div>
@@ -542,13 +673,7 @@ const ProductsServices: React.FC = () => {
                     </div>
                   </PopoverContent>
                 </Popover>
-                {/* {onBatchAdd && (
-                <BatchProductUpload
-                  onUpload={async (products) => {
-                    await onBatchAdd(products);
-                  }}
-                />
-              )} */}
+
                 <Button onClick={() => setIsServiceModalOpen(true)}>
                   <span className="flex gap-1 items-center">
                     <Plus className="w-4 h-4" />
@@ -557,34 +682,162 @@ const ProductsServices: React.FC = () => {
                 </Button>
               </div>
             </div>
-            <Table className="w-full">
-              <TableHeader className="">
-                <TableRow className="bg-muted hover:bg-muted">
-                  <TableHead>Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Material</TableHead>
-                  <TableHead>price</TableHead>
-                  <TableHead>Is Client Visible</TableHead>
-                  <TableHead>is_taxable</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {services.map((service, i) => (
-                  <TableRow key={i}>
-                    <TableCell>{service.name}</TableCell>
-                    <TableCell>{service.description}</TableCell>
-                    <TableCell>{service?.material?.name}</TableCell>
-                    <TableCell>${service.price}</TableCell>
-                    <TableCell>
-                      {service.is_client_visible ? "Yes" : "False"}
-                    </TableCell>
-                    <TableCell>
-                      {service.is_taxable ? "Yes" : "False"}
-                    </TableCell>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted hover:bg-muted">
+                    <TableHead className="w-[40px]">
+                      <Checkbox
+                        checked={
+                          services.length > 0 &&
+                          services.every((service) =>
+                            selectedServices.includes(service.id)
+                          )
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedServices(services.map((s) => s.id));
+                          } else {
+                            setSelectedServices([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer w-[560px]"
+                      onClick={() => handleSort("name")}
+                    >
+                      <div className="flex items-center">
+                        Name
+                        {getSortIcon("name")}
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("material_id")}
+                    >
+                      <div className="flex items-center">
+                        Material
+                        {getSortIcon("material_id")}
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer text-right"
+                      onClick={() => handleSort("price")}
+                    >
+                      <div className="flex items-center justify-end">
+                        Price
+                        {getSortIcon("price")}
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("description")}
+                    >
+                      <div className="flex items-center">
+                        Description
+                        {getSortIcon("description")}
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("is_client_visible")}
+                    >
+                      <div className="flex items-center">
+                        Client Visible
+                        {getSortIcon("is_client_visible")}
+                      </div>
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("is_taxable")}
+                    >
+                      <div className="flex items-center">
+                        Taxable
+                        {getSortIcon("is_taxable")}
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {sortServices(services).map((service) => (
+                    <TableRow
+                      key={service.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                    >
+                      <TableCell className="w-[40px]">
+                        <Checkbox
+                          checked={selectedServices.includes(service.id)}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedServices((prev) => [...prev, service.id]);
+                            } else {
+                              setSelectedServices((prev) =>
+                                prev.filter((id) => id !== service.id)
+                              );
+                            }
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium w-[400px]">
+                        {service.name}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {service?.material?.name}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${service.price}
+                      </TableCell>
+                      <TableCell>{service.description}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={service.is_client_visible ? "default" : "secondary"}
+                        >
+                          {service.is_client_visible ? "Yes" : "No"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={service.is_taxable ? "default" : "secondary"}
+                        >
+                          {service.is_taxable ? "Yes" : "No"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                            >
+                              <span className="sr-only">Open menu</span>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteClick(service)}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
@@ -598,26 +851,19 @@ const ProductsServices: React.FC = () => {
         onSave={() => handleSaveProduct()}
         product={selectedProduct}
       />
-      <BatchServiceUpload
-        isOpen={isServiceModalOpen}
-        setIsOpen={setIsServiceModalOpen}
-        onUpload={(services) => handleAddService(services)}
-      />
+
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
           setIsDeleteModalOpen(false);
-          setProductsToDelete([]);
+          setItemsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title={
-          productsToDelete.length === 1 ? "Delete Product" : "Delete Products"
-        }
-        message={
-          productsToDelete.length === 1
-            ? "Are you sure you want to delete this product? This action cannot be undone."
-            : `Are you sure you want to delete ${productsToDelete.length} products? This action cannot be undone.`
+        title={`Delete ${itemsToDelete[0] && 'lead_time' in itemsToDelete[0] ? 'Product' : 'Service'}`}
+        message={itemsToDelete.length === 1 
+          ? "Are you sure you want to delete this item? This action cannot be undone."
+          : `Are you sure you want to delete ${itemsToDelete.length} items? This action cannot be undone.`
         }
       />
     </div>

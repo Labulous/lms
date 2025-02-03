@@ -209,15 +209,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </button>
       </div>
 
-      <div className="mx-4 py-2">
-        <div className="  px-2 py-3 rounded-lg border border-slate-200 bg-white/50"
-          style={{ display: "flex", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="mx-4 py-4">
+        <div className="px-2 py-3 rounded-lg border border-slate-200 bg-white/50"
+          style={{ display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "center" }}>
           {labs[0]?.attachements ? (
             <img
               src={labs[0].attachements}
               alt="Lab Logo"
-              className="h-4 w-4 text-gray-500 mt-0.5"
-              style={{ width: "50px", height: "24px", objectFit: "contain" }}
+              className="h-4 w-4 text-gray-500 mt-0.5 mr-1"
+              style={{ width: "30px", height: "30px", objectFit: "contain" }}
             />
           ) : (
             <Building2 className="h-4 w-4 text-gray-500 " />

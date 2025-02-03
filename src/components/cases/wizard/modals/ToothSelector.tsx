@@ -10,6 +10,7 @@ import { BillingType } from "../../../../data/mockProductData";
 import { Button } from "@/components/ui/button";
 import { Plus, RotateCcw, HelpCircle } from "lucide-react";
 import { DefaultProductType } from "@/types/supabase";
+import { MoveUp, MoveDown } from "lucide-react";
 
 interface ToothSelectorProps {
   billingType: string;
@@ -772,28 +773,32 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       )}
       <div className="flex justify-between items-center mb-4">
         <div className="flex flex-col">
-          <div className="flex flex-col gap-2 mb-4">
+          <div className="flex flex-col gap-1 mb-4">
             <Button
               variant="outline"
               size="sm"
+              className="px-2"
               onClick={() =>
                 onSelectionChange([
                   11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
                 ])
               }
             >
-              Select Upper Arc
+              <MoveUp className="h-3 w-3" />
+              <span>Select Upper Arc</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="px-2"
               onClick={() =>
                 onSelectionChange([
                   31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
                 ])
               }
             >
-              Select Lower Arc
+              <MoveDown className="h-3 w-3" />
+              <span>Select Lower Arc</span>
             </Button>
           </div>
 
