@@ -882,7 +882,11 @@ const ProductsServices: React.FC = () => {
         onSave={() => handleSaveProduct()}
         product={selectedProduct}
       />
-
+      <BatchServiceUpload
+        onUpload={handleBatchServiceUpload}
+        setIsOpen={setIsServiceModalOpen}
+        isOpen={isServiceModalOpen}
+      />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
