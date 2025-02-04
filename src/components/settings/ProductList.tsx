@@ -86,6 +86,17 @@ const ProductList: React.FC<ProductListProps> = ({
   >(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const urlParams = location.pathname + location.search;
+
+    if (urlParams.includes("products&")) {
+
+      const afterAmpersand = urlParams.split("products&")[1];
+
+      setMaterialFilter([afterAmpersand]);
+    }
+  }, [location])
+
   // Get unique materials from products
   const materials = useMemo(() => {
     const uniqueMaterials = new Set(
@@ -95,6 +106,8 @@ const ProductList: React.FC<ProductListProps> = ({
     );
     return Array.from(uniqueMaterials).map((name) => ({ id: name, name }));
   }, [products]);
+
+  //console.log(materials, "materialsData");
 
   // Filtering
   const getFilteredProducts = () => {
