@@ -52,7 +52,7 @@ interface EditProductFormProps {
   product?: Product;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: z.infer<typeof productSchema>) => Promise<void>;
+  onSave: (product: z.infer<typeof productSchema>) => void;
 }
 
 export function EditProductForm({

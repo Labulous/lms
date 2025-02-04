@@ -276,7 +276,7 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
 
       // Validate services before submitting
       const invalidServices = services.filter(
-        (service) => !service.name || !service.material_id || service.price <= 0
+        (service) => !service.name || !service.material_id || service.price < 0
       );
 
       if (invalidServices.length > 0) {

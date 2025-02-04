@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Plus, Settings2, ChevronDown, ChevronUp, ChevronsUpDown, MoreVertical, Pencil, Trash } from "lucide-react";
+import {
+  Plus,
+  Settings2,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  MoreVertical,
+  Pencil,
+  Trash,
+} from "lucide-react";
 import ProductWizard from "../../components/settings/ProductWizard";
 import ServiceModal from "../../components/settings/ServiceModal";
 import DeleteConfirmationModal from "../../components/settings/DeleteConfirmationModal";
@@ -32,7 +41,13 @@ import {
 import { Checkbox } from "@radix-ui/react-checkbox";
 import { Badge } from "@/components/ui/badge";
 import BatchServiceUpload from "@/components/settings/BatchServiceUpload";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface ServicesFormData {
   categories: string[];
@@ -228,16 +243,8 @@ const ProductsServices: React.FC = () => {
   }, [activeTab]);
 
   const loadProductsAndTypes = async () => {
-    setLoading(true); // 
-
-    if (!labIdData?.lab_id) {
-      toast.error("Unable to get Lab ID");
-      setLoading(false); // 
-      return;
-    }
-
     try {
-      // 
+      //
       const { data: productsResult, error: productsError } = await supabase
         .from("products")
         .select(
@@ -248,7 +255,7 @@ const ProductsServices: React.FC = () => {
           billing_type:billing_types(name, label)
           `
         )
-        .eq("lab_id", labIdData.lab_id)
+        .eq("lab_id", labIdData?.lab_id)
         .order("name");
 
       if (productsError) {
@@ -256,7 +263,7 @@ const ProductsServices: React.FC = () => {
         throw new Error("Failed to fetch products.");
       }
 
-      // 
+      //
       const { data: productTypesData, error: productTypesError } =
         await supabase.from("product_types").select("*").order("name");
 
@@ -265,7 +272,7 @@ const ProductsServices: React.FC = () => {
         throw new Error("Failed to fetch product types.");
       }
 
-      // 
+      //
       setProducts(productsResult || []);
       setProductTypes(productTypesData || []);
 
@@ -279,7 +286,7 @@ const ProductsServices: React.FC = () => {
           : "Failed to load products and types. Please refresh."
       );
     } finally {
-      setLoading(false); // 
+      setLoading(false); //
     }
   };
 
@@ -327,7 +334,7 @@ const ProductsServices: React.FC = () => {
       toast.error("Error updating product:");
     } else if (data) {
       toast.success("Product updated successfully:");
-      // await loadProductsAndTypes();
+      await loadProductsAndTypes();
     }
   };
 
@@ -339,7 +346,7 @@ const ProductsServices: React.FC = () => {
       setIsDeleteModalOpen(false);
 
       for (const item of itemsToDelete) {
-        if ('lead_time' in item) {
+        if ("lead_time" in item) {
           // It's a product
           const { error } = await supabase
             .from("products")
@@ -359,15 +366,23 @@ const ProductsServices: React.FC = () => {
       }
 
       // Update local state based on what was deleted
-      const deletedIds = itemsToDelete.map(item => item.id);
-      if ('lead_time' in itemsToDelete[0]) {
+      const deletedIds = itemsToDelete.map((item) => item.id);
+      if ("lead_time" in itemsToDelete[0]) {
         // Products were deleted
-        setProducts(prev => prev.filter(item => !deletedIds.includes(item.id)));
-        toast.success(`Successfully deleted ${itemsToDelete.length} product(s)`);
+        setProducts((prev) =>
+          prev.filter((item) => !deletedIds.includes(item.id))
+        );
+        toast.success(
+          `Successfully deleted ${itemsToDelete.length} product(s)`
+        );
       } else {
         // Services were deleted
-        setServices(prev => prev.filter(item => !deletedIds.includes(item.id)));
-        toast.success(`Successfully deleted ${itemsToDelete.length} service(s)`);
+        setServices((prev) =>
+          prev.filter((item) => !deletedIds.includes(item.id))
+        );
+        toast.success(
+          `Successfully deleted ${itemsToDelete.length} service(s)`
+        );
       }
 
       // Clear delete state
@@ -390,7 +405,7 @@ const ProductsServices: React.FC = () => {
   const handleBatchDelete = async () => {
     if (selectedServices.length === 0) return;
 
-    const servicesToDelete = services.filter(service => 
+    const servicesToDelete = services.filter((service) =>
       selectedServices.includes(service.id)
     );
     setItemsToDelete(servicesToDelete);
@@ -502,7 +517,8 @@ const ProductsServices: React.FC = () => {
   };
 
   const getSortIcon = (key: keyof Service) => {
-    if (sortConfig.key !== key) return <ChevronsUpDown className="ml-2 h-4 w-4" />;
+    if (sortConfig.key !== key)
+      return <ChevronsUpDown className="ml-2 h-4 w-4" />;
     return sortConfig.direction === "asc" ? (
       <ChevronUp className="ml-2 h-4 w-4" />
     ) : (
@@ -516,8 +532,12 @@ const ProductsServices: React.FC = () => {
       if (sortConfig.key === "material_id") {
         const aValue = a.material?.name ?? "";
         const bValue = b.material?.name ?? "";
-        const comparison = aValue.toLowerCase() < bValue.toLowerCase() ? -1 : 
-                         aValue.toLowerCase() > bValue.toLowerCase() ? 1 : 0;
+        const comparison =
+          aValue.toLowerCase() < bValue.toLowerCase()
+            ? -1
+            : aValue.toLowerCase() > bValue.toLowerCase()
+            ? 1
+            : 0;
         return sortConfig.direction === "asc" ? comparison : -comparison;
       }
 
@@ -529,15 +549,27 @@ const ProductsServices: React.FC = () => {
       if (bValue === null || bValue === undefined) return -1;
 
       // Handle boolean values
-      if (typeof aValue === 'boolean') {
+      if (typeof aValue === "boolean") {
         return sortConfig.direction === "asc"
-          ? (aValue === bValue ? 0 : aValue ? -1 : 1)
-          : (aValue === bValue ? 0 : aValue ? 1 : -1);
+          ? aValue === bValue
+            ? 0
+            : aValue
+            ? -1
+            : 1
+          : aValue === bValue
+          ? 0
+          : aValue
+          ? 1
+          : -1;
       }
 
       // Handle string/number values
-      const comparison = String(aValue).toLowerCase() < String(bValue).toLowerCase() ? -1 : 
-                        String(aValue).toLowerCase() > String(bValue).toLowerCase() ? 1 : 0;
+      const comparison =
+        String(aValue).toLowerCase() < String(bValue).toLowerCase()
+          ? -1
+          : String(aValue).toLowerCase() > String(bValue).toLowerCase()
+          ? 1
+          : 0;
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   };
@@ -660,10 +692,7 @@ const ProductsServices: React.FC = () => {
                               htmlFor={`material-${material}`}
                               className="flex items-center text-sm font-medium cursor-pointer"
                             >
-                              <Badge
-                                variant={material}
-                                className="ml-1"
-                              >
+                              <Badge variant={material} className="ml-1">
                                 {material}
                               </Badge>
                             </label>
@@ -771,7 +800,10 @@ const ProductsServices: React.FC = () => {
                           checked={selectedServices.includes(service.id)}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedServices((prev) => [...prev, service.id]);
+                              setSelectedServices((prev) => [
+                                ...prev,
+                                service.id,
+                              ]);
                             } else {
                               setSelectedServices((prev) =>
                                 prev.filter((id) => id !== service.id)
@@ -794,7 +826,9 @@ const ProductsServices: React.FC = () => {
                       <TableCell>{service.description}</TableCell>
                       <TableCell>
                         <Badge
-                          variant={service.is_client_visible ? "default" : "secondary"}
+                          variant={
+                            service.is_client_visible ? "default" : "secondary"
+                          }
                         >
                           {service.is_client_visible ? "Yes" : "No"}
                         </Badge>
@@ -809,10 +843,7 @@ const ProductsServices: React.FC = () => {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                            >
+                            <Button variant="ghost" className="h-8 w-8 p-0">
                               <span className="sr-only">Open menu</span>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
@@ -823,7 +854,7 @@ const ProductsServices: React.FC = () => {
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               className="text-red-600"
                               onClick={() => handleDeleteClick(service)}
                             >
@@ -851,8 +882,11 @@ const ProductsServices: React.FC = () => {
         onSave={() => handleSaveProduct()}
         product={selectedProduct}
       />
-
-
+      <BatchServiceUpload
+        onUpload={handleBatchServiceUpload}
+        setIsOpen={setIsServiceModalOpen}
+        isOpen={isServiceModalOpen}
+      />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -860,10 +894,15 @@ const ProductsServices: React.FC = () => {
           setItemsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${itemsToDelete[0] && 'lead_time' in itemsToDelete[0] ? 'Product' : 'Service'}`}
-        message={itemsToDelete.length === 1 
-          ? "Are you sure you want to delete this item? This action cannot be undone."
-          : `Are you sure you want to delete ${itemsToDelete.length} items? This action cannot be undone.`
+        title={`Delete ${
+          itemsToDelete[0] && "lead_time" in itemsToDelete[0]
+            ? "Product"
+            : "Service"
+        }`}
+        message={
+          itemsToDelete.length === 1
+            ? "Are you sure you want to delete this item? This action cannot be undone."
+            : `Are you sure you want to delete ${itemsToDelete.length} items? This action cannot be undone.`
         }
       />
     </div>

@@ -47,7 +47,7 @@ export interface ClientInput
   > {
   accountNumber?: string;
   account_number?: string;
-
+  lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
 }
 class ClientsService {
@@ -127,6 +127,7 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
       account_number: client.accountNumber, // Keep the account number when updating
+      lab_id: client.lab_id, // Include lab_id in the transformation
     };
   }
 

@@ -313,7 +313,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       }));
       
       await onUpload(productsWithLabId);
-      toast.success("Products added successfully!");
+      // toast.success("Products added successfully!");
       setIsOpen(false);
       setProducts([{ ...emptyProduct(), lab_id: labId }]);
     } catch (error) {

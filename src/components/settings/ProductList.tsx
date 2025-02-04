@@ -460,7 +460,7 @@ const ProductList: React.FC<ProductListProps> = ({
                   className="font-medium"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setEditingProduct(product)
+                    setEditingProduct(product);
                   }}
                 >
                   <div className="flex items-center hover:text-primary cursor-pointer">
