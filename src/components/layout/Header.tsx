@@ -58,9 +58,12 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
       localStorage.setItem("clickedNotifications", JSON.stringify(Array.from(newClickedNotifications)));
       return newClickedNotifications;
     });
-    // Decrease the count
-    setPendingApprovalsCount((prev) => prev - 1);
   };
+
+  // New function to decrease the count
+  // const decreasePendingCount = () => {
+  //   setPendingApprovalsCount((prev) => prev - 1);
+  // };
 
   const getPageTitle = () => {
     const path = location.pathname;
