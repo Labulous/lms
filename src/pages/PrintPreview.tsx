@@ -8,6 +8,7 @@ import {
   InvoiceTemplate,
   AdjustmentReceiptTemplate,
   PaymentReceiptTemplate,
+  StatementReceiptTemplate,
 } from "@/components/cases/print/PrintTemplates";
 import { PAPER_SIZES } from "@/components/cases/print/PrintHandler";
 import { Button } from "@/components/ui/button";
@@ -65,7 +66,8 @@ interface PrintPreviewState {
   | "patient-label"
   | "invoice_slip"
   | "payment_receipt"
-  | "adjustment_receipt";
+  | "adjustment_receipt"
+  | "statement_receipt";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
   | {
@@ -109,9 +111,7 @@ interface PrintPreviewState {
 
 const PrintPreview = () => {
   const [searchParams] = useSearchParams();
-  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(
-    null
-  );
+  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -122,7 +122,6 @@ const PrintPreview = () => {
       }
       const decodedState = JSON.parse(atob(decodeURIComponent(stateParam)));
       setPreviewState(decodedState);
-      console.log("decide", decodedState)
     } catch (error) {
       console.error("Error parsing state:", error);
       navigate("/", { replace: true });
@@ -138,13 +137,8 @@ const PrintPreview = () => {
   const handlePrint = () => {
     window.print();
   };
- 
-  const renderTemplate = () => {
-    // If caseData is an array, we're doing batch printing
-    console.log("printing type bgfgfgfgfgffg", type)
-    console.log(caseDetails, "caseDetails");
-    console.log(caseData, "lab datatat");
 
+  const renderTemplate = () => {
     if (Array.isArray(caseData)) {
       return caseData.map((singleCaseData, index) => {
         const singleProps = {
@@ -156,28 +150,19 @@ const PrintPreview = () => {
           case "qr-code":
             return <QRCodeTemplate key={index} {...singleProps} />;
           case "lab-slip":
-            return (
-              <LabSlipTemplate
-                paperSize="LETTER"
-                key={index}
-                caseDetails={caseDetails}
-              />
-            );
+            return <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={caseDetails} />;
           case "address-label":
             return <AddressLabelTemplate key={index} {...singleProps} />;
           case "patient-label":
             return <PatientLabelTemplate key={index} {...singleProps} />;
           case "invoice_slip":
             return <InvoiceTemplate key={index} {...singleProps} />;
-
           default:
             return <div key={index}>Invalid template type</div>;
         }
       });
     }
 
-
-    // Single case printing
     const props = {
       caseData,
       paperSize,
@@ -195,14 +180,12 @@ const PrintPreview = () => {
         return <PatientLabelTemplate {...props} />;
       case "invoice_slip":
         return <InvoiceTemplate {...props} />;
-
       case "payment_receipt":
         return <PaymentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
-
       case "adjustment_receipt":
         return <AdjustmentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
-
-
+      case "statement_receipt":
+        return <StatementReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
       default:
         return <div>Invalid template type</div>;
     }
@@ -232,11 +215,7 @@ const PrintPreview = () => {
           <div className="print-content">
             {Array.isArray(caseData) ? (
               caseData.map((_, index) => (
-                <div
-                  key={index}
-                  style={containerStyle}
-                  className="print-container mb-8"
-                >
+                <div key={index} style={containerStyle} className="print-container mb-8">
                   {(renderTemplate() as React.ReactElement[])[index]}
                 </div>
               ))
@@ -256,7 +235,9 @@ const PrintPreview = () => {
             @page {
               size: ${paperSize.toLowerCase()};
               margin: 0mm;
+              counter-increment: page;
             }
+
             body {
               margin: 0;
               padding: 0;
@@ -295,9 +276,29 @@ const PrintPreview = () => {
             .mb-8 {
               margin: 0 !important;
             }
+
+            /* Footer for page numbering */
+            .page-footer {
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              right: 0;
+              text-align: center;
+              font-size: 12px;
+              padding: 10px;
+            }
+
+            .page-footer .page-number:after {
+              content: "Page " counter(page) " of " counter(pages);
+            }
           }
         `}
       </style>
+
+      {/* Footer for page numbering */}
+      <div className="page-footer">
+        <span className="page-number"></span>
+      </div>
     </div>
   );
 };

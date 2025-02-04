@@ -9,14 +9,28 @@ function calculateDaysOverdue(dueDate: string): number {
   return daysOverdue;
 }
 
-export async function updateBalanceTracking() {
+export async function updateBalanceTracking(client_id?: string) {
   try {
+    debugger;
     // Step 1: Fetch all unpaid or partially paid invoices
-    const { data: invoices, error: invoiceError } = await supabase
+    // const { data: invoices, error: invoiceError } = await supabase
+    //   .from("invoices")
+    //   .select("client_id, lab_id, due_date, due_amount, status")
+    //   .in("status", ["unpaid", "partially_paid"])
+    //   .gt("due_amount", 0);
+
+    let query = supabase
       .from("invoices")
       .select("client_id, lab_id, due_date, due_amount, status")
       .in("status", ["unpaid", "partially_paid"])
       .gt("due_amount", 0);
+
+    if (client_id) {
+      query = query.eq("client_id", client_id);
+    }
+
+    // Fetch invoices
+    const { data: invoices, error: invoiceError } = await query;
 
     if (invoiceError) {
       throw new Error(`Error fetching invoices: ${invoiceError.message}`);
@@ -73,11 +87,11 @@ export async function updateBalanceTracking() {
     // Step 4: Update or insert aggregated balances into the balance_tracking table
     const balanceArray: any = Object.values(balances);
 
-    for (const balance of balanceArray) {
+    for (let balance of balanceArray) {
       // Debugging log for balance being processed
       console.log("Balance object to process:", balance);
 
-      balance.updated_at = new Date().toUTCString();  // UTC datetime
+      balance = { ...balance, updated_at: new Date().toISOString() };
 
       // First, try to update the record if it exists
       const { data: existingBalance, error: fetchError } = await supabase

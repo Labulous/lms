@@ -60,6 +60,9 @@ const OnCancelModal = ({
         return;
       }
 
+
+      
+
       if (!invoiceData) {
         toast.error("No invoice found for this case");
         setLoading(false);
