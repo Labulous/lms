@@ -16,7 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tax, getTaxes, createTax, updateTax, deleteTax } from "@/services/taxService";
+import {
+  Tax,
+  getTaxes,
+  createTax,
+  updateTax,
+  deleteTax,
+} from "@/services/taxService";
 import TaxDialog from "./TaxDialog";
 import { toast } from "react-hot-toast";
 
@@ -48,18 +54,22 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
     }
   };
 
-  const handleCreateTax = async (values: Omit<Tax, "id" | "createdAt" | "updatedAt">) => {
+  const handleCreateTax = async (
+    values: Omit<Tax, "id" | "createdAt" | "updatedAt">
+  ) => {
     try {
       await createTax(labId, values);
       fetchTaxes();
       setDialogOpen(false);
       toast.success("Tax created successfully");
     } catch (error) {
-      toast.error("Failed to create tax");
+      toast.error(error?.message);
     }
   };
 
-  const handleUpdateTax = async (values: Omit<Tax, "id" | "createdAt" | "updatedAt">) => {
+  const handleUpdateTax = async (
+    values: Omit<Tax, "id" | "createdAt" | "updatedAt">
+  ) => {
     if (!selectedTax) return;
     try {
       await updateTax(labId, selectedTax.id, values);
@@ -84,11 +94,14 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
 
   const handleToggleStatus = async (tax: Tax) => {
     try {
-      await updateTax(labId, tax.id, { isActive: !tax.isActive });
+      await updateTax(labId, tax.id, {
+        is_active: tax.is_active === "Active" ? "Inactive" : "Active",
+        updated_at: new Date().toISOString(),
+      });
       fetchTaxes();
       toast.success("Tax status updated successfully");
     } catch (error) {
-      toast.error("Failed to update tax status");
+      toast.error(error?.message);
     }
   };
 
@@ -136,8 +149,12 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
                 <TableCell>{tax.description}</TableCell>
                 <TableCell>{tax.rate}%</TableCell>
                 <TableCell>
-                  <Badge variant={tax.isActive ? "success" : "secondary"}>
-                    {tax.isActive ? "Active" : "Inactive"}
+                  <Badge
+                    variant={
+                      tax.is_active === "Active" ? "success" : "secondary"
+                    }
+                  >
+                    {tax.is_active}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -149,7 +166,7 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleToggleStatus(tax)}>
-                        {tax.isActive ? "Deactivate" : "Activate"}
+                        {tax.is_active === "Active" ? "Deactivate" : "Activate"}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditDialog(tax)}>
                         Edit
