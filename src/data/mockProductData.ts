@@ -24,6 +24,7 @@ export interface SavedProduct {
   quantity?: number;
   subRows?: SavedProduct[];
   pontic_teeth?: number[];
+  is_taxable: boolean;
 }
 
 export interface Product {
