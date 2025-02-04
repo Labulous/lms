@@ -73,31 +73,33 @@ const ClientPricing = () => {
     return <div>Faild to fetch Clients!</div>;
   }
 
-  
   return (
-    <div className="container mx-auto px-4 py-4">
-      <PageHeader
-        heading="Products & Services Pricing"
-        description="Manage your product and service Special Pricing."
-      />
+    <div className="container mx-auto px-4 pb-4">
       <Tabs
         defaultValue="products"
         className="space-y-4 mt-6"
         value={activeTab}
         onValueChange={setActiveTab}
       >
-        <TabsList>
-          <TabsTrigger value="products">Products</TabsTrigger>
-          <TabsTrigger value="services">Services</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="products" className="space-y-4">
-          <ClientProductPricing labIdData={labIdData} clients={clients} />
-        </TabsContent>
-
-        <TabsContent value="services" className="space-y-4 w-full">
-          <ClientServicePricing labIdData={labIdData} clients={clients} activeTab={activeTab} />
-        </TabsContent>
+        {activeTab === "products" ? (
+          <div className="space-y-4">
+            <ClientProductPricing
+              labIdData={labIdData}
+              clients={clients}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </div>
+        ) : (
+          <div className="space-y-4 w-full">
+            <ClientServicePricing
+              labIdData={labIdData}
+              clients={clients}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+          </div>
+        )}
       </Tabs>
     </div>
   );
