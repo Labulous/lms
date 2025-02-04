@@ -62,17 +62,16 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
       fetchTaxes();
       setDialogOpen(false);
       toast.success("Tax created successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error?.message);
     }
   };
 
-  const handleUpdateTax = async (
-    values: Omit<Tax, "id" | "createdAt" | "updatedAt">
-  ) => {
+  const handleUpdateTax = async (values: Tax) => {
+    console.log(values, "values");
     if (!selectedTax) return;
     try {
-      await updateTax(labId, selectedTax.id, values);
+      await updateTax(labId, selectedTax.id as string, values);
       fetchTaxes();
       setDialogOpen(false);
       setSelectedTax(null);
@@ -94,13 +93,13 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
 
   const handleToggleStatus = async (tax: Tax) => {
     try {
-      await updateTax(labId, tax.id, {
+      await updateTax(labId, tax?.id as string, {
         is_active: tax.is_active === "Active" ? "Inactive" : "Active",
         updated_at: new Date().toISOString(),
       });
       fetchTaxes();
       toast.success("Tax status updated successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error?.message);
     }
   };
@@ -173,7 +172,7 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         className="text-red-600"
-                        onClick={() => handleDeleteTax(tax.id)}
+                        onClick={() => handleDeleteTax(tax.id as string)}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -189,9 +188,11 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
       <TaxDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onSubmit={mode === "create" ? handleCreateTax : handleUpdateTax}
         initialValues={selectedTax || undefined}
         mode={mode}
+        onSubmit={(values) =>
+          mode === "create" ? handleCreateTax(values) : handleUpdateTax(values)
+        }
       />
     </div>
   );

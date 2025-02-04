@@ -37,7 +37,7 @@ type FormValues = z.infer<typeof formSchema>;
 interface TaxDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: FormValues) => Promise<void>;
+  onSubmit: (values: FormValues) => void;
   initialValues?: Tax;
   mode: "create" | "edit";
 }

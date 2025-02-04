@@ -827,6 +827,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         discount: 0,
         notes: "",
         quantity: 1,
+        is_taxable: false
       };
 
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [

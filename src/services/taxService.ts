@@ -1,13 +1,13 @@
 import { supabase } from "@/lib/supabase";
 
 export interface Tax {
-  id: string;
+  id?: string;
   name: string;
-  description: string;
+  description?: string;
   rate: number;
   is_active: string;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Mock data for development
