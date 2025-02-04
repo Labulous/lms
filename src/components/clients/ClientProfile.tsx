@@ -257,7 +257,7 @@ const ClientProfile: React.FC = () => {
                     >
                         Billing
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => setActiveTab("sales-activity")}
                         className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "sales-activity"
                             ? "border-primary text-primary"
@@ -265,7 +265,7 @@ const ClientProfile: React.FC = () => {
                             }`}
                     >
                         Sales Activity
-                    </button>
+                    </button> */}
                 </nav>
             </div>
 
@@ -558,9 +558,9 @@ const ClientProfile: React.FC = () => {
                 {activeTab === "billing" && (
                     <ClientBillingActivity clientId={client.id} />
                 )}
-                {activeTab === "sales-activity" && (
+                {/* {activeTab === "sales-activity" && (
                     <ClientSalesActivity clientId={client.id} />
-                )}
+                )} */}
             </div>
         </div >
     );

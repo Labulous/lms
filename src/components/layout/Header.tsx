@@ -12,33 +12,55 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const [currentUser, setCurrentUser] = useState<any | null>(null);
-  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0); // State for pending approvals count
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState<number>(0);
+  const [clickedNotifications, setClickedNotifications] = useState<Set<number>>(new Set());
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Fetch current user asynchronously
     const fetchCurrentUser = async () => {
       const user = await getCurrentUser();
       setCurrentUser(user);
     };
 
     fetchCurrentUser();
-  }, []); // Empty dependency array ensures this runs only once after the initial render
+  }, []);
 
   useEffect(() => {
-    // Fetch pending approvals asynchronously only if the user is an admin or super admin
+    // Load clicked notifications from local storage
+    const storedClickedNotifications = localStorage.getItem("clickedNotifications");
+    if (storedClickedNotifications) {
+      const ids = JSON.parse(storedClickedNotifications);
+      setClickedNotifications(new Set(ids));
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchClientPendingApprovals = async () => {
       if (currentUser?.role === "admin" || currentUser?.role === "super_admin") {
         const approvals = await fetchPendingApprovals();
-        // Filter pending approvals and update the count
-        const pendingCount = approvals.filter((approval: any) => approval.status === "pending").length;
+        // Filter out clicked notifications
+        const pendingCount = approvals.filter((approval: any) =>
+          approval.status === "pending" && !clickedNotifications.has(approval.id)
+        ).length;
         setPendingApprovalsCount(pendingCount);
       }
     };
 
     fetchClientPendingApprovals();
-  }, [currentUser]); // Only re-fetch when currentUser changes
+  }, [currentUser, clickedNotifications]);
+
+  const handleNotificationClick = (id: number) => {
+    // Update clicked notifications
+    setClickedNotifications((prev) => {
+      const newClickedNotifications = new Set(prev).add(id);
+      // Store in local storage
+      localStorage.setItem("clickedNotifications", JSON.stringify(Array.from(newClickedNotifications)));
+      return newClickedNotifications;
+    });
+    // Decrease the count
+    setPendingApprovalsCount((prev) => prev - 1);
+  };
 
   const getPageTitle = () => {
     const path = location.pathname;
@@ -87,9 +109,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           </div>
 
           <div className="flex items-center space-x-3 pr-4">
-            {/* Only show bell icon if user is an admin */}
             {(currentUser?.role === "admin" || currentUser?.role === "super_admin") && (
-              <PendingApprovalNotification>
+              <PendingApprovalNotification onNotificationClick={handleNotificationClick}>
                 <button className="text-gray-500 hover:text-gray-600 relative">
                   <Bell className="h-5 w-5" />
                   {pendingApprovalsCount > 0 && (

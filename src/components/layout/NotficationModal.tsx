@@ -13,9 +13,10 @@ import { fetchPendingApprovals } from "@/services/authService";
 
 interface ApprovalMenuProps {
     children: React.ReactNode;
+    onNotificationClick: (id: number) => void; // New prop to handle notification click
 }
 
-const PendingApprovalNotification: React.FC<ApprovalMenuProps> = ({ children }) => {
+const PendingApprovalNotification: React.FC<ApprovalMenuProps> = ({ children, onNotificationClick }) => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
@@ -43,7 +44,10 @@ const PendingApprovalNotification: React.FC<ApprovalMenuProps> = ({ children }) 
                         <DropdownMenuItem
                             key={approval.id}
                             className="cursor-pointer flex flex-col items-start"
-                            onClick={() => navigate('/client-pending-request')}
+                            onClick={() => {
+                                onNotificationClick(approval.id); // Call the handler
+                                navigate('/client-pending-request');
+                            }}
                         >
                             <span className="font-semibold">{approval.client_name}</span>
                             <span className="text-sm text-gray-500">
