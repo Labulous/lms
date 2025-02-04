@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -25,8 +25,11 @@ import { Tax } from "@/services/taxService";
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
-  rate: z.number().min(0, "Rate must be positive").max(100, "Rate cannot exceed 100"),
-  isActive: z.boolean().default(true),
+  rate: z
+    .number()
+    .min(0, "Rate must be positive")
+    .max(100, "Rate cannot exceed 100"),
+  is_active: z.string().default("Active"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -49,12 +52,18 @@ const TaxDialog: React.FC<TaxDialogProps> = ({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: initialValues?.name || "",
-      description: initialValues?.description || "",
-      rate: initialValues?.rate || 0,
-      isActive: initialValues?.isActive ?? true,
+      name: "",
+      description: "",
+      rate: 0,
+      is_active: "Active",
     },
   });
+
+  useEffect(() => {
+    if (initialValues) {
+      form.reset(initialValues);
+    }
+  }, [initialValues, form]);
 
   const handleSubmit = async (values: FormValues) => {
     try {
@@ -74,7 +83,10 @@ const TaxDialog: React.FC<TaxDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -119,7 +131,9 @@ const TaxDialog: React.FC<TaxDialogProps> = ({
                       max="100"
                       placeholder="Enter tax rate"
                       {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value))
+                      }
                     />
                   </FormControl>
                   <FormMessage />
