@@ -11,7 +11,7 @@ export interface CustomUser {
   email: string;
   role: "admin" | "technician" | "client" | "super_admin";
   name: string;
-  
+
 }
 type User = Database["public"]["Tables"]["users"]["Row"];
 
@@ -47,10 +47,10 @@ export const login = async (email: string, password: string): Promise<void> => {
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
@@ -243,10 +243,10 @@ export const signUp = async (
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
@@ -260,6 +260,7 @@ export const createUserByAdmins = async (
   firstname: string,
   lastname: string,
   email: string,
+  phone: string,
   password: string,
   additionalClientFields?: {
     accountNumber: string;
@@ -281,6 +282,7 @@ export const createUserByAdmins = async (
     //   .select("id")
     //   .eq("email", email);
 
+
     const { data: authData, error: authError } = await supabase
       .from("users")
       .select("id")
@@ -295,24 +297,9 @@ export const createUserByAdmins = async (
       throw new Error("User already exists in Supabase Auth.");
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email);
-
-    if (userError) {
-      console.error(
-        "Error checking users table for existing email:",
-        userError
-      );
-      throw new Error("Error checking for existing email in users table.");
-    }
-
-    if (userData.length > 0) {
-      throw new Error("User already exists in users table.");
-    }
-
     // 2. Sign up the new user in Supabase Auth
+
+    const adminSession = await supabase.auth.getSession(); // Save admin session
     const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
@@ -327,6 +314,14 @@ export const createUserByAdmins = async (
     if (!newUserId) {
       throw new Error("No user ID returned after signup.");
     }
+    // Restore admin session if it was replaced
+    if (adminSession?.data?.session) {
+      await supabase.auth.setSession({
+        access_token: adminSession.data.session.access_token,
+        refresh_token: adminSession.data.session.refresh_token,
+      });
+    }
+
 
     // 3. Insert the new user into the 'users' table with the specified role
     const { error: insertError } = await supabase.from("users").insert([
@@ -334,6 +329,10 @@ export const createUserByAdmins = async (
         id: newUserId,
         name: name,
         email: email,
+        firstname: firstname,
+        lastname: lastname,
+        lab_id: labId,
+        phone: phone,
         role: role, // Set the role as provided
       },
     ]);
@@ -385,8 +384,8 @@ export const createUserByAdmins = async (
       role === "admin"
         ? "admin_ids"
         : role === "technician"
-        ? "technician_ids"
-        : "client_ids"; // Add to client_ids for clients
+          ? "technician_ids"
+          : "client_ids"; // Add to client_ids for clients
 
     // Fetch the current IDs/emails for the specified field
     const { data: labData, error: fetchError } = await supabase
@@ -418,8 +417,7 @@ export const createUserByAdmins = async (
     }
 
     console.log(
-      `${
-        role.charAt(0).toUpperCase() + role.slice(1)
+      `${role.charAt(0).toUpperCase() + role.slice(1)
       } created and lab updated successfully!`
     );
   } catch (error) {

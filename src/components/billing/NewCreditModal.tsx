@@ -213,7 +213,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
   console.log(selectedClient, "selectedClient");
   const handleSubmit = async () => {
-    debugger;
     try {
       setLoading(true);
 
@@ -257,7 +256,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   console.log(creditType, "creditType");
 
   const handlePaymentAmountChange = (newAmount: number) => {
-    debugger;
     let remainingAmount = newAmount; // Payment amount to be allocated
     let tempNewAmount = newAmount;
 
@@ -332,7 +330,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    debugger;
     const value = e.target.value;
     setPaymentAmount(Number(value));
     if (!isNaN(Number(value)) && Number(value) >= 0) {
@@ -346,7 +343,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     checked: boolean,
     reducePayment?: number | null
   ) => {
-    debugger;
     console.log("select");
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {
