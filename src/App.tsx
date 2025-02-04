@@ -28,10 +28,11 @@ import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
-import ClientPricing from "./pages/settings/ClientPricing";
+import TaxConfigurationPage from "./pages/settings/tax-configuration";
 
 import Home1 from "./pages/Home1";
 import { MyAccount } from "./pages/settings/my-account";
+import ClientPricing from "./pages/settings/ClientPricing/ClientPricing";
 
 const App: React.FC = () => {
   return (
@@ -123,16 +124,13 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                  <Route
-                    path="lab-profile"
-                    element={<LABProfile />}
-                  />
+                  <Route path="lab-profile" element={<LABProfile />} />
 
+                  <Route path="user-profile" element={<MyAccount />} />
                   <Route
-                    path="user-profile"
-                    element={<MyAccount />}
+                    path="tax-configuration"
+                    element={<TaxConfigurationPage />}
                   />
-
 
                   <Route path="*" element={<Settings />} />
                 </Routes>
@@ -149,6 +147,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/invoices/*"
             element={

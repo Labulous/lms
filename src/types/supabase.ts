@@ -239,6 +239,36 @@ export interface ShadeData {
     manual_body?: string;
   }[];
 }
+export interface SpecialProductPrices {
+  created_at: string; // ISO timestamp
+  product_id: string;
+  client_id: string;
+  price: number;
+  lab_id: string;
+  id: string;
+  default: {
+    name: string;
+    price: number;
+    material: {
+      name: string;
+    };
+  };
+}
+export interface SpecialServicesPrices {
+  created_at: string; // ISO timestamp
+  service_id: string;
+  client_id: string;
+  price: number;
+  lab_id: string;
+  id: string;
+  default: {
+    name: string;
+    price: number;
+    material: {
+      name: string;
+    };
+  };
+}
 
 export interface OfficeAddress {
   address_1: string;
