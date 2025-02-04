@@ -458,9 +458,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const { data: caseDataa, error: caseError } = useQuery(
     activeCaseId
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
         id,
         created_at,
         received_date,
@@ -618,9 +618,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           )
           )
       `
-          )
-          .eq("id", activeCaseId)
-          .single()
+        )
+        .eq("id", activeCaseId)
+        .single()
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -636,45 +636,45 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-        ...caseItem,
-        labDetail: lab,
-        custom_occlusal_details: caseDataa?.custom_occulusal_details,
-        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-          id: tp.product.id,
-          name: tp.product.name,
-          price: tp.product.price,
-          lead_time: tp.product.lead_time,
-          is_client_visible: tp.product.is_client_visible,
-          is_taxable: tp.product.is_taxable,
-          created_at: tp.product.created_at,
-          updated_at: tp.product.updated_at,
-          requires_shade: tp.product.requires_shade,
-          material: tp.product.material,
-          product_type: tp.product.product_type,
-          billing_type: tp.product.billing_type,
-          discounted_price: caseItem?.discounted_price[index],
-          teethProduct: {
-            id: tp.id,
-            is_range: tp.is_range,
-            tooth_number: tp.tooth_number,
-            product_id: tp.product_id,
-            occlusal_shade: tp.occlusal_shade,
-            body_shade: tp.body_shade,
-            gingival_shade: tp.gingival_shade,
-            stump_shade: tp.stump_shade,
-            manual_occlusal_shade: tp.manual_occlusal_shade,
-            manual_body_shade: tp.manual_body_shade,
-            manual_gingival_shade: tp.manual_gingival_shade,
-            manual_stump_shade: tp.manual_stump_shade,
-            custom_occlusal_shade: tp.custom_occlusal_shade,
-            custom_body_shade: tp.custom_body_shade,
-            custom_gingival_shade: tp.custom_gingival_shade,
-            custom_stump_shade: tp.custom_stump_shade,
-            custom_occlusal_details: tp.occlusal_shade,
-            notes: tp.notes,
-          },
-        })),
-      }
+      ...caseItem,
+      labDetail: lab,
+      custom_occlusal_details: caseDataa?.custom_occulusal_details,
+      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+        id: tp.product.id,
+        name: tp.product.name,
+        price: tp.product.price,
+        lead_time: tp.product.lead_time,
+        is_client_visible: tp.product.is_client_visible,
+        is_taxable: tp.product.is_taxable,
+        created_at: tp.product.created_at,
+        updated_at: tp.product.updated_at,
+        requires_shade: tp.product.requires_shade,
+        material: tp.product.material,
+        product_type: tp.product.product_type,
+        billing_type: tp.product.billing_type,
+        discounted_price: caseItem?.discounted_price[index],
+        teethProduct: {
+          id: tp.id,
+          is_range: tp.is_range,
+          tooth_number: tp.tooth_number,
+          product_id: tp.product_id,
+          occlusal_shade: tp.occlusal_shade,
+          body_shade: tp.body_shade,
+          gingival_shade: tp.gingival_shade,
+          stump_shade: tp.stump_shade,
+          manual_occlusal_shade: tp.manual_occlusal_shade,
+          manual_body_shade: tp.manual_body_shade,
+          manual_gingival_shade: tp.manual_gingival_shade,
+          manual_stump_shade: tp.manual_stump_shade,
+          custom_occlusal_shade: tp.custom_occlusal_shade,
+          custom_body_shade: tp.custom_body_shade,
+          custom_gingival_shade: tp.custom_gingival_shade,
+          custom_stump_shade: tp.custom_stump_shade,
+          custom_occlusal_details: tp.occlusal_shade,
+          notes: tp.notes,
+        },
+      })),
+    }
     : null;
 
   const fetchCaseData = async (refetch?: boolean) => {
@@ -1327,8 +1327,23 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }, 0);
   };
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
+    debugger;
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
+
+
+    const { data: casesData, error: CaseDataerror } = await supabase
+      .from("cases")
+      .select(`
+      client_id
+    `)
+      .eq("id", updatedInvoice.id)
+      .order("created_at", { ascending: false });
+
+    if (CaseDataerror) {
+      throw new Error(CaseDataerror.message);
+    }
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
 
@@ -1429,8 +1444,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
             console.log("Created new teeth row:", newTeeth);
           }
-
-          await updateBalanceTracking();
+          if (casesData && casesData.length > 0 && casesData[0]?.client_id) {
+            await updateBalanceTracking(casesData[0]?.client_id);
+          }
         } catch (error) {
           console.error(
             `Error processing item with productId ${item.id}:`,
@@ -1620,7 +1636,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         <p>
                           {
                             CASE_STATUS_DESCRIPTIONS[
-                              caseDetail.status as CaseStatus
+                            caseDetail.status as CaseStatus
                             ]
                           }
                         </p>
@@ -1867,8 +1883,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product?.product_type
-                                      ?.name as keyof typeof TYPE_COLORS
+                                  product?.product_type
+                                    ?.name as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
@@ -1884,8 +1900,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {product?.teethProduct?.tooth_number.length >= 1
                               ? formatTeethRange(
-                                  product.teethProduct.tooth_number
-                                )
+                                product.teethProduct.tooth_number
+                              )
                               : null}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -1906,8 +1922,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-0">
                               {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ||
-                              product?.teethProduct?.manual_occlusal_shade ? (
+                                product?.teethProduct?.custom_occlusal_shade ||
+                                product?.teethProduct?.manual_occlusal_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -1925,8 +1941,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -1941,8 +1957,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               ) : null}
                               {/* Body shade */}
                               {product?.teethProduct?.body_shade?.name ||
-                              product?.teethProduct?.custom_body_shade ||
-                              product?.teethProduct?.manual_body_shade ? (
+                                product?.teethProduct?.custom_body_shade ||
+                                product?.teethProduct?.manual_body_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">Body:</span>
@@ -1958,8 +1974,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -1975,8 +1991,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Gingival shade */}
                               {product?.teethProduct?.gingival_shade?.name ||
-                              product?.teethProduct?.custom_gingival_shade ||
-                              product?.teethProduct?.manual_gingival_shade ? (
+                                product?.teethProduct?.custom_gingival_shade ||
+                                product?.teethProduct?.manual_gingival_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -1994,8 +2010,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -2011,8 +2027,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Stump shade */}
                               {product?.teethProduct?.custom_stump_shade ||
-                              product?.teethProduct?.stump_shade_id ||
-                              product?.teethProduct?.manual_stump_shade ? (
+                                product?.teethProduct?.stump_shade_id ||
+                                product?.teethProduct?.manual_stump_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -2030,8 +2046,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -2208,8 +2224,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 {product.teethProduct.tooth_number?.length > 1
                                   ? formatTeethRange(
-                                      product.teethProduct?.tooth_number
-                                    )
+                                    product.teethProduct?.tooth_number
+                                  )
                                   : product.teethProduct?.tooth_number[0]}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
@@ -2387,8 +2403,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Tooth #
                               {product.tooth_number.length > 1
                                 ? product.tooth_number
-                                    .map((i) => `${i}`)
-                                    .join(", ")
+                                  .map((i) => `${i}`)
+                                  .join(", ")
                                 : product.tooth_number[0]}
                             </p>
                             <div className="text-sm">
@@ -2499,7 +2515,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusal_type
                                 ? caseDetail?.occlusal_type
                                 : caseDetail.custom_occulusal_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2510,7 +2526,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.contact_type
                                 ? caseDetail?.contact_type
                                 : caseDetail?.custom_contact_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2519,7 +2535,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.pontic_type
                                 ? caseDetail?.pontic_type
                                 : caseDetail?.custom_pontic_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                         </div>{" "}
@@ -2532,7 +2548,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.margin_design_type
                                 ? caseDetail?.margin_design_type
                                 : caseDetail?.custom_margin_design_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2543,7 +2559,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusion_design_type
                                 ? caseDetail?.occlusion_design_type
                                 : caseDetail?.custom_occlusion_design_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2552,7 +2568,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.alloy_type
                                 ? caseDetail?.alloy_type
                                 : caseDetail?.custon_alloy_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                         </div>
@@ -2698,8 +2714,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           ?.map((file, index) => {
                             const fileName = file
                               ? decodeURIComponent(
-                                  file.split("/").pop()?.split("?")[0] || ""
-                                )
+                                file.split("/").pop()?.split("?")[0] || ""
+                              )
                               : "";
                             const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
                               fileName
@@ -2752,10 +2768,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           })}
                         {(!caseDetail?.attachements ||
                           caseDetail.attachements.length === 0) && (
-                          <p className="text-sm text-gray-500">
-                            No attachments found
-                          </p>
-                        )}
+                            <p className="text-sm text-gray-500">
+                              No attachments found
+                            </p>
+                          )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

@@ -28,12 +28,13 @@ import { formatDate } from "@/lib/formatedDate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { useNavigate } from "react-router-dom";
-import PaymentReceiptPreviewModal from "./print/PaymentReceiptPreviewModal";
 import toast from "react-hot-toast";
 import { Address, clientsService, Doctor } from "@/services/clientsService";
 import {
   Client as ClientItem
 } from "@/services/clientsService";
+import StatementReceiptPreviewModal from "./print/StatementReceiptPreviewModal";
+import moment from "moment";
 
 // Mock data for development
 const mockStatements = [
@@ -85,6 +86,22 @@ export interface Client {
   updated_at?: string;
 }
 
+export interface InvoiceItem {
+  date: string;
+  activity: string;
+  amount: number;
+  balance: number;
+  type: string;
+}
+
+export interface StatementDetails {
+  statement: StatementList;
+  client: Client;
+  invoiceData: InvoiceItem[];
+}
+
+
+
 const StatementList = ({ statement }: StatementList) => {
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("");
@@ -97,11 +114,11 @@ const StatementList = ({ statement }: StatementList) => {
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
   const currentDate = new Date();
-  
+
   const [selectmonth, setSelectMonth] = useState((currentDate.getMonth() + 1).toString());
   const [selectyear, setSelectYear] = useState((currentDate.getFullYear()).toString());
 
-  
+
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("All Clients");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -112,6 +129,9 @@ const StatementList = ({ statement }: StatementList) => {
   const [isEditing, setIsEditing] = useState(false);
   const [labs, setLabs] = useState<labDetail[]>([]);
 
+  const [statementDetails, setStatementDetails] = useState<StatementDetails[]>([]);
+
+
 
 
   console.log('statement data1.1.......................', statement);
@@ -119,8 +139,9 @@ const StatementList = ({ statement }: StatementList) => {
 
   const { user } = useAuth();
   const handleSelectAll = (checked: boolean) => {
+    debugger;
     if (checked) {
-      setSelectedStatements(statement.map((statement) => statement.id));
+      setSelectedStatements(filteredStatements.map((statement: any) => statement.id));
     } else {
       setSelectedStatements([]);
     }
@@ -277,7 +298,7 @@ const StatementList = ({ statement }: StatementList) => {
 
 
 
- 
+
   const filteredClients = useMemo(() => {
     if (searchTerm === "All Clients" || searchTerm.trim() === "") {
       setFilteredStatements(statement.filter((item) => {
@@ -309,6 +330,140 @@ const StatementList = ({ statement }: StatementList) => {
     return filter.length > 0 ? filter : [];
 
   }, [searchTerm, clients]);
+
+  const handleViewDetails = async (statementId: string) => {
+    const statementData = filteredStatements.filter((l: any) => l.id === statementId);
+    const { data: clientData, error } = await supabase
+      .from("clients")
+      .select("*")
+      .eq("client_name", statementData[0]?.client.client_name)
+      .single();
+
+
+    const startOfMonth = moment(`${selectyear}-${selectmonth}-01`).format("YYYY-MM-DD");
+    const nextMonth = moment(startOfMonth).add(1, "month").format("YYYY-MM-DD");
+
+    const { data: invoicesData, error: errro1 } = await supabase
+      .from("invoices")
+      .select(`
+          *,
+          case:cases(case_number, patient_name)
+        `)
+      .eq("client_id", clientData?.id)
+      .gte("created_at", startOfMonth)
+      .lt("created_at", nextMonth)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const { data: paymentsData, error: paymentsError } = await supabase
+      .from("payments")
+      .select("created_at,payment_method,amount")
+      .eq("client_id", clientData?.id)
+      .gte("created_at", startOfMonth)
+      .lt("created_at", nextMonth)
+      .order("created_at", { ascending: false });
+
+    if (paymentsError) {
+      console.error("Error fetching payments:", paymentsError);
+    }
+
+    // const { data: adjustmentsData, error: adjustmentsError } = await supabase
+    //   .from("adjustments")
+    //   .select("*")
+    //   .eq("client_id", clientData?.id)
+    //   .order("created_at", { ascending: false });
+
+    // if (adjustmentsError) {
+    //   console.error("Error fetching adjustments:", adjustmentsError);
+    // }
+
+    let combinedData: InvoiceItem[] = [];
+
+    invoicesData?.forEach(invoice => {
+      combinedData.push({
+        date: invoice.created_at,
+        activity: `Invoice  ${invoice.case?.case_number?.replace("TES", "INV")} : ${invoice.case?.patient_name}`,
+        amount: invoice.amount || 0,
+        balance: invoice.balance || 0,
+        type: "I",
+      });
+    });
+
+    paymentsData?.forEach(payment => {
+      combinedData.push({
+        date: payment.created_at,
+        activity: `Payment: ${payment?.payment_method}`,
+        amount: payment.amount || 0,
+        balance: 0,
+        type: "P",
+      });
+    });
+
+    // adjustmentsData?.forEach(adjustment => {
+    //   combinedData.push({
+    //     date: adjustment.created_at,
+    //     activity: adjustment.description,
+    //     amount: adjustment.credit_amount,
+    //     balance: adjustment.balance || 0,
+    //   });
+    // });
+
+    let runningBalance = 0;
+    const { data: balanceList, error: balanceListError } = await supabase
+      .from("balance_tracking")
+      .select("*")
+      .eq("client_id", clientData?.id);
+
+    if (balanceListError) {
+      console.error("Error fetching balance list:", balanceListError);
+    } else {
+      runningBalance = balanceList.reduce((sum, item) => {
+        return sum + (item.last_month || 0) + (item.days_30_plus || 0) + (item.days_60_plus || 0) + (item.days_90_plus || 0);
+      }, 0);
+
+      console.log("Total Outstanding Balance:", runningBalance);
+    }
+
+
+    combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+
+
+    if (runningBalance >= 0) {
+      combinedData.unshift({
+        date: "",
+        activity: "Previous Balance",
+        amount: 0,
+        balance: runningBalance,
+        type: "PB",
+      });
+    }
+
+    combinedData = combinedData.map(transaction => {
+      if (transaction.type === "I") {
+        runningBalance += transaction.amount;
+      } else if (transaction.type === "P") {
+        runningBalance -= transaction.amount;
+      }
+
+      return {
+        ...transaction,
+        balance: runningBalance,
+      };
+    });
+
+
+
+    const statementDetailsObject: StatementDetails = {
+      statement: statementData[0],
+      client: clientData,
+      invoiceData: combinedData || [],
+    };
+    setStatementDetails([statementDetailsObject]);
+    setSelectedStatements([statementId]);
+    setIsPreviewModalOpen(true);
+  };
 
 
   return (
@@ -407,11 +562,11 @@ const StatementList = ({ statement }: StatementList) => {
               <Button
                 variant="default"
                 size="sm"
-                //onClick={() => setIsPreviewModalOpen(true)}
-                onClick={handlePrintReceipts}
+                onClick={() => setIsPreviewModalOpen(true)}
+              //onClick={handlePrintReceipts}
               >
                 <PrinterIcon className="mr-2 h-4 w-4" />
-                Print Invoices
+                Print Statement
               </Button>
             </>
           )}
@@ -521,17 +676,26 @@ const StatementList = ({ statement }: StatementList) => {
                       className="w-[160px]"
                     >
 
+                      {/* <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedStatements([statement?.id as string]);
+                          setIsPreviewModalOpen(true);
+                        }}
+                        //onClick={handlePrintReceipts}
+                        className="cursor-pointer"
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem> */}
+
                       <DropdownMenuItem
-                        // onClick={() => {
-                        //   setSelectedStatements([statement?.id as string]);
-                        //   setIsPreviewModalOpen(true);
-                        // }}
-                        onClick={handlePrintReceipts}
+                        onClick={() => handleViewDetails(statement?.id as string)}
                         className="cursor-pointer"
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
+
                     </DropdownMenuContent>
                   </DropdownMenu>
 
@@ -559,14 +723,15 @@ const StatementList = ({ statement }: StatementList) => {
       </div>
 
       {isPreviewModalOpen && (
-        <PaymentReceiptPreviewModal
+        <StatementReceiptPreviewModal
           isOpen={isPreviewModalOpen}
           onClose={() => {
             setIsPreviewModalOpen(false);
           }}
-          caseDetails={statement.filter((statement: any) =>
-            selectedStatements.includes(statement.id)
-          )}
+          // caseDetails={statement.filter((statement: any) =>
+          //   selectedStatements.includes(statement.id)
+          // )}
+          caseDetails={statementDetails}
           labData={labs}
         />
       )}

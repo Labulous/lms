@@ -158,22 +158,22 @@ const saveCaseProduct = async (
           quantity: product.quantity || 1, // Ensure at least 1
           occlusal_shade_id:
             product.shades.occlusal_shade !== "manual" &&
-            product.shades.custom_occlusal_shade !== ""
+              product.shades.custom_occlusal_shade !== ""
               ? product.shades.occlusal_shade
               : null,
           body_shade_id:
             product.shades.body_shade !== "manual" &&
-            product.shades.custom_body_shade !== ""
+              product.shades.custom_body_shade !== ""
               ? product.shades.body_shade
               : null,
           gingival_shade_id:
             product.shades.gingival_shade !== "manual" &&
-            product.shades.custom_gingival_shade !== ""
+              product.shades.custom_gingival_shade !== ""
               ? product.shades.gingival_shade
               : null,
           stump_shade_id:
             product.shades.stump_shade !== "manual" &&
-            product.shades.custom_stump_shade !== ""
+              product.shades.custom_stump_shade !== ""
               ? product.shades.stump_shade
               : null,
           manual_body_shade: product?.shades.manual_body || null,
@@ -400,7 +400,9 @@ const saveCases = async (
         console.log("Invoice created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
-        await updateBalanceTracking();
+        if (invoiceData && invoiceData.length > 0 && invoiceData[0]?.client_id) {
+          await updateBalanceTracking(invoiceData[0].client_id);
+        }
       }
       const { data: count, error: caseCountError } = await supabase
         .from("case_number_tracker")
@@ -417,7 +419,9 @@ const saveCases = async (
         console.log("case count created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
-        await updateBalanceTracking();
+        if (invoiceData && invoiceData.length > 0 && invoiceData[0]?.client_id) {
+          await updateBalanceTracking(invoiceData[0].client_id);
+        }
       }
     }
 
