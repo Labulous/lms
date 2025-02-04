@@ -510,79 +510,98 @@ const ClientProductPricing = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody className="overflow-y-scroll">
-                      {editableProducts?.map((product) => (
-                        <TableRow
-                          key={product.id}
-                          className="hover:bg-muted/50"
-                        >
-                          <TableCell className="font-medium">
-                            {product.name}
-                          </TableCell>
-                          <TableCell>{product.material.name}</TableCell>
-                          <TableCell>${product.price.toFixed(2)}</TableCell>
-                          <TableCell>
-                            {selectedClient !== "default" ? (
-                              <Input
-                                type="number"
-                                value={
-                                  selectedClient !== "default"
-                                    ? getClientPrice(
-                                        product.id,
-                                        selectedClient
-                                      ) ?? product.price
-                                    : product.price
-                                }
-                                onChange={(e) =>
-                                  handlePriceChange(product.id, e.target.value)
-                                }
-                                step="0.01"
-                                min="0"
-                                className="w-24"
-                              />
-                            ) : (
-                              <Input
-                                type="number"
-                                placeholder="Ener new"
-                                value={
-                                  defaultClientPrices.find(
-                                    (item) => item.productId === product.id
-                                  )?.price || 0
-                                }
-                                onChange={(e) => {
-                                  const newPrice =
-                                    parseFloat(e.target.value) || 0;
-                                  setDefaultClientPrices((prevPrices) => {
-                                    const index = prevPrices.findIndex(
-                                      (item) => item.productId === product.id
-                                    );
-                                    if (index !== -1) {
-                                      // Update existing item
-                                      const updatedPrices = [...prevPrices];
-                                      updatedPrices[index] = {
-                                        ...updatedPrices[index],
-                                        price: newPrice,
-                                      };
-                                      return updatedPrices;
-                                    } else {
-                                      // Add new item
-                                      return [
-                                        ...prevPrices,
-                                        {
-                                          productId: product.id,
-                                          price: newPrice,
-                                        },
-                                      ];
+                      {editableProducts
+                        ?.sort((a, b) => {
+                          const aHasNewPrice = selectedClient !== "default" 
+                            ? !!getClientPrice(a.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === a.id);
+                          const bHasNewPrice = selectedClient !== "default"
+                            ? !!getClientPrice(b.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === b.id);
+                          return Number(bHasNewPrice) - Number(aHasNewPrice); // Convert booleans to numbers for subtraction
+                        })
+                        .map((product) => {
+                          const hasNewPrice = selectedClient !== "default"
+                            ? !!getClientPrice(product.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === product.id);
+                          
+                          return (
+                            <TableRow
+                              key={product.id}
+                              className={cn(
+                                "hover:bg-muted/50",
+                                selectedClient !== "default" && hasNewPrice && "bg-blue-50"
+                              )}
+                            >
+                              <TableCell className="font-medium">
+                                {product.name}
+                              </TableCell>
+                              <TableCell>{product.material.name}</TableCell>
+                              <TableCell>${product.price.toFixed(2)}</TableCell>
+                              <TableCell>
+                                {selectedClient !== "default" ? (
+                                  <Input
+                                    type="number"
+                                    value={
+                                      selectedClient !== "default"
+                                        ? getClientPrice(
+                                            product.id,
+                                            selectedClient
+                                          ) ?? product.price
+                                        : product.price
                                     }
-                                  });
-                                }}
-                                step="0.01"
-                                min="0"
-                                className="w-24"
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                    onChange={(e) =>
+                                      handlePriceChange(product.id, e.target.value)
+                                    }
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                  />
+                                ) : (
+                                  <Input
+                                    type="number"
+                                    placeholder="Ener new"
+                                    value={
+                                      defaultClientPrices.find(
+                                        (item) => item.productId === product.id
+                                      )?.price || 0
+                                    }
+                                    onChange={(e) => {
+                                      const newPrice =
+                                        parseFloat(e.target.value) || 0;
+                                      setDefaultClientPrices((prevPrices) => {
+                                        const index = prevPrices.findIndex(
+                                          (item) => item.productId === product.id
+                                        );
+                                        if (index !== -1) {
+                                          // Update existing item
+                                          const updatedPrices = [...prevPrices];
+                                          updatedPrices[index] = {
+                                            ...updatedPrices[index],
+                                            price: newPrice,
+                                          };
+                                          return updatedPrices;
+                                        } else {
+                                          // Add new item
+                                          return [
+                                            ...prevPrices,
+                                            {
+                                              productId: product.id,
+                                              price: newPrice,
+                                            },
+                                          ];
+                                        }
+                                      });
+                                    }}
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                  />
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
                   </Table>
                 </div>
