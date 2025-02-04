@@ -329,7 +329,8 @@ const saveCases = async (
     const { data: taxData, error: taxDataError } = await supabase
       .from("tax_configuration")
       .select("*")
-      .eq("lab_id", cases.overview.lab_id);
+      .eq("lab_id", cases.overview.lab_id)
+      .eq("is_active", "Active");
 
     const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
       return sum + (tax.rate || 0);
