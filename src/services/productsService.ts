@@ -24,7 +24,7 @@ export interface ProductInput {
 
 export interface ProductTypes {
   id: string;
-  description: string;
+  description: string | null;
   name: string;
 }
 
@@ -223,6 +223,174 @@ class ProductsService {
       logger.debug("Product deleted successfully", { id });
     } catch (error) {
       logger.error("Error in deleteProduct", { error });
+      throw error;
+    }
+  }
+
+  async getMaterials(labId: string) {
+    try {
+      const { data, error } = await supabase
+        .from("materials")
+        .select("*")
+        .eq("lab_id", labId)
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logger.error("Error in getMaterials", { error });
+      throw error;
+    }
+  }
+
+  async createProductType(input: { name: string; description: string | null; lab_id: string }) {
+    try {
+      const { data, error } = await supabase
+        .from("product_types")
+        .insert([{
+          name: input.name.trim(),
+          description: input.description?.trim() || null,
+          lab_id: input.lab_id,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select("*")
+        .single();
+
+      if (error) {
+        logger.error("Error creating product type", { error });
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      logger.error("Error in createProductType", { error });
+      throw error;
+    }
+  }
+
+  async updateProductType(id: string, input: { name: string; description: string | null }) {
+    try {
+      const { data, error } = await supabase
+        .from("product_types")
+        .update({
+          name: input.name.trim(),
+          description: input.description?.trim() || null,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .select("*")
+        .single();
+
+      if (error) {
+        logger.error("Error updating product type", { error });
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      logger.error("Error in updateProductType", { error });
+      throw error;
+    }
+  }
+
+  async createMaterial(input: { name: string; description: string | null; lab_id: string }) {
+    try {
+      const { data, error } = await supabase
+        .from("materials")
+        .insert([{
+          name: input.name.trim(),
+          description: input.description?.trim() || null,
+          lab_id: input.lab_id,
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select("*")
+        .single();
+
+      if (error) {
+        logger.error("Error creating material", { error });
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      logger.error("Error in createMaterial", { error });
+      throw error;
+    }
+  }
+
+  async updateMaterial(id: string, input: { name: string; description: string | null }) {
+    try {
+      const { data, error } = await supabase
+        .from("materials")
+        .update({
+          name: input.name.trim(),
+          description: input.description?.trim() || null,
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .select("*")
+        .single();
+
+      if (error) {
+        logger.error("Error updating material", { error });
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      logger.error("Error in updateMaterial", { error });
+      throw error;
+    }
+  }
+
+  async deleteMaterial(id: string) {
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    } catch (error) {
+      logger.error("Error in deleteMaterial", { error });
+      throw error;
+    }
+  }
+
+  async deleteProductType(id: string): Promise<void> {
+    try {
+      logger.debug("Attempting to delete product type", { id });
+
+      const { error } = await supabase
+        .from("product_types")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        // Log the full error object for debugging
+        logger.error("Error deleting product type", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+
+        // Handle foreign key violation
+        if (error.code === '23503') {
+          throw new Error(
+            `Cannot delete this product type as it is being used by existing products`
+          );
+        }
+        
+        // For other errors, throw a generic message
+        throw new Error(`Failed to delete product type: ${error.message}`);
+      }
+
+      logger.debug("Product type deleted successfully", { id });
+    } catch (error) {
+      logger.error("Error in deleteProductType", { error });
       throw error;
     }
   }

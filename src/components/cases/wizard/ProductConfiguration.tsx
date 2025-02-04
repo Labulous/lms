@@ -985,15 +985,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           <Table>
             <TableHeader className="bg-slate-100 border-b border-slate-200">
               <TableRow>
-                <TableHead className="w-[20px]">Expend</TableHead>
+                <TableHead className="w-[20px]"></TableHead>
                 <TableHead className="w-[200px]">Type</TableHead>
                 <TableHead className="w-[200px]">Teeth</TableHead>
-                <TableHead>Material/Item</TableHead>
-                <TableHead>Services</TableHead>
+                <TableHead>Material/Product</TableHead>
+                <TableHead>Additional Services</TableHead>
                 <TableHead>Shades</TableHead>
                 <TableHead>Note</TableHead>
-                <TableHead>Percent</TableHead>
-                <TableHead>Quanitity</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>QTY</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
