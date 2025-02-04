@@ -38,6 +38,7 @@ import ChangePasswordForm from "./components/settings/ChangePassword";
 import ClientPricing from "./pages/settings/ClientPricing";
 import Home1 from "./pages/Home1";
 import { MyAccount } from "./pages/settings/my-account";
+import Patients from "./pages/Patients";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -287,6 +288,16 @@ const App: React.FC = () => {
           />
           <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/patients/*"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
+                <Layout>
+                  <Patients />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </>
     </ErrorBoundary>

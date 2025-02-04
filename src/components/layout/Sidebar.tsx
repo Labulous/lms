@@ -187,6 +187,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       href: "/client-pending-request",
       roles: ["admin", "super_admin"],
     },
+    {
+      icon: Users,
+      label: "Patients",
+      href: "/patients",
+      roles: ["admin", "super_admin", "client"],
+    },
   ];
 
   const quickActions = [
