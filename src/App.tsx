@@ -13,6 +13,7 @@ import Inventory from "./pages/Inventory";
 import Login from "./pages/Login";
 import Layout from "./components/layout/Layout";
 import ProductsServices from "./pages/settings/ProductsServices";
+import MaterialSelection from "./pages/settings/MaterialSelection";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Invoices from "./pages/billing/Invoices";
 import Payments from "./pages/billing/Payments";
@@ -100,7 +101,7 @@ const App: React.FC = () => {
           <Route
             path="/settings/*"
             element={
-              <ProtectedRoute requiredRole={["super_admin"]}>
+              <ProtectedRoute requiredRole={["super_admin", "admin"]}>
                 <Routes>
                   <Route path="system" element={<SystemSettings />} />
                   <Route
@@ -173,6 +174,16 @@ const App: React.FC = () => {
               <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <ProductsServices />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/material-selection/*"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+                <Layout>
+                  <MaterialSelection />
                 </Layout>
               </ProtectedRoute>
             }
