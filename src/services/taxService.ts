@@ -1,29 +1,41 @@
+import { supabase } from "@/lib/supabase";
+
 export interface Tax {
   id: string;
   name: string;
   description: string;
   rate: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  is_active: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Mock data for development
-let mockTaxes: Tax[] = [
-  {
-    id: "1",
-    name: "Standard VAT",
-    description: "Standard Value Added Tax",
-    rate: 20,
-    isActive: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+// let mockTaxes: Tax[] = [
+//   {
+//     id: "1",
+//     name: "Standard VAT",
+//     description: "Standard Value Added Tax",
+//     rate: 20,
+//     isActive: true,
+//     createdAt: new Date().toISOString(),
+//     updatedAt: new Date().toISOString(),
+//   },
+// ];
 
 export const getTaxes = async (labId: string): Promise<Tax[]> => {
   // TODO: Replace with actual API call
-  return mockTaxes;
+  const { data: taxesData, error: taxesDataError } = await supabase
+    .from("tax_configuration")
+    .select("*")
+    .eq("lab_id", labId)
+    .order("created_at", { ascending: false });
+
+  if (taxesData && taxesData.length > 0) {
+    return taxesData;
+  }
+
+  return [];
 };
 
 export const createTax = async (
@@ -31,14 +43,24 @@ export const createTax = async (
   tax: Omit<Tax, "id" | "createdAt" | "updatedAt">
 ): Promise<Tax> => {
   // TODO: Replace with actual API call
-  const newTax: Tax = {
-    id: Math.random().toString(36).substr(2, 9),
-    ...tax,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  mockTaxes.push(newTax);
-  return newTax;
+  try {
+    const { data: taxData, error: taxDataError } = await supabase
+      .from("tax_configuration")
+      .insert({
+        ...tax,
+        lab_id: labId,
+      })
+      .select("*")
+      .single();
+
+    if (taxDataError) {
+      throw new Error("Failed to create new tax");
+    }
+
+    return taxData;
+  } catch (error) {
+    throw new Error("Failed to create new tax");
+  }
 };
 
 export const updateTax = async (
@@ -47,20 +69,28 @@ export const updateTax = async (
   tax: Partial<Omit<Tax, "id" | "createdAt" | "updatedAt">>
 ): Promise<Tax> => {
   // TODO: Replace with actual API call
-  const index = mockTaxes.findIndex((t) => t.id === id);
-  if (index === -1) throw new Error("Tax not found");
+  const { data: updatedTax, error: updatedTaxError } = await supabase
+    .from("tax_configuration")
+    .update(tax)
+    .eq("id", id)
+    .select("*")
+    .single();
 
-  mockTaxes[index] = {
-    ...mockTaxes[index],
-    ...tax,
-    updatedAt: new Date().toISOString(),
-  };
-  return mockTaxes[index];
+  if (updatedTaxError) {
+    throw new Error("Failed to update the status");
+  }
+
+  return updatedTax;
 };
 
 export const deleteTax = async (labId: string, id: string): Promise<void> => {
   // TODO: Replace with actual API call
-  const index = mockTaxes.findIndex((t) => t.id === id);
-  if (index === -1) throw new Error("Tax not found");
-  mockTaxes.splice(index, 1);
+  const { data: deletedData, error: deletedDataError } = await supabase
+    .from("tax_configuration")
+    .delete()
+    .eq("id", id); // Delete where id = 1
+
+  if (deletedDataError) {
+    throw new Error("Failed to delete the tax");
+  }
 };

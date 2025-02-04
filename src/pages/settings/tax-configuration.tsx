@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import Layout from '@/components/layout/Layout';
-import TaxConfiguration from '@/components/settings/TaxConfiguration';
-import { useAuth } from '@/contexts/AuthContext';
-import { getLabIdByUserId } from '@/services/authService';
+import React, { useEffect, useState } from "react";
+import Layout from "@/components/layout/Layout";
+import TaxConfiguration from "@/components/settings/TaxConfiguration";
+import { useAuth } from "@/contexts/AuthContext";
+import { getLabIdByUserId } from "@/services/authService";
+import { SettingsTabs } from "./SettingsTabs";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function TaxConfigurationPage() {
   const [labId, setLabId] = useState<string>("");
@@ -22,8 +25,11 @@ export default function TaxConfigurationPage() {
 
   return (
     <Layout>
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <TaxConfiguration labId={labId} />
+      <div className="flex h-full bg-gray-50">
+        <SettingsTabs />
+        <div className="flex-1 p-6">
+          <TaxConfiguration labId={labId} />
+        </div>
       </div>
     </Layout>
   );
