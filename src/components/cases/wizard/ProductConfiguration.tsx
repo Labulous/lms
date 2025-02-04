@@ -493,6 +493,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             name: product.name,
             id: product.id,
             price: product.price, // Update the name for each subRow
+            is_taxable: product.is_taxable,
           })),
         };
 
@@ -534,7 +535,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             ...updatedProducts[index].subRows[SubIndex],
             name: product.name,
             id: product.id,
-            price: product.price,
+            price: product.price
           };
         }
 
