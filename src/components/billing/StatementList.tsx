@@ -97,8 +97,11 @@ const StatementList = ({ statement }: StatementList) => {
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
   const currentDate = new Date();
-  const [selectmonth, setSelectMonth] = useState((currentDate.getMonth() === 0 ? 12 : currentDate.getMonth()).toString());
-  const [selectyear, setSelectYear] = useState((currentDate.getMonth() === 0 ? currentDate.getFullYear() - 1 : currentDate.getFullYear()).toString());
+  
+  const [selectmonth, setSelectMonth] = useState((currentDate.getMonth() + 1).toString());
+  const [selectyear, setSelectYear] = useState((currentDate.getFullYear()).toString());
+
+  
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("All Clients");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);

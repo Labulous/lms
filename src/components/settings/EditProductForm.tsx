@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,11 +32,7 @@ import { Database } from "@/types/supabase";
 import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
 
-type Product = Database["public"]["Tables"]["products"]["Row"] & {
-  material: { name: string } | null;
-  billing_type: { name: string; label: string | null } | null;
-};
-
+type Product = Database["public"]["Tables"]["products"]["Row"];
 type Material = Database["public"]["Tables"]["materials"]["Row"];
 type BillingType = Database["public"]["Tables"]["billing_types"]["Row"];
 
@@ -57,22 +52,35 @@ interface EditProductFormProps {
   product?: Product;
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: z.infer<typeof productSchema>) => void;
+  onSave: (product: z.infer<typeof productSchema>) => Promise<void>;
 }
 
-export function EditProductForm({ product, isOpen, onClose, onSave }: EditProductFormProps) {
+export function EditProductForm({
+  product,
+  isOpen,
+  onClose,
+  onSave,
+}: EditProductFormProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
 
   useEffect(() => {
     const fetchReferenceData = async () => {
-      const [materialsData, billingTypesData] = await Promise.all([
-        supabase.from("materials").select("*").order("name"),
-        supabase.from("billing_types").select("*").order("name"),
-      ]);
+      try {
+        const [materialsData, billingTypesData] = await Promise.all([
+          supabase.from("materials").select("*").order("name"),
+          supabase.from("billing_types").select("*").order("name"),
+        ]);
 
-      if (materialsData.data) setMaterials(materialsData.data);
-      if (billingTypesData.data) setBillingTypes(billingTypesData.data);
+        if (materialsData.error || billingTypesData.error) {
+          toast.error("Failed to fetch reference data");
+        }
+
+        setMaterials(materialsData.data || []);
+        setBillingTypes(billingTypesData.data || []);
+      } catch (error) {
+        toast.error("Error fetching data");
+      }
     };
 
     fetchReferenceData();
@@ -81,6 +89,17 @@ export function EditProductForm({ product, isOpen, onClose, onSave }: EditProduc
   const form = useForm<z.infer<typeof productSchema>>({
     resolver: zodResolver(productSchema),
     defaultValues: {
+      name: "",
+      description: "",
+      material_id: "",
+      billing_type_id: "",
+      price: 0,
+      lead_time: 0,
+      is_client_visible: true,
+      is_taxable: true,
+      requires_shade: false,
+    },
+    values: {
       name: product?.name || "",
       description: product?.description || "",
       material_id: product?.material_id || "",

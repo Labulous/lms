@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, Percent } from "lucide-react";
+import { X, Plus, StickyNote, Percent, Minus } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -68,6 +68,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { FormData as CaseFormData } from "./CaseWizard";
 import { spawn } from "child_process";
+import React from "react";
+import { Service } from "@/data/mockServiceData";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -248,11 +250,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [loading, setLoading] = useState(true);
   const [shadeData, setShadeData] = useState<ShadeData[]>([]);
   const [discount, setDiscount] = useState<number>(0);
-
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
+  const [services, setServices] = useState<{ name: string; id: string }[]>([]);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
     number[][]
@@ -270,6 +272,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [openTypePopover, setOpenTypePopover] = useState<string | null>(null);
   const [openTeethPopover, setOpenTeethPopover] = useState<string | null>(null);
   const { user } = useAuth();
+
+  const [expandedRows, setExpandedRows] = useState<string[]>([]);
+
+  const toggleRowExpansion = (rowId: string) => {
+    setExpandedRows((prev) => {
+      const newArray = [...prev];
+      // Check if the length is 1 and the value is an empty string
+      if (newArray.length === 1 && newArray[0] === "") {
+        newArray[0] = rowId; // Replace the empty string with the incoming rowId
+        return newArray;
+      }
+      const index = newArray.indexOf(rowId);
+      if (index > -1) {
+        newArray.splice(index, 1); // Remove the rowId if it's already in the array
+      } else {
+        newArray.push(rowId); // Add the rowId if it's not in the array
+      }
+      return newArray;
+    });
+  };
+
+  console.log(expandedRows, "expandedRows");
   useEffect(() => {
     const fetchProductTypes = async () => {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -312,7 +336,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         `
         )
         .order("name")
-        .eq("product_type_id", selectedId?.id)
         .eq("lab_id", lab?.labId);
 
       if (error) {
@@ -336,9 +359,37 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setLoading(false);
     }
   };
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const { data: fetchedServices, error } = await supabase
+        .from("services")
+        .select(
+          `
+          id,name
+        `
+        )
+        .order("name")
+        .eq("lab_id", lab?.labId);
+
+      if (error) {
+        toast.error("Error fetching products from Supabase");
+        throw error;
+      }
+      const servicesWithNone = [{ id: null, name: "None" }, ...fetchedServices];
+
+      setServices(servicesWithNone);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     if (selectedType) {
       fetchedProducts(selectedType);
+      fetchServices();
     }
   }, [selectedType]);
 
@@ -419,22 +470,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     console.log(product, "product");
 
     if (!product) return;
+    if (!index) {
+      toggleRowExpansion(product.id);
+    }
     setSelectedProduct(product);
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
-        return prevSelectedProducts.map(
-          (selectedProduct: SavedProduct, i: number) => {
-            if (i === index) {
-              return {
-                ...selectedProduct,
-                id: product.id,
-                name: product.name,
-                price: product.price,
-              };
-            }
-            return selectedProduct;
-          }
-        );
+        let updatedProducts = [...prevSelectedProducts];
+
+        // Update the subRows' product name
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          name: product.name,
+          id: product.id,
+          price: product.price,
+          subRows: updatedProducts?.[index]?.subRows?.map((subRow) => ({
+            ...subRow,
+            name: product.name,
+            id: product.id,
+            price: product.price, // Update the name for each subRow
+          })),
+        };
+
+        return updatedProducts;
       } else {
         return [
           ...prevSelectedProducts,
@@ -446,6 +504,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
   };
+  const handleProductSubSelect = (
+    value: any,
+    keepTeeth = false,
+    index?: number,
+    SubIndex: number = 0
+  ) => {
+    const product = products.find((p) => p.id === value.id) || null;
+    console.log(product, "product");
+
+    if (!product) return;
+
+    setSelectedProduct(product);
+
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index !== undefined) {
+        let updatedProducts = [...prevSelectedProducts];
+
+        // Update only the subRow at the specified SubIndex
+        if (
+          updatedProducts[index]?.subRows &&
+          updatedProducts[index].subRows[SubIndex]
+        ) {
+          updatedProducts[index].subRows[SubIndex] = {
+            ...updatedProducts[index].subRows[SubIndex],
+            name: product.name,
+            id: product.id,
+            price: product.price,
+          };
+        }
+
+        return updatedProducts;
+      } else {
+        return [
+          ...prevSelectedProducts,
+          {
+            id: product.id,
+            name: product.name,
+          },
+        ];
+      }
+    });
+  };
+
   const handleCancelShades = (index: number) => {
     setShadePopoverOpen((prev) => {
       const updated = new Map(prev);
@@ -453,7 +554,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return updated;
     });
   };
-
   const handleProductTypeChange = (
     type: { name: string; id: string },
     index: number
@@ -462,12 +562,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
+        // Update the main row type
         updatedProducts[index] = {
           ...updatedProducts[index],
           type: type.name,
-          id: "",
-          name: "",
         };
+
+        // If subRows exist, update them as well
+        if (
+          updatedProducts[index].subRows &&
+          updatedProducts[index].subRows!.length > 0
+        ) {
+          updatedProducts[index].subRows = updatedProducts[index].subRows!.map(
+            (subRow) => ({
+              ...subRow,
+              type: type.name,
+            })
+          );
+        }
 
         return updatedProducts;
       } else {
@@ -514,17 +626,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return groups; // Optional, for debugging or testing
   };
   const handleTeethSelectionChange = (
-    teeth: any[],
+    teeth: number[],
     pontic_teeth: number[],
     index: number
   ) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
+
+        // Generate subRows by duplicating the product with each tooth individually
+        const subRows = teeth.map((tooth) => ({
+          ...updatedProducts[index],
+          teeth: [tooth], // Assigning a single tooth in an array
+        }));
+
         updatedProducts[index] = {
           ...updatedProducts[index],
           teeth,
           pontic_teeth,
+          subRows, // Update the subRows field dynamically
         };
 
         return updatedProducts;
@@ -532,11 +652,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         return prevSelectedProducts;
       }
     });
+
     groupSelectedTeeth(teeth);
   };
 
   console.log(groupSelectedTeethState, "groupSelectedTeethState");
-  const handleSaveShades = (index: number) => {
+  const handleSaveShades = (index: number, subIndex?: number) => {
+    // Construct the updated shades object
     const updatedShades = {
       occlusal_shade: shadeData[index]?.occlusal_shade || "",
       body_shade: shadeData[index]?.body_shade || "",
@@ -550,17 +672,98 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       manual_gingival: shadeData[index]?.manual_gingival || "",
       manual_occlusal: shadeData[index]?.manual_occlusal || "",
       manual_stump: shadeData[index]?.manual_stump || "",
+      // Generate subRows based on the length of the teeth array
+      subRow: selectedProducts[index].teeth.map((item) => ({
+        occlusal_shade: shadeData[index]?.occlusal_shade || "",
+        body_shade: shadeData[index]?.body_shade || "",
+        gingival_shade: shadeData[index]?.gingival_shade || "",
+        stump_shade: shadeData[index]?.stump_shade || "",
+        custom_body: shadeData[index]?.custom_body || "",
+        custom_gingival: shadeData[index]?.custom_gingival || "",
+        custom_occlusal: shadeData[index]?.custom_occlusal || "",
+        custom_stump: shadeData[index]?.custom_stump || "",
+        manual_body: shadeData[index]?.manual_body || "",
+        manual_gingival: shadeData[index]?.manual_gingival || "",
+        manual_occlusal: shadeData[index]?.manual_occlusal || "",
+        manual_stump: shadeData[index]?.manual_stump || "",
+      })),
+    };
+    const subShades = {
+      occlusal_shade:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.occlusal_shade || "",
+      body_shade: shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade || "",
+      gingival_shade:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.gingival_shade || "",
+      stump_shade: shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade || "",
+      custom_body: shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body || "",
+      custom_gingival:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_gingival || "",
+      custom_occlusal:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_occlusal || "",
+      custom_stump:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump || "",
+      manual_body: shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body || "",
+      manual_gingival:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_gingival || "",
+      manual_occlusal:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_occlusal || "",
+      manual_stump:
+        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump || "",
     };
 
-    console.log(updatedShades, "updatedShades");
-
+    // Update the products, including updating subRows based on the teeth count
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
 
         updatedProducts[index] = {
           ...updatedProducts[index],
-          shades: updatedShades,
+          shades: updatedShades, // Update the main product shades
+          subRows: subIndex
+            ? updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
+                ...subRow,
+                shades: {
+                  occlusal_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.occlusal_shade ||
+                    "",
+                  body_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade || "",
+                  gingival_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.gingival_shade ||
+                    "",
+                  stump_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
+                    "",
+                  custom_body:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
+                    "",
+                  custom_gingival:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.custom_gingival || "",
+                  custom_occlusal:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.custom_occlusal || "",
+                  custom_stump:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump ||
+                    "",
+                  manual_body:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body ||
+                    "",
+                  manual_gingival:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.manual_gingival || "",
+                  manual_occlusal:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.manual_occlusal || "",
+                  manual_stump:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump ||
+                    "",
+                }, // Apply the same updated shades to each subRow
+              }))
+            : updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
+                ...subRow,
+                shades: updatedShades, // Apply the same updated shades to each subRow
+              })),
         };
 
         return updatedProducts;
@@ -570,28 +773,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
 
+    // Close the shade popover for the current index
     setShadePopoverOpen((prev) => {
       const updated = new Map(prev);
-      updated.set(index, false);
+      // Set all values in the Map to false
+      updated.forEach((_, key) => {
+        updated.set(key, false);
+      });
+
       return updated;
     });
   };
 
   const handleDiscountChange = (index: number) => {
-    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      const updatedProducts = [...prevSelectedProducts];
-
-      if (index >= 0 && index < updatedProducts.length) {
-        const selectedProduct = updatedProducts[index];
-
-        updatedProducts[index] = {
-          ...selectedProduct,
-          discount: discount,
-        };
-      }
-
-      return updatedProducts;
-    });
     setDiscount(0);
     setPercentPopoverOpen((prev) => {
       const updated = new Map(prev);
@@ -614,6 +808,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         type: "",
         teeth: [],
         price: 0,
+        additional_service_id: "",
         shades: {
           body_shade: "",
           gingival_shade: "",
@@ -703,6 +898,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         type: "",
         teeth: [],
         price: 0,
+        additional_service_id: "",
         shades: {
           body_shade: "",
           gingival_shade: "",
@@ -715,7 +911,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       };
       setselectedProducts([newProduct]);
     }
-  }, selectedProducts);
+  }, []);
 
   console.log(shadesItems, "shadeData");
 
@@ -725,7 +921,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-
+  console.log(services, "services data");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -738,9 +934,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           <Table>
             <TableHeader className="bg-slate-100 border-b border-slate-200">
               <TableRow>
+                <TableHead className="w-[20px]">Expend</TableHead>
                 <TableHead className="w-[200px]">Type</TableHead>
                 <TableHead className="w-[200px]">Teeth</TableHead>
                 <TableHead>Material/Item</TableHead>
+                <TableHead>Services</TableHead>
                 <TableHead>Shades</TableHead>
                 <TableHead>Note</TableHead>
                 <TableHead>Percent</TableHead>
@@ -748,241 +946,1113 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="">
               {selectedProducts?.map((row, index) => (
-                <TableRow key={row.id} className="border">
-                  <TableCell className="border-b">
-                    <Popover
-                      open={openTypePopover === row.id}
-                      onOpenChange={(open) => {
-                        setOpenTypePopover(open ? row.id : null);
-                      }}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={cn(
-                            "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
-                            !row.type && "text-muted-foreground"
-                          )}
-                        >
-                          {row.type || "Select Type"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[200px] p-0">
-                        <div className="grid gap-1">
-                          {productTypes.map((type) => (
-                            <Button
-                              key={type.id}
-                              variant={
-                                row.type === type.name ? "secondary" : "ghost"
-                              }
-                              className={cn(
-                                "justify-start text-left h-auto py-2 px-3 w-full text-sm",
-                                row.type === type.name
-                                  ? "hover:opacity-90"
-                                  : "hover:bg-gray-50"
-                              )}
-                              onClick={() => {
-                                handleProductTypeChange(type, index);
-                                setOpenTypePopover(null);
-                              }}
-                            >
-                              {type.name}
-                            </Button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TableCell>
-                  <TableCell className="border-b">
-                    <Popover
-                      open={openTeethPopover === row.id}
-                      onOpenChange={(open) => {
-                        setOpenTeethPopover(open ? row.id : null);
-                      }}
-                    >
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className={cn(
-                            "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
-                            row.teeth.length === 0 && "text-muted-foreground"
-                          )}
-                          disabled={!row.type}
-                        >
-                          {row.type === "Bridge"
-                            ? row.teeth.length > 0
-                              ? formatTeethRange(row.teeth)
-                              : "Select Teeth"
-                            : row.teeth?.length > 0
-                            ? row.teeth?.join(",")
-                            : "Select Teeth"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-[320px] p-2"
-                        onEscapeKeyDown={(e) => {
-                          e.preventDefault();
-                          setOpenTeethPopover(null);
-                        }}
-                        onInteractOutside={(e) => {
-                          e.preventDefault();
-                          setOpenTeethPopover(null);
+                <React.Fragment key={row.id}>
+                  <TableRow key={row.id} className="border ">
+                    <TableCell className="border-b w-[20px] cursor-pointer top-0 ">
+                      {expandedRows.includes(row.id) ? (
+                        <Minus
+                          onClick={() => toggleRowExpansion(row.id)}
+                          className="h-6 w-6"
+                        />
+                      ) : (
+                        <Plus
+                          onClick={() => toggleRowExpansion(row.id)}
+                          className="h-6 w-6"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="border-b mr-2">
+                      <Popover
+                        open={openTypePopover === row.id}
+                        onOpenChange={(open) => {
+                          setOpenTypePopover(open ? row.id : null);
+                          setExpandedRows([row.id]);
                         }}
                       >
-                        <ToothSelector
-                          billingType={
-                            selectedProduct?.billing_type?.name || "perTooth"
-                          }
-                          selectedTeeth={row.teeth}
-                          onSelectionChange={(teeth, pontic_teeth) => {
-                            handleTeethSelectionChange(
-                              teeth,
-                              pontic_teeth
-                                ? (pontic_teeth as number[] | [])
-                                : [],
-                              index
-                            );
-                          }}
-                          disabled={!row.type}
-                          selectedProduct={{
-                            type: row.type ? [row.type] : [],
-                            selectedPontic: row.pontic_teeth as number[],
-                          }}
-                          addedTeethMap={new Map()}
-                          onAddToShadeTable={() => {}}
-                          ponticTeeth={ponticTeeth}
-                          setPonticTeeth={setPonticTeeth}
-                          groupSelectedTeethState={groupSelectedTeethState}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </TableCell>
-                  <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                    <MultiColumnProductSelector
-                      materials={MATERIALS}
-                      products={products}
-                      selectedProduct={{
-                        id: selectedProducts[index].id ?? "",
-                        name:
-                          selectedProducts[index].name.length > 0
-                            ? selectedProducts[index].name
-                            : "Select a Product",
-                      }}
-                      onProductSelect={(product) => {
-                        handleProductSelect(product, true, index);
-                      }}
-                      disabled={loading || row.teeth.length === 0}
-                      size="xs"
-                      onClick={() => fetchedProducts(row.type)}
-                    />
-                  </TableCell>
-
-                  <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                    <div className="flex flex-col space-y-0.5">
-                      <Popover open={shadePopoverOpen.get(index) || false}>
                         <PopoverTrigger asChild>
                           <Button
                             variant="outline"
                             size="sm"
-                            className={`h-7 text-sm ${
-                              row.shades?.body_shade ||
-                              row.shades?.gingival_shade ||
-                              row.shades?.occlusal_shade ||
-                              row.shades?.stump_shade
-                                ? "text-blue-600"
-                                : ""
-                            }`}
-                            disabled={row.teeth.length === 0}
-                            onClick={() => toggleShadePopover(index)}
-                          >
-                            {row.shades?.body_shade ||
-                            row.shades?.gingival_shade ||
-                            row.shades?.occlusal_shade ||
-                            row.shades?.custom_body ||
-                            row.shades?.custom_gingival ||
-                            row.shades?.custom_occlusal ||
-                            row.shades?.manual_occlusal ||
-                            row.shades?.manual_gingival ||
-                            row.shades?.manual_body ||
-                            row.shades?.manual_stump ||
-                            row.shades?.custom_stump ||
-                            row.shades?.stump_shade ? (
-                              <div>
-                                {shadeData[index]?.occlusal_shade === "manual"
-                                  ? shadeData[index]?.manual_occlusal
-                                  : shadesItems.filter(
-                                      (item) =>
-                                        item.id ===
-                                        shadeData[index]?.occlusal_shade
-                                    )[0]?.name || (
-                                      <span
-                                        className="text-red-600"
-                                        title="custom"
-                                      >
-                                        {shadeData[index]?.custom_occlusal ||
-                                          "--"}
-                                      </span>
-                                    )}
-                                /
-                                {shadeData[index]?.body_shade === "manual"
-                                  ? shadeData[index]?.manual_body
-                                  : shadesItems.filter(
-                                      (item) =>
-                                        item.id === shadeData[index]?.body_shade
-                                    )[0]?.name || (
-                                      <span
-                                        className="text-red-600"
-                                        title="custom"
-                                      >
-                                        {shadeData[index]?.custom_body || "--"}
-                                      </span>
-                                    )}
-                                /
-                                {shadeData[index]?.gingival_shade === "manual"
-                                  ? shadeData[index]?.manual_gingival
-                                  : shadesItems.filter(
-                                      (item) =>
-                                        item.id ===
-                                        shadeData[index]?.gingival_shade
-                                    )[0]?.name || (
-                                      <span
-                                        className="text-red-600"
-                                        title="custom"
-                                      >
-                                        {shadeData[index]?.custom_gingival ||
-                                          "--"}
-                                      </span>
-                                    )}
-                                /
-                                {shadeData[index]?.stump_shade === "manual"
-                                  ? shadeData[index]?.manual_stump
-                                  : shadesItems.filter(
-                                      (item) =>
-                                        item.id ===
-                                        shadeData[index]?.stump_shade
-                                    )[0]?.name || (
-                                      <span
-                                        className="text-red-600"
-                                        title="custom"
-                                      >
-                                        {shadeData[index]?.custom_stump || "--"}
-                                      </span>
-                                    )}
-                              </div>
-                            ) : (
-                              " Add Shade"
+                            className={cn(
+                              "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
+                              !row.type && "text-muted-foreground"
                             )}
+                          >
+                            {row.type || "Select Type"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[200px] p-0">
+                          <div className="grid gap-1">
+                            {productTypes.map((type) => (
+                              <Button
+                                key={type.id}
+                                variant={
+                                  row.type === type.name ? "secondary" : "ghost"
+                                }
+                                className={cn(
+                                  "justify-start text-left h-auto py-2 px-3 w-full text-sm",
+                                  row.type === type.name
+                                    ? "hover:opacity-90"
+                                    : "hover:bg-gray-50"
+                                )}
+                                onClick={() => {
+                                  handleProductTypeChange(type, index);
+                                  setOpenTypePopover(null);
+                                }}
+                              >
+                                {type.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="border-b">
+                      <Popover
+                        open={openTeethPopover === row.id}
+                        onOpenChange={(open) => {
+                          setOpenTeethPopover(open ? row.id : null);
+                        }}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
+                              row.teeth.length === 0 && "text-muted-foreground"
+                            )}
+                            disabled={!row.type || row.type === "Service"}
+                          >
+                            {row.type === "Bridge"
+                              ? row.teeth.length > 0
+                                ? formatTeethRange(row.teeth)
+                                : "Select Teeth"
+                              : row.teeth?.length > 0
+                              ? row.teeth?.join(",")
+                              : "Select Teeth"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-92"
+                          className="w-[320px] p-2"
                           onEscapeKeyDown={(e) => {
                             e.preventDefault();
-                            setShadePopoverOpen((prev) => {
+                            setOpenTeethPopover(null);
+                          }}
+                          onInteractOutside={(e) => {
+                            e.preventDefault();
+                            setOpenTeethPopover(null);
+                          }}
+                        >
+                          <ToothSelector
+                            billingType={
+                              selectedProduct?.billing_type?.name || "perTooth"
+                            }
+                            selectedTeeth={row.teeth}
+                            onSelectionChange={(teeth, pontic_teeth) => {
+                              handleTeethSelectionChange(
+                                teeth,
+                                pontic_teeth
+                                  ? (pontic_teeth as number[] | [])
+                                  : [],
+                                index
+                              );
+                            }}
+                            disabled={!row.type || row.type === "Service"}
+                            selectedProduct={{
+                              type: row.type ? [row.type] : [],
+                              selectedPontic: row.pontic_teeth as number[],
+                            }}
+                            addedTeethMap={new Map()}
+                            onAddToShadeTable={() => {}}
+                            ponticTeeth={ponticTeeth}
+                            setPonticTeeth={setPonticTeeth}
+                            groupSelectedTeethState={groupSelectedTeethState}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                      <MultiColumnProductSelector
+                        materials={MATERIALS}
+                        products={products}
+                        selectedProduct={{
+                          id: selectedProducts[index].id ?? "",
+                          name:
+                            selectedProducts[index].name.length > 0
+                              ? selectedProducts[index].name
+                              : "Select a Product",
+                        }}
+                        onProductSelect={(product) => {
+                          handleProductSelect(product, true, index);
+                        }}
+                        disabled={loading || row.teeth.length === 0}
+                        size="xs"
+                        onClick={() => fetchedProducts(row.type)}
+                      />
+                    </TableCell>
+                    <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                      <Select
+                        disabled={
+                          loading ||
+                          (row.teeth.length === 0 && row.type === "Service")
+                        }
+                        onValueChange={(value) => {
+                          setselectedProducts(
+                            (prevSelectedProducts: SavedProduct[]) => {
+                              const updatedProducts = [...prevSelectedProducts];
+
+                              if (
+                                index >= 0 &&
+                                index < updatedProducts.length
+                              ) {
+                                updatedProducts[index] = {
+                                  ...updatedProducts[index],
+                                  additional_service_id: value, // Update the main row's note
+                                  subRows: updatedProducts?.[
+                                    index
+                                  ]?.subRows?.map((subRow) => ({
+                                    ...subRow,
+                                    additional_service_id: value, // Update the note for each subRow
+                                  })),
+                                };
+                              }
+
+                              return updatedProducts;
+                            }
+                          );
+                        }}
+                      >
+                        <SelectTrigger className={cn("bg-white")}>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {services && services.length > 0 ? (
+                            services.map((service) => (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.name || "Unnamed material"}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="_no_clients" disabled>
+                              No Service available
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+
+                    <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                      <div className="flex flex-col space-y-0.5">
+                        <Popover open={shadePopoverOpen.get(index) || false}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={`h-7 text-sm ${
+                                row.shades?.body_shade ||
+                                row.shades?.gingival_shade ||
+                                row.shades?.occlusal_shade ||
+                                row.shades?.stump_shade
+                                  ? "text-blue-600"
+                                  : ""
+                              }`}
+                              disabled={
+                                row.teeth.length === 0 && row.type !== "Service"
+                              }
+                              onClick={() => toggleShadePopover(index)}
+                            >
+                              {row.shades?.body_shade ||
+                              row.shades?.gingival_shade ||
+                              row.shades?.occlusal_shade ||
+                              row.shades?.custom_body ||
+                              row.shades?.custom_gingival ||
+                              row.shades?.custom_occlusal ||
+                              row.shades?.manual_occlusal ||
+                              row.shades?.manual_gingival ||
+                              row.shades?.manual_body ||
+                              row.shades?.manual_stump ||
+                              row.shades?.custom_stump ||
+                              row.shades?.stump_shade ? (
+                                <div>
+                                  {shadeData[index]?.occlusal_shade === "manual"
+                                    ? shadeData[index]?.manual_occlusal
+                                    : shadesItems.filter(
+                                        (item) =>
+                                          item.id ===
+                                          shadeData[index]?.occlusal_shade
+                                      )[0]?.name || (
+                                        <span
+                                          className="text-red-600"
+                                          title="custom"
+                                        >
+                                          {shadeData[index]?.custom_occlusal ||
+                                            "--"}
+                                        </span>
+                                      )}
+                                  /
+                                  {shadeData[index]?.body_shade === "manual"
+                                    ? shadeData[index]?.manual_body
+                                    : shadesItems.filter(
+                                        (item) =>
+                                          item.id ===
+                                          shadeData[index]?.body_shade
+                                      )[0]?.name || (
+                                        <span
+                                          className="text-red-600"
+                                          title="custom"
+                                        >
+                                          {shadeData[index]?.custom_body ||
+                                            "--"}
+                                        </span>
+                                      )}
+                                  /
+                                  {shadeData[index]?.gingival_shade === "manual"
+                                    ? shadeData[index]?.manual_gingival
+                                    : shadesItems.filter(
+                                        (item) =>
+                                          item.id ===
+                                          shadeData[index]?.gingival_shade
+                                      )[0]?.name || (
+                                        <span
+                                          className="text-red-600"
+                                          title="custom"
+                                        >
+                                          {shadeData[index]?.custom_gingival ||
+                                            "--"}
+                                        </span>
+                                      )}
+                                  /
+                                  {shadeData[index]?.stump_shade === "manual"
+                                    ? shadeData[index]?.manual_stump
+                                    : shadesItems.filter(
+                                        (item) =>
+                                          item.id ===
+                                          shadeData[index]?.stump_shade
+                                      )[0]?.name || (
+                                        <span
+                                          className="text-red-600"
+                                          title="custom"
+                                        >
+                                          {shadeData[index]?.custom_stump ||
+                                            "--"}
+                                        </span>
+                                      )}
+                                </div>
+                              ) : (
+                                " Add Shade"
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-92"
+                            onEscapeKeyDown={(e) => {
+                              e.preventDefault();
+                              setShadePopoverOpen((prev) => {
+                                const updated = new Map(prev);
+                                updated.set(index, false);
+                                return updated;
+                              });
+                            }}
+                            onInteractOutside={(e) => {
+                              e.preventDefault();
+                              setShadePopoverOpen((prev) => {
+                                const updated = new Map(prev);
+                                updated.set(index, false);
+                                return updated;
+                              });
+                            }}
+                          >
+                            <div className="grid gap-4">
+                              <div className="space-y-2">
+                                <h4 className="font-medium leading-none">
+                                  Shades main row
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  Set the shades for different areas
+                                </p>
+                              </div>
+
+                              <div className="grid gap-2">
+                                <div className="grid grid-cols-4 items-center gap-4 text-gray-800 text-sm">
+                                  <h2></h2>
+                                  <h2>Select</h2>
+                                  <h2>Manual</h2>
+                                  <h2>Custom</h2>
+                                </div>
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="occlusal">Incisal</Label>
+                                  <Select
+                                    value={
+                                      shadeData[index]?.occlusal_shade || ""
+                                    }
+                                    onValueChange={(value) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          occlusal_shade: value,
+                                          manual_occlusal: "",
+                                          id: row.id,
+                                          custom_occlusal: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData?.[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      occlusal_shade: value,
+                                                      manual_occlusal: "",
+                                                      id: row.id,
+                                                      custom_occlusal: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  occlusal_shade: value,
+                                                  manual_occlusal: "",
+                                                  id: row.id,
+                                                  custom_occlusal: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="N/A" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.manual_occlusal}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+
+                                        if (e.target.value) {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_occlusal: e.target.value,
+                                            id: row.id,
+                                            occlusal_shade: "manual",
+                                            custom_occlusal: "",
+
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_occlusal:
+                                                          e.target.value,
+                                                        occlusal_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_occlusal:
+                                                      e.target.value,
+                                                    occlusal_shade: e.target
+                                                      .value
+                                                      ? "manual"
+                                                      : "",
+                                                  })),
+                                          };
+                                        } else {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_occlusal: "",
+                                            id: row.id,
+                                            occlusal_shade: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_occlusal: "",
+                                                        occlusal_shade: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_occlusal: "",
+                                                    occlusal_shade: "",
+                                                  })),
+                                          };
+                                        }
+
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.custom_occlusal}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_occlusal:
+                                            e.target.value.toUpperCase(),
+                                          id: row.id,
+                                          manual_occlusal: "",
+                                          occlusal_shade: "",
+
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      custom_occlusal:
+                                                        e.target.value.toUpperCase(),
+                                                      id: row.id,
+                                                      manual_occlusal: "",
+                                                      occlusal_shade: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  custom_occlusal:
+                                                    e.target.value.toUpperCase(),
+                                                  id: row.id,
+                                                  manual_occlusal: "",
+                                                  occlusal_shade: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+
+                                {/* Body Shade */}
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="body">Body</Label>
+                                  <Select
+                                    value={shadeData[index]?.body_shade || ""}
+                                    onValueChange={(value) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          body_shade: value,
+                                          id: row.id,
+                                          manual_body: "",
+                                          custom_body: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      body_shade: value,
+                                                      id: row.id,
+                                                      manual_body: "",
+                                                      custom_body: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  body_shade: value,
+                                                  id: row.id,
+                                                  manual_body: "",
+                                                  custom_body: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="N/A" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.manual_body}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        if (e.target.value) {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_body: e.target.value,
+                                            id: row.id,
+                                            body_shade: "manual",
+                                            custom_body: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_body:
+                                                          e.target.value,
+                                                        body_shade: "manual",
+                                                        custom_body: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_body: e.target.value,
+                                                    body_shade: "manual",
+                                                    custom_body: "",
+                                                  })),
+                                          };
+                                        } else {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_body: "",
+                                            id: row.id,
+                                            body_shade: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? selectedProducts[0].teeth.map(
+                                                    (item) => ({
+                                                      manual_body: "",
+                                                      body_shade: "",
+                                                    })
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_body: "",
+                                                    id: row.id,
+                                                    body_shade: "",
+                                                  })),
+                                          };
+                                        }
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.custom_body}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_body:
+                                            e.target.value.toUpperCase(),
+                                          id: row.id,
+                                          body_shade: "",
+                                          manual_body: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      custom_body:
+                                                        e.target.value.toUpperCase(),
+                                                      id: row.id,
+                                                      body_shade: "",
+                                                      manual_body: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  custom_body:
+                                                    e.target.value.toUpperCase(),
+                                                  id: row.id,
+                                                  body_shade: "",
+                                                  manual_body: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+
+                                {/* Gingival Shade */}
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="gingival">Gingival</Label>
+                                  <Select
+                                    value={
+                                      shadeData[index]?.gingival_shade || ""
+                                    }
+                                    onValueChange={(value) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          gingival_shade: value,
+                                          manual_gingival: "",
+                                          id: row.id,
+                                          custom_gingival: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      gingival_shade: value,
+                                                      manual_gingival: "",
+                                                      id: row.id,
+                                                      custom_gingival: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  gingival_shade: value,
+                                                  manual_gingival: "",
+                                                  id: row.id,
+                                                  custom_gingival: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="N/A" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-[260px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.manual_gingival}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        if (e.target.value) {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_gingival: e.target.value,
+                                            id: row.id,
+                                            gingival_shade: "manual",
+                                            custom_gingival: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_gingival:
+                                                          e.target.value,
+                                                        id: row.id,
+                                                        gingival_shade:
+                                                          "manual",
+                                                        custom_gingival: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_gingival:
+                                                      e.target.value,
+                                                    id: row.id,
+                                                    gingival_shade: "manual",
+                                                    custom_gingival: "",
+                                                  })),
+                                          };
+                                        } else {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_gingival: "",
+                                            id: row.id,
+                                            gingival_shade: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_gingival: "",
+                                                        id: row.id,
+                                                        gingival_shade: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_gingival: "",
+                                                    id: row.id,
+                                                    gingival_shade: "",
+                                                  })),
+                                          };
+                                        }
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.custom_gingival}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_gingival:
+                                            e.target.value.toUpperCase(),
+                                          id: row.id,
+                                          gingival_shade: "",
+                                          manual_gingival: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      custom_gingival:
+                                                        e.target.value.toUpperCase(),
+                                                      id: row.id,
+                                                      gingival_shade: "",
+                                                      manual_gingival: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  custom_gingival:
+                                                    e.target.value.toUpperCase(),
+                                                  id: row.id,
+                                                  gingival_shade: "",
+                                                  manual_gingival: "",
+                                                })),
+                                        };
+
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+
+                                {/* Stump Shade */}
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  <Label htmlFor="stump">Stump</Label>
+                                  <Select
+                                    value={shadeData[index]?.stump_shade || ""}
+                                    onValueChange={(value) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          stump_shade: value,
+                                          id: row.id,
+                                          manual_stump: "",
+                                          custom_stump: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      stump_shade: value,
+                                                      manual_stump: "",
+                                                      custom_stump: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  stump_shade: value,
+                                                  manual_stump: "",
+                                                  custom_stump: "",
+                                                })),
+                                        };
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-full">
+                                      <SelectValue placeholder="N/A" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <ScrollArea className="h-[200px]">
+                                        {sortedShadesItems.map((shade) => (
+                                          <SelectItem
+                                            key={shade.id}
+                                            value={shade.id}
+                                          >
+                                            {shade.name}
+                                          </SelectItem>
+                                        ))}
+                                      </ScrollArea>
+                                    </SelectContent>
+                                  </Select>
+
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.manual_stump}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        if (e.target.value) {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_stump: e.target.value,
+                                            id: row.id,
+                                            stump_shade: "manual",
+                                            custom_stump: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_stump:
+                                                          e.target.value,
+                                                        id: row.id,
+                                                        stump_shade: "manual",
+                                                        custom_stump: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_stump:
+                                                      e.target.value,
+                                                    id: row.id,
+                                                    stump_shade: "manual",
+                                                    custom_stump: "",
+                                                  })),
+                                          };
+                                        } else {
+                                          updatedShadeData[index] = {
+                                            ...updatedShadeData[index],
+                                            manual_stump: "",
+                                            id: row.id,
+                                            stump_shade: "",
+                                            subRow:
+                                              updatedShadeData?.[index]?.subRow
+                                                ?.length ?? 0 > 0
+                                                ? updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, subIndex) => {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_stump: "",
+                                                        id: row.id,
+                                                        stump_shade: "",
+                                                      };
+                                                    }
+                                                  )
+                                                : selectedProducts[
+                                                    index
+                                                  ].teeth.map((item) => ({
+                                                    manual_stump: "",
+                                                    id: row.id,
+                                                    stump_shade: "",
+                                                  })),
+                                          };
+                                        }
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                  <Input
+                                    type="text"
+                                    value={shadeData[index]?.custom_stump}
+                                    onChange={(e) => {
+                                      setShadeData((prev) => {
+                                        const updatedShadeData = [...prev];
+                                        updatedShadeData[index] = {
+                                          ...updatedShadeData[index],
+                                          custom_stump:
+                                            e.target.value.toUpperCase(),
+                                          id: row.id,
+                                          stump_shade: "",
+                                          manual_stump: "",
+                                          subRow:
+                                            updatedShadeData?.[index]?.subRow
+                                              ?.length ?? 0 > 0
+                                              ? updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      custom_stump:
+                                                        e.target.value.toUpperCase(),
+                                                      id: row.id,
+                                                      stump_shade: "",
+                                                      manual_stump: "",
+                                                    };
+                                                  }
+                                                )
+                                              : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  custom_stump:
+                                                    e.target.value.toUpperCase(),
+                                                  id: row.id,
+                                                  stump_shade: "",
+                                                  manual_stump: "",
+                                                })),
+                                        };
+
+                                        return updatedShadeData;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex justify-end space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCancelShades(index)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveShades(index)}
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </TableCell>
+                    <TableCell className="border-b">
+                      <Popover open={notePopoverOpen.get(index) || false}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "h-6 w-6",
+                              row.notes ? "text-blue-600" : "",
+                              "hover:text-blue-600"
+                            )}
+                            disabled={!row.id && row.type !== "Service"}
+                            onClick={() => toggleNotePopover(index)}
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-80 p-3"
+                          onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setNotePopoverOpen((prev) => {
                               const updated = new Map(prev);
                               updated.set(index, false);
                               return updated;
@@ -990,550 +2060,1343 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           }}
                           onInteractOutside={(e) => {
                             e.preventDefault();
-                            setShadePopoverOpen((prev) => {
+                            setNotePopoverOpen((prev) => {
                               const updated = new Map(prev);
                               updated.set(index, false);
                               return updated;
                             });
                           }}
+                          align="end"
                         >
-                          <div className="grid gap-4">
-                            <div className="space-y-2">
-                              <h4 className="font-medium leading-none">
-                                Shades
-                              </h4>
-                              <p className="text-sm text-muted-foreground">
-                                Set the shades for different areas
-                              </p>
-                            </div>
-
-                            <div className="grid gap-2">
-                              <div className="grid grid-cols-4 items-center gap-4 text-gray-800 text-sm">
-                                <h2></h2>
-                                <h2>Select</h2>
-                                <h2>Manual</h2>
-                                <h2>Custom</h2>
-                              </div>
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="occlusal">Incisal</Label>
-                                <Select
-                                  value={shadeData[index]?.occlusal_shade || ""}
-                                  onValueChange={(value) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        occlusal_shade: value,
-                                        manual_occlusal: "",
-                                        id: row.id,
-                                        custom_occlusal: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="N/A" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sortedShadesItems.map((shade) => (
-                                      <SelectItem
-                                        key={shade.id}
-                                        value={shade.id}
-                                      >
-                                        {shade.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.manual_occlusal}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      if (e.target.value) {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_occlusal: e.target.value,
-                                          id: row.id,
-                                          occlusal_shade: "manual",
-                                          custom_occlusal: "",
-                                        };
-                                      } else {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_occlusal: "",
-                                          id: row.id,
-                                          occlusal_shade: "",
-                                        };
-                                      }
-
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.custom_occlusal}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        custom_occlusal:
-                                          e.target.value.toUpperCase(),
-                                        id: row.id,
-                                        manual_occlusal: "",
-                                        occlusal_shade: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                              </div>
-
-                              {/* Body Shade */}
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="body">Body</Label>
-                                <Select
-                                  value={shadeData[index]?.body_shade || ""}
-                                  onValueChange={(value) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        body_shade: value,
-                                        id: row.id,
-                                        manual_body: "",
-                                        custom_body: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="N/A" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sortedShadesItems.map((shade) => (
-                                      <SelectItem
-                                        key={shade.id}
-                                        value={shade.id}
-                                      >
-                                        {shade.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.manual_body}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      if (e.target.value) {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_body: e.target.value,
-                                          id: row.id,
-                                          body_shade: "manual",
-                                          custom_body: "",
-                                        };
-                                      } else {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_body: "",
-                                          id: row.id,
-                                          body_shade: "",
-                                        };
-                                      }
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.custom_body}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        custom_body:
-                                          e.target.value.toUpperCase(),
-                                        id: row.id,
-                                        body_shade: "",
-                                        manual_body: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                              </div>
-
-                              {/* Gingival Shade */}
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="gingival">Gingival</Label>
-                                <Select
-                                  value={shadeData[index]?.gingival_shade || ""}
-                                  onValueChange={(value) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        gingival_shade: value,
-                                        manual_gingival: "",
-                                        id: row.id,
-                                        custom_gingival: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="N/A" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sortedShadesItems.map((shade) => (
-                                      <SelectItem
-                                        key={shade.id}
-                                        value={shade.id}
-                                      >
-                                        {shade.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.manual_gingival}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      if (e.target.value) {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_gingival: e.target.value,
-                                          id: row.id,
-                                          gingival_shade: "manual",
-                                          custom_gingival: "",
-                                        };
-                                      } else {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_gingival: "",
-                                          id: row.id,
-                                          gingival_shade: "",
-                                        };
-                                      }
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.custom_gingival}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        custom_gingival:
-                                          e.target.value.toUpperCase(),
-                                        id: row.id,
-                                        gingival_shade: "",
-                                        manual_gingival: "",
-                                      };
-
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                              </div>
-
-                              {/* Stump Shade */}
-                              <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="stump">Stump</Label>
-                                <Select
-                                  value={shadeData[index]?.stump_shade || ""}
-                                  onValueChange={(value) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        stump_shade: value,
-                                        id: row.id,
-                                        manual_stump: "",
-                                        custom_stump: "",
-                                      };
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="N/A" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sortedShadesItems.map((shade) => (
-                                      <SelectItem
-                                        key={shade.id}
-                                        value={shade.id}
-                                      >
-                                        {shade.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.manual_stump}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      if (e.target.value) {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_stump: e.target.value,
-                                          id: row.id,
-                                          stump_shade: "manual",
-                                          custom_stump: "",
-                                        };
-                                      } else {
-                                        updatedShadeData[index] = {
-                                          ...updatedShadeData[index],
-                                          manual_stump: "",
-                                          id: row.id,
-                                          stump_shade: "",
-                                        };
-                                      }
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                                <Input
-                                  type="text"
-                                  value={shadeData[index]?.custom_stump}
-                                  onChange={(e) => {
-                                    setShadeData((prev) => {
-                                      const updatedShadeData = [...prev];
-                                      updatedShadeData[index] = {
-                                        ...updatedShadeData[index],
-                                        custom_stump:
-                                          e.target.value.toUpperCase(),
-                                        id: row.id,
-                                        stump_shade: "",
-                                        manual_stump: "",
-                                      };
-
-                                      return updatedShadeData;
-                                    });
-                                  }}
-                                  className="w-20 h-7 text-sm bg-white"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancelShades(index)}
-                              >
-                                Cancel
-                              </Button>
+                          <div className="space-y-2">
+                            <div className="flex justify-between w-full">
+                              <Label className="text-xs">Add Note</Label>
                               <Button
                                 size="sm"
-                                onClick={() => handleSaveShades(index)}
+                                onClick={() =>
+                                  setNotePopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(index, false);
+                                    return updated;
+                                  })
+                                }
                               >
                                 Save
                               </Button>
                             </div>
+                            <Textarea
+                              placeholder="Enter note for this product..."
+                              value={selectedProducts[index].notes ?? ""}
+                              onChange={(e) => {
+                                const newNote = e.target.value;
+
+                                setselectedProducts(
+                                  (prevSelectedProducts: SavedProduct[]) => {
+                                    const updatedProducts = [
+                                      ...prevSelectedProducts,
+                                    ];
+
+                                    if (
+                                      index >= 0 &&
+                                      index < updatedProducts.length
+                                    ) {
+                                      updatedProducts[index] = {
+                                        ...updatedProducts[index],
+                                        notes: newNote, // Update the main row's note
+                                        subRows: updatedProducts?.[
+                                          index
+                                        ]?.subRows?.map((subRow) => ({
+                                          ...subRow,
+                                          notes: newNote, // Update the note for each subRow
+                                        })),
+                                      };
+                                    }
+
+                                    return updatedProducts;
+                                  }
+                                );
+                              }}
+                              className="h-24 text-sm"
+                            />
                           </div>
                         </PopoverContent>
                       </Popover>
-                    </div>
-                  </TableCell>
-                  <TableCell className=" border-b">
-                    <Popover open={notePopoverOpen.get(index) || false}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn(
-                            "h-6 w-6",
-                            row.notes ? "text-blue-600" : "",
-                            "hover:text-blue-600"
-                          )}
-                          disabled={!row.id}
-                          onClick={() => toggleNotePopover(index)}
+                    </TableCell>
+                    <TableCell className="border-b">
+                      <Popover open={percentPopoverOpen.get(index) || false}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "h-6 w-6",
+                              selectedProducts?.[index]?.discount !== 0
+                                ? "text-blue-600"
+                                : "",
+                              "hover:text-blue-600"
+                            )}
+                            disabled={!row.id && row.type !== "Service"}
+                            onClick={() => togglePercentPopover(index)}
+                          >
+                            {selectedProducts?.[index]?.discount}{" "}
+                            <Percent className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-80 p-3"
+                          onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setPercentPopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                          onInteractOutside={(e) => {
+                            e.preventDefault();
+                            setPercentPopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                          align="end"
                         >
-                          <StickyNote className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-80 p-3"
-                        onEscapeKeyDown={(e) => {
-                          e.preventDefault();
-                          setNotePopoverOpen((prev) => {
-                            const updated = new Map(prev);
-                            updated.set(index, false);
-                            return updated;
-                          });
-                        }}
-                        onInteractOutside={(e) => {
-                          e.preventDefault();
-                          setNotePopoverOpen((prev) => {
-                            const updated = new Map(prev);
-                            updated.set(index, false);
-                            return updated;
-                          });
-                        }}
-                        align="end"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex justify-between w-full">
-                            <Label className="text-xs">Add Note</Label>
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                setNotePopoverOpen((prev) => {
-                                  const updated = new Map(prev);
-                                  updated.set(index, false);
-                                  return updated;
-                                })
-                              }
-                            >
-                              Save
-                            </Button>
+                          <div className="flex flex-col justify-between">
+                            <div className="flex justify-between">
+                              <Label className="text-xs">Add Discount</Label>
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  handleDiscountChange(index);
+                                }}
+                              >
+                                Save
+                              </Button>
+                            </div>
+
+                            {row.price && (
+                              <>
+                                <Separator className="mt-2" />
+                                <div className="mt-4 flex justify-between space-x-4">
+                                  <div>
+                                    <Label className="text-xs text-gray-500">
+                                      Price
+                                    </Label>
+                                    <p className="text-sm font-medium">
+                                      ${row.price.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-8 mx-2"
+                                  />
+                                  <div>
+                                    <Label className="text-xs text-gray-500">
+                                      Discount (%)
+                                    </Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={row.discount}
+                                      onChange={(e) => {
+                                        const updatedDiscount = Number(
+                                          e.target.value
+                                        );
+
+                                        setDiscount(updatedDiscount);
+
+                                        setselectedProducts(
+                                          (
+                                            prevSelectedProducts: SavedProduct[]
+                                          ) => {
+                                            const updatedProducts = [
+                                              ...prevSelectedProducts,
+                                            ];
+
+                                            // Update the discount for the main row
+                                            updatedProducts[index] = {
+                                              ...updatedProducts[index],
+                                              discount: updatedDiscount,
+
+                                              // Also update the discount for all subRows
+                                              subRows:
+                                                updatedProducts[
+                                                  index
+                                                ]?.subRows?.map((subRow) => ({
+                                                  ...subRow,
+                                                  discount: updatedDiscount, // Apply the same discount to each subRow
+                                                })) ?? [], // Default to an empty array if subRows is undefined or null
+                                            };
+
+                                            return updatedProducts;
+                                          }
+                                        );
+                                      }}
+                                      className="w-20 h-7 text-sm bg-white"
+                                    />
+                                  </div>
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-8 mx-2"
+                                  />
+                                  <div>
+                                    <Label className="text-xs text-gray-500">
+                                      Total
+                                    </Label>
+                                    <p className="text-sm font-extrabold text-blue-500">
+                                      $
+                                      {(
+                                        row.price *
+                                        (1 - discount / 100)
+                                      ).toFixed(2)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </>
+                            )}
                           </div>
-                          <Textarea
-                            placeholder="Enter note for this product..."
-                            value={selectedProducts[index].notes ?? ""}
-                            onChange={(e) => {
-                              const newNote = e.target.value;
+                        </PopoverContent>
+                      </Popover>
+                    </TableCell>
+                    <TableCell className="border-b">
+                      <Input
+                        type="number"
+                        value={selectedProducts[index].quantity || 1}
+                        onChange={(e) => {
+                          const updatedQuantity = Number(e.target.value);
 
-                              setselectedProducts(
-                                (prevSelectedProducts: SavedProduct[]) => {
-                                  const updatedProducts = [
-                                    ...prevSelectedProducts,
-                                  ];
+                          setselectedProducts(
+                            (prevSelectedProducts: SavedProduct[]) => {
+                              const updatedProducts = [...prevSelectedProducts];
 
-                                  if (
-                                    index >= 0 &&
-                                    index < updatedProducts.length
-                                  ) {
-                                    updatedProducts[index] = {
-                                      ...updatedProducts[index],
-                                      notes: newNote,
-                                    };
-                                  }
+                              updatedProducts[index] = {
+                                ...updatedProducts[index],
+                                quantity: updatedQuantity,
+                                subRows:
+                                  updatedProducts[index]?.subRows?.map(
+                                    (subRow) => ({
+                                      ...subRow,
+                                      quantity: updatedQuantity,
+                                    })
+                                  ) ?? [],
+                              };
 
-                                  return updatedProducts;
-                                }
-                              );
-                            }}
-                            className="h-24 text-sm"
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TableCell>
-                  <TableCell className="border-b">
-                    <Popover open={percentPopoverOpen.get(index) || false}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={cn(
-                            "h-6 w-6",
-                            selectedProducts?.[index]?.discount !== 0
-                              ? "text-blue-600"
-                              : "",
-                            "hover:text-blue-600"
-                          )}
-                          disabled={!row.id}
-                          onClick={() => togglePercentPopover(index)}
-                        >
-                          {selectedProducts?.[index]?.discount}{" "}
-                          <Percent className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-80 p-3"
-                        onEscapeKeyDown={(e) => {
-                          e.preventDefault();
-                          setPercentPopoverOpen((prev) => {
-                            const updated = new Map(prev);
-                            updated.set(index, false);
-                            return updated;
-                          });
+                              return updatedProducts;
+                            }
+                          );
                         }}
-                        onInteractOutside={(e) => {
-                          e.preventDefault();
-                          setPercentPopoverOpen((prev) => {
-                            const updated = new Map(prev);
-                            updated.set(index, false);
-                            return updated;
-                          });
+                        placeholder="Quantity"
+                        className="w-20"
+                      />
+                    </TableCell>
+
+                    <TableCell className="border-b">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const updatedProducts = selectedProducts.filter(
+                            (_, i) => i !== index
+                          );
+                          setselectedProducts(updatedProducts);
                         }}
-                        align="end"
                       >
-                        <div className="flex flex-col justify-between">
-                          <div className="flex justify-between">
-                            <Label className="text-xs">Add Discount</Label>
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                handleDiscountChange(index);
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                  {expandedRows.includes(row.id) &&
+                    row?.subRows &&
+                    row?.subRows?.length > 1 &&
+                    row?.subRows?.map((row_sub, subIndex) => {
+                      let originalIndex = subIndex;
+                      subIndex = subIndex + 100;
+                      console.log(shadeData[index]?.subRow?.[0], "sub shade");
+
+                      return (
+                        <TableRow key={subIndex} className="border pl-10">
+                          <TableCell className="border-b"></TableCell>
+                          <TableCell className="border-b">
+                            <Popover
+                              open={false}
+                              onOpenChange={(open) => {
+                                setOpenTypePopover(open ? row_sub.id : null);
                               }}
                             >
-                              Save
-                            </Button>
-                          </div>
-
-                          {row.price && (
-                            <>
-                              <Separator className="mt-2" />
-                              <div className="mt-4 flex justify-between space-x-4">
-                                <div>
-                                  <Label className="text-xs text-gray-500">
-                                    Price
-                                  </Label>
-                                  <p className="text-sm font-medium">
-                                    ${row.price.toFixed(2)}
-                                  </p>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled
+                                  className={cn(
+                                    "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
+                                    !row_sub.type && "text-muted-foreground"
+                                  )}
+                                >
+                                  {row_sub.type || "Select Type"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-[200px] p-0">
+                                <div className="grid gap-1">
+                                  {productTypes.map((type) => (
+                                    <Button
+                                      key={type.id}
+                                      variant={
+                                        row_sub.type === type.name
+                                          ? "secondary"
+                                          : "ghost"
+                                      }
+                                      className={cn(
+                                        "justify-start text-left h-auto py-2 px-3 w-full text-sm",
+                                        row_sub.type === type.name
+                                          ? "hover:opacity-90"
+                                          : "hover:bg-gray-50"
+                                      )}
+                                      onClick={() => {
+                                        handleProductTypeChange(type, index);
+                                        setOpenTypePopover(null);
+                                      }}
+                                    >
+                                      {type.name}
+                                    </Button>
+                                  ))}
                                 </div>
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-8 mx-2"
-                                />
-                                <div>
-                                  <Label className="text-xs text-gray-500">
-                                    Discount (%)
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={row.discount}
-                                    onChange={(e) => {
-                                      const updatedDiscount = Number(
-                                        e.target.value
-                                      );
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+                          <TableCell className="border-b">
+                            <Popover
+                              open={false}
+                              onOpenChange={(open) => {
+                                setOpenTeethPopover(open ? row_sub.id : null);
+                              }}
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled
+                                  className={cn(
+                                    "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
+                                    row_sub.teeth.length === 0 &&
+                                      "text-muted-foreground"
+                                  )}
+                                >
+                                  {row_sub.teeth[0]}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-[320px] p-2"
+                                onEscapeKeyDown={(e) => {
+                                  e.preventDefault();
+                                  setOpenTeethPopover(null);
+                                }}
+                                onInteractOutside={(e) => {
+                                  e.preventDefault();
+                                  setOpenTeethPopover(null);
+                                }}
+                              ></PopoverContent>
+                            </Popover>
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                            <MultiColumnProductSelector
+                              materials={MATERIALS}
+                              products={products}
+                              selectedProduct={{
+                                id: row_sub.id ?? "",
+                                name:
+                                  row_sub.name.length > 0
+                                    ? row_sub.name
+                                    : "Select a Product",
+                              }}
+                              onProductSelect={(product) => {
+                                handleProductSubSelect(
+                                  product,
+                                  true,
+                                  index,
+                                  originalIndex
+                                );
+                              }}
+                              size="xs"
+                              onClick={() => fetchedProducts(row_sub.type)}
+                            />
+                          </TableCell>
+                          <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                            <Select
+                              disabled={loading || row.teeth.length === 0}
+                              value={row_sub.additional_service_id}
+                              onValueChange={(value) => {
+                                setselectedProducts(
+                                  (prevSelectedProducts: SavedProduct[]) => {
+                                    const updatedProducts = [
+                                      ...prevSelectedProducts,
+                                    ];
 
-                                      setDiscount(updatedDiscount);
+                                    if (
+                                      index >= 0 &&
+                                      index < updatedProducts.length
+                                    ) {
+                                      updatedProducts[index] = {
+                                        ...updatedProducts[index],
+                                        subRows:
+                                          updatedProducts[index]?.subRows?.map(
+                                            (subRow, subIndex) => {
+                                              if (subIndex === originalIndex) {
+                                                // Only update the specific subRow at originalIndex
+                                                return {
+                                                  ...subRow,
+                                                  additional_service_id: value,
+                                                };
+                                              }
+                                              return subRow; // Keep other subRows unchanged
+                                            }
+                                          ) ?? [], // In case subRows is undefined or null, default to an empty array
+                                      };
+                                    }
+
+                                    return updatedProducts;
+                                  }
+                                );
+                              }}
+                            >
+                              <SelectTrigger className={cn("bg-white")}>
+                                <SelectValue placeholder="Select" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {services && services.length > 0 ? (
+                                  services.map((service) => (
+                                    <SelectItem
+                                      key={service.id}
+                                      value={service.id}
+                                    >
+                                      {service.name || "Unnamed material"}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="_no_clients" disabled>
+                                    No Service available
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+
+                          <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                            <div className="flex flex-col space-y-0.5">
+                              <Popover
+                                open={
+                                  shadePopoverOpen.get(
+                                    subIndex + index + 100
+                                  ) || false
+                                }
+                              >
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={`h-7 text-sm ${
+                                      shadeData[index]?.body_shade ||
+                                      shadeData[index]?.gingival_shade ||
+                                      shadeData[index]?.occlusal_shade ||
+                                      shadeData[index]?.stump_shade
+                                        ? "text-blue-600"
+                                        : ""
+                                    }`}
+                                    disabled={row_sub.teeth.length === 0}
+                                    onClick={() =>
+                                      toggleShadePopover(subIndex + index + 100)
+                                    }
+                                  >
+                                    {shadeData[index]?.body_shade ||
+                                    shadeData[index]?.gingival_shade ||
+                                    shadeData[index]?.occlusal_shade ||
+                                    shadeData[index]?.custom_body ||
+                                    shadeData[index]?.custom_gingival ||
+                                    shadeData[index]?.custom_occlusal ||
+                                    shadeData[index]?.manual_occlusal ||
+                                    shadeData[index]?.manual_gingival ||
+                                    shadeData[index]?.manual_body ||
+                                    shadeData[index]?.manual_stump ||
+                                    shadeData[index]?.custom_stump ||
+                                    (row?.subRows &&
+                                      row?.subRows?.length > 0) ||
+                                    shadeData[index]?.stump_shade ? (
+                                      <div>
+                                        {shadeData[index]?.subRow?.[
+                                          originalIndex
+                                        ]?.occlusal_shade === "manual"
+                                          ? shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_occlusal
+                                          : shadesItems.filter(
+                                              (item) =>
+                                                item.id ===
+                                                shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.occlusal_shade
+                                            )[0]?.name || (
+                                              <span
+                                                className="text-red-600"
+                                                title="custom"
+                                              >
+                                                {shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.custom_occlusal || "--"}
+                                              </span>
+                                            )}
+                                        /
+                                        {shadeData[index]?.subRow?.[
+                                          originalIndex
+                                        ]?.body_shade === "manual"
+                                          ? shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_body
+                                          : shadesItems.filter(
+                                              (item) =>
+                                                item.id ===
+                                                shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.body_shade
+                                            )[0]?.name || (
+                                              <span
+                                                className="text-red-600"
+                                                title="custom"
+                                              >
+                                                {shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.custom_body || "--"}
+                                              </span>
+                                            )}
+                                        /
+                                        {shadeData[index]?.subRow?.[
+                                          originalIndex
+                                        ]?.gingival_shade === "manual"
+                                          ? shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_gingival
+                                          : shadesItems.filter(
+                                              (item) =>
+                                                item.id ===
+                                                shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.gingival_shade
+                                            )[0]?.name || (
+                                              <span
+                                                className="text-red-600"
+                                                title="custom"
+                                              >
+                                                {shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.custom_gingival || "--"}
+                                              </span>
+                                            )}
+                                        /
+                                        {shadeData[index]?.subRow?.[
+                                          originalIndex
+                                        ]?.stump_shade === "manual"
+                                          ? shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_stump
+                                          : shadesItems.filter(
+                                              (item) =>
+                                                item.id ===
+                                                shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.stump_shade
+                                            )[0]?.name || (
+                                              <span
+                                                className="text-red-600"
+                                                title="custom"
+                                              >
+                                                {shadeData[index]?.subRow?.[
+                                                  originalIndex
+                                                ]?.custom_stump || "--"}
+                                              </span>
+                                            )}
+                                      </div>
+                                    ) : (
+                                      " Add Shade"
+                                    )}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-92"
+                                  onEscapeKeyDown={(e) => {
+                                    e.preventDefault();
+                                    setShadePopoverOpen((prev) => {
+                                      const updated = new Map(prev);
+                                      updated.set(
+                                        subIndex + index + 100,
+                                        false
+                                      );
+                                      return updated;
+                                    });
+                                  }}
+                                  onInteractOutside={(e) => {
+                                    e.preventDefault();
+                                    setShadePopoverOpen((prev) => {
+                                      const updated = new Map(prev);
+                                      updated.set(
+                                        subIndex + index + 100,
+                                        false
+                                      );
+                                      return updated;
+                                    });
+                                  }}
+                                >
+                                  <div className="grid gap-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium leading-none">
+                                        Shades {originalIndex}
+                                      </h4>
+                                      <p className="text-sm text-muted-foreground">
+                                        Set the shades for different areas
+                                      </p>
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                      <div className="grid grid-cols-4 items-center gap-4 text-gray-800 text-sm">
+                                        <h2></h2>
+                                        <h2>Select</h2>
+                                        <h2>Manual</h2>
+                                        <h2>Custom</h2>
+                                      </div>
+                                      <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="occlusal">
+                                          Incisal
+                                        </Label>
+                                        <Select
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.occlusal_shade || ""
+                                          }
+                                          onValueChange={(value) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        occlusal_shade: value,
+                                                        manual_occlusal: "",
+                                                        custom_occlusal: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    occlusal_shade: value,
+                                                    manual_occlusal: "",
+                                                    custom_occlusal: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="N/A" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {sortedShadesItems.map((shade) => (
+                                              <SelectItem
+                                                key={shade.id}
+                                                value={shade.id}
+                                              >
+                                                {shade.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_occlusal || ""
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      // Only update the specific subRow at originalIndex
+                                                      return {
+                                                        ...subRowItem, // Keep existing subRow data
+                                                        manual_occlusal:
+                                                          e.target.value,
+                                                        occlusal_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_occlusal: e
+                                                          .target.value
+                                                          ? ""
+                                                          : "",
+                                                      };
+                                                    }
+                                                    return subRowItem; // Keep other subRow items unchanged
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_occlusal:
+                                                      e.target.value,
+                                                    occlusal_shade: e.target
+                                                      .value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_occlusal: e.target
+                                                      .value
+                                                      ? ""
+                                                      : "",
+                                                  },
+                                                ], // Default to an empty array if subRow is undefined or null
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.custom_occlusal || ""
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow:
+                                                  updatedShadeData[
+                                                    index
+                                                  ]?.subRow?.map(
+                                                    (subRowItem, i) => {
+                                                      if (i === originalIndex) {
+                                                        // Only update the specific subRow at originalIndex
+                                                        return {
+                                                          ...subRowItem, // Keep existing subRow data
+                                                          custom_occlusal:
+                                                            e.target.value.toUpperCase(),
+                                                          occlusal_shade: "", // Optional: You can decide whether to clear or keep it
+                                                          manual_occlusal: "", // Optional: You can decide whether to clear or keep it
+                                                        };
+                                                      }
+                                                      return subRowItem; // Keep other subRow items unchanged
+                                                    }
+                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+
+                                      {/* Body Shade */}
+                                      <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="body">Body</Label>
+                                        <Select
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.body_shade || ""
+                                          }
+                                          onValueChange={(value) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        body_shade: value,
+                                                        manual_body: "",
+                                                        custom_body: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    body_shade: value,
+                                                    manual_body: "",
+                                                    custom_body: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="N/A" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {sortedShadesItems.map((shade) => (
+                                              <SelectItem
+                                                key={shade.id}
+                                                value={shade.id}
+                                              >
+                                                {shade.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_body
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem, // Keep existing subRow data
+                                                        manual_body:
+                                                          e.target.value,
+                                                        id: row_sub.id,
+                                                        body_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_body: "",
+                                                      };
+                                                    }
+                                                    return subRowItem; // Keep other subRow items unchanged
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_body: e.target.value,
+                                                    id: row_sub.id,
+                                                    body_shade: e.target.value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_body: "",
+                                                  },
+                                                ], // Default to an empty array if subRow is undefined or null
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.custom_body
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_body:
+                                                          e.target.value.toUpperCase(),
+                                                        id: row_sub.id,
+                                                        body_shade: "",
+                                                        manual_body: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_body:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row_sub.id,
+                                                    body_shade: "",
+                                                    manual_body: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+
+                                      {/* Gingival Shade */}
+                                      <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="gingival">
+                                          Gingival
+                                        </Label>
+                                        <Select
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.gingival_shade || ""
+                                          }
+                                          onValueChange={(value) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        gingival_shade: value,
+                                                        manual_gingival: "",
+                                                        custom_gingival: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    gingival_shade: value,
+                                                    manual_gingival: "",
+                                                    custom_gingival: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="N/A" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {sortedShadesItems.map((shade) => (
+                                              <SelectItem
+                                                key={shade.id}
+                                                value={shade.id}
+                                              >
+                                                {shade.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_gingival
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_gingival:
+                                                          e.target.value,
+                                                        gingival_shade:
+                                                          "manual",
+                                                        custom_gingival: "",
+                                                        id: row_sub.id,
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_gingival:
+                                                      e.target.value,
+                                                    gingival_shade: "manual",
+                                                    custom_gingival: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.custom_gingival
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_gingival:
+                                                          e.target.value.toUpperCase(),
+                                                        gingival_shade: "",
+                                                        manual_gingival: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_gingival:
+                                                      e.target.value.toUpperCase(),
+                                                    gingival_shade: "",
+                                                    manual_gingival: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+
+                                      {/* Stump Shade */}
+                                      <div className="grid grid-cols-4 items-center gap-4">
+                                        <Label htmlFor="stump">Stump</Label>
+                                        <Select
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.stump_shade || ""
+                                          }
+                                          onValueChange={(value) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        stump_shade: value,
+                                                        manual_stump: "",
+                                                        custom_stump: "",
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    stump_shade: value,
+                                                    manual_stump: "",
+                                                    custom_stump: "",
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="N/A" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {sortedShadesItems.map((shade) => (
+                                              <SelectItem
+                                                key={shade.id}
+                                                value={shade.id}
+                                              >
+                                                {shade.name}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.manual_stump
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        manual_stump:
+                                                          e.target.value,
+                                                        stump_shade: e.target
+                                                          .value
+                                                          ? "manual"
+                                                          : "",
+                                                        custom_stump: "",
+                                                        id: row_sub.id,
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    manual_stump:
+                                                      e.target.value,
+                                                    stump_shade: e.target.value
+                                                      ? "manual"
+                                                      : "",
+                                                    custom_stump: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                        <Input
+                                          type="text"
+                                          value={
+                                            shadeData[index]?.subRow?.[
+                                              originalIndex
+                                            ]?.custom_stump
+                                          }
+                                          onChange={(e) => {
+                                            setShadeData((prev) => {
+                                              const updatedShadeData = [
+                                                ...prev,
+                                              ];
+
+                                              updatedShadeData[index] = {
+                                                ...updatedShadeData[index],
+                                                subRow: updatedShadeData[
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, i) => {
+                                                    if (i === originalIndex) {
+                                                      return {
+                                                        ...subRowItem,
+                                                        custom_stump:
+                                                          e.target.value.toUpperCase(),
+                                                        stump_shade: "",
+                                                        manual_stump: "",
+                                                        id: row_sub.id,
+                                                      };
+                                                    }
+                                                    return subRowItem;
+                                                  }
+                                                ) ?? [
+                                                  {
+                                                    custom_stump:
+                                                      e.target.value.toUpperCase(),
+                                                    stump_shade: "",
+                                                    manual_stump: "",
+                                                    id: row_sub.id,
+                                                  },
+                                                ],
+                                              };
+
+                                              return updatedShadeData;
+                                            });
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <div className="flex justify-end space-x-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                          handleCancelShades(
+                                            subIndex + index + 100
+                                          )
+                                        }
+                                      >
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleSaveShades(index, originalIndex)
+                                        }
+                                      >
+                                        Save
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </TableCell>
+                          <TableCell className=" border-b">
+                            <Popover
+                              open={
+                                notePopoverOpen.get(subIndex + index + 100) ||
+                                false
+                              }
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-6 w-6",
+                                    row_sub.notes ? "text-blue-600" : "",
+                                    "hover:text-blue-600"
+                                  )}
+                                  disabled={!row_sub.id}
+                                  onClick={() =>
+                                    toggleNotePopover(subIndex + index + 100)
+                                  }
+                                >
+                                  <StickyNote className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-80 p-3"
+                                onEscapeKeyDown={(e) => {
+                                  e.preventDefault();
+                                  setNotePopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                onInteractOutside={(e) => {
+                                  e.preventDefault();
+                                  setNotePopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                align="end"
+                              >
+                                <div className="space-y-2">
+                                  <div className="flex justify-between w-full">
+                                    <Label className="text-xs">Add Note</Label>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        setNotePopoverOpen((prev) => {
+                                          const updated = new Map(prev);
+                                          updated.set(
+                                            subIndex + index + 100,
+                                            false
+                                          );
+                                          return updated;
+                                        })
+                                      }
+                                    >
+                                      Save
+                                    </Button>
+                                  </div>
+                                  <Textarea
+                                    placeholder="Enter note for this subRow..."
+                                    value={
+                                      selectedProducts[index]?.subRows?.[
+                                        originalIndex
+                                      ]?.notes ?? ""
+                                    }
+                                    onChange={(e) => {
+                                      const newNote = e.target.value;
 
                                       setselectedProducts(
                                         (
@@ -1543,70 +3406,278 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             ...prevSelectedProducts,
                                           ];
 
-                                          updatedProducts[index] = {
-                                            ...updatedProducts[index],
-                                            discount: updatedDiscount,
-                                          };
+                                          if (
+                                            index >= 0 &&
+                                            index < updatedProducts.length
+                                          ) {
+                                            updatedProducts[index] = {
+                                              ...updatedProducts[index],
+                                              subRows:
+                                                updatedProducts[
+                                                  index
+                                                ]?.subRows?.map(
+                                                  (subRow, subIndex) => {
+                                                    if (
+                                                      subIndex === originalIndex
+                                                    ) {
+                                                      // Only update the specific subRow at originalIndex
+                                                      return {
+                                                        ...subRow,
+                                                        notes: newNote,
+                                                      };
+                                                    }
+                                                    return subRow; // Keep other subRows unchanged
+                                                  }
+                                                ) ?? [], // In case subRows is undefined or null, default to an empty array
+                                            };
+                                          }
 
                                           return updatedProducts;
                                         }
                                       );
                                     }}
-                                    className="w-20 h-7 text-sm bg-white"
+                                    className="h-24 text-sm"
                                   />
                                 </div>
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-8 mx-2"
-                                />
-                                <div>
-                                  <Label className="text-xs text-gray-500">
-                                    Total
-                                  </Label>
-                                  <p className="text-sm font-extrabold text-blue-500">
-                                    $
-                                    {(row.price * (1 - discount / 100)).toFixed(
-                                      2
-                                    )}
-                                  </p>
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+                          <TableCell className="border-b">
+                            <Popover
+                              open={
+                                percentPopoverOpen.get(
+                                  subIndex + index + 100
+                                ) || false
+                              }
+                            >
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-6 w-6",
+                                    selectedProducts?.[index]?.discount !== 0
+                                      ? "text-blue-600"
+                                      : "",
+                                    "hover:text-blue-600"
+                                  )}
+                                  disabled={!row_sub.id}
+                                  onClick={() =>
+                                    togglePercentPopover(subIndex + index + 100)
+                                  }
+                                >
+                                  {row_sub.discount}
+                                  <Percent className="h-4 w-4" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-80 p-3"
+                                onEscapeKeyDown={(e) => {
+                                  e.preventDefault();
+                                  setPercentPopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                onInteractOutside={(e) => {
+                                  e.preventDefault();
+                                  setPercentPopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                align="end"
+                              >
+                                <div className="flex flex-col justify-between">
+                                  <div className="flex justify-between">
+                                    <Label className="text-xs">
+                                      Add Discount
+                                    </Label>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        handleDiscountChange(
+                                          subIndex + index + 100
+                                        );
+                                      }}
+                                    >
+                                      Save
+                                    </Button>
+                                  </div>
+
+                                  {row_sub.price && (
+                                    <>
+                                      <Separator className="mt-2" />
+                                      <div className="mt-4 flex justify-between space-x-4">
+                                        <div>
+                                          <Label className="text-xs text-gray-500">
+                                            Price
+                                          </Label>
+                                          <p className="text-sm font-medium">
+                                            ${row_sub.price.toFixed(2)}
+                                          </p>
+                                        </div>
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-8 mx-2"
+                                        />
+                                        <div>
+                                          <Label className="text-xs text-gray-500">
+                                            Discount (%)
+                                          </Label>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            value={row_sub.discount}
+                                            onChange={(e) => {
+                                              const updatedDiscount = Number(
+                                                e.target.value
+                                              );
+
+                                              setselectedProducts(
+                                                (
+                                                  prevSelectedProducts: SavedProduct[]
+                                                ) => {
+                                                  const updatedProducts = [
+                                                    ...prevSelectedProducts,
+                                                  ];
+
+                                                  updatedProducts[index] = {
+                                                    ...updatedProducts[index],
+                                                    subRows:
+                                                      updatedProducts[
+                                                        index
+                                                      ]?.subRows?.map(
+                                                        (subRowItem, i) => {
+                                                          if (
+                                                            i === originalIndex
+                                                          ) {
+                                                            // Only update subRow discount based on the main discount and the input discount
+
+                                                            return {
+                                                              ...subRowItem,
+                                                              discount:
+                                                                updatedDiscount, // Update discount for the specific subRow
+                                                            };
+                                                          }
+                                                          return subRowItem; // Keep other subRows unchanged
+                                                        }
+                                                      ) ?? [], // Ensure it's an empty array if subRows is undefined or null
+                                                  };
+
+                                                  return updatedProducts;
+                                                }
+                                              );
+                                            }}
+                                            className="w-20 h-7 text-sm bg-white"
+                                          />
+                                        </div>
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-8 mx-2"
+                                        />
+                                        <div>
+                                          <Label className="text-xs text-gray-500">
+                                            Total
+                                          </Label>
+                                          <p className="text-sm font-extrabold text-blue-500">
+                                            $
+                                            {(
+                                              row_sub.price *
+                                              (1 - discount / 100)
+                                            ).toFixed(2)}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </>
+                                  )}
                                 </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </TableCell>
-                  <TableCell className="border-b">
-                    <Input
-                      type="number"
-                      value={selectedProducts[index].quantity || 1}
-                      onChange={(e) => {
-                        const updatedProducts = [...selectedProducts];
-                        updatedProducts[index].quantity = Number(
-                          e.target.value
-                        );
-                        setselectedProducts(updatedProducts);
-                      }}
-                      placeholder="Quantity"
-                      className="w-20"
-                    />
-                  </TableCell>
-                  <TableCell className="border-b">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const updatedProducts = selectedProducts.filter(
-                          (_, i) => i !== index
-                        );
-                        setselectedProducts(updatedProducts);
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                              </PopoverContent>
+                            </Popover>
+                          </TableCell>
+                          <TableCell className="border-b relative">
+                            <Input
+                              type="number"
+                              value={row_sub.quantity}
+                              onChange={(e) => {
+                                const updatedQuantity = Number(e.target.value);
+
+                                setselectedProducts(
+                                  (prevSelectedProducts: SavedProduct[]) => {
+                                    const updatedProducts = [
+                                      ...prevSelectedProducts,
+                                    ];
+
+                                    // Update the quantity for the subRow at the given index
+                                    updatedProducts[index] = {
+                                      ...updatedProducts[index],
+                                      subRows:
+                                        updatedProducts[index]?.subRows?.map(
+                                          (subRowItem, i) => {
+                                            if (i === originalIndex) {
+                                              return {
+                                                ...subRowItem,
+                                                quantity: updatedQuantity, // Update quantity for the specific subRow
+                                              };
+                                            }
+                                            return subRowItem; // Keep other subRows unchanged
+                                          }
+                                        ) ?? [], // Ensure it's an empty array if subRows is undefined or null
+                                    };
+
+                                    return updatedProducts;
+                                  }
+                                );
+                              }}
+                              placeholder="Quantity"
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell className="border-b">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setselectedProducts(
+                                  (prevProducts: SavedProduct[]) => {
+                                    return prevProducts.map((product, idx) => {
+                                      if (idx === index) {
+                                        const updatedSubRows =
+                                          product.subRows?.filter(
+                                            (_, i) => i !== originalIndex
+                                          ) || [];
+
+                                        const removedTeeth =
+                                          product.subRows?.[originalIndex]
+                                            ?.teeth?.[0];
+
+                                        const updatedTeeth =
+                                          product.teeth?.filter(
+                                            (tooth) => tooth !== removedTeeth
+                                          ) || [];
+
+                                        return {
+                                          ...product,
+                                          subRows: updatedSubRows,
+                                          teeth: updatedTeeth,
+                                        };
+                                      }
+                                      return product;
+                                    });
+                                  }
+                                );
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                </React.Fragment>
               ))}
             </TableBody>
             <div className="flex justify-end py-4 px-4">

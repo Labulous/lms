@@ -14,6 +14,8 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
+import { clientsService } from "@/services/clientsService";
+import { useNavigate } from "react-router-dom";
 
 export interface BalanceSummary {
   creditBalance: number;
@@ -32,24 +34,35 @@ const Statements = () => {
   const [monthStatement, setMonthStatement] = useState<any>([]);
   const [refresh, setRefresh] = useState<boolean>(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const handleCreateStatement = async (data: any) => {
+    debugger
     try {
       setIsLoading(true);
 
       // Extract month and year from input
-      const [month, year] = data.month
-        .split(",")
-        .map((item: string) => parseInt(item.trim(), 10));
+      // const [month, year, client_id] = data.month
+      //   .split(",")
+      //   .map((item: string) => parseInt(item.trim(), 10));
+
+      const [month, year, client_id] = data.month.split(",").map((item: string, index: number) => {
+        return index < 2 ? parseInt(item.trim(), 10) : item.trim();
+      });
+
       const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
       const nextMonth = month === 12 ? 1 : month + 1;
       const nextYear = month === 12 ? year + 1 : year;
       const endDate = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
 
-      // Generate statement number based on current date
-      const today = new Date();
-      const statementNumber = `${today.getFullYear()}${String(
-        today.getMonth() + 1
-      ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      // // Generate statement number based on current date
+      // const today = new Date();
+      // const statementNumber = `${today.getFullYear()}${String(
+      //   today.getMonth() + 1
+      // ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+
+
+
+
 
       // Get lab ID for the current user
       const lab = await getLabIdByUserId(user?.id as string);
@@ -59,8 +72,28 @@ const Statements = () => {
         throw new Error("Lab ID is required to create statements.");
       }
 
+      // // Fetch invoices for the specified month
+      // const { data: categorizedInvoices, error: fetchError } = await supabase
+      //   .from("invoices")
+      //   .select(
+      //     "due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
+      //   )
+      //   .in("status", ["unpaid", "partially_paid"])
+      //   .gte("due_date", startDate)
+      //   .lt("due_date", endDate)
+      //   .not("amount", "is", null)
+      //   .eq("lab_id", lab.labId) // Filter by lab_id
+      //   .or(client_id ? `client_id.eq.${client_id}` : "client_id.is.not.null");
+
+      // if (fetchError) {
+      //   throw new Error(
+      //     `Failed to fetch categorized invoices: ${fetchError.message}`
+      //   );
+      // }
+
+
       // Fetch invoices for the specified month
-      const { data: categorizedInvoices, error: fetchError } = await supabase
+      let query = supabase
         .from("invoices")
         .select(
           "due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
@@ -69,13 +102,20 @@ const Statements = () => {
         .gte("due_date", startDate)
         .lt("due_date", endDate)
         .not("amount", "is", null)
-        .eq("lab_id", lab.labId); // Filter by lab_id
+        .eq("lab_id", lab.labId);
+
+      if (client_id) {
+        query = query.eq("client_id", client_id);
+      }
+
+      const { data: categorizedInvoices, error: fetchError } = await query;
 
       if (fetchError) {
         throw new Error(
           `Failed to fetch categorized invoices: ${fetchError.message}`
         );
       }
+
 
       // Generate client statements
       const statementSummary = categorizedInvoices.reduce(
@@ -117,62 +157,70 @@ const Statements = () => {
       for (const statement of statementSummary) {
         const { client_id, amount, outstanding, last_sent } = statement;
 
-        // Check if a statement exists for the current client, lab, and month
-        const { data: existingStatement, error: checkError } = await supabase
-          .from("statements")
-          .select("id")
-          .eq("client_id", client_id)
-          .eq("lab_id", lab.labId) // Filter by lab_id
-          .gte("updated_at", `${year}-${String(month).padStart(2, "0")}-01`)
-          .lt(
-            "updated_at",
-            `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
-          )
-          .single();
+        const clientData = await clientsService.getClientById(client_id);
+        if (clientData) {
+          // Generate statement number based on current date
+          const today = new Date();
+          const statementNumber = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}${clientData?.accountNumber}`;
 
-        if (checkError && checkError.code !== "PGRST116") {
-          // Ignore "no rows found" error (PGRST116), but handle others
-          throw new Error(
-            `Failed to check existing statement: ${checkError.message}`
-          );
-        }
 
-        if (existingStatement) {
-          // Update the existing statement
-          const { error: updateError } = await supabase
+          // Check if a statement exists for the current client, lab, and month
+          const { data: existingStatement, error: checkError } = await supabase
             .from("statements")
-            .update({
-              amount,
-              outstanding,
-              last_sent,
-              statement_number: statementNumber,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existingStatement.id);
+            .select("id")
+            .eq("client_id", client_id)
+            .eq("lab_id", lab.labId) // Filter by lab_id
+            .gte("updated_at", `${year}-${String(month).padStart(2, "0")}-01`)
+            .lt(
+              "updated_at",
+              `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+            )
+            .single();
 
-          if (updateError) {
+          if (checkError && checkError.code !== "PGRST116") {
+            // Ignore "no rows found" error (PGRST116), but handle others
             throw new Error(
-              `Failed to update statement: ${updateError.message}`
+              `Failed to check existing statement: ${checkError.message}`
             );
           }
-        } else {
-          // Insert a new statement
-          const { error: insertError } = await supabase
-            .from("statements")
-            .insert({
-              lab_id: lab.labId, // Include lab_id
-              client_id,
-              amount,
-              outstanding,
-              last_sent,
-              statement_number: statementNumber,
-              updated_at: new Date().toISOString(),
-            });
 
-          if (insertError) {
-            throw new Error(
-              `Failed to insert statement: ${insertError.message}`
-            );
+          if (existingStatement) {
+            // Update the existing statement
+            const { error: updateError } = await supabase
+              .from("statements")
+              .update({
+                amount,
+                outstanding,
+                last_sent,
+                statement_number: statementNumber,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existingStatement.id);
+
+            if (updateError) {
+              throw new Error(
+                `Failed to update statement: ${updateError.message}`
+              );
+            }
+          } else {
+            // Insert a new statement
+            const { error: insertError } = await supabase
+              .from("statements")
+              .insert({
+                lab_id: lab.labId, // Include lab_id
+                client_id,
+                amount,
+                outstanding,
+                last_sent,
+                statement_number: statementNumber,
+                updated_at: new Date().toISOString(),
+              });
+
+            if (insertError) {
+              throw new Error(
+                `Failed to insert statement: ${insertError.message}`
+              );
+            }
           }
         }
       }
@@ -182,6 +230,12 @@ const Statements = () => {
       console.error("Error processing statements:", error);
       toast.error("Failed to process statements");
     } finally {
+
+      navigate('/', { replace: true });
+      setTimeout(() => {
+        navigate("/billing/statements", { replace: true });
+      }, 100);
+
       setIsLoading(false);
       setIsCreateModalOpen(false);
       setRefresh(true);

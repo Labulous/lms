@@ -34,6 +34,8 @@ import { Address, clientsService, Doctor } from "@/services/clientsService";
 import {
   Client as ClientItem
 } from "@/services/clientsService";
+import { devNull } from "os";
+import { useNavigate } from "react-router-dom";
 
 
 
@@ -97,11 +99,10 @@ export function CreateStatementModal({
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("All Clients");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
-
   const currentDate = new Date();
   const [selectmonth, setSelectMonth] = useState((currentDate.getMonth() + 1).toString());
   const [selectyear, setSelectYear] = useState((currentDate.getFullYear()).toString());
-
+  
 
   const { user } = useAuth();
   // Helper function to animate value changes
@@ -157,12 +158,12 @@ export function CreateStatementModal({
 
   const handleMonthChange = (e: any) => {
     setSelectMonth(e);
-    getBalanceSummary(Number(e), Number(selectyear), "");
+    getBalanceSummary(Number(e), Number(selectyear), selectedClient);
   }
 
   const handleYearChange = (e: any) => {
     setSelectYear(e);
-    getBalanceSummary(Number(selectmonth), Number(e), "");
+    getBalanceSummary(Number(selectmonth), Number(e), selectedClient);
   }
 
 
@@ -171,6 +172,7 @@ export function CreateStatementModal({
   // Fetch months with payment activity
 
   useEffect(() => {
+    debugger;
     const fetchAvailableMonths = async () => {
       try {
         const { data: payments, error } = await supabase
@@ -206,6 +208,7 @@ export function CreateStatementModal({
 
 
   useEffect(() => {
+    debugger;
     const fetchClients = async () => {
       try {
         setLoading(true);
@@ -232,6 +235,7 @@ export function CreateStatementModal({
 
 
   const getBalanceSummary = async (month: number, year: number, clientId: string) => {
+    debugger;
     setLoading(true);
 
     const formattedYear = year < 100 ? 2000 + year : year;
@@ -297,7 +301,7 @@ export function CreateStatementModal({
 
 
   const filteredClients = useMemo(() => {
-     if (searchTerm === "All Clients" || searchTerm.trim() === "") {
+    if (searchTerm === "All Clients" || searchTerm.trim() === "") {
       if (Number(selectmonth) > 0 && Number(selectyear) > 0)
         getBalanceSummary(Number(selectmonth), Number(selectyear), "");
       return clients;
@@ -325,17 +329,30 @@ export function CreateStatementModal({
 
   // Handle statement generation
   const handleGenerateStatement = async () => {
-    if (!selectedMonth) {
+    debugger;
+    if (!selectmonth) {
       toast.error("Please select a month");
       return;
     }
+    const selectedDate = new Date(Number(selectyear), Number(selectmonth) - 1);
+    const currentDate = new Date();
+    if (selectedDate > currentDate) {
+      toast.error("Statement cannot be generated for a future month");
+      return;
+    }
+
 
     try {
       // TODO: Implement statement generation logic
+      const client_id = selectedClient === "All Clients" ? "" : selectedClient
       onSubmit({
-        month: selectedMonth,
+        //month: !selectmonth ,
+        month: `${selectmonth},${selectyear},${client_id || ""}`,
         summary: balanceSummary,
+
       });
+
+    
       toast.success("Statement generated successfully");
       // onClose();
     } catch (error) {
@@ -628,7 +645,7 @@ export function CreateStatementModal({
           </Button>
           <Button
             onClick={handleGenerateStatement}
-            disabled={!selectedMonth || isLoading}
+            disabled={!selectmonth && !selectyear || isLoading}
             className="relative"
           >
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

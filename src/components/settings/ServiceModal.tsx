@@ -1,37 +1,38 @@
-import React, { useState } from "react";
+import React, { SetStateAction, useState } from "react";
 import { X, HelpCircle } from "lucide-react";
 import { Service } from "../../data/mockServiceData";
 import { PRODUCT_TYPES } from "../../data/mockProductData";
+import { ServicesFormData } from "@/pages/settings/ProductsServices";
+import { Materials } from "@/types/supabase";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface ServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (service: Service) => void;
-}
-
-interface FormData {
-  name: string;
-  price: number;
-  isClientVisible: boolean;
-  isTaxable: boolean;
-  categories: string[];
-  price_error?: string;
-  category_error?: string;
+  isLoading: boolean;
+  setFormData: React.Dispatch<SetStateAction<ServicesFormData>>;
+  formData: ServicesFormData;
+  materials: Materials[];
 }
 
 const ServiceModal: React.FC<ServiceModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  isLoading,
+  formData,
+  setFormData,
+  materials,
 }) => {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    price: 0,
-    isClientVisible: true,
-    isTaxable: true,
-    categories: [],
-  });
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<Partial<ServicesFormData>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -56,8 +57,12 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
+    const newErrors: Partial<ServicesFormData> = {};
     if (!formData.name.trim()) newErrors.name = "Service name is required";
+    if (!formData?.description?.trim())
+      newErrors.description = "Service Description is required";
+    if (!formData?.material_id?.trim())
+      newErrors.material_id = "Service material is required";
     if (formData.price <= 0)
       newErrors.price_error = "Price must be greater than 0";
     if (formData.categories.length === 0)
@@ -69,9 +74,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
 
   const handleSubmit = () => {
     if (!validateForm()) return;
-
+    console.log("calling");
     const newService: Service = {
-      id: Date.now().toString(),
       ...formData,
     };
 
@@ -119,7 +123,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className={`mt-1 block w-full rounded-md shadow-sm sm:text-sm ${
+                className={`mt-1 block py-2 w-full border px-4 rounded-md shadow-sm sm:text-sm ${
                   errors.name
                     ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                     : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
@@ -149,30 +153,98 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                   step="0.01"
                   value={formData.price}
                   onChange={handleInputChange}
-                  className={`block w-full pl-7 pr-12 sm:text-sm rounded-md ${
+                  className={`block w-full pl-7 border py-2 pr-12 sm:text-sm rounded-md ${
                     errors.price
                       ? "border-red-300 focus:ring-red-500 focus:border-red-500"
                       : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
                   }`}
                 />
               </div>
-              {errors.price && (
-                <p className="mt-1 text-sm text-red-600">{errors.price}</p>
+              {errors.price_error && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.price_error}
+                </p>
               )}
             </div>
-
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Description
+              </label>
+              <input
+                type="text"
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={(event) => handleInputChange(event)}
+                className={`mt-1 px-4 block py-2 border w-full rounded-md shadow-sm sm:text-sm ${
+                  errors.name
+                    ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                    : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                }`}
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.description}
+                </p>
+              )}
+            </div>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-4"
+              >
+                Select Material
+              </label>
+              <Select
+                name="material_id"
+                value={formData.material_id}
+                onValueChange={(value) => {
+                  setFormData((form) => ({ ...form, material_id: value }));
+                }}
+              >
+                <SelectTrigger
+                  className={cn(
+                    "bg-white",
+                    errors.material_id ? "border-red-500" : ""
+                  )}
+                >
+                  <SelectValue placeholder="Select a Material" />
+                </SelectTrigger>
+                <SelectContent>
+                  {materials && materials.length > 0 ? (
+                    materials.map((material) => (
+                      <SelectItem key={material.id} value={material.id}>
+                        {material.name || "Unnamed material"}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="_no_clients" disabled>
+                      No materials available
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {errors.material_id && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.material_id}
+                </p>
+              )}
+            </div>
             <div className="space-y-4">
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  id="isClientVisible"
-                  name="isClientVisible"
-                  checked={formData.isClientVisible}
+                  id="is_client_visible"
+                  name="is_client_visible"
+                  checked={formData.is_client_visible}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label
-                  htmlFor="isClientVisible"
+                  htmlFor="is_client_visible"
                   className="ml-2 block text-sm text-gray-700"
                 >
                   Visible to Clients
@@ -182,14 +254,14 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  id="isTaxable"
-                  name="isTaxable"
-                  checked={formData.isTaxable}
+                  id="is_taxable"
+                  name="is_taxable"
+                  checked={formData.is_taxable}
                   onChange={handleInputChange}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label
-                  htmlFor="isTaxable"
+                  htmlFor="is_taxable"
                   className="ml-2 block text-sm text-gray-700"
                 >
                   Taxable
@@ -198,7 +270,7 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-4">
                 Apply to Categories *
                 <span
                   className="ml-1 inline-block"
@@ -227,8 +299,8 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
                   </div>
                 ))}
               </div>
-              {errors.categories && (
-                <p className="mt-1 text-sm text-red-600">{errors.categories}</p>
+              {errors.category_error && (
+                <p className="mt-1 text-sm text-red-600">{errors.category_error}</p>
               )}
             </div>
           </div>
@@ -246,9 +318,10 @@ const ServiceModal: React.FC<ServiceModalProps> = ({
               <button
                 type="button"
                 onClick={handleSubmit}
+                disabled={isLoading}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-500 border border-transparent rounded-md shadow-sm hover:bg-blue-600"
               >
-                Add Service
+                {isLoading ? "Inserting..." : "Add Service"}
               </button>
             </div>
           </div>
