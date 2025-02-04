@@ -467,8 +467,8 @@ const ClientProductPricing = ({
                 Edit Prices
               </Button>
             </SheetTrigger>
-            <SheetContent className="w-[80vw]">
-              <SheetHeader>
+            <SheetContent className="w-[80vw] flex flex-col h-full">
+              <SheetHeader className="flex-shrink-0">
                 <div className="flex justify-between">
                   <SheetTitle className="flex items-center gap-2">
                     Edit Prices
@@ -494,10 +494,10 @@ const ClientProductPricing = ({
                   Make changes to product prices below
                 </SheetDescription>
               </SheetHeader>
-              <div className="mt-6">
-                <div className="rounded-md border">
-                  <Table className="overflow-y-scroll">
-                    <TableHeader>
+              <div className="flex-1 overflow-y-auto mt-6">
+                <div className="rounded-md border h-full">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-white z-10">
                       <TableRow className="bg-muted hover:bg-muted">
                         <TableHead>Name</TableHead>
                         <TableHead>Material</TableHead>

@@ -23,7 +23,7 @@ const TYPE_COLORS = {
 const teethData = [
   {
     number: 12,
-    path: "M104.04,15.85c-4.53,0.15-10.17,2.75-12.78,6.3c-3.03,4.13-1.28,9.04,2.42,10.69 c3.89,1.73,16.62,13.27,20.44,5.58c2.02-4.07-1.88-15.5,3.34-18.55c0.68-1.43,1.55-2.84,3.23-3.5 C106.54,15.97,105.33,15.81,104.04,15.85z",
+    path: "M104.04,15.85c-4.53,0.15-10.17,2.75-12.78,6.3c-3.03,4.13-1.28,9.04,2.42,10.69 c3.89,1.73,16.62,13.27,20.44,5.58c5.6-4.45,3.43-14.58,1.69-18.45L104.04,15.85z",
     x: 102,
     y: 30,
   },
@@ -252,9 +252,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
               ) {
                 // End of a group
                 if (groupStart === prev) {
-                  groups.push(groupStart.toString());
+                  groups.push(`#${groupStart}`);
                 } else {
-                  groups.push(`${groupStart}-${prev}`);
+                  groups.push(`#${groupStart}-#${prev}`);
                 }
                 groupStart = current; // Start a new group
               }
@@ -337,18 +337,6 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               <div className="border-b border-gray-300 pb-0.5">
                                 <div className="grid grid-cols-[auto_1fr] gap-4">
                                   <p className="text-right font-medium whitespace-nowrap text-sm">
-                                    Inv. #:
-                                  </p>
-                                  <p className="text-right min-w-[120px] text-sm">
-                                    {invoice.case_number
-                                      ? invoice.case_number.split("-")[2]
-                                      : "N/A"}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="border-b border-gray-300 pb-0.5">
-                                <div className="grid grid-cols-[auto_1fr] gap-4">
-                                  <p className="text-right font-medium whitespace-nowrap text-sm">
                                     Date:
                                   </p>
                                   <p className="text-right min-w-[120px] text-sm">
@@ -358,16 +346,6 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   </p>
                                 </div>
                               </div>
-                              {/* <div className="border-b border-gray-300 pb-0.5">
-                                <div className="grid grid-cols-[auto_1fr] gap-4">
-                                  <p className="text-right font-medium whitespace-nowrap text-sm">
-                                    Pan #:
-                                  </p>
-                                  <p className="text-right min-w-[120px] text-sm">
-                                    {invoice?.working_pan_name || ""}
-                                  </p>
-                                </div>
-                              </div> */}
                             </div>
                           </div>
                         </div>
@@ -712,19 +690,21 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="flex justify-end pt-4 mt-4 border-t border-gray-800">
                           <div className="w-64">
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-sm font-medium">
-                                Case Subtotal:
-                              </span>
+                              <span className="text-sm font-medium">Item Subtotal:</span>
                               <span className="text-sm font-bold">
-                                $
-                                {invoice?.invoice?.[0]?.amount?.toLocaleString()}
+                                ${(invoice?.invoice?.[0]?.amount || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-sm font-medium">Taxes:</span>
+                              <span className="text-sm font-bold">
+                                {invoice?.invoice?.[0]?.taxes ? `$${invoice.invoice[0].taxes.toFixed(2)}` : '-'}
                               </span>
                             </div>
                             <div className="flex justify-between items-center mt-2">
-                              <span className="text-sm font-bold">TOTAL:</span>
+                              <span className="text-sm font-bold">Total Due:</span>
                               <span className="text-sm font-bold">
-                                $
-                                {invoice?.invoice?.[0]?.due_amount?.toLocaleString()}
+                                ${(invoice?.invoice?.[0]?.due_amount || 0).toFixed(2)}
                               </span>
                             </div>
                           </div>
@@ -990,9 +970,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
           if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
             // End of a group
             if (groupStart === prev) {
-              groups.push(groupStart.toString());
+              groups.push(`#${groupStart}`);
             } else {
-              groups.push(`${groupStart}-${prev}`);
+              groups.push(`#${groupStart}-#${prev}`);
             }
             groupStart = current; // Start a new group
           }
