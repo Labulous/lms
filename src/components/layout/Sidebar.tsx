@@ -214,7 +214,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       </div>
 
       <div className="mx-4 py-4">
-        <div className="px-2 py-3 rounded-lg border border-slate-200 bg-white/50"
+        <div className="px-2 py-2 rounded-lg border border-slate-200 bg-white/50"
           style={{ display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "center" }}>
           {labs[0]?.attachements ? (
             <img

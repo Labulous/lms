@@ -6,7 +6,11 @@ export type SettingsTab =
   | "system"
   | "product-catalog"
   | "case-workflow"
-  | "working-tags";
+  | "working-tags"
+  | "working-pans"
+  | "user-management"
+  | "lab-profile"
+  | "tax-configuration";
 
 const tabs = [
   { id: "system", label: "System", href: "/settings/system" },
@@ -21,7 +25,7 @@ const tabs = [
     href: "/settings/case-workflow",
   },
   { id: "working-tags", label: "Working Tags", href: "/settings/working-tags" },
-  { id: "working-Pans", label: "Working Pans", href: "/settings/working-pans" },
+  { id: "working-pans", label: "Working Pans", href: "/settings/working-pans" },
   {
     id: "user-management",
     label: "User Management",
@@ -29,7 +33,7 @@ const tabs = [
   },
   { id: "lab-profile", label: "Lab Profile", href: "/settings/lab-profile" },
   {
-    id: "tax-setting",
+    id: "tax-configuration",
     label: "Tax Configuration",
     href: "/settings/tax-configuration",
   },

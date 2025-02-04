@@ -8,6 +8,7 @@ import { AddProductValuesDialog } from "@/components/settings/AddProductValuesDi
 import EditProductValuesDialog from "@/components/settings/EditProductValuesDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { getLabIdByUserId } from "@/services/authService";
+import TaxConfiguration from "@/components/settings/TaxConfiguration";
 
 interface SettingsRow {
   label: string;
@@ -266,6 +267,29 @@ export const WorkingPansSettingsContent: React.FC = () => {
   return (
     <div className="p-6">
       <WorkingPansSettings />
+    </div>
+  );
+};
+
+export const TaxConfigurationSettingsContent: React.FC = () => {
+  const [labId, setLabId] = useState<string>("");
+  const { user } = useAuth();
+
+  useEffect(() => {
+    const fetchLabId = async () => {
+      if (user?.id) {
+        const data = await getLabIdByUserId(user.id);
+        if (data?.labId) {
+          setLabId(data.labId);
+        }
+      }
+    };
+    fetchLabId();
+  }, [user]);
+
+  return (
+    <div className="p-6">
+      <TaxConfiguration labId={labId} />
     </div>
   );
 };

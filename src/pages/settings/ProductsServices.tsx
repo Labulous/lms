@@ -38,7 +38,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@radix-ui/react-popover";
-import { Checkbox } from "@radix-ui/react-checkbox";
+import { Checkbox } from "@/components/ui/checkbox"; // Import Checkbox component
 import { Badge } from "@/components/ui/badge";
 import BatchServiceUpload from "@/components/settings/BatchServiceUpload";
 import {
@@ -634,7 +634,7 @@ const ProductsServices: React.FC = () => {
                     onClick={handleBatchDelete}
                   >
                     <Trash className="mr-2 h-4 w-4" />
-                    Delete Selected
+                    Delete Selected ({selectedServices.length})
                   </Button>
                 )}
               </div>
@@ -714,14 +714,12 @@ const ProductsServices: React.FC = () => {
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-muted hover:bg-muted">
-                    <TableHead className="w-[40px]">
+                  <TableRow>
+                    <TableHead className="w-[50px]">
                       <Checkbox
                         checked={
                           services.length > 0 &&
-                          services.every((service) =>
-                            selectedServices.includes(service.id)
-                          )
+                          selectedServices.length === services.length
                         }
                         onCheckedChange={(checked) => {
                           if (checked) {
@@ -793,9 +791,9 @@ const ProductsServices: React.FC = () => {
                   {sortServices(services).map((service) => (
                     <TableRow
                       key={service.id}
-                      className="hover:bg-muted/50 cursor-pointer"
+                      className="hover:bg-muted/50" // Add hover effect to table rows
                     >
-                      <TableCell className="w-[40px]">
+                      <TableCell className="w-[50px]">
                         <Checkbox
                           checked={selectedServices.includes(service.id)}
                           onCheckedChange={(checked) => {
@@ -812,7 +810,7 @@ const ProductsServices: React.FC = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium w-[400px]">
+                      <TableCell className="font-medium">
                         {service.name}
                       </TableCell>
                       <TableCell>
