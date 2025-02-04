@@ -123,16 +123,9 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                  <Route
-                    path="lab-profile"
-                    element={<LABProfile />}
-                  />
+                  <Route path="lab-profile" element={<LABProfile />} />
 
-                  <Route
-                    path="user-profile"
-                    element={<MyAccount />}
-                  />
-
+                  <Route path="user-profile" element={<MyAccount />} />
 
                   <Route path="*" element={<Settings />} />
                 </Routes>
