@@ -73,9 +73,13 @@ interface ClientPrice {
 const ClientProductPricing = ({
   labIdData,
   clients,
+  activeTab,
+  setActiveTab,
 }: {
   labIdData: { lab_id: string } | null | undefined;
   clients: Client[] | null | undefined;
+  activeTab: string;
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   const [selectedClient, setSelectedClient] = useState<string>("default");
   const [editableProducts, setEditableProducts] = useState<Product[]>([]);
@@ -327,7 +331,7 @@ const ClientProductPricing = ({
         toast.success("Default prices updated successfully!");
         console.log("Updated products successfully:", updates);
         fetchEditableProducts();
-        setIsDrawerOpen(false)
+        setIsDrawerOpen(false);
       } else {
         // Show loading toast
 
@@ -587,7 +591,18 @@ const ClientProductPricing = ({
           </Sheet>
         </div>
       </div>
-
+      <div className="flex pb-2 mb-5 border-b gap-4 text-sm">
+        <button
+          onClick={() => setActiveTab("products")}
+          className={`${
+            activeTab === "products" ? "text-primary" : "text-base"
+          } relative`}
+        >
+          Products
+          <div className="absolute w-[70px] border border-[#1D4ED8] -bottom-[10px] -right-2"></div>
+        </button>
+        <button onClick={() => setActiveTab("services")}>Services</button>
+      </div>
       <div className="space-y-4">
         {selectedClient !== "default" && (
           <div className="flex justify-between items-center">

@@ -74,10 +74,12 @@ const ClientServicePricing = ({
   labIdData,
   clients,
   activeTab,
+  setActiveTab,
 }: {
   labIdData: { lab_id: string } | null | undefined;
   clients: Client[] | null | undefined;
   activeTab: string;
+  setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 }) => {
   const [selectedClient, setSelectedClient] = useState<string>("default");
   const [editableServices, setEditableServices] = useState<Product[]>([]);
@@ -577,7 +579,20 @@ const ClientServicePricing = ({
           </Sheet>
         </div>
       </div>
-
+      <div className="flex pb-2 mb-5 border-b gap-4 text-sm relative">
+        <button onClick={() => setActiveTab("products")} className="relative">
+          Products
+        </button>
+        <button
+          onClick={() => setActiveTab("services")}
+          className={`${
+            activeTab === "services" ? "text-primary" : "text-base"
+          } relative`}
+        >
+          Services
+          <div className="absolute w-[70px] border border-[#1D4ED8] -bottom-[10px] -right-2"></div>
+        </button>
+      </div>
       <div className="space-y-4">
         {selectedClient !== "default" && (
           <div className="flex justify-between items-center">
