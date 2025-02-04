@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useAuth } from "@/contexts/AuthContext";
-import { SpecialProductPrices } from "@/types/supabase";
+import { SpecialServicesPrices } from "@/types/supabase";
 import toast from "react-hot-toast";
 
 // Mock data types
@@ -58,8 +58,8 @@ interface Client {
 }
 
 interface ClientPrice {
-  productId: string;
-  clientId: string;
+  serviceId: string;
+  clientId?: string;
   price: number;
 }
 
@@ -70,45 +70,38 @@ interface ClientPrice {
 //   { id: "3", client_name: "City Dentistry" },
 // ];
 
-const mockClientPrices: ClientPrice[] = [
-  { productId: "1", clientId: "1", price: 279.99 },
-  { productId: "2", clientId: "1", price: 379.99 },
-  { productId: "1", clientId: "2", price: 289.99 },
-];
-
-const ClientPricing: React.FC = () => {
+const ClientServicePricing = ({
+  labIdData,
+  clients,
+  activeTab,
+}: {
+  labIdData: { lab_id: string } | null | undefined;
+  clients: Client[] | null | undefined;
+  activeTab: string;
+}) => {
   const [selectedClient, setSelectedClient] = useState<string>("default");
-  const [editableProducts, setEditableProducts] = useState<Product[]>([]);
+  const [editableServices, setEditableServices] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [specialProducts, setSpecialProducts] = useState<
-    SpecialProductPrices[]
+    SpecialServicesPrices[]
   >([]);
   const [clientPrices, setClientPrices] = useState<ClientPrice[]>([]);
+  const [defaultClientPrices, setDefaultClientPrices] = useState<ClientPrice[]>(
+    []
+  );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   const { user } = useAuth();
 
-  const {
-    data: labIdData,
-    error: labError,
-    isLoading: isLabLoading,
-  } = useQuery(
-    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
-
-  const { data: specialProductPrices, error: pricesError } = useQuery(
+  const { data: specialServicePrices, error: pricesError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("special_product_prices")
+          .from("special_service_prices")
           .select(
             `
              *,
-             default:products!product_id (
+             default:services!service_id (
              price,
              name,
              material:materials!material_id (
@@ -125,49 +118,23 @@ const ClientPricing: React.FC = () => {
       refreshInterval: 1000,
     }
   );
-  const {
-    data: clients,
-    error: clientsError,
-    isLoading: clientLoading,
-  } = useQuery(
-    labIdData && specialProductPrices && specialProductPrices.length
-      ? supabase
-          .from("clients")
-          .select(
-            `
-             id, client_name            `
-          )
-          .eq("lab_id", labIdData.lab_id)
-          .order("client_name", { ascending: true })
-      : null,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
-  console.log(clients, "clients");
-  if (clientsError) {
-    return <div>Faild to fetch Clients!</div>;
-  }
-  const fetchEditableProducts = async () => {
+
+  const fetchEditableServices = async () => {
     try {
       const { data, error } = await supabase
-        .from("products")
+        .from("services")
         .select(
           `
-            id, name, price, material:materials!material_id (
-            name),
-             specialPrice:special_product_prices!id (
-            price
-            )
-    `
+           *,
+           material:materials(name)
+          `
         )
         .order("name")
         .eq("lab_id", labIdData?.lab_id);
 
       console.log(data, error, "datadatadata");
       const products: any = data;
-      setEditableProducts(products);
+      setEditableServices(products);
     } catch (error) {
       console.log(error, "error");
     }
@@ -179,10 +146,10 @@ const ClientPricing: React.FC = () => {
       try {
         // Fetch special prices for the selected client
         const { data, error } = await supabase
-          .from("special_product_prices")
+          .from("special_service_prices")
           .select(
             ` *,
-             default:products!product_id (
+             default:services!service_id (
              price,
              name,
              material:materials!material_id (
@@ -212,26 +179,32 @@ const ClientPricing: React.FC = () => {
   };
 
   useEffect(() => {
-    if (specialProductPrices && specialProductPrices.length > 0) {
-      setSpecialProducts(specialProductPrices);
+    if (specialServicePrices && specialServicePrices.length > 0) {
+      setSpecialProducts(specialServicePrices);
     }
     if (
-      specialProductPrices &&
-      specialProductPrices.length &&
-      editableProducts?.length === 0
+      specialServicePrices &&
+      specialServicePrices.length &&
+      editableServices?.length === 0
     ) {
       const fetchProducts = async () => {
-        await fetchEditableProducts();
+        await fetchEditableServices();
       };
       fetchProducts();
     }
-  }, [specialProductPrices?.length]);
+  }, [specialServicePrices?.length]);
 
   useEffect(() => {
     if (selectedClient !== "default") {
       handleFetchSpecialPrices();
     }
   }, [selectedClient]);
+  useEffect(() => {
+    if (activeTab === "services") {
+      console.log(activeTab, "activeTab");
+      fetchEditableServices();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (
@@ -240,38 +213,38 @@ const ClientPricing: React.FC = () => {
       specialProducts?.length > 0 &&
       isDrawerOpen
     ) {
-      console.log(specialProducts, "specialProductPricesspecialProductPrices");
+      console.log(specialProducts, "specialServicePricesspecialServicePrices");
       setClientPrices(
         specialProducts.map((item) => ({
           clientId: selectedClient,
-          productId: item.product_id,
+          serviceId: item.service_id,
           price: item.price,
         }))
       );
     }
   }, [isDrawerOpen]);
-  console.log(editableProducts, "editable products");
-  const getClientPrice = (productId: string, clientId: string) => {
+  console.log(editableServices, "editable products");
+  const getClientPrice = (serviceId: string, clientId: string) => {
     return clientPrices.find(
-      (cp) => cp.productId === productId && cp.clientId === clientId
+      (cp) => cp.serviceId === serviceId && cp.clientId === clientId
     )?.price;
   };
 
-  const handlePriceChange = (productId: string, newPrice: string) => {
+  const handlePriceChange = (serviceId: string, newPrice: string) => {
     const price = parseFloat(newPrice);
     if (isNaN(price) || price < 0) return;
 
     if (selectedClient !== "default") {
       const updatedPrices = [...clientPrices];
       const existingPriceIndex = updatedPrices.findIndex(
-        (cp) => cp.productId === productId && cp.clientId === selectedClient
+        (cp) => cp.serviceId === serviceId && cp.clientId === selectedClient
       );
 
       if (existingPriceIndex >= 0) {
         updatedPrices[existingPriceIndex].price = price;
       } else {
         updatedPrices.push({
-          productId,
+          serviceId,
           clientId: selectedClient,
           price,
         });
@@ -281,16 +254,16 @@ const ClientPricing: React.FC = () => {
     }
   };
 
-  const handleRemoveClientPrice = (productId: string) => {
+  const handleRemoveClientPrice = (serviceId: string) => {
     const updatedPrices = clientPrices.filter(
-      (cp) => !(cp.productId === productId && cp.clientId === selectedClient)
+      (cp) => !(cp.serviceId === serviceId && cp.clientId === selectedClient)
     );
     setClientPrices(updatedPrices);
   };
 
-  const handleSelectProduct = (productId: string, checked: boolean) => {
+  const handleSelectProduct = (serviceId: string, checked: boolean) => {
     setSelectedProducts((prev) =>
-      checked ? [...prev, productId] : prev.filter((id) => id !== productId)
+      checked ? [...prev, serviceId] : prev.filter((id) => id !== serviceId)
     );
   };
 
@@ -310,7 +283,7 @@ const ClientPricing: React.FC = () => {
       (cp) =>
         !(
           cp.clientId === selectedClient &&
-          selectedProducts.includes(cp.productId)
+          selectedProducts.includes(cp.serviceId)
         )
     );
     setClientPrices(updatedPrices);
@@ -319,104 +292,114 @@ const ClientPricing: React.FC = () => {
 
   const filteredProducts =
     selectedClient !== "default"
-      ? editableProducts?.filter((product) =>
+      ? editableServices?.filter((product) =>
           clientPrices.some(
             (cp) =>
-              cp.productId === product.id && cp.clientId === selectedClient
+              cp.serviceId === product.id && cp.clientId === selectedClient
           )
         )
-      : editableProducts;
+      : editableServices;
 
   console.log(clientPrices, "client, prices");
 
   const handleSubmit = async () => {
-    if (clientPrices.length === 0) {
+    if (clientPrices.length === 0 && defaultClientPrices.length === 0) {
       toast.error("Please Update the Prices to Save!!!");
       return;
     }
+
     try {
       setIsLoading(true);
+      console.log(defaultClientPrices, "defaultClientPrices");
+      if (selectedClient === "default") {
+        // Update `services` table using `defaultClientPrices`
+        const updates = defaultClientPrices.map((item) => ({
+          id: item.serviceId,
+          price: item.price,
+        }));
 
-      // Show loading toast
+        for (const item of updates) {
+          const { error: updateError } = await supabase
+            .from("services")
+            .update({ price: item.price })
+            .eq("id", item.id);
 
-      const clientId = clientPrices[0].clientId; // Single client ID
-      const productPrices = clientPrices.map((item) => ({
-        product_id: item.productId,
-        client_id: item.clientId,
-        price: item.price,
-      }));
+          if (updateError) {
+            throw new Error(
+              `Error updating service ID ${item.id}: ${updateError.message}`
+            );
+          }
+        }
 
-      // Extract all product IDs
-      const productIds = productPrices.map((item) => item.product_id);
+        toast.success("Default prices updated successfully!");
+        console.log("Updated services successfully:", updates);
+        fetchEditableServices();
+      } else {
+        // Existing logic for updating special_service_prices
+        const clientId = clientPrices[0].clientId;
+        const productPrices = clientPrices.map((item) => ({
+          service_id: item.serviceId,
+          client_id: item.clientId,
+          price: item.price,
+        }));
 
-      // Fetch existing records for this client
-      const { data: existingRecords, error: fetchError } = await supabase
-        .from("special_product_prices")
-        .select("id, product_id")
-        .eq("client_id", clientId)
-        .in("product_id", productIds);
+        const serviceIds = productPrices.map((item) => item.service_id);
 
-      if (fetchError)
-        throw new Error(
-          `Error fetching existing records: ${fetchError.message}`
+        const { data: existingRecords, error: fetchError } = await supabase
+          .from("special_service_prices")
+          .select("id, service_id")
+          .eq("client_id", clientId)
+          .in("service_id", serviceIds);
+
+        if (fetchError)
+          throw new Error(
+            `Error fetching existing records: ${fetchError.message}`
+          );
+
+        const existingMap = new Map(
+          existingRecords.map((record) => [record.service_id, record.id])
         );
 
-      // Create a lookup map of existing product_ids
-      const existingMap = new Map(
-        existingRecords.map((record) => [record.product_id, record.id])
-      );
+        const updates = [];
+        const inserts = [];
 
-      // Separate data into updates and inserts
-      const updates = [];
-      const inserts = [];
-
-      for (const item of productPrices) {
-        if (existingMap.has(item.product_id)) {
-          // Update existing record
-          updates.push({
-            id: existingMap.get(item.product_id),
-            price: item.price,
-          });
-        } else {
-          // Insert new record
-          inserts.push({ ...item });
+        for (const item of productPrices) {
+          if (existingMap.has(item.service_id)) {
+            updates.push({
+              id: existingMap.get(item.service_id),
+              price: item.price,
+            });
+          } else {
+            inserts.push({ ...item });
+          }
         }
-      }
 
-      // Perform batch updates
-      if (updates.length > 0) {
-        const { error: updateError } = await supabase
-          .from("special_product_prices")
-          .upsert(updates);
-        if (updateError)
-          throw new Error(`Error updating records: ${updateError.message}`);
+        if (updates.length > 0) {
+          const { error: updateError } = await supabase
+            .from("special_service_prices")
+            .upsert(updates);
+          if (updateError)
+            throw new Error(`Error updating records: ${updateError.message}`);
+          console.log("Updated successfully:", updates);
+        }
 
-        // Success Toast for Updates
-        toast.success("Records updated successfully!");
-        console.log("Updated successfully:", updates);
-        setIsDrawerOpen(false);
-      }
+        if (inserts.length > 0) {
+          const { error: insertError } = await supabase
+            .from("special_service_prices")
+            .insert(inserts);
+          if (insertError)
+            throw new Error(`Error inserting records: ${insertError.message}`);
+          console.log("Inserted successfully:", inserts);
+        }
 
-      // Perform batch inserts
-      if (inserts.length > 0) {
-        const { error: insertError } = await supabase
-          .from("special_product_prices")
-          .insert(inserts);
-        if (insertError)
-          throw new Error(`Error inserting records: ${insertError.message}`);
-
-        // Success Toast for Inserts
-        toast.success("Records inserted successfully!");
-        setIsDrawerOpen(false);
-        console.log("Inserted successfully:", inserts);
+        toast.success("Records Updated successfully!");
       }
 
       setIsLoading(false);
       setClientPrices([]);
+      setIsDrawerOpen(false);
     } catch (error: any) {
       console.error("An error occurred:", error.message);
-
-      // Error Toast
       toast.error(`Error: ${error.message}`);
       setIsLoading(false);
       setClientPrices([]);
@@ -468,7 +451,7 @@ const ClientPricing: React.FC = () => {
               <Button
                 variant="outline"
                 onClick={() => {
-                  editableProducts?.length === 0 && fetchEditableProducts();
+                  editableServices?.length === 0 && fetchEditableServices();
                 }}
               >
                 Edit Prices
@@ -513,7 +496,7 @@ const ClientPricing: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody className="overflow-y-scroll">
-                      {editableProducts?.map((product) => (
+                      {editableServices?.map((product) => (
                         <TableRow
                           key={product.id}
                           className="hover:bg-muted/50"
@@ -524,23 +507,65 @@ const ClientPricing: React.FC = () => {
                           <TableCell>{product.material.name}</TableCell>
                           <TableCell>${product.price.toFixed(2)}</TableCell>
                           <TableCell>
-                            <Input
-                              type="number"
-                              value={
-                                selectedClient !== "default"
-                                  ? getClientPrice(
-                                      product.id,
-                                      selectedClient
-                                    ) ?? product.price
-                                  : product.price
-                              }
-                              onChange={(e) =>
-                                handlePriceChange(product.id, e.target.value)
-                              }
-                              step="0.01"
-                              min="0"
-                              className="w-24"
-                            />
+                            {selectedClient !== "default" ? (
+                              <Input
+                                type="number"
+                                value={
+                                  selectedClient !== "default"
+                                    ? getClientPrice(
+                                        product.id,
+                                        selectedClient
+                                      ) ?? product.price
+                                    : product.price
+                                }
+                                onChange={(e) =>
+                                  handlePriceChange(product.id, e.target.value)
+                                }
+                                step="0.01"
+                                min="0"
+                                className="w-24"
+                              />
+                            ) : (
+                              <Input
+                                type="number"
+                                placeholder="Ener new"
+                                value={
+                                  defaultClientPrices.find(
+                                    (item) => item.serviceId === product.id
+                                  )?.price || 0
+                                }
+                                onChange={(e) => {
+                                  const newPrice =
+                                    parseFloat(e.target.value) || 0;
+                                  setDefaultClientPrices((prevPrices) => {
+                                    const index = prevPrices.findIndex(
+                                      (item) => item.serviceId === product.id
+                                    );
+                                    if (index !== -1) {
+                                      // Update existing item
+                                      const updatedPrices = [...prevPrices];
+                                      updatedPrices[index] = {
+                                        ...updatedPrices[index],
+                                        price: newPrice,
+                                      };
+                                      return updatedPrices;
+                                    } else {
+                                      // Add new item
+                                      return [
+                                        ...prevPrices,
+                                        {
+                                          serviceId: product.id,
+                                          price: newPrice,
+                                        },
+                                      ];
+                                    }
+                                  });
+                                }}
+                                step="0.01"
+                                min="0"
+                                className="w-24"
+                              />
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -608,7 +633,7 @@ const ClientPricing: React.FC = () => {
                     has all of the default prices.
                   </TableCell>
                 </TableRow>
-              ) : (
+              ) : selectedClient !== "default" ? (
                 specialProducts.map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
@@ -662,6 +687,60 @@ const ClientPricing: React.FC = () => {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : (
+                editableServices.map((product) => (
+                  <TableRow key={product.id} className="hover:bg-muted/50">
+                    {selectedClient !== "default" && (
+                      <TableCell>
+                        {getClientPrice(product.id, selectedClient) && (
+                          <Checkbox
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={(checked: boolean) =>
+                              handleSelectProduct(product.id, checked)
+                            }
+                          />
+                        )}
+                      </TableCell>
+                    )}
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
+                    <TableCell>{product.material.name}</TableCell>
+                    {selectedClient !== "default" && (
+                      <TableCell
+                        className={cn(
+                          "font-medium",
+                          getClientPrice(product.id, selectedClient) &&
+                            "text-green-600 dark:text-green-400"
+                        )}
+                      >
+                        ${product.price.toFixed(2)}
+                      </TableCell>
+                    )}
+                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>
+                      {selectedClient !== "default" &&
+                        getClientPrice(product.id, selectedClient) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleRemoveClientPrice(product.id)
+                                }
+                              >
+                                Remove New Price
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                    </TableCell>
+                  </TableRow>
+                ))
               )}
             </TableBody>
           </Table>
@@ -671,4 +750,4 @@ const ClientPricing: React.FC = () => {
   );
 };
 
-export default ClientPricing;
+export default ClientServicePricing;
