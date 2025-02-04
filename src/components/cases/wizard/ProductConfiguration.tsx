@@ -985,16 +985,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           <Table>
             <TableHeader className="bg-slate-100 border-b border-slate-200">
               <TableRow>
-                <TableHead className="w-[20px]"></TableHead>
-                <TableHead className="w-[200px]">Type</TableHead>
-                <TableHead className="w-[200px]">Teeth</TableHead>
-                <TableHead>Material/Product</TableHead>
-                <TableHead>Additional Services</TableHead>
-                <TableHead>Shades</TableHead>
-                <TableHead>Note</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>QTY</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[10px]"></TableHead>
+                <TableHead className="w-[100px] text-xs">Type</TableHead>
+                <TableHead className="w-[120px] text-xs">Teeth</TableHead>
+                <TableHead className="text-xs">Material/Product</TableHead>
+                <TableHead className="w-[100px] text-xs">Additional Services</TableHead>
+                <TableHead className="text-xs">Shades</TableHead>
+                <TableHead className="text-xs">Note</TableHead>
+                <TableHead className="w-[20px] text-xs">Discount</TableHead>
+                <TableHead className="text-xs">QTY</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="">
@@ -1145,7 +1145,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                      <Select
+                      <Select                     
                         disabled={
                           loading ||
                           (row.teeth.length === 0 && row.type === "Service")
@@ -1176,7 +1176,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           );
                         }}
                       >
-                        <SelectTrigger className={cn("bg-white")}>
+                        <SelectTrigger className={cn("bg-white text-xs")}>
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1202,7 +1202,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`h-7 text-sm ${
+                              className={`h-7 text-xs ${
                                 row.shades?.body_shade ||
                                 row.shades?.gingival_shade ||
                                 row.shades?.occlusal_shade ||

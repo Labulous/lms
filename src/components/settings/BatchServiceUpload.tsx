@@ -330,7 +330,7 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
         </Button>
       </DialogTrigger>
       <DialogContent
-        className="max-w-4xl max-h-[80vh] overflow-y-auto"
+        className="max-w-[1440px] max-h-[80vh] overflow-y-auto"
         onOpenAutoFocus={(e) => {
           e.preventDefault();
         }}
@@ -367,10 +367,10 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Price</TableHead>
+                      <TableHead className="w-[600px]">Name</TableHead>
+                      <TableHead className="w-[180px]">Price</TableHead>
                       <TableHead>Material</TableHead>
-                      <TableHead>Description</TableHead>
+                      <TableHead className="w-[300px]">Description</TableHead>
                       <TableHead>Options</TableHead>
                       <TableHead></TableHead>
                     </TableRow>

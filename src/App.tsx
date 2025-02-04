@@ -29,6 +29,7 @@ import Dashboard from "./pages/Dashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
 import ClientPricing from "./pages/settings/ClientPricing";
+import TaxConfigurationPage from "./pages/settings/tax-configuration";
 
 import Home1 from "./pages/Home1";
 import { MyAccount } from "./pages/settings/my-account";
@@ -132,7 +133,7 @@ const App: React.FC = () => {
                     path="user-profile"
                     element={<MyAccount />}
                   />
-
+                  <Route path="tax-configuration" element={<TaxConfigurationPage />} />
 
                   <Route path="*" element={<Settings />} />
                 </Routes>
