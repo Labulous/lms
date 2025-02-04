@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MoreVertical } from "lucide-react";
 import {
   Table,
@@ -33,18 +33,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { useAuth } from "@/contexts/AuthContext";
+import { SpecialProductPrices } from "@/types/supabase";
+import toast from "react-hot-toast";
 
 // Mock data types
 interface Product {
   id: string;
   name: string;
-  material: string;
-  defaultPrice: number;
+  material: {
+    name: string;
+  };
+  price: number;
+  specialPrice: {
+    price: number;
+  }[];
 }
 
 interface Client {
   id: string;
-  name: string;
+  client_name: string;
 }
 
 interface ClientPrice {
@@ -54,17 +64,11 @@ interface ClientPrice {
 }
 
 // Mock data
-const mockProducts: Product[] = [
-  { id: "1", name: "Crown", material: "Zirconia", defaultPrice: 299.99 },
-  { id: "2", name: "Bridge", material: "Porcelain", defaultPrice: 399.99 },
-  { id: "3", name: "Implant", material: "Titanium", defaultPrice: 599.99 },
-];
-
-const mockClients: Client[] = [
-  { id: "1", name: "Dental Care Clinic" },
-  { id: "2", name: "Smile Perfect" },
-  { id: "3", name: "City Dentistry" },
-];
+// const clients: Client[] = [
+//   { id: "1", client_name: "Dental Care Clinic" },
+//   { id: "2", client_name: "Smile Perfect" },
+//   { id: "3", client_name: "City Dentistry" },
+// ];
 
 const mockClientPrices: ClientPrice[] = [
   { productId: "1", clientId: "1", price: 279.99 },
@@ -74,11 +78,179 @@ const mockClientPrices: ClientPrice[] = [
 
 const ClientPricing: React.FC = () => {
   const [selectedClient, setSelectedClient] = useState<string>("default");
-  const [editableProducts, setEditableProducts] = useState<Product[]>(mockProducts);
-  const [clientPrices, setClientPrices] = useState<ClientPrice[]>(mockClientPrices);
+  const [editableProducts, setEditableProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [specialProducts, setSpecialProducts] = useState<
+    SpecialProductPrices[]
+  >([]);
+  const [clientPrices, setClientPrices] = useState<ClientPrice[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
+  const { user } = useAuth();
+
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  const { data: specialProductPrices, error: pricesError } = useQuery(
+    labIdData?.lab_id
+      ? supabase
+          .from("special_product_prices")
+          .select(
+            `
+             *,
+             default:products!product_id (
+             price,
+             name,
+             material:materials!material_id (
+             name
+             )
+             )
+          `
+          )
+          .eq("lab_id", labIdData?.lab_id)
+      : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 1000,
+    }
+  );
+  const {
+    data: clients,
+    error: clientsError,
+    isLoading: clientLoading,
+  } = useQuery(
+    labIdData && specialProductPrices && specialProductPrices.length
+      ? supabase
+          .from("clients")
+          .select(
+            `
+             id, client_name            `
+          )
+          .eq("lab_id", labIdData.lab_id)
+          .order("client_name", { ascending: true })
+      : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  console.log(clients, "clients");
+  if (clientsError) {
+    return <div>Faild to fetch Clients!</div>;
+  }
+  const fetchEditableProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select(
+          `
+            id, name, price, material:materials!material_id (
+            name),
+             specialPrice:special_product_prices!id (
+            price
+            )
+    `
+        )
+        .order("name")
+        .eq("lab_id", labIdData?.lab_id);
+
+      console.log(data, error, "datadatadata");
+      const products: any = data;
+      setEditableProducts(products);
+    } catch (error) {
+      console.log(error, "error");
+    }
+  };
+
+  const handleFetchSpecialPrices = async () => {
+    // Check if selectedClient is not "Default"
+    if (selectedClient !== "default") {
+      try {
+        // Fetch special prices for the selected client
+        const { data, error } = await supabase
+          .from("special_product_prices")
+          .select(
+            ` *,
+             default:products!product_id (
+             price,
+             name,
+             material:materials!material_id (
+             name
+             )
+             )`
+          )
+          .eq("client_id", selectedClient); // Assuming selectedClient is the client ID
+
+        if (error) {
+          throw new Error(`Error fetching special prices: ${error.message}`);
+        }
+
+        // Handle fetched data (e.g., update state or process the data)
+        console.log("Fetched special prices:", data);
+
+        // You can set this data in your state, for example:
+        console.log(data, "datadata");
+        setSpecialProducts(data);
+      } catch (error: any) {
+        console.error("An error occurred:", error.message);
+        toast.error(`Error: ${error.message}`);
+      }
+    } else {
+      return;
+    }
+  };
+
+  useEffect(() => {
+    if (specialProductPrices && specialProductPrices.length > 0) {
+      setSpecialProducts(specialProductPrices);
+    }
+    if (
+      specialProductPrices &&
+      specialProductPrices.length &&
+      editableProducts?.length === 0
+    ) {
+      const fetchProducts = async () => {
+        await fetchEditableProducts();
+      };
+      fetchProducts();
+    }
+  }, [specialProductPrices?.length]);
+
+  useEffect(() => {
+    if (selectedClient !== "default") {
+      handleFetchSpecialPrices();
+    }
+  }, [selectedClient]);
+
+  useEffect(() => {
+    if (
+      selectedClient !== "default" &&
+      specialProducts &&
+      specialProducts?.length > 0 &&
+      isDrawerOpen
+    ) {
+      console.log(specialProducts, "specialProductPricesspecialProductPrices");
+      setClientPrices(
+        specialProducts.map((item) => ({
+          clientId: selectedClient,
+          productId: item.product_id,
+          price: item.price,
+        }))
+      );
+    }
+  }, [isDrawerOpen]);
+  console.log(editableProducts, "editable products");
   const getClientPrice = (productId: string, clientId: string) => {
     return clientPrices.find(
       (cp) => cp.productId === productId && cp.clientId === clientId
@@ -117,18 +289,16 @@ const ClientPricing: React.FC = () => {
   };
 
   const handleSelectProduct = (productId: string, checked: boolean) => {
-    setSelectedProducts(prev =>
-      checked 
-        ? [...prev, productId]
-        : prev.filter(id => id !== productId)
+    setSelectedProducts((prev) =>
+      checked ? [...prev, productId] : prev.filter((id) => id !== productId)
     );
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const selectableProducts = filteredProducts
-        .filter(product => getClientPrice(product.id, selectedClient))
-        .map(product => product.id);
+        .filter((product) => getClientPrice(product.id, selectedClient))
+        .map((product) => product.id);
       setSelectedProducts(selectableProducts);
     } else {
       setSelectedProducts([]);
@@ -137,19 +307,123 @@ const ClientPricing: React.FC = () => {
 
   const handleRemoveSelectedPrices = () => {
     const updatedPrices = clientPrices.filter(
-      (cp) => !(cp.clientId === selectedClient && selectedProducts.includes(cp.productId))
+      (cp) =>
+        !(
+          cp.clientId === selectedClient &&
+          selectedProducts.includes(cp.productId)
+        )
     );
     setClientPrices(updatedPrices);
     setSelectedProducts([]);
   };
 
-  const filteredProducts = selectedClient !== "default"
-    ? editableProducts.filter((product) =>
-        clientPrices.some(
-          (cp) => cp.productId === product.id && cp.clientId === selectedClient
+  const filteredProducts =
+    selectedClient !== "default"
+      ? editableProducts?.filter((product) =>
+          clientPrices.some(
+            (cp) =>
+              cp.productId === product.id && cp.clientId === selectedClient
+          )
         )
-      )
-    : editableProducts;
+      : editableProducts;
+
+  console.log(clientPrices, "client, prices");
+
+  const handleSubmit = async () => {
+    if (clientPrices.length === 0) {
+      toast.error("Please Update the Prices to Save!!!");
+      return;
+    }
+    try {
+      setIsLoading(true);
+
+      // Show loading toast
+
+      const clientId = clientPrices[0].clientId; // Single client ID
+      const productPrices = clientPrices.map((item) => ({
+        product_id: item.productId,
+        client_id: item.clientId,
+        price: item.price,
+      }));
+
+      // Extract all product IDs
+      const productIds = productPrices.map((item) => item.product_id);
+
+      // Fetch existing records for this client
+      const { data: existingRecords, error: fetchError } = await supabase
+        .from("special_product_prices")
+        .select("id, product_id")
+        .eq("client_id", clientId)
+        .in("product_id", productIds);
+
+      if (fetchError)
+        throw new Error(
+          `Error fetching existing records: ${fetchError.message}`
+        );
+
+      // Create a lookup map of existing product_ids
+      const existingMap = new Map(
+        existingRecords.map((record) => [record.product_id, record.id])
+      );
+
+      // Separate data into updates and inserts
+      const updates = [];
+      const inserts = [];
+
+      for (const item of productPrices) {
+        if (existingMap.has(item.product_id)) {
+          // Update existing record
+          updates.push({
+            id: existingMap.get(item.product_id),
+            price: item.price,
+          });
+        } else {
+          // Insert new record
+          inserts.push({ ...item });
+        }
+      }
+
+      // Perform batch updates
+      if (updates.length > 0) {
+        const { error: updateError } = await supabase
+          .from("special_product_prices")
+          .upsert(updates);
+        if (updateError)
+          throw new Error(`Error updating records: ${updateError.message}`);
+
+        // Success Toast for Updates
+        toast.success("Records updated successfully!");
+        console.log("Updated successfully:", updates);
+        setIsDrawerOpen(false);
+      }
+
+      // Perform batch inserts
+      if (inserts.length > 0) {
+        const { error: insertError } = await supabase
+          .from("special_product_prices")
+          .insert(inserts);
+        if (insertError)
+          throw new Error(`Error inserting records: ${insertError.message}`);
+
+        // Success Toast for Inserts
+        toast.success("Records inserted successfully!");
+        setIsDrawerOpen(false);
+        console.log("Inserted successfully:", inserts);
+      }
+
+      setIsLoading(false);
+      setClientPrices([]);
+    } catch (error: any) {
+      console.error("An error occurred:", error.message);
+
+      // Error Toast
+      toast.error(`Error: ${error.message}`);
+      setIsLoading(false);
+      setClientPrices([]);
+    } finally {
+      handleFetchSpecialPrices();
+    }
+  };
 
   return (
     <div className="p-6">
@@ -157,9 +431,10 @@ const ClientPricing: React.FC = () => {
         <h1 className="text-2xl font-bold flex items-center gap-2">
           Client Pricing
           <span className="text-primary">
-            – {selectedClient === "default" 
-              ? "Default" 
-              : mockClients.find((c) => c.id === selectedClient)?.name}
+            –{" "}
+            {selectedClient === "default"
+              ? "Default"
+              : clients?.find((c) => c.id === selectedClient)?.client_name}
           </span>
         </h1>
         <div className="flex gap-4">
@@ -172,35 +447,63 @@ const ClientPricing: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">Default</SelectItem>
-              {mockClients.map((client) => (
+              {clients?.map((client) => (
                 <SelectItem key={client.id} value={client.id}>
-                  {client.name}
+                  {client.client_name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <Sheet
+            open={isDrawerOpen}
+            onOpenChange={(value) => {
+              if (value === false) {
+                setClientPrices([]);
+              }
+              setIsDrawerOpen(value);
+            }}
+          >
             <SheetTrigger asChild>
-              <Button variant="outline">Edit Prices</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  editableProducts?.length === 0 && fetchEditableProducts();
+                }}
+              >
+                Edit Prices
+              </Button>
             </SheetTrigger>
             <SheetContent className="w-[80vw]">
               <SheetHeader>
-                <SheetTitle className="flex items-center gap-2">
-                  Edit Prices
-                  {selectedClient !== "default" && (
-                    <span className="text-primary">
-                      – {mockClients.find((c) => c.id === selectedClient)?.name}
-                    </span>
-                  )}
-                </SheetTitle>
+                <div className="flex justify-between">
+                  <SheetTitle className="flex items-center gap-2">
+                    Edit Prices
+                    {selectedClient !== "default" && (
+                      <span className="text-primary">
+                        –{" "}
+                        {
+                          clients?.find((c) => c.id === selectedClient)
+                            ?.client_name
+                        }
+                      </span>
+                    )}
+                  </SheetTitle>
+                  <Button
+                    className="mt-5"
+                    disabled={isLoading}
+                    onClick={() => handleSubmit()}
+                  >
+                    {isLoading ? "Saving...." : "Save"}
+                  </Button>
+                </div>
                 <SheetDescription>
                   Make changes to product prices below
                 </SheetDescription>
               </SheetHeader>
               <div className="mt-6">
                 <div className="rounded-md border">
-                  <Table>
+                  <Table className="overflow-y-scroll">
                     <TableHeader>
                       <TableRow className="bg-muted hover:bg-muted">
                         <TableHead>Name</TableHead>
@@ -209,20 +512,27 @@ const ClientPricing: React.FC = () => {
                         <TableHead>New Price</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {editableProducts.map((product) => (
-                        <TableRow key={product.id} className="hover:bg-muted/50">
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>{product.material}</TableCell>
-                          <TableCell>${product.defaultPrice.toFixed(2)}</TableCell>
+                    <TableBody className="overflow-y-scroll">
+                      {editableProducts?.map((product) => (
+                        <TableRow
+                          key={product.id}
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell className="font-medium">
+                            {product.name}
+                          </TableCell>
+                          <TableCell>{product.material.name}</TableCell>
+                          <TableCell>${product.price.toFixed(2)}</TableCell>
                           <TableCell>
                             <Input
                               type="number"
                               value={
                                 selectedClient !== "default"
-                                  ? getClientPrice(product.id, selectedClient) ??
-                                    product.defaultPrice
-                                  : product.defaultPrice
+                                  ? getClientPrice(
+                                      product.id,
+                                      selectedClient
+                                    ) ?? product.price
+                                  : product.price
                               }
                               onChange={(e) =>
                                 handlePriceChange(product.id, e.target.value)
@@ -267,9 +577,9 @@ const ClientPricing: React.FC = () => {
                   <TableHead className="w-[50px]">
                     <Checkbox
                       checked={
-                        filteredProducts.length > 0 &&
-                        filteredProducts.every(
-                          product =>
+                        specialProducts.length > 0 &&
+                        filteredProducts?.every(
+                          (product) =>
                             !getClientPrice(product.id, selectedClient) ||
                             selectedProducts.includes(product.id)
                         )
@@ -280,34 +590,43 @@ const ClientPricing: React.FC = () => {
                 )}
                 <TableHead>Name</TableHead>
                 <TableHead>Material</TableHead>
-                {selectedClient !== "default" && <TableHead>Client Price</TableHead>}
+                {selectedClient !== "default" && (
+                  <TableHead>Client Price</TableHead>
+                )}
                 <TableHead>Default Price</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedClient !== "default" && 
-               !clientPrices.some(cp => cp.clientId === selectedClient) ? (
+              {selectedClient !== "default" && specialProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    {mockClients.find((c) => c.id === selectedClient)?.name} has all of the default prices.
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground py-8"
+                  >
+                    {clients?.find((c) => c.id === selectedClient)?.client_name}{" "}
+                    has all of the default prices.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredProducts.map((product) => (
+                specialProducts.map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
                         {getClientPrice(product.id, selectedClient) && (
                           <Checkbox
                             checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={(checked: boolean) => handleSelectProduct(product.id, checked)}
+                            onCheckedChange={(checked: boolean) =>
+                              handleSelectProduct(product.id, checked)
+                            }
                           />
                         )}
                       </TableCell>
                     )}
-                    <TableCell className="font-medium">{product.name}</TableCell>
-                    <TableCell>{product.material}</TableCell>
+                    <TableCell className="font-medium">
+                      {product.default.name}
+                    </TableCell>
+                    <TableCell>{product.default.material.name}</TableCell>
                     {selectedClient !== "default" && (
                       <TableCell
                         className={cn(
@@ -316,32 +635,30 @@ const ClientPricing: React.FC = () => {
                             "text-green-600 dark:text-green-400"
                         )}
                       >
-                        $
-                        {getClientPrice(product.id, selectedClient)?.toFixed(2) ??
-                          product.defaultPrice.toFixed(2)}
+                        ${product.price.toFixed(2)}
                       </TableCell>
                     )}
-                    <TableCell>${product.defaultPrice.toFixed(2)}</TableCell>
+                    <TableCell>${product.default.price.toFixed(2)}</TableCell>
                     <TableCell>
-                      {selectedClient !== "default" && getClientPrice(product.id, selectedClient) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className="h-8 w-8 p-0"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleRemoveClientPrice(product.id)}
-                            >
-                              Remove New Price
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      {selectedClient !== "default" &&
+                        getClientPrice(product.id, selectedClient) && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleRemoveClientPrice(product.id)
+                                }
+                              >
+                                Remove New Price
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))
