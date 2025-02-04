@@ -200,6 +200,7 @@ const ClientList: React.FC<ClientListProps> = ({
             <p>{client.clientName} has been added as a user.</p>
           </div>
         );
+        setClients(initialClients);
       }
       closeCreateLoginModal();
     } catch (error) {

@@ -48,6 +48,7 @@ const ClientProfile: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedData, setEditedData] = useState<any>({});
     const [activeTab, setActiveTab] = useState("client-information");
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         const loadClient = async () => {
@@ -84,6 +85,7 @@ const ClientProfile: React.FC = () => {
 
     const handleSave = async () => {
         if (!editedData || !client) return;
+        setIsLoading(true);
         try {
             if (!user) {
                 toast.error("User not found");
@@ -96,6 +98,11 @@ const ClientProfile: React.FC = () => {
                 return;
             }
 
+            // Check if the email is being changed
+            if (editedData.email !== client.email) {
+                toast.success("Please wait, after admin approval your email will be changed.");
+            }
+
             // Call API to save edited data using the fetched client ID
             await clientsService.updateClientUserDetails(fetchedClientID, user.id, editedData); // Pass fetchedClientID instead of client?.id
             toast.success("Client data saved successfully");
@@ -104,6 +111,8 @@ const ClientProfile: React.FC = () => {
         } catch (error) {
             console.error("Failed to save client data:", error);
             toast.error("Failed to save client data.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -248,7 +257,7 @@ const ClientProfile: React.FC = () => {
                     >
                         Billing
                     </button>
-                    <button
+                    {/* <button
                         onClick={() => setActiveTab("sales-activity")}
                         className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === "sales-activity"
                             ? "border-primary text-primary"
@@ -256,7 +265,7 @@ const ClientProfile: React.FC = () => {
                             }`}
                     >
                         Sales Activity
-                    </button>
+                    </button> */}
                 </nav>
             </div>
 
@@ -290,9 +299,19 @@ const ClientProfile: React.FC = () => {
                                                 variant="default"
                                                 size="sm"
                                                 onClick={handleSave}
+                                                disabled={isLoading} // Disable button while loading
                                             >
-                                                <Save className="h-4 w-4 mr-2" />
-                                                Save
+                                                {isLoading ? ( // Change label based on loading state
+                                                    <>
+                                                        <Save className="h-4 w-4 mr-2" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="h-4 w-4 mr-2" />
+                                                        Save
+                                                    </>
+                                                )}
                                             </Button>
                                             <Button
                                                 variant="outline"
@@ -539,9 +558,9 @@ const ClientProfile: React.FC = () => {
                 {activeTab === "billing" && (
                     <ClientBillingActivity clientId={client.id} />
                 )}
-                {activeTab === "sales-activity" && (
+                {/* {activeTab === "sales-activity" && (
                     <ClientSalesActivity clientId={client.id} />
-                )}
+                )} */}
             </div>
         </div >
     );

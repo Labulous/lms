@@ -430,6 +430,7 @@ export const createClientByAdmin = async (
   role: "admin" | "technician" | "client"
 ): Promise<void> => {
   try {
+
     // 1. Check if the email already exists in the users table
     const { data: userData, error: userError } = await supabase
       .from("users")
@@ -705,6 +706,38 @@ export const approvePendingApproval = async (
     return { success: false, error }; // Return error response if any issues occur
   }
 };
+
+//The admin has denied the client's new email address
+export const denyPendingApproval = async (
+  approvalId: string,
+  clientId: string,
+  userId: string,
+  newEmail: string
+) => {
+  try {
+    // Update the pending_approvals table
+    const { error } = await supabaseServiceRole
+      .from("pending_approvals")
+      .update({
+        status: "denied", // Set the status to denied
+      })
+      .eq("id", approvalId) // Match the approvalId
+      .eq("client_id", clientId) // Match the clientId
+      .eq("user_id", userId); // Match the userId
+
+    if (error) {
+      console.error("Error updating pending approval:", error);
+      throw new Error("Failed to update pending approval status.");
+    }
+
+    console.log("Approval has been successfully denied.");
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error("Error in denying approval process:", error);
+    return { success: false, error }; // Return error response if any issues occur
+  }
+};
+
 
 
 

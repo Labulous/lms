@@ -464,6 +464,168 @@ class ClientsService {
     }
   }
 
+  // async updateClientUserDetails(id: string, userId: string, clientData: ClientInput): Promise<Client> {
+  //   try {
+  //     console.log("test=>" + JSON.stringify(clientData, null, 2));
+  //     console.log(clientData.clientName);
+
+  //     // Fetch the current client data to check if the email is changing
+  //     const { data: existingClient, error: fetchError } = await supabaseServiceRole
+  //       .from("clients")
+  //       .select("email")
+  //       .eq("id", id)
+  //       .single();
+
+  //     if (fetchError) {
+  //       console.error("Error fetching existing client data:", fetchError);
+  //       throw fetchError;
+  //     }
+
+  //     const currentEmail = existingClient?.email;
+  //     const newEmail = clientData.email;
+
+  //     if (currentEmail !== newEmail) {
+  //       // Check if a pending approval already exists
+  //       const { data: existingApproval, error: approvalFetchError } = await supabaseServiceRole
+  //         .from("pending_approvals")
+  //         .select("id, status")
+  //         .eq("client_id", id)
+  //         .eq("user_id", userId)
+  //         .eq("new_email", newEmail)
+  //         .maybeSingle(); // Returns null if no record found
+
+  //       if (approvalFetchError) {
+  //         console.error("Error fetching pending approvals:", approvalFetchError);
+  //         throw approvalFetchError;
+  //       }
+
+  //       if (!existingApproval || existingApproval.status === "approved") {
+  //         // Insert a new approval request only if no pending record exists or previous request was approved
+  //         const { error: approvalError } = await supabaseServiceRole
+  //           .from("pending_approvals")
+  //           .insert({
+  //             client_id: id,
+  //             user_id: userId,
+  //             new_email: newEmail,
+  //             status: "pending",
+  //             previous_email: currentEmail,
+  //             client_name: clientData.clientName,
+  //             requested_at: new Date(),
+  //           });
+
+  //         if (approvalError) {
+  //           console.error("Error inserting into pending approvals:", approvalError);
+  //           throw approvalError;
+  //         }
+
+  //         console.log("New email change request added to pending approvals.");
+  //       } else {
+  //         console.log("Pending approval request already exists. Skipping insertion.");
+  //       }
+  //     }
+
+  //     // Update client details (excluding email if it has changed)
+  //     const { error: clientError } = await supabaseServiceRole
+  //       .from("clients")
+  //       .update({
+  //         client_name: clientData.clientName,
+  //         contact_name: clientData.contactName,
+  //         phone: clientData.phone,
+  //         street: clientData.address?.street,
+  //         city: clientData.address?.city,
+  //         state: clientData.address?.state,
+  //         zip_code: clientData.address?.zipCode,
+  //         clinic_registration_number: clientData.clinicRegistrationNumber,
+  //         notes: clientData.notes,
+  //         account_number: clientData.accountNumber,
+  //         ...(currentEmail === newEmail && { email: newEmail }), // Only update email if unchanged
+  //       })
+  //       .eq("id", id);
+
+  //     if (clientError) {
+  //       console.error("Error updating client data:", clientError);
+  //       throw clientError;
+  //     }
+
+  //     console.log("Client details updated successfully.");
+
+  //     // Proceed with updating doctors if provided
+  //     if (clientData.doctors !== undefined) {
+  //       const { data: currentDoctors, error: fetchError } = await supabaseServiceRole
+  //         .from("doctors")
+  //         .select("*")
+  //         .eq("client_id", id);
+
+  //       if (fetchError) {
+  //         logger.error("Error fetching current doctors", { fetchError });
+  //         throw fetchError;
+  //       }
+
+  //       const currentDoctorsSet = new Set(
+  //         currentDoctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+  //       );
+  //       const newDoctorsSet = new Set(
+  //         clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
+  //       );
+
+  //       if (currentDoctors.length !== clientData.doctors.length ||
+  //         ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
+
+  //         for (let i = 0; i < clientData.doctors.length; i++) {
+  //           const doctor = clientData.doctors[i];
+  //           const currentDoctor = currentDoctors[i];
+
+  //           if (currentDoctor) {
+  //             const { error: updateError } = await supabaseServiceRole
+  //               .from("doctors")
+  //               .update({
+  //                 ...this.transformDoctorToDB(doctor),
+  //                 client_id: id,
+  //               })
+  //               .eq("id", currentDoctor.id);
+
+  //             if (updateError) {
+  //               logger.error("Error updating doctor", { updateError, doctor });
+  //               throw updateError;
+  //             }
+  //           } else {
+  //             const { error: insertError } = await supabaseServiceRole
+  //               .from("doctors")
+  //               .insert({
+  //                 ...this.transformDoctorToDB(doctor),
+  //                 client_id: id,
+  //               });
+
+  //             if (insertError) {
+  //               logger.error("Error inserting doctor", { insertError, doctor });
+  //               throw insertError;
+  //             }
+  //           }
+  //         }
+
+  //         if (currentDoctors.length > clientData.doctors.length) {
+  //           const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
+  //           const { error: deleteError } = await supabaseServiceRole
+  //             .from("doctors")
+  //             .delete()
+  //             .eq("client_id", id)
+  //             .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
+
+  //           if (deleteError) {
+  //             logger.error("Error removing excess doctors", { deleteError });
+  //             throw deleteError;
+  //           }
+  //         }
+  //       }
+  //     }
+
+  //     return this.getClientById(id) as Promise<Client>;
+  //   } catch (error) {
+  //     logger.error("Error updating client", { error });
+  //     throw error;
+  //   }
+  // }
+
   async updateClientUserDetails(id: string, userId: string, clientData: ClientInput): Promise<Client> {
     try {
       console.log("test=>" + JSON.stringify(clientData, null, 2));
@@ -491,7 +653,6 @@ class ClientsService {
           .select("id, status")
           .eq("client_id", id)
           .eq("user_id", userId)
-          .eq("new_email", newEmail)
           .maybeSingle(); // Returns null if no record found
 
         if (approvalFetchError) {
@@ -499,9 +660,49 @@ class ClientsService {
           throw approvalFetchError;
         }
 
-        if (!existingApproval || existingApproval.status === "approved") {
-          // Insert a new approval request only if no pending record exists or previous request was approved
-          const { error: approvalError } = await supabaseServiceRole
+        if (existingApproval) {
+          if (existingApproval.status === "pending") {
+            // Update the existing pending approval with the latest email
+            const { error: updateApprovalError } = await supabaseServiceRole
+              .from("pending_approvals")
+              .update({
+                new_email: newEmail,
+                requested_at: new Date(),
+              })
+              .eq("id", existingApproval.id);
+
+            if (updateApprovalError) {
+              console.error("Error updating pending approval:", updateApprovalError);
+              throw updateApprovalError;
+            }
+
+            console.log("Updated existing pending approval with new email.");
+          } else if (existingApproval.status === "approved") {
+            // Insert a new approval request only if the previous request was approved
+            const { error: insertApprovalError } = await supabaseServiceRole
+              .from("pending_approvals")
+              .insert({
+                client_id: id,
+                user_id: userId,
+                new_email: newEmail,
+                status: "pending",
+                previous_email: currentEmail,
+                client_name: clientData.clientName,
+                requested_at: new Date(),
+              });
+
+            if (insertApprovalError) {
+              console.error("Error inserting into pending approvals:", insertApprovalError);
+              throw insertApprovalError;
+            }
+
+            console.log("New email change request added to pending approvals.");
+          } else {
+            console.log("Approval request exists with status:", existingApproval.status);
+          }
+        } else {
+          // Insert new approval if no existing record found
+          const { error: insertApprovalError } = await supabaseServiceRole
             .from("pending_approvals")
             .insert({
               client_id: id,
@@ -513,14 +714,12 @@ class ClientsService {
               requested_at: new Date(),
             });
 
-          if (approvalError) {
-            console.error("Error inserting into pending approvals:", approvalError);
-            throw approvalError;
+          if (insertApprovalError) {
+            console.error("Error inserting into pending approvals:", insertApprovalError);
+            throw insertApprovalError;
           }
 
           console.log("New email change request added to pending approvals.");
-        } else {
-          console.log("Pending approval request already exists. Skipping insertion.");
         }
       }
 
@@ -551,14 +750,14 @@ class ClientsService {
 
       // Proceed with updating doctors if provided
       if (clientData.doctors !== undefined) {
-        const { data: currentDoctors, error: fetchError } = await supabaseServiceRole
+        const { data: currentDoctors, error: fetchDoctorsError } = await supabaseServiceRole
           .from("doctors")
           .select("*")
           .eq("client_id", id);
 
-        if (fetchError) {
-          logger.error("Error fetching current doctors", { fetchError });
-          throw fetchError;
+        if (fetchDoctorsError) {
+          console.error("Error fetching current doctors", fetchDoctorsError);
+          throw fetchDoctorsError;
         }
 
         const currentDoctorsSet = new Set(
@@ -568,15 +767,16 @@ class ClientsService {
           clientData.doctors.map(d => `${d.name}|${d.email}|${d.phone}|${d.notes}`)
         );
 
-        if (currentDoctors.length !== clientData.doctors.length ||
-          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))) {
-
+        if (
+          currentDoctors.length !== clientData.doctors.length ||
+          ![...currentDoctorsSet].every(d => newDoctorsSet.has(d))
+        ) {
           for (let i = 0; i < clientData.doctors.length; i++) {
             const doctor = clientData.doctors[i];
             const currentDoctor = currentDoctors[i];
 
             if (currentDoctor) {
-              const { error: updateError } = await supabaseServiceRole
+              const { error: updateDoctorError } = await supabaseServiceRole
                 .from("doctors")
                 .update({
                   ...this.transformDoctorToDB(doctor),
@@ -584,36 +784,36 @@ class ClientsService {
                 })
                 .eq("id", currentDoctor.id);
 
-              if (updateError) {
-                logger.error("Error updating doctor", { updateError, doctor });
-                throw updateError;
+              if (updateDoctorError) {
+                console.error("Error updating doctor", updateDoctorError);
+                throw updateDoctorError;
               }
             } else {
-              const { error: insertError } = await supabaseServiceRole
+              const { error: insertDoctorError } = await supabaseServiceRole
                 .from("doctors")
                 .insert({
                   ...this.transformDoctorToDB(doctor),
                   client_id: id,
                 });
 
-              if (insertError) {
-                logger.error("Error inserting doctor", { insertError, doctor });
-                throw insertError;
+              if (insertDoctorError) {
+                console.error("Error inserting doctor", insertDoctorError);
+                throw insertDoctorError;
               }
             }
           }
 
           if (currentDoctors.length > clientData.doctors.length) {
             const doctorsToKeep = currentDoctors.slice(0, clientData.doctors.length);
-            const { error: deleteError } = await supabaseServiceRole
+            const { error: deleteDoctorError } = await supabaseServiceRole
               .from("doctors")
               .delete()
               .eq("client_id", id)
               .not("id", "in", `(${doctorsToKeep.map(d => d.id).join(",")})`);
 
-            if (deleteError) {
-              logger.error("Error removing excess doctors", { deleteError });
-              throw deleteError;
+            if (deleteDoctorError) {
+              console.error("Error removing excess doctors", deleteDoctorError);
+              throw deleteDoctorError;
             }
           }
         }
@@ -621,10 +821,11 @@ class ClientsService {
 
       return this.getClientById(id) as Promise<Client>;
     } catch (error) {
-      logger.error("Error updating client", { error });
+      console.error("Error updating client", error);
       throw error;
     }
   }
+
 
 
   async deleteClient(id: string): Promise<void> {

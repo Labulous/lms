@@ -17,6 +17,7 @@ import {
   ChevronDown,
   CreditCard,
   UserCircle,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import logomark from "../../assets/logomark.svg";
@@ -176,6 +177,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       href: "/inventory",
       roles: ["admin", "super_admin"],
     },
+    {
+      icon: MessageCircle,
+      label: "Client Pending Request",
+      href: "/client-pending-request",
+      roles: ["admin", "super_admin"],
+    },
   ];
 
   const quickActions = [
@@ -215,9 +222,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center space-x-2">
           <img
-            src={logomark}
-            alt="dentalms logo logomark"
-            className={`h-7  w-auto transition-opacity duration-200 ${
+            src={logotext}
+            alt="Labulous"
+            className={`h-5 transition-opacity duration-200 ${
               isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
             }`}
           />

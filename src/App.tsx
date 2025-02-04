@@ -33,6 +33,7 @@ import { useAuth } from "./contexts/AuthContext";
 import ClientDashboard from "./pages/ClientDashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
+import ClientPendingRequest from "./components/clients/ClientPendingRequest";
 
 import Home1 from "./pages/Home1";
 import ChangePasswordForm from "./components/settings/ChangePassword";
@@ -107,6 +108,16 @@ const App: React.FC = () => {
             }
           />
           <Route
+            path="/client-pending-request"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+                <Layout>
+                  <ClientPendingRequest />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/settings/*"
             element={
               <ProtectedRoute requiredRole={["super_admin"]}>
@@ -133,7 +144,7 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                     <Route
+                  <Route
                     path="lab-profile"
                     element={<LABProfile />}
                   />
