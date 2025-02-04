@@ -193,7 +193,6 @@ export const UserManagement: React.FC = () => {
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
-        debugger;
         console.log(formData);
         setLoading(true);
         e.preventDefault();

@@ -172,7 +172,6 @@ export function CreateStatementModal({
   // Fetch months with payment activity
 
   useEffect(() => {
-    debugger;
     const fetchAvailableMonths = async () => {
       try {
         const { data: payments, error } = await supabase
@@ -208,7 +207,6 @@ export function CreateStatementModal({
 
 
   useEffect(() => {
-    debugger;
     const fetchClients = async () => {
       try {
         setLoading(true);
@@ -235,8 +233,7 @@ export function CreateStatementModal({
 
 
   const getBalanceSummary = async (month: number, year: number, clientId: string) => {
-    debugger;
-    setLoading(true);
+   setLoading(true);
 
     const formattedYear = year < 100 ? 2000 + year : year;
     const nextMonth = month === 12 ? 1 : month + 1;
@@ -329,7 +326,6 @@ export function CreateStatementModal({
 
   // Handle statement generation
   const handleGenerateStatement = async () => {
-    debugger;
     if (!selectmonth) {
       toast.error("Please select a month");
       return;

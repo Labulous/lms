@@ -95,7 +95,6 @@ export const MyAccount: React.FC = () => {
 
 
     const handleChangePassword = async () => {
-        debugger
         if (!passwordData) return;
         console.log(passwordData);
         if (!passwordData.newPassword || !passwordData.confirmPassword) {
@@ -183,7 +182,6 @@ export const MyAccount: React.FC = () => {
 
 
     const handleSave = async (e: React.FormEvent) => {
-        debugger;
         if (!formData) return;
         console.log(formData);
 

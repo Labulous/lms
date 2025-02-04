@@ -36,7 +36,6 @@ const Statements = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const handleCreateStatement = async (data: any) => {
-    debugger
     try {
       setIsLoading(true);
 
