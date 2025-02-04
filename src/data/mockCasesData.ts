@@ -326,7 +326,14 @@ const saveCases = async (
       return;
     }
 
-    console.log("Cases saved successfully:", data);
+    const { data: taxData, error: taxDataError } = await supabase
+      .from("tax_configuration")
+      .select("*")
+      .eq("lab_id", cases.overview.lab_id);
+
+    const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
+      return sum + (tax.rate || 0);
+    }, 0);
 
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
@@ -371,7 +378,12 @@ const saveCases = async (
             const final_price = priceAfterDiscount * totalQuantity;
 
             // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
-            const amount = final_price * (product.teeth?.length || 1);
+            let amount = final_price * (product.teeth?.length || 1);
+
+            // If the product is taxable, add tax percentage
+            if (product.is_taxable) {
+              amount += (amount * totalTaxPercent) / 100;
+            }
 
             // Add the amount to the overall sum
             return subSum + amount;
