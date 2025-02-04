@@ -1,5 +1,5 @@
-import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 export type SettingsTab = 'system' | 'product-catalog' | 'case-workflow' | 'working-tags' | 'working-pans' | 'user-management' | 'lab-profile' | 'tax-configuration';
@@ -19,7 +19,8 @@ export const SettingsTabs: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentTab = tabs.find(tab => location.pathname === tab.href)?.id || 'system';
+  const currentTab =
+    tabs.find((tab) => location.pathname === tab.href)?.id || "system";
 
   return (
     <div className="w-64 border-r min-h-[calc(100vh-4rem)] bg-white">
