@@ -56,8 +56,12 @@ const UserInfo: React.FC<UserInfoProps> = ({ data }) => {
         navigate("/login");
     };
 
+    const handleProfile = () => {
+        navigate("/settings/user-profile");
+    };
+
     const menuItems = [
-        { icon: '', label: "Profile" },
+        { icon: '', label: "Profile", action: handleProfile },
         { icon: '', label: "Logout", action: handleLogout },
     ];
 

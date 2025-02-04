@@ -145,7 +145,6 @@ const saveCaseProduct = async (
     const caseProductId = caseProductData[0].id; // Assuming `id` is the `case_product_id`
 
     // Step 3: Map cases.products and create rows for case_product_teeth
-    console.log(cases.products, "cases.products");
     const caseProductTeethRows = cases.products.flatMap((main: any) => {
       return main.subRows.map((product: any) => {
         return {
@@ -433,11 +432,17 @@ const updateCases = async (
   cases: any,
   navigate?: any,
   setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
-  caseId?: string
+  caseId?: string,
+  oldAmount?: number,
+  oldDueAmount?: number
 ) => {
+  console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
-
+    console.log(
+      cases.overview.enclosed_case_id,
+      "cases.overview.enclosed_case_id"
+    );
     // Step 1: Update enclosed case details
     const enclosedCaseRow = {
       impression: cases.enclosedItems?.impression || 0,
@@ -455,7 +460,7 @@ const updateCases = async (
     const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
       .from("enclosed_case")
       .update(enclosedCaseRow)
-      .eq("id", cases.overview.enclosed_case_id)
+      .eq("id", cases.enclosed_item_id)
       .select("*");
 
     if (enclosedCaseError) {
@@ -464,10 +469,12 @@ const updateCases = async (
       );
     }
 
+    console.log("Enclosed case updated successfully:", enclosedCaseData);
+
     // Step 2: Update cases overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
-      enclosed_case_id: cases.overview.enclosed_case_id,
+      enclosed_case_id: cases.enclosed_case_id,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase
@@ -481,216 +488,41 @@ const updateCases = async (
       throw new Error(`Error updating cases: ${caseOverviewError.message}`);
     }
 
+    console.log("Cases updated successfully:", caseOverviewData);
+
     // Step 3: Update case products (instead of saving, we'll update)
     const productIds = cases.products.map((item: any) => item.id);
+    const caseProduct = {
+      user_id: cases.overview.created_by,
+      case_id: caseId,
+      products_id: productIds,
+    };
 
-    if (productIds.length > 0) {
-      const caseProduct = {
-        user_id: cases.overview.created_by,
-        case_id: caseId,
-        products_id: productIds,
-      };
+    // Upsert case products
+    const { data: caseProductData, error: caseProductError } = await supabase
+      .from("case_products")
+      .update(caseProduct)
+      .eq("case_id", caseId)
+      .select("*");
 
-      // Calculate discounted prices for products
-      for (const product of cases.products) {
-        // Prepare the data row
+    if (caseProductError) {
+      console.error("Error updating case products:", caseProductError);
+    } else {
+      console.log("Case products updated successfully:", caseProductData);
+    }
 
-        // Calculate totalAmount by iterating over all products
-        const totalAmount = cases.products.reduce(
-          (sum: number, item: SavedProduct) => {
-            const quantity = item?.quantity || 1; // Default to 1 if quantity is not provided
-            const finalPriceBeforeDiscount =
-              item.price * item.teeth.length * quantity; // Total before discount
-            const discountedTotal =
-              finalPriceBeforeDiscount -
-              (finalPriceBeforeDiscount * (item.discount || 0)) / 100; // Apply discount to total
-
-            // Add discounted total for this product to the sum
-            return sum + discountedTotal;
-          },
-          0
-        );
-
-        const discountedPriceRow = {
-          product_id: product.id,
-          price: product.price || 0,
-          discount: product.discount || 0,
-          quantity: product.quantity,
-          // Calculate the final price after discount and considering quantity
-          final_price:
-            (product.price - (product.price * product.discount) / 100 || 0) *
-            (product?.quantity || 1),
-          case_id: caseId,
-          total: Number(totalAmount) || 0,
-          user_id: cases.overview.created_by || "",
-        };
-        const UpdatedInvoice = {
-          case_id: caseId,
-          client_id: cases.overview.client_id,
-          lab_id: cases.overview.lab_id,
-          amount: Number(totalAmount),
-          due_date: null,
-        };
-        const newInvoice = {
-          case_id: caseId,
-          client_id: cases.overview.client_id,
-          lab_id: cases.overview.lab_id,
-          amount: Number(totalAmount),
-          due_amount: Number(totalAmount),
-          status: "unpaid",
-          due_date: null,
-        };
-        console.log("Processing product:", product.id);
-
-        // Fetch existing row by case_id and product_id
-        const { data: existingRow, error: fetchError } = await supabase
-          .from("discounted_price")
-          .select("id") // Only fetch the ID for updates
-          .eq("case_id", caseId)
-          .eq("product_id", product.id)
-          .single();
-
-        if (fetchError && fetchError.code !== "PGRST116") {
-          // Log error if it's not "No rows found" (PGRST116 means no match)
-          console.error(
-            `Error fetching row for product_id: ${product.id}`,
-            fetchError
-          );
-          continue; // Skip this product and move on to the next
-        }
-
-        if (existingRow) {
-          // Update the existing row
-          const { error: updateError } = await supabase
-            .from("discounted_price")
-            .update(discountedPriceRow)
-            .eq("id", existingRow.id);
-
-          if (updateError) {
-            console.error(
-              `Error updating row for product_id: ${product.id}`,
-              updateError
-            );
-          } else {
-            console.log(
-              `Discounted price updated successfully for product_id: ${product.id}`
-            );
-          }
-        } else {
-          // Insert a new row
-          const { error: insertError } = await supabase
-            .from("discounted_price")
-            .insert(discountedPriceRow);
-
-          if (insertError) {
-            console.error(
-              `Error inserting row for product_id: ${product.id}`,
-              insertError
-            );
-          } else {
-            console.log(
-              `Discounted price inserted successfully for product_id: ${product.id}`
-            );
-          }
-        }
-
-        const { data: existingInvoicesRow, error: invoiceFetchError } =
-          await supabase
-            .from("invoices")
-            .select("id") // Only fetch the ID for updates
-            .eq("case_id", caseId)
-            .single();
-
-        if (invoiceFetchError && invoiceFetchError.code !== "PGRST116") {
-          // Log error if it's not "No rows found" (PGRST116 means no match)
-          console.error(
-            `Error fetching row for product_id: ${product.id}`,
-            invoiceFetchError
-          );
-          continue; // Skip this product and move on to the next
-        }
-
-        if (existingInvoicesRow) {
-          // Update the existing row
-          const { error: updateError } = await supabase
-            .from("invoices")
-            .update(UpdatedInvoice)
-            .eq("id", existingInvoicesRow.id);
-
-          if (updateError) {
-            console.error(
-              `Error updating row for product_id: ${product.id}`,
-              updateError
-            );
-          } else {
-            console.log(
-              `Discounted price updated successfully for product_id: ${product.id}`
-            );
-          }
-        } else {
-          // Insert a new row
-          const { error: insertError } = await supabase
-            .from("invoices")
-            .insert(newInvoice);
-
-          if (insertError) {
-            console.error(
-              `Error inserting row for product_id: ${product.id}`,
-              insertError
-            );
-          } else {
-            console.log(
-              `Discounted price inserted successfully for product_id: ${product.id}`
-            );
-          }
-        }
-      }
-
-      const { data: findCaseProduct, error: findCaseProductError } =
-        await supabase
-          .from("case_products")
-          .select("*")
-          .eq("case_id", caseId)
-          .single();
-
-      let caseProductId = "";
-      if (!findCaseProduct) {
-        // Insert case product
-        const { data: caseProductData, error: caseProductError } =
-          await supabase.from("case_products").insert(caseProduct).select("*");
-        caseProductId =
-          caseProductData &&
-          caseProductData.length > 0 &&
-          caseProductData[0].id;
-      } else {
-        // Upsert case products
-        const { data: caseProductData, error: caseProductError } =
-          await supabase
-            .from("case_products")
-            .update(caseProduct)
-            .eq("case_id", caseId)
-            .select("*");
-
-        if (caseProductError) {
-          console.error("Error updating case products:", caseProductError);
-        } else {
-          console.log("Case products updated successfully:", caseProductData);
-        }
-
-        caseProductId =
-          caseProductData &&
-          caseProductData.length > 0 &&
-          caseProductData[0].id;
-      }
-      // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
-      // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
-      const caseProductTeethRows = cases.products.map((product: any) => ({
-        case_product_id: caseProductId, // Use the ID of the updated/inserted case product
+    // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
+    // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
+    console.log(cases.products, "cases.products");
+    const caseProductTeethRows = cases.products.flatMap((main: any) =>
+      main.subRows.map((product: any) => ({
+        case_product_id: product.case_product_id ?? "", // Use the ID of the updated/inserted case product
         is_range: cases.products.length > 0,
         product_id: product.id,
         type: product.type || "",
         lab_id: cases.overview.lab_id || "",
-        quantity: product.quantity || 1,
+        quantity: (product.quantity ?? 1) + (main.quantity ?? 0), // Ensure quantity calculation is safe
+        additional_service_id: product.additional_service_id,
         notes: product.notes || "",
         tooth_number: product.teeth || [],
         pontic_teeth: product.pontic_teeth || [],
@@ -710,7 +542,6 @@ const updateCases = async (
           product.shades.stump_shade === "manual"
             ? null
             : product.shades.stump_shade || null,
-
         manual_body_shade: product?.shades.manual_body || null,
         manual_occlusal_shade: product?.shades.manual_occlusal || null,
         manual_gingival_shade: product?.shades.manual_gingival || null,
@@ -719,135 +550,201 @@ const updateCases = async (
         custom_occlusal_shade: product?.shades.custom_occlusal || null,
         custom_gingival_shade: product?.shades.custom_gingival || null,
         custom_stump_shade: product?.shades.custom_stump || null,
-
         case_id: caseId,
-      }));
+      }))
+    );
 
-      // Step to check if rows exist for product_id before inserting
-      for (const row of caseProductTeethRows) {
-        const { data: existingTeethRows, error: fetchError } = await supabase
+    // Step to check if rows exist for product_id before inserting
+    for (const row of caseProductTeethRows) {
+      const { data: existingTeethRows, error: fetchError } = await supabase
+        .from("case_product_teeth")
+        .select("*")
+        .eq("product_id", row.product_id)
+        .eq("case_id", caseId)
+        .eq("id", row.case_product_id); // Check for the combination of case_product_id and product_id
+
+      if (fetchError) {
+        console.error("Error fetching case_product_teeth rows:", fetchError);
+        return; // Exit if there is an error
+      }
+      console.log(existingTeethRows, "existingTeethRows");
+
+      if (existingTeethRows.length === 0) {
+        // No existing row found for this product_id, so insert a new row
+        const { error: insertError } = await supabase
           .from("case_product_teeth")
-          .select("*")
-          .eq("product_id", row.product_id)
-          .eq("case_id", caseId)
-          .eq("case_product_id", row.case_product_id); // Check for the combination of case_product_id and product_id
+          .insert([row]);
 
-        if (fetchError) {
-          console.error("Error fetching case_product_teeth rows:", fetchError);
+        if (insertError) {
+          console.error(
+            "Error inserting new case_product_teeth row:",
+            insertError,
+            console.log(row, "row")
+          );
+
           return; // Exit if there is an error
-        }
-        console.log(existingTeethRows, "existingTeethRows");
-
-        if (existingTeethRows.length === 0) {
-          // No existing row found for this product_id, so insert a new row
-          const { error: insertError } = await supabase
-            .from("case_product_teeth")
-            .insert([row]);
-
-          if (insertError) {
-            console.error(
-              "Error inserting new case_product_teeth row:",
-              insertError,
-              console.log(row, "row")
-            );
-
-            return; // Exit if there is an error
-          } else {
-            console.log(
-              `New case_product_teeth row created for product_id: ${row.product_id}`
-            );
-
-            toast.success("Case updated successfully");
-            if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-            }
-          }
         } else {
-          // Existing row found, update the row if needed
-          const { error: updateError } = await supabase
-            .from("case_product_teeth")
-            .update(row)
-            .eq("product_id", row.product_id)
-            .eq("case_product_id", row.case_product_id); // Update for the combination of case_product_id and product_id
+          console.log(
+            `New case_product_teeth row created for product_id: ${row.product_id}`
+          );
 
-          if (updateError) {
-            console.error(
-              "Error updating existing case_product_teeth row:",
-              updateError
-            );
+          toast.success("Case updated successfully");
+          if (navigate && caseId) {
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+          }
+          return;
+        }
+      } else {
+        // Existing row found, update the row if needed
+        const { error: updateError } = await supabase
+          .from("case_product_teeth")
+          .update(row)
+          .eq("product_id", row.product_id)
+          .eq("case_product_id", row.case_product_id); // Update for the combination of case_product_id and product_id
 
-            return; // Exit if there is an error
-          } else {
-            console.log(
-              `Existing case_product_teeth row updated for product_id: ${row.product_id}`
-            );
+        if (updateError) {
+          console.error(
+            "Error updating existing case_product_teeth row:",
+            updateError
+          );
 
-            toast.success("Case updated successfully");
-            if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-            }
+          return; // Exit if there is an error
+        } else {
+          console.log(
+            `Existing case_product_teeth row updated for product_id: ${row.product_id}`
+          );
+
+          toast.success("Case updated successfully");
+          if (navigate && caseId) {
+            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
           }
         }
-      }
-
-      // Step 6: Save the updated overview to localStorage and navigate
-      localStorage.setItem("cases", JSON.stringify(cases));
-      // toast.success("Case updated successfully");
-      // navigate && navigate("/cases");
-    } else {
-      try {
-        const { error: removeCaseProductsError } = await supabase
-          .from("case_products")
-          .delete()
-          .eq("case_id", caseId);
-
-        if (removeCaseProductsError) {
-          throw new Error("Failed to update case product");
-        }
-
-        const { error: removeCaseProductTeethError } = await supabase
-          .from("case_product_teeth")
-          .delete()
-          .eq("case_id", caseId);
-
-        if (removeCaseProductTeethError) {
-          throw new Error("Failed to update case teeth");
-        }
-
-        const { error: removeDiscountedPriceError } = await supabase
-          .from("discounted_price")
-          .delete()
-          .eq("case_id", caseId);
-
-        if (removeDiscountedPriceError) {
-          throw new Error("Failed to update case price");
-        }
-
-        const { error: removeInvoiceError } = await supabase
-          .from("invoices")
-          .delete()
-          .eq("case_id", caseId);
-
-        if (removeInvoiceError) {
-          throw new Error("Failed to update case invoice");
-        }
-      } catch (error) {
-        toast.error(error?.message || "Failed to update case");
-        return;
-      }
-
-      await updateBalanceTracking();
-
-      toast.success("Case updated successfully");
-      if (navigate && caseId) {
-        navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
       }
     }
+    // Step 4: Create invoice for the case
+
+    function updateInvoice(
+      old_amount: number,
+      new_amount: number,
+      due_amount: number
+    ) {
+      let paid_amount = old_amount - due_amount;
+      let new_due_amount = Math.max(0, new_amount - paid_amount);
+
+      return {
+        amount: new_amount,
+        due_amount: new_due_amount,
+      };
+    }
+
+    const totalAmount = cases.products.reduce((sum: number, main: any) => {
+      return (
+        sum +
+        main.subRows.reduce((subSum: number, product: any) => {
+          // Calculate the final discount for each product
+          const finalDiscount =
+            product.discount === 0
+              ? main.discount // If product discount is 0, use the main discount
+              : main.discount + product.discount; // Otherwise, add both main and product discounts
+
+          // Calculate price after the final discount
+          const priceAfterDiscount =
+            product.price - (product.price * finalDiscount) / 100;
+
+          // Calculate total quantity for the product (main.quantity + product.quantity)
+          const totalQuantity =
+            main.quantity > 1
+              ? main.quantity + product.quantity
+              : product.quantity;
+
+          // Calculate the final price (after discount) for the given quantity
+          const final_price = priceAfterDiscount * totalQuantity;
+
+          // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
+          const amount = final_price * (product.teeth?.length || 1);
+
+          // Add the amount to the overall sum
+          return subSum + amount;
+        }, 0)
+      );
+    }, 0);
+
+    const newInvoice = {
+      case_id: caseId,
+      client_id: cases.overview.client_id,
+      lab_id: cases.overview.lab_id,
+      amount: Number(totalAmount), // Total amount for the invoice after discount
+      due_amount: updateInvoice(
+        Number(oldAmount),
+        Number(totalAmount),
+        Number(oldDueAmount)
+      ).due_amount, // Same as amount since it's unpaid
+      status: "unpaid",
+      due_date: null,
+    };
+
+    const { data: invoiceData, error: invoiceError } = await supabase
+      .from("invoices")
+      .update(newInvoice)
+      .eq("id", cases.invoiceId)
+      .select("*");
+
+    if (invoiceError) {
+      toast.error("failed to update Invoice Data");
+      return;
+    }
+    cases.products.flatMap((main: any) => {
+      return main.subRows.map((product: any) => {
+        // Calculate the final discount
+
+        // Calculate the price after final discount
+        const priceAfterDiscount =
+          product.price - (product.price * product.discount) / 100;
+
+        // Calculate the total quantity based on main.quantity and product.quantity
+
+        // Calculate final price (after discount) for the given quantity
+        const final_price = priceAfterDiscount * product.quantity;
+
+        // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
+        const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
+
+        // Step 4: Insert discount price rows
+        const updatedData = {
+          product_id: product.id,
+          price: product.price,
+          discount: product.discount, // use the final discount
+          quantity: product.quantity, // final quantity after adding main.quantity
+          final_price: final_price, // price after final discount
+          total: amount, // final price * total quantity * teeth length
+          case_id: caseId as string,
+          user_id: cases.overview.created_by,
+        };
+        const handleUpdateDiscountedPrice = async () => {
+          const { error: discountPriceError } = await supabase
+            .from("discounted_price")
+            .update(updatedData)
+            .eq("id", product.discounted_price_id)
+            .select("*");
+
+          if (discountPriceError) {
+            console.error(
+              "Error inserting discount prices:",
+              discountPriceError
+            );
+            return; // Exit if there is an error
+          } else {
+            console.log("Discount prices inserted successfully!");
+          }
+        };
+        handleUpdateDiscountedPrice();
+      });
+    });
   } catch (error) {
     console.error("Error in updateCases function:", error);
     toast.error("Failed to update case");
   } finally {
-    setLoadingState && setLoadingState({ isLoading: false, action: "update" });
+    // setLoadingState && setLoadingState({ isLoading: false, action: "update" });
   }
 };
 
@@ -879,10 +776,19 @@ export const updateCase = (
   newCase: Case,
   navigate?: any,
   setLoadingState?: React.Dispatch<SetStateAction<LoadingState>>,
-  caseId?: string
+  caseId?: string,
+  oldAmount?: number,
+  oldDueAmount?: number
 ): void => {
   cases = [newCase];
-  updateCases(newCase, navigate, setLoadingState, caseId);
+  updateCases(
+    newCase,
+    navigate,
+    setLoadingState,
+    caseId,
+    oldAmount,
+    oldDueAmount
+  );
 };
 // Function to delete a case
 export const deleteCase = (id: string): void => {

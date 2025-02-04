@@ -72,7 +72,6 @@ const Adjustments = () => {
   const { user } = useAuth();
 
   const handleCreditSubmit = async (data: any) => {
-    debugger;
     if (data.type === "apply") {
       try {
         const {

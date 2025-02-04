@@ -140,7 +140,6 @@ const PrintPreview = () => {
   };
  
   const renderTemplate = () => {
-    debugger;
     // If caseData is an array, we're doing batch printing
     console.log("printing type bgfgfgfgfgffg", type)
     console.log(caseDetails, "caseDetails");

@@ -93,15 +93,21 @@ const StatementList = ({ statement }: StatementList) => {
   const [clientFilter, setClientFilter] = useState("");
   const [clientStatus, setClientStatus] = useState("active");
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [statementsData, setStatementsData] = useState<any>(statement);
+  const [filteredStatements, setFilteredStatements] = useState<any>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isClientLoading, setIsClientLoading] = useState(false);
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
 
-  const currentYear = new Date().getFullYear();
-  const [selectmonth, setSelectMonth] = useState("12");
-  const [selectyear, setSelectYear] = useState((currentYear - 1).toString());
+  const currentDate = new Date();
+
+  const [selectmonth, setSelectMonth] = useState(
+    (currentDate.getMonth() + 1).toString()
+  );
+  const [selectyear, setSelectYear] = useState(
+    currentDate.getFullYear().toString()
+  );
+
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("All Clients");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -213,12 +219,44 @@ const StatementList = ({ statement }: StatementList) => {
       }
     };
     fetchClients();
-    filterStaementData();
+    setFilteredStatements(statement);
   }, []);
 
   const handleMonthChange = (e: any) => {
-    setSelectMonth(e.target.value);
-    filterStaementData();
+    setSelectMonth(e);
+    const selMonth = e;
+
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return selectedClient === "" || selectedClient === "All Clients"
+          ? itemMonth === Number(selMonth) && itemYear === Number(selectyear)
+          : itemMonth === Number(selMonth) &&
+              itemYear === Number(selectyear) &&
+              item.client.client_name.toLowerCase() ===
+                selectedClient.toLocaleLowerCase();
+      })
+    );
+  };
+
+  const handleYearChange = (e: any) => {
+    setSelectYear(e);
+    const selYear = e;
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return selectedClient === "" || selectedClient === "All Clients"
+          ? itemMonth === Number(selectmonth) && itemYear === Number(selYear)
+          : itemMonth === Number(selectmonth) &&
+              itemYear === Number(selYear) &&
+              item.client.client_name.toLowerCase() ===
+                selectedClient.toLocaleLowerCase();
+      })
+    );
   };
 
   const months = [
@@ -237,31 +275,40 @@ const StatementList = ({ statement }: StatementList) => {
   ];
   const years = Array.from({ length: 10 }, (_, i) => 2020 + i);
 
-  const filterStaementData = () => {
-    debugger;
-    setStatementsData(
-      statement.filter((item) => {
-        const itemDate = new Date(item.created_at);
-        const itemMonth = itemDate.getMonth() + 1;
-        const itemYear = itemDate.getFullYear();
-        return selectedClient === "All Clients"
-          ? itemMonth === Number(selectmonth) && itemYear === Number(selectyear)
-          : itemMonth === Number(selectmonth) &&
-              itemYear === Number(selectyear) &&
-              item.client.client_name.toLowerCase() ===
-                selectedClient.toLocaleLowerCase();
-      })
-    );
-  };
   const filteredClients = useMemo(() => {
     if (searchTerm === "All Clients" || searchTerm.trim() === "") {
+      setFilteredStatements(
+        statement.filter((item) => {
+          const itemDate = new Date(item.created_at);
+          const itemMonth = itemDate.getMonth() + 1;
+          const itemYear = itemDate.getFullYear();
+          return (
+            itemMonth === Number(selectmonth) && itemYear === Number(selectyear)
+          );
+        })
+      );
+
       return clients;
     }
 
     const filter = clients.filter((client) =>
       client.clientName.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    filterStaementData();
+
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return (
+          itemMonth === Number(selectmonth) &&
+          itemYear === Number(selectyear) &&
+          item.client.client_name.toLowerCase() ===
+            selectedClient.toLocaleLowerCase()
+        );
+      })
+    );
+
     return filter.length > 0 ? filter : [];
   }, [searchTerm, clients]);
 
@@ -290,7 +337,7 @@ const StatementList = ({ statement }: StatementList) => {
                     <div
                       className="p-2 hover:bg-gray-200 cursor-pointer"
                       onClick={() => {
-                        setSelectedClient("all");
+                        setSelectedClient("All Clients");
                         setSearchTerm("All Clients");
                         setIsDropdownOpen(false);
                       }}
@@ -320,7 +367,7 @@ const StatementList = ({ statement }: StatementList) => {
           </div>
 
           <div>
-            <Select value={selectmonth} onValueChange={setSelectMonth}>
+            <Select value={selectmonth} onValueChange={handleMonthChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Month" />
               </SelectTrigger>
@@ -334,7 +381,7 @@ const StatementList = ({ statement }: StatementList) => {
             </Select>
           </div>
           <div>
-            <Select value={selectyear} onValueChange={setSelectYear}>
+            <Select value={selectyear} onValueChange={handleYearChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select Year" />
               </SelectTrigger>
@@ -426,7 +473,7 @@ const StatementList = ({ statement }: StatementList) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {statement.map((statement) => (
+            {filteredStatements.map((statement: any) => (
               <TableRow key={statement.id}>
                 <TableCell>
                   <Checkbox

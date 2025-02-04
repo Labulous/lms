@@ -157,7 +157,6 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
 
   const handleDownloadPDF = async () => {
-    debugger;
     if (!invoiceRef.current) {
       console.log("Invoice reference is missing");
       return;

@@ -212,10 +212,10 @@ export interface Materials {
  * Shade data structure for dental products
  */
 export interface ShadeData {
-  occlusal_shade?: string;
-  body_shade?: string;
-  gingival_shade?: string;
-  stump_shade?: string;
+  occlusal_shade?: string | null;
+  body_shade?: string | null;
+  gingival_shade?: string | null;
+  stump_shade?: string | null;
   id?: string;
   custom_occlusal?: string;
   custom_gingival?: string;
@@ -226,10 +226,10 @@ export interface ShadeData {
   manual_stump?: string;
   manual_body?: string;
   subRow?: {
-    occlusal_shade?: string;
-    body_shade?: string;
-    gingival_shade?: string;
-    stump_shade?: string;
+    occlusal_shade?: string | null;
+    body_shade?: string | null;
+    gingival_shade?: string | null;
+    stump_shade?: string | null;
     id?: string;
     custom_occlusal?: string;
     custom_gingival?: string;

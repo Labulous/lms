@@ -1,3 +1,4 @@
+import { date } from "zod";
 import { supabase } from "./supabase";
 
 // Helper function to calculate days overdue
@@ -75,6 +76,8 @@ export async function updateBalanceTracking() {
     for (const balance of balanceArray) {
       // Debugging log for balance being processed
       console.log("Balance object to process:", balance);
+
+      balance.updated_at = new Date().toUTCString();  // UTC datetime
 
       // First, try to update the record if it exists
       const { data: existingBalance, error: fetchError } = await supabase

@@ -4,7 +4,7 @@ import { ClientInput } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { getLabIdByUserId } from "@/services/authService";
+import { getLabIdByUserId } from "../../services/authService";
 
 interface Doctor {
   name: string;
@@ -26,8 +26,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
   loading,
   onSuccess,
 }) => {
-
-  //Get UserID 
+  //Get UserID
   const { user } = useAuth();
   const [labId, setLabId] = useState<string | null>(null);
 
@@ -40,7 +39,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
           toast.error("Unable to get Lab Id");
           return;
         }
-        setLabId(labData.labId);  // Set the lab ID here
+        setLabId(labData.labId); // Set the lab ID here
       } catch (error) {
         console.error("Error loading clients:", error);
         toast.error("Failed to load clients list");
@@ -212,6 +211,20 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     }
 
     try {
+      // Get current user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("No authenticated user found");
+      }
+
+      // Get lab_id for the current user
+      const labData = await getLabIdByUserId(user.id);
+      if (!labData) {
+        throw new Error("No lab found for current user");
+      }
+
       const { data: accountNumber, error: numberError } = await supabase.rpc(
         "get_next_account_number"
       );
@@ -220,7 +233,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       const result = await onSubmit({
         ...formData,
         account_number: accountNumber as string,
-        lab_id: labId // labId should now always be defined here
+        lab_id: labData.labId, // Add lab_id to the client data
       });
 
       if (result !== undefined) {

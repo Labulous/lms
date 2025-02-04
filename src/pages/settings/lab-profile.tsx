@@ -109,7 +109,6 @@ export const LABProfile: React.FC = () => {
 
 
     const handleSave = async (e: React.FormEvent) => {
-        debugger;
         if (!formData) return;
         console.log(formData);
 
@@ -118,7 +117,6 @@ export const LABProfile: React.FC = () => {
 
         try {
             if (isEditing) {
-                debugger;
                 let publicUrlData = null;
                 if (formData.file) {
                     const fileName = `${Date.now()}_${formData.file?.name}`;

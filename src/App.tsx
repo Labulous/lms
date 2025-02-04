@@ -34,9 +34,10 @@ import ClientDashboard from "./pages/ClientDashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
 import ClientPendingRequest from "./components/clients/ClientPendingRequest";
-
-import Home1 from "./pages/Home1";
 import ChangePasswordForm from "./components/settings/ChangePassword";
+import ClientPricing from "./pages/settings/ClientPricing";
+import Home1 from "./pages/Home1";
+import { MyAccount } from "./pages/settings/my-account";
 
 const App: React.FC = () => {
   const { user } = useAuth();
@@ -144,12 +145,22 @@ const App: React.FC = () => {
                     element={<ProductsServices />}
                   />
                   <Route path="user-management" element={<UserManagement />} />
-                  <Route
-                    path="lab-profile"
-                    element={<LABProfile />}
-                  />
+                  <Route path="lab-profile" element={<LABProfile />} />
+
+                  <Route path="user-profile" element={<MyAccount />} />
+
                   <Route path="*" element={<Settings />} />
                 </Routes>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client-pricing"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+                <Layout>
+                  <ClientPricing />
+                </Layout>
               </ProtectedRoute>
             }
           />
