@@ -101,6 +101,7 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientsLoading, setPatientsLoading] = useState(true);
   const [patientSearch, setPatientSearch] = useState("");
+  const [patientDialogOpen, setPatientDialogOpen] = useState(false);
 
   const handleEditTag = async (tagId: string) => {
     const tag = tags.find((t) => t.id === tagId);
@@ -459,15 +460,12 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   Patient <span className="text-red-500">*</span>
                 </Label>
                 <NewPatient
-                  onClose={() => setIsAddingPatient(false)}
                   initiallyOpen={isAddingPatient}
                   trigger={
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsAddingPatient(!isAddingPatient);
-                      }}
                       className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      onClick={() => setPatientDialogOpen(true)}
                     >
                       <Plus className="w-3 h-3" />
                       Add New Patient
@@ -475,6 +473,8 @@ const ClientOrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   }
                   patients={patients}
                   setPatients={setPatients}
+                  patientDialogOpen={patientDialogOpen}
+                  setPatientDialogOpen={setPatientDialogOpen}
                 />
               </div>
               <div className="grid grid-cols-1">
