@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { getLabIdByUserId } from "../../services/authService";
 
 interface DailyCounts {
   casesDue: number;
@@ -50,6 +51,13 @@ const DailyCountsCard = ({
         return;
       }
 
+      // Get lab_id first
+      const labData = await getLabIdByUserId(user.id);
+      if (!labData?.labId) {
+        console.log("No lab ID found");
+        return;
+      }
+
       // Set today to start of day in local timezone
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -63,6 +71,7 @@ const DailyCountsCard = ({
         const { data: dueCases, error: dueError } = await supabase
           .from("cases")
           .select("id, status, due_date")
+          .eq("lab_id", labData.labId)
           .in("status", ["in_progress", "in_queue"])
           .lte("due_date", tomorrow.toISOString());
 
@@ -70,6 +79,7 @@ const DailyCountsCard = ({
         const { data: completedCases, error: completedError } = await supabase
           .from("cases")
           .select("id, status, updated_at")
+          .eq("lab_id", labData.labId)
           .eq("status", "completed")
           .gte("updated_at", today.toISOString())
           .lt("updated_at", tomorrow.toISOString());
@@ -78,6 +88,7 @@ const DailyCountsCard = ({
         const { data: receivedCases, error: receivedError } = await supabase
           .from("cases")
           .select("id, created_at")
+          .eq("lab_id", labData.labId)
           .gte("created_at", today.toISOString())
           .lt("created_at", tomorrow.toISOString());
 
@@ -85,6 +96,7 @@ const DailyCountsCard = ({
         const { data: shippedCases, error: shippedError } = await supabase
           .from("cases")
           .select("id, status, updated_at")
+          .eq("lab_id", labData.labId)
           .eq("status", "shipped")
           .gte("updated_at", today.toISOString())
           .lt("updated_at", tomorrow.toISOString());

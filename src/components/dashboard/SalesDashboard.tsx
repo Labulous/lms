@@ -25,6 +25,7 @@ import { mockDashboardData } from "../../data/mockSalesData";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../contexts/AuthContext";
 import { format } from 'date-fns';
+import { getLabIdByUserId } from "../../services/authService";
 
 interface TopClient {
   id: string;
@@ -102,6 +103,13 @@ const SalesDashboard: React.FC = () => {
         return;
       }
 
+      // Get lab_id first
+      const labData = await getLabIdByUserId(user.id);
+      if (!labData?.labId) {
+        console.error("Lab ID not found");
+        return;
+      }
+
       // Calculate date range based on selected filter
       const today = new Date();
       const startDate = new Date(today);
@@ -127,6 +135,7 @@ const SalesDashboard: React.FC = () => {
             created_at
           )
         `)
+        .eq('lab_id', labData.labId)
         .gte('created_at', formattedStartDate)
         .lte('created_at', formattedEndDate);
 
@@ -178,6 +187,13 @@ const SalesDashboard: React.FC = () => {
         return;
       }
 
+      // Get lab_id first
+      const labData = await getLabIdByUserId(user.id);
+      if (!labData?.labId) {
+        console.error("Lab ID not found");
+        return;
+      }
+
       let currentStartDate: Date;
       let previousStartDate: Date;
       const today = new Date();
@@ -206,35 +222,53 @@ const SalesDashboard: React.FC = () => {
         previousStartDate.setDate(previousStartDate.getDate() - 7);
       }
 
-      // Format dates for Supabase query
-      const formattedCurrentStartDate = currentStartDate.toISOString();
-      const formattedPreviousStartDate = previousStartDate.toISOString();
-      const formattedEndDate = today.toISOString();
+      // Format dates for queries
+      const currentPeriodStart = currentStartDate.toISOString();
+      const currentPeriodEnd = today.toISOString();
+      const previousPeriodStart = previousStartDate.toISOString();
+      const previousPeriodEnd = currentStartDate.toISOString();
 
-      // Fetch current period revenue
-      const { data: currentData, error: currentError } = await supabase
+      // Get current period revenue
+      const { data: currentPeriodData, error: currentError } = await supabase
         .from('invoices')
-        .select('amount, created_at')
-        .gte('created_at', formattedCurrentStartDate)
-        .lte('created_at', formattedEndDate)
-        .eq('status', 'paid');
+        .select(`
+          amount,
+          created_at,
+          cases!inner (
+            lab_id
+          )
+        `)
+        .eq('cases.lab_id', labData.labId)
+        .gte('created_at', currentPeriodStart)
+        .lte('created_at', currentPeriodEnd);
 
-      // Fetch previous period revenue for growth calculation
-      const { data: previousData, error: previousError } = await supabase
+      if (currentError) {
+        console.error('Error fetching current period revenue:', currentError);
+        return;
+      }
+
+      // Get previous period revenue for growth calculation
+      const { data: previousPeriodData, error: previousError } = await supabase
         .from('invoices')
-        .select('amount')
-        .gte('created_at', formattedPreviousStartDate)
-        .lt('created_at', formattedCurrentStartDate)
-        .eq('status', 'paid');
-
-      if (currentError || previousError) {
-        console.error('Error fetching revenue data:', currentError || previousError);
+        .select(`
+          amount,
+          created_at,
+          cases!inner (
+            lab_id
+          )
+        `)
+        .eq('cases.lab_id', labData.labId)
+        .gte('created_at', previousPeriodStart)
+        .lte('created_at', previousPeriodEnd);
+      
+      if (previousError) {
+        console.error('Error fetching previous period revenue:', previousError);
         return;
       }
 
       // Calculate total revenue for current period
-      const currentRevenue = currentData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
-      const previousRevenue = previousData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+      const currentRevenue = currentPeriodData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+      const previousRevenue = previousPeriodData?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
 
       // Calculate growth percentage
       const growth = previousRevenue === 0 
@@ -242,7 +276,7 @@ const SalesDashboard: React.FC = () => {
         : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
 
       // Generate monthly data for the chart
-      const monthlyData = generateMonthlyData(currentData || []);
+      const monthlyData = generateMonthlyData(currentPeriodData || []);
 
       setRevenueData({
         revenue: currentRevenue,
