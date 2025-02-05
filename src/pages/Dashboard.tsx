@@ -48,13 +48,13 @@ export interface CalendarEvents {
     due_date?: string;
     case_products: { name: string; product_type: { name: string } }[];
     invoicesData:
-      | {
-          amount: number;
-          due_amount: number;
-          status: String;
-          created_at: string;
-        }[]
-      | [];
+    | {
+      amount: number;
+      due_amount: number;
+      status: String;
+      created_at: string;
+    }[]
+    | [];
   }[];
 }
 interface CasesDues {
@@ -69,13 +69,13 @@ interface CasesDues {
   doctor: { name: string };
   products: any[];
   invoicesData:
-    | {
-        amount: number;
-        due_amount: number;
-        status: String;
-        created_at: string;
-      }[]
-    | [];
+  | {
+    amount: number;
+    due_amount: number;
+    status: String;
+    created_at: string;
+  }[]
+  | [];
 }
 
 const Dashboard: React.FC = () => {
@@ -118,9 +118,9 @@ const Dashboard: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
                   case_number,
                   id,
                   status,
@@ -152,10 +152,10 @@ const Dashboard: React.FC = () => {
                     )
                   )
     `
-          )
-          .eq("lab_id", labIdData.lab_id)
-          .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
-          .order("created_at", { ascending: true })
+        )
+        .eq("lab_id", labIdData.lab_id)
+        .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
+        .order("created_at", { ascending: true })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -494,13 +494,12 @@ const Dashboard: React.FC = () => {
 
             // Create the event for "on_hold" cases
             const onHoldEvent = {
-              title: `${
-                formattedOnHoldCases.length > 0
-                  ? formattedOnHoldCases.filter(
-                      (caseItem) => caseItem.due_day === day
-                    ).length
-                  : ""
-              }`, // Example: "2 on hold"
+              title: `${formattedOnHoldCases.length > 0
+                ? formattedOnHoldCases.filter(
+                  (caseItem) => caseItem.due_day === day
+                ).length
+                : ""
+                }`, // Example: "2 on hold"
               start,
               end,
               onHold: true,
@@ -511,13 +510,12 @@ const Dashboard: React.FC = () => {
             };
 
             const pastDueEvent = {
-              title: `${
-                formattedOnHoldCases.length > 0
-                  ? formattedActiveCases.filter(
-                      (caseItem) => caseItem.due_day < day
-                    ).length
-                  : ""
-              }`, // Example: "2 on hold"
+              title: `${formattedOnHoldCases.length > 0
+                ? formattedActiveCases.filter(
+                  (caseItem) => caseItem.due_day < day
+                ).length
+                : ""
+                }`, // Example: "2 on hold"
               start: startOfToday,
               end: endOfToday,
               isPastDue: true,
