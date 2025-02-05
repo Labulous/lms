@@ -157,25 +157,25 @@ const saveCaseProduct = async (
           lab_id: cases.overview.lab_id || "",
           quantity: product.quantity || 1, // Ensure at least 1
           occlusal_shade_id:
-            product.shades.occlusal_shade !== "manual" &&
-              product.shades.custom_occlusal_shade !== ""
-              ? product.shades.occlusal_shade
-              : null,
+          product?.shades?.occlusal_shade === "manual" ||
+          product?.shades?.occlusal_shade === ""
+            ? null
+            : product?.shades?.occlusal_shade || null,
           body_shade_id:
-            product.shades.body_shade !== "manual" &&
-              product.shades.custom_body_shade !== ""
-              ? product.shades.body_shade
-              : null,
+            product?.shades?.body_shade === "manual" ||
+            product?.shades?.body_shade === ""
+              ? null
+              : product?.shades?.body_shade || null,
           gingival_shade_id:
-            product.shades.gingival_shade !== "manual" &&
-              product.shades.custom_gingival_shade !== ""
-              ? product.shades.gingival_shade
-              : null,
+            product?.shades?.gingival_shade === "manual" ||
+            product?.shades?.gingival_shade === ""
+              ? null
+              : product?.shades?.gingival_shade || null,
           stump_shade_id:
-            product.shades.stump_shade !== "manual" &&
-              product.shades.custom_stump_shade !== ""
-              ? product.shades.stump_shade
-              : null,
+            product?.shades?.stump_shade === "manual" ||
+            product?.shades?.stump_shade === ""
+              ? null
+              : product?.shades?.stump_shade,
           manual_body_shade: product?.shades.manual_body || null,
           manual_occlusal_shade: product?.shades.manual_occlusal || null,
           manual_gingival_shade: product?.shades.manual_gingival || null,
@@ -413,7 +413,11 @@ const saveCases = async (
         console.log("Invoice created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
-        if (invoiceData && invoiceData.length > 0 && invoiceData[0]?.client_id) {
+        if (
+          invoiceData &&
+          invoiceData.length > 0 &&
+          invoiceData[0]?.client_id
+        ) {
           await updateBalanceTracking(invoiceData[0].client_id);
         }
       }
@@ -432,7 +436,11 @@ const saveCases = async (
         console.log("case count created successfully:", invoiceData);
         setLoadingState &&
           setLoadingState({ isLoading: false, action: "save" });
-        if (invoiceData && invoiceData.length > 0 && invoiceData[0]?.client_id) {
+        if (
+          invoiceData &&
+          invoiceData.length > 0 &&
+          invoiceData[0]?.client_id
+        ) {
           await updateBalanceTracking(invoiceData[0].client_id);
         }
       }
@@ -508,13 +516,15 @@ const updateCases = async (
     console.log("Cases updated successfully:", caseOverviewData);
 
     // Step 3: Update case products (instead of saving, we'll update)
-    const productIds = cases.products.map((item: any) => item.id);
+    const productIds = cases.products?.flatMap(
+      (main: any) => main.subRows?.map((product: any) => product.id) || []
+    );
     const caseProduct = {
       user_id: cases.overview.created_by,
       case_id: caseId,
       products_id: productIds,
     };
-
+    console.log(productIds, "productIds");
     // Upsert case products
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
@@ -532,112 +542,102 @@ const updateCases = async (
     // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
     console.log(cases.products, "cases.products");
     const caseProductTeethRows = cases.products.flatMap((main: any) =>
-      main.subRows.map((product: any) => ({
-        case_product_id: product.case_product_id ?? "", // Use the ID of the updated/inserted case product
-        is_range: cases.products.length > 0,
-        product_id: product.id,
-        type: product.type || "",
-        lab_id: cases.overview.lab_id || "",
-        quantity: (product.quantity ?? 1) + (main.quantity ?? 0), // Ensure quantity calculation is safe
-        additional_service_id: product.additional_service_id,
-        notes: product.notes || "",
-        tooth_number: product.teeth || [],
-        pontic_teeth: product.pontic_teeth || [],
-        occlusal_shade_id:
-          product.shades.occlusal_shade === "manual"
-            ? null
-            : product.shades.occlusal_shade || null,
-        body_shade_id:
-          product.shades.body_shade === "manual"
-            ? null
-            : product.shades.body_shade || null,
-        gingival_shade_id:
-          product.shades.gingival_shade === "manual"
-            ? null
-            : product.shades.gingival_shade || null,
-        stump_shade_id:
-          product.shades.stump_shade === "manual"
-            ? null
-            : product.shades.stump_shade || null,
-        manual_body_shade: product?.shades.manual_body || null,
-        manual_occlusal_shade: product?.shades.manual_occlusal || null,
-        manual_gingival_shade: product?.shades.manual_gingival || null,
-        manual_stump_shade: product?.shades.manual_stump || null,
-        custom_body_shade: product?.shades.custom_body || null,
-        custom_occlusal_shade: product?.shades.custom_occlusal || null,
-        custom_gingival_shade: product?.shades.custom_gingival || null,
-        custom_stump_shade: product?.shades.custom_stump || null,
-        case_id: caseId,
-      }))
-    );
+      main.subRows.map((product: any) => {
+        const data = {
+          is_range: cases.products.length > 0,
+          product_id: product.id,
+          case_product_id: caseProductData?.[0].id,
+          type: product.type || "",
+          lab_id: cases.overview.lab_id || "",
+          quantity: (product.quantity ?? 1) + (main.quantity ?? 0), // Ensure quantity calculation is safe
+          additional_service_id: product.additional_service_id || null,
+          notes: product.notes || "",
+          tooth_number: product.teeth || [],
+          pontic_teeth: product.pontic_teeth || [],
+          occlusal_shade_id:
+            product?.shades?.occlusal_shade === "manual" ||
+            product?.shades?.occlusal_shade === ""
+              ? null
+              : product?.shades?.occlusal_shade || null,
+          body_shade_id:
+            product?.shades?.body_shade === "manual" ||
+            product?.shades?.body_shade === ""
+              ? null
+              : product?.shades?.body_shade || null,
+          gingival_shade_id:
+            product?.shades?.gingival_shade === "manual" ||
+            product?.shades?.gingival_shade === ""
+              ? null
+              : product?.shades?.gingival_shade || null,
+          stump_shade_id:
+            product?.shades?.stump_shade === "manual" ||
+            product?.shades?.stump_shade === ""
+              ? null
+              : product?.shades?.stump_shade || null,
+          manual_body_shade: product?.shades?.manual_body || null,
+          manual_occlusal_shade: product?.shades?.manual_occlusal || null,
+          manual_gingival_shade: product?.shades?.manual_gingival || null,
+          manual_stump_shade: product?.shades?.manual_stump || null,
+          custom_body_shade: product?.shades?.custom_body || null,
+          custom_occlusal_shade: product?.shades?.custom_occlusal || null,
+          custom_gingival_shade: product?.shades?.custom_gingival || null,
+          custom_stump_shade: product?.shades?.custom_stump || null,
+          case_id: caseId,
+        };
 
+        const update = async () => {
+          if (!product.case_product_id) {
+            // No case_product_id means it's a new item, directly insert
+            const { error: insertError } = await supabase
+              .from("case_product_teeth")
+              .insert([data]);
+
+            if (insertError) {
+              console.error(
+                "Error inserting new case_product_teeth row:",
+                insertError,
+                data
+              );
+              return;
+            }
+
+            console.log(
+              `New case_product_teeth row created for product_id: ${product.product_id}`
+            );
+            toast.success("Case updated successfully");
+            setLoadingState &&
+              setLoadingState({ isLoading: false, action: "save" });
+          } else {
+            // Existing item, update it
+            const { error: updateError } = await supabase
+              .from("case_product_teeth")
+              .update(data)
+              .eq("id", product.case_product_id);
+
+            if (updateError) {
+              console.error(
+                "Error updating existing case_product_teeth row:",
+                updateError
+              );
+              return;
+            }
+
+            console.log(
+              `Existing case_product_teeth row updated for product_id: ${product.product_id}`
+            );
+            toast.success("Case updated successfully");
+          }
+
+          // Navigate after processing the row
+        };
+        update();
+      })
+    );
+    console.log(caseProductTeethRows, "caseProductTeethRows");
     // Step to check if rows exist for product_id before inserting
     for (const row of caseProductTeethRows) {
-      const { data: existingTeethRows, error: fetchError } = await supabase
-        .from("case_product_teeth")
-        .select("*")
-        .eq("product_id", row.product_id)
-        .eq("case_id", caseId)
-        .eq("id", row.case_product_id); // Check for the combination of case_product_id and product_id
-
-      if (fetchError) {
-        console.error("Error fetching case_product_teeth rows:", fetchError);
-        return; // Exit if there is an error
-      }
-      console.log(existingTeethRows, "existingTeethRows");
-
-      if (existingTeethRows.length === 0) {
-        // No existing row found for this product_id, so insert a new row
-        const { error: insertError } = await supabase
-          .from("case_product_teeth")
-          .insert([row]);
-
-        if (insertError) {
-          console.error(
-            "Error inserting new case_product_teeth row:",
-            insertError,
-            console.log(row, "row")
-          );
-
-          return; // Exit if there is an error
-        } else {
-          console.log(
-            `New case_product_teeth row created for product_id: ${row.product_id}`
-          );
-
-          toast.success("Case updated successfully");
-          if (navigate && caseId) {
-            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-          }
-          return;
-        }
-      } else {
-        // Existing row found, update the row if needed
-        const { error: updateError } = await supabase
-          .from("case_product_teeth")
-          .update(row)
-          .eq("product_id", row.product_id)
-          .eq("case_product_id", row.case_product_id); // Update for the combination of case_product_id and product_id
-
-        if (updateError) {
-          console.error(
-            "Error updating existing case_product_teeth row:",
-            updateError
-          );
-
-          return; // Exit if there is an error
-        } else {
-          console.log(
-            `Existing case_product_teeth row updated for product_id: ${row.product_id}`
-          );
-
-          toast.success("Case updated successfully");
-          if (navigate && caseId) {
-            navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
-          }
-        }
-      }
     }
+
     // Step 4: Create invoice for the case
 
     function updateInvoice(
@@ -738,22 +738,50 @@ const updateCases = async (
           user_id: cases.overview.created_by,
         };
         const handleUpdateDiscountedPrice = async () => {
-          const { error: discountPriceError } = await supabase
-            .from("discounted_price")
-            .update(updatedData)
-            .eq("id", product.discounted_price_id)
-            .select("*");
+          if (product.discounted_price_id) {
+            // Update the existing row if discounted_price_id exists
+            const { error: discountPriceError } = await supabase
+              .from("discounted_price")
+              .update(updatedData)
+              .eq("id", product.discounted_price_id)
+              .select("*");
 
-          if (discountPriceError) {
-            console.error(
-              "Error inserting discount prices:",
-              discountPriceError
-            );
-            return; // Exit if there is an error
+            if (discountPriceError) {
+              console.error(
+                "Error updating discount prices:",
+                discountPriceError
+              );
+              return;
+            }
+
+            console.log("Discount prices updated successfully!");
+            if (navigate && caseId) {
+              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+            }
           } else {
-            console.log("Discount prices inserted successfully!");
+            // Insert a new row if discounted_price_id does not exist
+            const newData = {
+              ...updatedData, // Include existing data
+              product_id: product.id, // Ensure product ID is included
+            };
+
+            const { error: insertError } = await supabase
+              .from("discounted_price")
+              .insert([newData])
+              .select("*");
+
+            if (insertError) {
+              console.error("Error inserting new discount price:", insertError);
+              return;
+            }
+
+            console.log("New discount price inserted successfully!");
+            if (navigate && caseId) {
+              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+            }
           }
         };
+
         handleUpdateDiscountedPrice();
       });
     });
@@ -761,7 +789,7 @@ const updateCases = async (
     console.error("Error in updateCases function:", error);
     toast.error("Failed to update case");
   } finally {
-    // setLoadingState && setLoadingState({ isLoading: false, action: "update" });
+    setLoadingState && setLoadingState({ isLoading: false, action: "update" });
   }
 };
 
