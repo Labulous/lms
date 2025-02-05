@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -93,6 +93,13 @@ const ClientServicePricing = ({
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc' | null;
+  }>({
+    key: '',
+    direction: null
+  });
 
   const { user } = useAuth();
 
@@ -410,6 +417,62 @@ const ClientServicePricing = ({
     }
   };
 
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current.key === key) {
+        if (current.direction === 'asc') {
+          return { key, direction: 'desc' };
+        }
+        if (current.direction === 'desc') {
+          return { key: '', direction: null };
+        }
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    if (sortConfig.direction === 'asc') {
+      return <ArrowUp className="ml-2 h-4 w-4" />;
+    }
+    if (sortConfig.direction === 'desc') {
+      return <ArrowDown className="ml-2 h-4 w-4" />;
+    }
+    return null;
+  };
+
+  const sortData = (data: any[]) => {
+    if (!sortConfig.key || !sortConfig.direction) return data;
+
+    return [...data].sort((a, b) => {
+      if (sortConfig.key === 'name') {
+        const aName = a.name || (a.default && a.default.name) || '';
+        const bName = b.name || (b.default && b.default.name) || '';
+        return sortConfig.direction === 'asc' 
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
+      }
+      if (sortConfig.key === 'description') {
+        const aDesc = a.description || (a.default && a.default.description) || '';
+        const bDesc = b.description || (b.default && b.default.description) || '';
+        return sortConfig.direction === 'asc'
+          ? aDesc.localeCompare(bDesc)
+          : bDesc.localeCompare(aDesc);
+      }
+      if (sortConfig.key === 'price') {
+        const aPrice = a.price || (a.default && a.default.price) || 0;
+        const bPrice = b.price || (b.default && b.default.price) || 0;
+        return sortConfig.direction === 'asc'
+          ? aPrice - bPrice
+          : bPrice - aPrice;
+      }
+      return 0;
+    });
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -491,14 +554,41 @@ const ClientServicePricing = ({
                   <Table>
                     <TableHeader className="sticky top-0 bg-white z-10">
                       <TableRow className="bg-muted hover:bg-muted">
-                        <TableHead>Name</TableHead>
-                        <TableHead>Material</TableHead>
-                        <TableHead>Default Price</TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('name')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Name
+                            {getSortIcon('name')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('description')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Material
+                            {getSortIcon('description')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('price')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Default Price
+                            {getSortIcon('price')}
+                          </Button>
+                        </TableHead>
                         <TableHead>New Price</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
-                      {editableServices
+                    <TableBody className="overflow-y-scroll">
+                      {sortData(editableServices)
                         ?.sort((a, b) => {
                           const aHasNewPrice = selectedClient !== "default" 
                             ? !!getClientPrice(a.id, selectedClient)
@@ -647,12 +737,48 @@ const ClientServicePricing = ({
                     />
                   </TableHead>
                 )}
-                <TableHead>Name</TableHead>
-                <TableHead>Material</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('name')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('description')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Description
+                    {getSortIcon('description')}
+                  </Button>
+                </TableHead>
                 {selectedClient !== "default" && (
-                  <TableHead>Client Price</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('price')}
+                      className="h-8 p-0 font-medium"
+                    >
+                      Client Price
+                      {getSortIcon('price')}
+                    </Button>
+                  </TableHead>
                 )}
-                <TableHead>Default Price</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('price')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Default Price
+                    {getSortIcon('price')}
+                  </Button>
+                </TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -668,7 +794,7 @@ const ClientServicePricing = ({
                   </TableCell>
                 </TableRow>
               ) : selectedClient !== "default" ? (
-                specialProducts.map((product) => (
+                sortData(specialProducts).map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
@@ -722,7 +848,7 @@ const ClientServicePricing = ({
                   </TableRow>
                 ))
               ) : (
-                editableServices.map((product) => (
+                sortData(editableServices).map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>

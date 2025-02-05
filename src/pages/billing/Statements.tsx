@@ -301,7 +301,7 @@ const Statements = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select>
+          {/* <Select>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Print" />
             </SelectTrigger>
@@ -319,7 +319,7 @@ const Statements = () => {
               <SelectItem value="email-selected">Email Selected</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">Rollback</Button>
+          <Button variant="outline">Rollback</Button> */}
           <Button
             onClick={() => setIsCreateModalOpen(true)}
             disabled={isLoading}

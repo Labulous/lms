@@ -4,6 +4,11 @@ import { ClientInput } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 import { supabase } from "../../lib/supabase";
 import { getLabIdByUserId } from "../../services/authService";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 interface Doctor {
   name: string;
@@ -191,206 +196,182 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow"
-    >
-      <div className="space-y-4">
-        <div className="flex items-center mb-6">
-          <h2 className="text-2xl font-bold">
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
             Add New Client
             {nextAccountNumber && (
-              <span className="ml-2 text-gray-500">
+              <span className="ml-2 text-muted-foreground">
                 – Account #{nextAccountNumber}
               </span>
             )}
-          </h2>
-        </div>
-
-        {/* Client Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Client Name *
-            </label>
-            <input
-              type="text"
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Contact Name
-            </label>
-            <input
-              type="text"
-              name="contactName"
-              value={formData.contactName}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email *
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Address */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Client Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Street *
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Client Name *</Label>
+              <Input
+                id="clientName"
                 type="text"
-                name="address.street"
-                value={formData.address.street}
+                name="clientName"
+                value={formData.clientName}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                City *
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="contactName">Contact Name</Label>
+              <Input
+                id="contactName"
                 type="text"
-                name="address.city"
-                value={formData.address.city}
+                name="contactName"
+                value={formData.contactName}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
                 required
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                State *
-              </label>
-              <input
-                type="text"
-                name="address.state"
-                value={formData.address.state}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                ZIP Code *
-              </label>
-              <input
-                type="text"
-                name="address.zipCode"
-                value={formData.address.zipCode}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 required
               />
             </div>
           </div>
-        </div>
 
-        {/* Additional Information */}
-        <div className="mt-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Clinic Registration Number
-            </label>
-            <input
-              type="text"
-              name="clinicRegistrationNumber"
-              value={formData.clinicRegistrationNumber}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+          {/* Address */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="street">Street *</Label>
+                <Input
+                  id="street"
+                  type="text"
+                  name="address.street"
+                  value={formData.address.street}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  type="text"
+                  name="address.city"
+                  value={formData.address.city}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State *</Label>
+                <Input
+                  id="state"
+                  type="text"
+                  name="address.state"
+                  value={formData.address.state}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code *</Label>
+                <Input
+                  id="zipCode"
+                  type="text"
+                  name="address.zipCode"
+                  value={formData.address.zipCode}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
           </div>
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Notes
-            </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
+
+          {/* Additional Information */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="clinicRegistrationNumber">Clinic Registration Number</Label>
+              <Input
+                id="clinicRegistrationNumber"
+                type="text"
+                name="clinicRegistrationNumber"
+                value={formData.clinicRegistrationNumber}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleInputChange}
+                rows={3}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Doctors Section */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Doctors</h3>
-          {(formData?.doctors ?? []).map((doctor, index) => (
-            <DoctorFields
-              key={index}
-              doctor={doctor}
-              onChange={(field, value) =>
-                handleDoctorChange(index, field, value)
-              }
-              onRemove={() => removeDoctor(index)}
-              showRemove={(formData?.doctors?.length ?? 0) > 1}
-            />
-          ))}
+          {/* Doctors Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Doctors</h3>
+            {(formData?.doctors ?? []).map((doctor, index) => (
+              <DoctorFields
+                key={index}
+                doctor={doctor}
+                onChange={(field, value) => handleDoctorChange(index, field, value)}
+                onRemove={() => removeDoctor(index)}
+                showRemove={(formData?.doctors?.length ?? 0) > 1}
+              />
+            ))}
 
-          <button
-            type="button"
-            onClick={addDoctor}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Add Another Doctor
-          </button>
-        </div>
-      </div>
+            <Button
+              type="button"
+              onClick={addDoctor}
+              variant="secondary"
+              className="mt-2"
+            >
+              Add Another Doctor
+            </Button>
+          </div>
 
-      {/* Form Actions */}
-      <div className="flex justify-end space-x-4 mt-8">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting || loading}
-          className="inline-flex justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {isSubmitting ? "Adding..." : "Add Client"}
-        </button>
-      </div>
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || loading}
+            >
+              {isSubmitting ? "Adding..." : "Add Client"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 };

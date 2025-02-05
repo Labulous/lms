@@ -64,6 +64,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
@@ -112,13 +113,14 @@ const CaseList: React.FC = () => {
     pageIndex: 0,
     pageSize: 10,
   });
+  const [pageSize, setPageSize] = useState<number>(15);
 
   const pagination = useMemo(
     () => ({
       pageIndex: paginationState.pageIndex,
-      pageSize: paginationState.pageSize,
+      pageSize: pageSize,
     }),
-    [paginationState]
+    [paginationState, pageSize]
   );
   const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
   const month = date.getMonth() + 1; // Months are 0-indexed
@@ -964,23 +966,18 @@ const CaseList: React.FC = () => {
   const table = useReactTable({
     data: filteredCases as ExtendedCase[],
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onPaginationChange: setPaginationState,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    enableRowSelection: true,
+    pageCount: Math.ceil(filteredCases.length / pageSize),
     state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
       rowSelection,
-      pagination,
+      pagination: { pageIndex: paginationState.pageIndex, pageSize },
     },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPaginationState,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
   useEffect(() => {
     if (statusFilter.length > 0) {
@@ -1284,10 +1281,27 @@ const CaseList: React.FC = () => {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-end space-x-2 py-4">
-          <div className="flex-1 text-sm text-muted-foreground">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+        <div className="flex items-center justify-between space-x-2 py-4">
+          <div className="flex items-center space-x-4">
+            <Select
+              value={pageSize.toString()}
+              onValueChange={(value) => setPageSize(Number(value))}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={pageSize} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[15, 50, 100, 150].map((size) => (
+                  <SelectItem key={size} value={size.toString()}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex-1 text-sm text-muted-foreground">
+              {table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table.getFilteredRowModel().rows.length} row(s) selected.
+            </div>
           </div>
           <div className="space-x-2">
             <Button

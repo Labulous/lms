@@ -27,6 +27,7 @@ const CaseFilters: React.FC<CaseFiltersProps> = ({ onFilterChange, onSearch }) =
 
   return (
     <div className="mb-6 flex flex-wrap items-center justify-between">
+      {/* Commented out filter selects
       <div className="flex space-x-4 mb-4 sm:mb-0">
         <select
           name="dueDate"
@@ -49,7 +50,8 @@ const CaseFilters: React.FC<CaseFiltersProps> = ({ onFilterChange, onSearch }) =
           <option value="on_hold">On Hold</option>
         </select>
       </div>
-      <div className="relative">
+      */}
+      <div className="relative flex-1">
         <input
           type="text"
           placeholder="Search cases..."

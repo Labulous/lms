@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MoreVertical, PrinterIcon, Settings2, X } from "lucide-react";
+import { Eye, MoreVertical, PrinterIcon, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
@@ -221,7 +221,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
               <TableHead className="text-right">Credit Amount</TableHead>
               <TableHead className="text-right">Debit Amount</TableHead>
               <TableHead className="w-[30px]"></TableHead>
-              <TableHead className="w-[30px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -250,11 +249,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                   {adjustment.debit_amount && adjustment?.debit_amount > 0
                     ? `$${adjustment.debit_amount.toFixed(2)}`
                     : "-"}
-                </TableCell>
-                <TableCell>
-                  <Button variant="ghost" size="icon">
-                    <Settings2 className="h-4 w-4" />
-                  </Button>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
