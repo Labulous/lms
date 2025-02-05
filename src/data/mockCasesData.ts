@@ -157,10 +157,10 @@ const saveCaseProduct = async (
           lab_id: cases.overview.lab_id || "",
           quantity: product.quantity || 1, // Ensure at least 1
           occlusal_shade_id:
-          product?.shades?.occlusal_shade === "manual" ||
-          product?.shades?.occlusal_shade === ""
-            ? null
-            : product?.shades?.occlusal_shade || null,
+            product?.shades?.occlusal_shade === "manual" ||
+            product?.shades?.occlusal_shade === ""
+              ? null
+              : product?.shades?.occlusal_shade || null,
           body_shade_id:
             product?.shades?.body_shade === "manual" ||
             product?.shades?.body_shade === ""
@@ -360,20 +360,14 @@ const saveCases = async (
           sum +
           main.subRows.reduce((subSum: number, product: any) => {
             // Calculate the final discount for each product
-            const finalDiscount =
-              product.discount === 0
-                ? main.discount // If product discount is 0, use the main discount
-                : main.discount + product.discount; // Otherwise, add both main and product discounts
+            const finalDiscount = product.discount; // Otherwise, add both main and product discounts
 
             // Calculate price after the final discount
             const priceAfterDiscount =
               product.price - (product.price * finalDiscount) / 100;
 
             // Calculate total quantity for the product (main.quantity + product.quantity)
-            const totalQuantity =
-              main.quantity > 1
-                ? main.quantity + product.quantity
-                : product.quantity;
+            const totalQuantity = product;
 
             // Calculate the final price (after discount) for the given quantity
             const final_price = priceAfterDiscount * totalQuantity;
@@ -659,20 +653,14 @@ const updateCases = async (
         sum +
         main.subRows.reduce((subSum: number, product: any) => {
           // Calculate the final discount for each product
-          const finalDiscount =
-            product.discount === 0
-              ? main.discount // If product discount is 0, use the main discount
-              : main.discount + product.discount; // Otherwise, add both main and product discounts
+          const finalDiscount = product.discount; // Otherwise, add both main and product discounts
 
           // Calculate price after the final discount
           const priceAfterDiscount =
             product.price - (product.price * finalDiscount) / 100;
 
           // Calculate total quantity for the product (main.quantity + product.quantity)
-          const totalQuantity =
-            main.quantity > 1
-              ? main.quantity + product.quantity
-              : product.quantity;
+          const totalQuantity = product.quantity;
 
           // Calculate the final price (after discount) for the given quantity
           const final_price = priceAfterDiscount * totalQuantity;
