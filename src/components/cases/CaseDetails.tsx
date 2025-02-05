@@ -589,7 +589,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   manual_gingival_shade,
                   manual_stump_shade,
                   type,
-          product:products!product_id (
+            product:products!product_id (
                     id,
                     name,
                     price,
@@ -665,6 +665,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
             manual_body_shade: tp.manual_body_shade,
+            type: tp.type,
             manual_gingival_shade: tp.manual_gingival_shade,
             manual_stump_shade: tp.manual_stump_shade,
             custom_occlusal_shade: tp.custom_occlusal_shade,
@@ -1885,12 +1886,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product?.product_type
-                                      ?.name as keyof typeof TYPE_COLORS
+                                    product?.teethProduct?.type as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
-                              {product?.product_type?.name ?? "Null"}
+                              {product?.teethProduct?.type ?? "Null"}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
