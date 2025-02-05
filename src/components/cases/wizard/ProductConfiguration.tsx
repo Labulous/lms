@@ -535,7 +535,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             ...updatedProducts[index].subRows[SubIndex],
             name: product.name,
             id: product.id,
-            price: product.price
+            price: product.price,
           };
         }
 
@@ -697,84 +697,64 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         manual_stump: shadeData[index]?.manual_stump || "",
       })),
     };
-    const subShades = {
-      occlusal_shade:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.occlusal_shade || "",
-      body_shade: shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade || "",
-      gingival_shade:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.gingival_shade || "",
-      stump_shade: shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade || "",
-      custom_body: shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body || "",
-      custom_gingival:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_gingival || "",
-      custom_occlusal:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_occlusal || "",
-      custom_stump:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump || "",
-      manual_body: shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body || "",
-      manual_gingival:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_gingival || "",
-      manual_occlusal:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_occlusal || "",
-      manual_stump:
-        shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump || "",
-    };
 
     // Update the products, including updating subRows based on the teeth count
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
-
+        console.log(subIndex, "subIndex");
         updatedProducts[index] = {
           ...updatedProducts[index],
           shades: updatedShades, // Update the main product shades
-          subRows: subIndex
-            ? updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
-                ...subRow,
-                shades: {
-                  occlusal_shade:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.occlusal_shade ||
-                    "",
-                  body_shade:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade || "",
-                  gingival_shade:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.gingival_shade ||
-                    "",
-                  stump_shade:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
-                    "",
-                  custom_body:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
-                    "",
-                  custom_gingival:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]
-                      ?.custom_gingival || "",
-                  custom_occlusal:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]
-                      ?.custom_occlusal || "",
-                  custom_stump:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump ||
-                    "",
-                  manual_body:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body ||
-                    "",
-                  manual_gingival:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]
-                      ?.manual_gingival || "",
-                  manual_occlusal:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]
-                      ?.manual_occlusal || "",
-                  manual_stump:
-                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump ||
-                    "",
-                }, // Apply the same updated shades to each subRow
-              }))
-            : updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
-                ...subRow,
-                shades: updatedShades, // Apply the same updated shades to each subRow
-              })),
+          subRows:
+            subIndex !== undefined
+              ? updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
+                  ...subRow,
+                  shades: {
+                    occlusal_shade:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.occlusal_shade || "",
+                    body_shade:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade ||
+                      "",
+                    gingival_shade:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.gingival_shade || "",
+                    stump_shade:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
+                      "",
+                    custom_body:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
+                      "",
+                    custom_gingival:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.custom_gingival || "",
+                    custom_occlusal:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.custom_occlusal || "",
+                    custom_stump:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump ||
+                      "",
+                    manual_body:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body ||
+                      "",
+                    manual_gingival:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.manual_gingival || "",
+                    manual_occlusal:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]
+                        ?.manual_occlusal || "",
+                    manual_stump:
+                      shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump ||
+                      "",
+                  }, // Apply the same updated shades to each subRow
+                }))
+              : updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
+                  ...subRow,
+                  shades: updatedShades, // Apply the same updated shades to each subRow
+                })),
         };
-
+        console.log(updatedProducts, "updatedProducts");
         return updatedProducts;
       } else {
         console.error("Invalid index provided");
@@ -827,7 +807,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         discount: 0,
         notes: "",
         quantity: 1,
-        is_taxable: false
+        is_taxable: false,
       };
 
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
@@ -991,7 +971,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="w-[100px] text-xs">Type</TableHead>
                 <TableHead className="w-[120px] text-xs">Teeth</TableHead>
                 <TableHead className="text-xs">Material/Product</TableHead>
-                <TableHead className="w-[100px] text-xs">Additional Services</TableHead>
+                <TableHead className="w-[100px] text-xs">
+                  Additional Services
+                </TableHead>
                 <TableHead className="text-xs">Shades</TableHead>
                 <TableHead className="text-xs">Note</TableHead>
                 <TableHead className="w-[20px] text-xs">Discount</TableHead>
@@ -1147,7 +1129,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                      <Select                     
+                      <Select
                         disabled={
                           loading ||
                           (row.teeth.length === 0 && row.type === "Service")
