@@ -212,7 +212,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       setPonticTeeth(new Set());
     }
   }, [selectedProduct?.type]);
-  console.log(selectedTeeth, "selected tooth");
   // Helper function to get visual position index of a tooth
   const getVisualIndex = (toothNumber: number) => {
     // Upper right quadrant (18-11)
@@ -363,7 +362,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   // Helper function to get tooth numbers between two visual positions
   const getTeethInVisualRange = (start: number, end: number) => {
-    console.log("getTeethInVisualRange called with:", { start, end });
 
     // Check if teeth are in the same arch
     const isUpperArch = (tooth: number) => tooth >= 11 && tooth <= 28;
@@ -381,13 +379,11 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     // Get teeth based on arch
     if (isUpperArch(start) && isUpperArch(end)) {
       const result = getUpperArchTeeth(start, end);
-      console.log("Upper arch selection:", result);
       return result;
     }
 
     if (isLowerArch(start) && isLowerArch(end)) {
       const result = getLowerArchTeeth(start, end);
-      console.log("Lower arch selection:", result);
       return result;
     }
 
@@ -742,7 +738,6 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onSelectionChange]);
-  console.log(ponticTeeth, "ponticTeeth");
   return (
     <div
       ref={containerRef}

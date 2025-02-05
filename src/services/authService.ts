@@ -11,7 +11,6 @@ export interface CustomUser {
   email: string;
   role: "admin" | "technician" | "client" | "super_admin";
   name: string;
-
 }
 type User = Database["public"]["Tables"]["users"]["Row"];
 
@@ -47,10 +46,10 @@ export const login = async (email: string, password: string): Promise<void> => {
       error:
         error instanceof Error
           ? {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-          }
+              message: error.message,
+              name: error.name,
+              stack: error.stack,
+            }
           : error,
     });
     throw error;
@@ -243,10 +242,10 @@ export const signUp = async (
       error:
         error instanceof Error
           ? {
-            message: error.message,
-            name: error.name,
-            stack: error.stack,
-          }
+              message: error.message,
+              name: error.name,
+              stack: error.stack,
+            }
           : error,
     });
     throw error;
@@ -281,7 +280,6 @@ export const createUserByAdmins = async (
     //   .from("auth.users")
     //   .select("id")
     //   .eq("email", email);
-
 
     const { data: authData, error: authError } = await supabase
       .from("users")
@@ -321,7 +319,6 @@ export const createUserByAdmins = async (
         refresh_token: adminSession.data.session.refresh_token,
       });
     }
-
 
     // 3. Insert the new user into the 'users' table with the specified role
     const { error: insertError } = await supabase.from("users").insert([
@@ -384,8 +381,8 @@ export const createUserByAdmins = async (
       role === "admin"
         ? "admin_ids"
         : role === "technician"
-          ? "technician_ids"
-          : "client_ids"; // Add to client_ids for clients
+        ? "technician_ids"
+        : "client_ids"; // Add to client_ids for clients
 
     // Fetch the current IDs/emails for the specified field
     const { data: labData, error: fetchError } = await supabase
@@ -417,7 +414,8 @@ export const createUserByAdmins = async (
     }
 
     console.log(
-      `${role.charAt(0).toUpperCase() + role.slice(1)
+      `${
+        role.charAt(0).toUpperCase() + role.slice(1)
       } created and lab updated successfully!`
     );
   } catch (error) {
@@ -431,36 +429,30 @@ export const getLabIdByUserId = async (
 ): Promise<{ labId: string; name: string } | null> => {
   try {
     // Fetch all labs
-    const { data: labs, error } = await supabase
-      .from("labs")
-      .select("id, super_admin_id, admin_ids, client_ids, name");
+    if (!userId) {
+      return { labId: "", name: "" };
+    }
+    const { data: lab, error } = await supabase.from("users").select("lab_id");
 
     if (error) {
       console.error("Error fetching labs:", error);
       throw new Error("Failed to fetch labs.");
     }
 
-    if (!labs || labs.length === 0) {
-      console.warn("No labs found.");
+    if (!lab || lab.length === 0) {
+      console.warn("No lab found.");
       return null;
     }
-
+    const { data: labData, error: LabData } = await supabase
+      .from("users")
+      .select("lab:labs!lab_id (id, name)")
+      .eq("id", userId);
     // Check each lab for a matching userId
-    for (const lab of labs) {
-      const { id: labId, super_admin_id, admin_ids, client_ids, name } = lab;
-
-      // Check if the userId matches any of the super_admin_id, admin_ids, or client_ids
-      if (
-        super_admin_id === userId ||
-        (admin_ids && admin_ids.includes(userId)) ||
-        (client_ids && client_ids.includes(userId))
-      ) {
-        return { labId, name }; // Return the matching lab_id
-      }
-    }
 
     // If no match is found, return null
-    return null;
+    console.log(labData, LabData, "labData here");
+    const data: any = labData;
+    return { labId: data?.[0]?.lab.id, name: data?.[0]?.lab.name };
   } catch (error) {
     console.error("Error in getLabIdByUserId function:", error);
     throw error;
