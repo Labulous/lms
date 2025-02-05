@@ -2366,7 +2366,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     row?.subRows?.map((row_sub, subIndex) => {
                       let originalIndex = subIndex;
                       subIndex = subIndex + 100;
-                      console.log(shadeData[index]?.subRow?.[0], "sub shade");
 
                       return (
                         <TableRow key={subIndex} className="border pl-10">
