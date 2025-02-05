@@ -346,6 +346,7 @@ const UpdateCase: React.FC = () => {
             body_shade: tp.body_shade,
             gingival_shade: tp.gingival_shade,
             additional_service_id: tp.additional_service_id,
+            type:tp.type,
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
             manual_body_shade: tp.manual_body_shade,
@@ -608,7 +609,7 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId] = {
                 id: productId,
                 name: item?.name || "",
-                type: item?.product_type?.name || "",
+                type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.additional_service_id,
                 discount: item?.discounted_price?.discount || 0,
@@ -632,7 +633,7 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
-                type: item?.product_type?.name || "",
+                type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.additional_service_id ?? null,
                 quantity: item.discounted_price.quantity,
