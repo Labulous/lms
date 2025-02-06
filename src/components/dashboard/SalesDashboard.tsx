@@ -277,11 +277,13 @@ const SalesDashboard: React.FC = () => {
         return;
       }
 
+      //console.log(incomeData);
       // Rest of the function remains the same
     } catch (error) {
       console.error('Error in fetchIncomeExpenseData:', error);
     }
   };
+  //fetchIncomeExpenseData();
 
   const generateMonthlyData = (invoices: any[]) => {
     const monthlyMap = new Map<string, number>();
