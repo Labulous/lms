@@ -37,7 +37,7 @@ interface Material {
   name: string;
 }
 
-interface ServiceType {
+export interface ServiceType {
   id: string | null;
   name: string;
   price: number;

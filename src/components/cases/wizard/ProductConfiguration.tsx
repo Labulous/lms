@@ -318,8 +318,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return newArray;
     });
   };
-  console.log(selectedProducts);
-  console.log(selectedServices);
 
   useEffect(() => {
     const fetchProductTypes = async () => {
@@ -335,10 +333,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const fetchedProductTypes = await productsService.getProductTypes(
           labData.labId
         );
-        console.log("Fetched product types:", fetchedProductTypes);
+
         setProductTypes(fetchedProductTypes);
       } catch (error) {
-        console.error("Error fetching products:", error);
         toast.error("Failed to load products");
       } finally {
         setLoading(false);
@@ -369,18 +366,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         toast.error("Error fetching products from Supabase");
         throw error;
       }
-      console.log(
-        "Fetched products:",
-        fetchedProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          material: p.material,
-          type: p.product_type,
-        }))
-      );
+
       setProducts(fetchedProducts);
     } catch (error) {
-      console.error("Error fetching products:", error);
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
@@ -418,12 +406,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const getShadeOptions = async (labId: string) => {
       const shadeOptions = await fetchShadeOptions(labId);
       if (shadeOptions) {
-        console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
         const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
-      } else {
-        console.log("Failed to fetch shade options.");
       }
     };
 
@@ -488,7 +473,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
     if (!index) {
@@ -572,7 +556,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     SubIndex: number = 0
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
 
@@ -651,8 +634,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedType(type.name);
   };
 
-  console.log(selectedProducts, "selectedProducts");
-
   const groupSelectedTeeth = (selectedTeeth: number[]) => {
     // Sort selectedTeeth based on their order in teethArray
     const sortedTeeth = selectedTeeth.sort(
@@ -721,7 +702,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     groupSelectedTeeth(teeth);
   };
 
-  console.log(groupSelectedTeethState, "groupSelectedTeethState");
   const handleSaveShades = (index: number, subIndex?: number) => {
     // Construct the updated shades object
     const updatedShades = {
@@ -833,7 +813,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
         return updatedProducts;
       } else {
-        console.error("Invalid index provided");
         return prevSelectedProducts;
       }
     });
@@ -883,6 +862,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         discount: 0,
         notes: "",
         quantity: 1,
+        is_taxable: false,
       };
 
       const newService: ServiceType = {
@@ -1032,8 +1012,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
-
-  console.log(shadeData, "shadeData");
 
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
@@ -2452,7 +2430,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     row?.subRows?.map((row_sub, subIndex) => {
                       let originalIndex = subIndex;
                       subIndex = subIndex + 100;
-                      console.log(shadeData[index]?.subRow?.[0], "sub shade");
 
                       return (
                         <TableRow key={subIndex} className="border pl-10">
