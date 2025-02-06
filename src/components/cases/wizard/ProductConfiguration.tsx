@@ -898,6 +898,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       new Map(prev).set(index, !(prev.get(index) || false))
     );
   };
+  console.log(selectedProducts);
 
   useEffect(() => {
     if (isUpdate) {

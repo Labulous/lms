@@ -251,6 +251,7 @@ const UpdateCase: React.FC = () => {
           tooth_number,
           product_id,
           additional_service_id,
+          quantity,
           service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
@@ -322,6 +323,7 @@ const UpdateCase: React.FC = () => {
       revalidateOnReconnect: false,
     }
   );
+  console.log(caseDataa);
 
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
@@ -365,6 +367,7 @@ const UpdateCase: React.FC = () => {
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
             service: tp.service,
+            quantity: tp.quantity,
           },
         })),
       }
@@ -633,7 +636,7 @@ const UpdateCase: React.FC = () => {
                 pontic_teeth: new Set(), // To store unique pontic teeth
                 notes: item?.teethProduct?.notes || "",
                 subRows: [], // Subrows for each individual tooth
-                quantity: item?.teethProduct?.quantity || 1,
+                quantity: item?.teethProduct?.quantity,
               };
             }
 
@@ -663,22 +666,28 @@ const UpdateCase: React.FC = () => {
                   : [],
                 notes: item?.teethProduct?.notes || "",
                 shades: {
-                  body_shade: item.teethProduct?.body_shade_id || "",
-                  gingival_shade: item?.teethProduct?.gingival_shade_id || "",
-                  occlusal_shade: item?.teethProduct?.occlusal_shade_id || "",
-                  stump_shade: item.teethProduct?.stump_shade_id || "",
-                  custom_body: item.teethProduct?.custom_body_shade || null,
+                  body_shade: item.teethProduct?.body_shade?.name || "",
+                  gingival_shade:
+                    item?.teethProduct?.gingival_shade?.name || "",
+                  occlusal_shade:
+                    item?.teethProduct?.occlusal_shade?.name || "",
+                  stump_shade: item.teethProduct?.stump_shade?.name || "",
+                  custom_body:
+                    item.teethProduct?.custom_body_shade?.name || null,
                   custom_occlusal:
-                    item.teethProduct?.custom_occlusal_shade || null,
+                    item.teethProduct?.custom_occlusal_shade?.name || null,
                   custom_gingival:
-                    item.teethProduct?.custom_gingival_shade || null,
-                  custom_stump: item.teethProduct?.custom_stump_shade || null,
-                  manual_body: item.teethProduct?.manual_body_shade || null,
+                    item.teethProduct?.custom_gingival_shade?.name || null,
+                  custom_stump:
+                    item.teethProduct?.custom_stump_shade?.name || null,
+                  manual_body:
+                    item.teethProduct?.manual_body_shade?.name || null,
                   manual_occlusal:
-                    item.teethProduct?.manual_occlusal_shade || null,
+                    item.teethProduct?.manual_occlusal_shade?.name || null,
                   manual_gingival:
-                    item.teethProduct?.manual_gingival_shade || null,
-                  manual_stump: item.teethProduct?.manual_stump_shade || null,
+                    item.teethProduct?.manual_gingival_shade?.name || null,
+                  manual_stump:
+                    item.teethProduct?.manual_stump_shade?.name || null,
                 },
               });
             });
