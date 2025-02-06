@@ -31,6 +31,19 @@ interface Client {
     name: string;
   }[];
 }
+
+interface Material {
+  id: string;
+  name: string;
+}
+
+interface ServiceType {
+  id: string | null;
+  name: string;
+  price: number;
+  material?: Material;
+}
+
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -71,13 +84,15 @@ const NewCase: React.FC = () => {
   const [isAddingPan, setIsAddingPan] = useState(false);
 
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
+  const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
     isLoading: false,
   });
   const mainDivRef = useRef<HTMLDivElement>(null);
-  const handleSaveProduct = (product: SavedProduct) => {
+  const handleSaveProduct = (product: SavedProduct, service: ServiceType) => {
     setSelectedProducts((prev) => [...prev, product]);
+    setSelectedServices((prev) => [...prev, service]);
   };
 
   const handleCategoryChange = (category: SavedProduct | null) => {
@@ -86,6 +101,10 @@ const NewCase: React.FC = () => {
 
   const handleProductsChange = (products: SavedProduct[]) => {
     setSelectedProducts(products);
+  };
+
+  const handleServicesChange = (services: ServiceType[]) => {
+    setSelectedServices(services);
   };
 
   const handleCaseDetailsChange = (details: any) => {
@@ -301,7 +320,9 @@ const NewCase: React.FC = () => {
         },
         products: selectedProducts,
         enclosedItems: transformedData.enclosedItems,
+        services: selectedServices,
       };
+
       // Add case to database
       await addCase(newCase, navigate, setLoadingState);
     } catch (error) {
@@ -354,6 +375,9 @@ const NewCase: React.FC = () => {
             initialCaseDetails={formData.caseDetails}
             setselectedProducts={setSelectedProducts}
             formErrors={errors}
+            onServicesChange={(services) => handleServicesChange(services)}
+            selectedServices={selectedServices}
+            setselectedServices={setSelectedServices}
           />
         </div>
 
