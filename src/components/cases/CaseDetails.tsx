@@ -1551,7 +1551,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     // If there's only one group, return it
     return groupedTeeth.join(", ");
   };
-  console.log(lab, "lab");
+  console.log(caseDetail.products);
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -2011,7 +2011,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Stump shade */}
                               {product?.teethProduct?.custom_stump_shade ||
-                              product?.teethProduct?.stump_shade_id ||
+                              product?.teethProduct?.stump_shade ||
                               product?.teethProduct?.manual_stump_shade ? (
                                 <p>
                                   <div className="flex gap-2">
@@ -2022,7 +2022,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_stump_shade ||
-                                          product?.teethProduct?.stump_shade_id
+                                          product?.teethProduct?.stump_shade
                                             ?.name}
                                       </p>{" "}
                                       <p
@@ -2368,7 +2368,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       body_shade?: { name: string };
                       gingival_shade?: { name: string };
                       occlusal_shade?: { name: string };
-                      stump_shade_id?: { name: string };
+                      stump_shade?: { name: string };
                     },
                     index: number
                   ) => (
@@ -2419,7 +2419,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   Stump Shade:
                                 </span>
                                 <span>
-                                  {product.stump_shade_id?.name || "N/A"}
+                                  {product.stump_shade?.name || "N/A"}
                                 </span>
                               </div>
                             </div>
