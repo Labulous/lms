@@ -177,19 +177,17 @@ const MaterialSelection: React.FC = () => {
       label: "Product Material",
       actions: (
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleOpenDialog("materials")}
-          >
-            <Plus className="h-4 w-4" />
+          <Button size="sm" onClick={() => handleOpenDialog("materials")}>
+            <span className="flex gap-2">
+              <Plus className="h-4 w-4" />
+              Add Material
+            </span>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleOpenEditDialog("materials")}
-          >
-            <Pencil className="h-4 w-4" />
+          <Button size="sm" onClick={() => handleOpenEditDialog("materials")}>
+            <span className="flex gap-2">
+              <Pencil className="h-4 w-4" />
+              Edit Material
+            </span>
           </Button>
         </div>
       ),
@@ -197,7 +195,6 @@ const MaterialSelection: React.FC = () => {
   ];
   const SettingsRow: React.FC<SettingsRow> = ({ label, actions }) => (
     <div className="flex items-center justify-between py-4 px-6 border-b last:border-b-0">
-      <span className="text-sm font-medium text-gray-900">{label}</span>
       {actions}
     </div>
   );
@@ -212,18 +209,18 @@ const MaterialSelection: React.FC = () => {
         <div className="divide-y border rounded-lg bg-white">
           {materialsData.length === 0 && !isLoading && labIdData?.lab_id ? (
             <div>
-              <button
+              <Button
                 disabled={disableDefaultInsert}
                 onClick={() => {
                   setDisabledDefaultButton(true);
                   handleSetDefaultMaterials();
                 }}
-                className="flex items-center justify-between py-4 px-6 border-b last:border-b-0 hover:bg-primary cursor-pointer text-gray-900 rounded-md hover:text-white"
               >
-                <span className="text-sm font-medium ">
+                <span className="text-sm font-medium flex gap-2">
                   {"Set Default Materials"}
+                  <Plus className="h-4 w-4" />
                 </span>
-              </button>
+              </Button>
             </div>
           ) : (
             <>
