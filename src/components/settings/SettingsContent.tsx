@@ -14,7 +14,7 @@ interface SettingsRow {
 
 const ProductCatalogRows: SettingsRow[] = [
   { label: 'Product Type', onEdit: () => console.log('Edit Product Type') },
-  { label: 'Product Material', onEdit: () => console.log('Edit Product Material') },
+  { label: 'Product Material', onEdit: () => console.log('Edit Product Material hi') },
 ];
 
 const CaseWorkflowRows: SettingsRow[] = [

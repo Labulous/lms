@@ -103,6 +103,7 @@ export default function EditProductValuesDialog({
           description: updatedValue.description?.trim() || null
         });
       } else {
+        console.log(updatedValue,"updatedValue")
         await productsService.updateMaterial(updatedValue.id, {
           name: updatedValue.name.trim(),
           description: updatedValue.description?.trim() || null
