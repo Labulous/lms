@@ -190,7 +190,8 @@ const UpdateCase: React.FC = () => {
         ),
         tag:working_tags!working_tag_id (
           name,
-          color
+          color,
+          id
         ),
         working_pan_name,
         working_pan_color,
@@ -323,7 +324,6 @@ const UpdateCase: React.FC = () => {
       revalidateOnReconnect: false,
     }
   );
-  console.log(caseDataa);
 
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
@@ -558,7 +558,7 @@ const UpdateCase: React.FC = () => {
           deliveryMethodError: "",
           appointmentDate: caseDataApi.appointment_date || "",
           workingPanName: caseDataApi.working_pan_name || "",
-          workingTagName: caseDataApi.tags?.id || null,
+          workingTagName: caseDataApi.tag?.id || null,
           workingPanColor: caseDataApi.working_pan_color || "",
           is_appointment_TBD: caseDataApi.is_appointment_TBD,
           enclosedItems: {
