@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { DefaultProductType } from "@/types/supabase";
 import { CheckCircle2, X } from "lucide-react";
 import ClientDetails from "@/components/clients/ClientDetails";
-import moment from 'moment';
+import moment from "moment";
 
 const TYPE_COLORS = {
   Crown: "rgb(59 130 246)", // blue-500
@@ -160,12 +160,11 @@ interface PrintTemplateProps {
 }
 
 interface PrintStatementTemplateProps {
-  caseDetails: any[] | undefined,
-  labData: any,
+  caseDetails: any[] | undefined;
+  labData: any;
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
 }
-
 
 // Helper function to get QR code size based on paper size
 const getQRCodeSize = (
@@ -1008,6 +1007,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       // If there's only one group, return it
       return groupedTeeth.join(", ");
     };
+    console.log(teeth.teethProduct);
 
     return (
       <div
@@ -1045,104 +1045,101 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               <div className="flex">
                 <span className="w-20 text-[10px]">Incisal: </span>
                 <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_occlusal_shade ? (
-                    teeth.teethProduct?.manual_occlusal_shade
-                  ) : teeth.teethProduct?.occlusal_shade?.name ||
-                    teeth?.teethProduct?.custom_occlusal_shade ? (
-                    <p
-                      className="font-semibold ml-1"
-                      style={{
-                        color:
-                          TYPE_COLORS[
-                            teeth?.product_type
-                              ?.name as keyof typeof TYPE_COLORS
-                          ] || TYPE_COLORS.Other,
-                      }}
-                    >
-                      {teeth?.teethProduct?.custom_occlusal_shade || "N/A"}{" "}
-                      {teeth?.teethProduct?.custom_occlusal_shade && "(cus)"}
-                    </p>
-                  ) : (
-                    "N/A"
-                  )}
+                  {teeth.teethProduct?.manual_occlusal_shade
+                    ? teeth.teethProduct?.manual_occlusal_shade
+                    : teeth.teethProduct?.occlusal_shade?.name ||
+                      (teeth?.teethProduct?.custom_occlusal_shade ? (
+                        <p
+                          className="font-semibold ml-1"
+                          style={{
+                            color:
+                              TYPE_COLORS[
+                                teeth?.product_type
+                                  ?.name as keyof typeof TYPE_COLORS
+                              ] || TYPE_COLORS.Other,
+                          }}
+                        >
+                          {teeth?.teethProduct?.custom_occlusal_shade || "N/A"}{" "}
+                          {teeth?.teethProduct?.custom_occlusal_shade &&
+                            "(cus)"}
+                        </p>
+                      ) : (
+                        "N/A"
+                      ))}
                 </div>
               </div>
               <div className="flex">
                 <span className="w-20 text-[10px]">Body: </span>
                 <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_body_shade ? (
-                    teeth.teethProduct?.manual_body_shade
-                  ) : teeth.teethProduct?.body_shade?.name ||
-                    teeth?.teethProduct?.custom_body_shade ? (
-                    <p
-                      className="font-semibold ml-1"
-                      style={{
-                        color:
-                          TYPE_COLORS[
-                            teeth?.product_type
-                              ?.name as keyof typeof TYPE_COLORS
-                          ] || TYPE_COLORS.Other,
-                      }}
-                    >
-                      {teeth?.teethProduct?.custom_body_shade || "N/A"}{" "}
-                      {teeth?.teethProduct?.custom_body_shade && "(cus)"}
-                    </p>
-                  ) : (
-                    "N/A"
-                  )}
+                  {teeth.teethProduct?.manual_body_shade
+                    ? teeth.teethProduct?.manual_body_shade
+                    : teeth.teethProduct?.body_shade?.name ||
+                      (teeth?.teethProduct?.custom_body_shade ? (
+                        <p
+                          className="font-semibold ml-1"
+                          style={{
+                            color:
+                              TYPE_COLORS[
+                                teeth?.product_type
+                                  ?.name as keyof typeof TYPE_COLORS
+                              ] || TYPE_COLORS.Other,
+                          }}
+                        >
+                          {teeth?.teethProduct?.custom_body_shade || "N/A"}{" "}
+                          {teeth?.teethProduct?.custom_body_shade && "(cus)"}
+                        </p>
+                      ) : (
+                        "N/A"
+                      ))}
                 </div>
               </div>
 
               <div className="flex">
                 <span className="w-20 text-[10px]">Gingival: </span>
                 <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_gingival_shade ? (
-                    teeth.teethProduct?.manual_gingival_shade
-                  ) : teeth.teethProduct?.gingival_shade?.name ||
-                    teeth?.teethProduct?.custom_gingival_shade ? (
-                    <p
-                      className="font-semibold ml-1"
-                      style={{
-                        color:
-                          TYPE_COLORS[
-                            teeth?.product_type
-                              ?.name as keyof typeof TYPE_COLORS
-                          ] || TYPE_COLORS.Other,
-                      }}
-                    >
-                      {teeth?.teethProduct?.custom_gingival_shade || "N/A"}{" "}
-                      {teeth?.teethProduct?.custom_gingival_shade && "(cus)"}
-                    </p>
-                  ) : (
-                    "N/A"
-                  )}
+                  {teeth.teethProduct?.manual_gingival_shade
+                    ? teeth.teethProduct?.manual_gingival_shade
+                    : teeth.teethProduct?.gingival_shade?.name ||
+                      (teeth?.teethProduct?.custom_gingival_shade ? (
+                        <p
+                          className="font-semibold ml-1"
+                          style={{
+                            color:
+                              TYPE_COLORS[
+                                teeth?.product_type
+                                  ?.name as keyof typeof TYPE_COLORS
+                              ] || TYPE_COLORS.Other,
+                          }}
+                        >
+                          {teeth?.teethProduct?.custom_gingival_shade || "N/A"}
+                        </p>
+                      ) : (
+                        "N/A"
+                      ))}
                 </div>
               </div>
-              <div className="h-2"></div>
               <div className="flex">
                 <span className="w-20 text-[10px]">Stump: </span>
                 <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_stump_shade ? (
-                    teeth.teethProduct?.manual_stump_shade
-                  ) : teeth.teethProduct?.stump_shade?.name ||
-                    teeth.teethProduct?.custom_stump_shade ||
-                    teeth?.teethProduct?.custom_stump_shade ? (
-                    <p
-                      className="font-semibold ml-1"
-                      style={{
-                        color:
-                          TYPE_COLORS[
-                            teeth?.product_type
-                              ?.name as keyof typeof TYPE_COLORS
-                          ] || TYPE_COLORS.Other,
-                      }}
-                    >
-                      {teeth?.teethProduct?.custom_stump_shade || "N/A"}{" "}
-                      {teeth?.teethProduct?.custom_stump_shade && "(cus)"}
-                    </p>
-                  ) : (
-                    "N/A"
-                  )}
+                  {teeth.teethProduct?.manual_stump_shade
+                    ? teeth.teethProduct?.manual_stump_shade
+                    : teeth.teethProduct?.stump_shade?.name ||
+                      (teeth?.teethProduct?.custom_stump_shade ? (
+                        <p
+                          className="font-semibold ml-1"
+                          style={{
+                            color:
+                              TYPE_COLORS[
+                                teeth?.product_type
+                                  ?.name as keyof typeof TYPE_COLORS
+                              ] || TYPE_COLORS.Other,
+                          }}
+                        >
+                          {teeth?.teethProduct?.custom_stump_shade}
+                        </p>
+                      ) : (
+                        "N/A"
+                      ))}
                 </div>
               </div>
             </div>
@@ -1220,25 +1217,28 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                     <span className="w-16">Body: </span>
                     <div className="font-bold ml-1 flex gap-x-2">
                       <p>
-                        {teeth.teethProduct?.manual_body_shade ? (
-                          teeth.teethProduct?.manual_body_shade
-                        ) : teeth.teethProduct?.body_shade?.name ? (
-                          <p
-                            className="font-semibold ml-1"
-                            style={{
-                              color:
-                                TYPE_COLORS[
-                                  teeth?.product_type
-                                    ?.name as keyof typeof TYPE_COLORS
-                                ] || TYPE_COLORS.Other,
-                            }}
-                          >
-                            {teeth?.teethProduct?.custom_body_shade || "N/A"}{" "}
-                            {teeth?.teethProduct?.custom_body_shade && "(cus)"}
-                          </p>
-                        ) : (
-                          "N/A"
-                        )}
+                        {teeth.teethProduct?.manual_body_shade
+                          ? teeth.teethProduct?.manual_body_shade
+                          : teeth.teethProduct?.body_shade?.name ||
+                            (teeth?.teethProduct?.custom_body_shade ? (
+                              <p
+                                className="font-semibold ml-1"
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      teeth?.product_type
+                                        ?.name as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {teeth?.teethProduct?.custom_body_shade ||
+                                  "N/A"}{" "}
+                                {teeth?.teethProduct?.custom_body_shade &&
+                                  "(cus)"}
+                              </p>
+                            ) : (
+                              "N/A"
+                            ))}
                       </p>
                     </div>
                   </div>
@@ -1630,8 +1630,6 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
   );
 };
 
-
-
 export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
   caseDetails,
   labData,
@@ -1645,7 +1643,6 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
     return (
       <div>
         <div>
-
           <div className="py-2">
             <div className="flex justify-between items-start">
               {/* Left Section */}
@@ -1664,20 +1661,16 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
                 <div>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                     <div>
+                      <div>{labData?.name}</div>
+                      <div>{labData?.office_address?.address_1}</div>
                       <div>
-                        {labData?.name}
-                      </div>
-                      <div>
-                        {labData?.office_address?.address_1}
-                      </div>
-                      <div>
-                        {labData?.office_address?.city && labData?.office_address?.state_province && labData?.office_address?.zip_postal
+                        {labData?.office_address?.city &&
+                        labData?.office_address?.state_province &&
+                        labData?.office_address?.zip_postal
                           ? `${labData.office_address.city}, ${labData.office_address.state_province} ${labData.office_address.zip_postal}`
                           : ""}
                       </div>
-                      <div>
-                        {labData?.office_address?.phone_number}
-                      </div>
+                      <div>{labData?.office_address?.phone_number}</div>
                     </div>
                   </div>
                 </div>
@@ -1686,11 +1679,12 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
               {/* Right Section */}
               <div className="flex-1">
                 <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-6"></div>
                   <div className="col-span-6">
-                  </div>
-                  <div className="col-span-6">
-                    <p><strong>PAYMENT RECEIPT</strong> </p>
-                    <p>{moment(statement.payment_date).format('DD/MM/YYYY')}</p>
+                    <p>
+                      <strong>PAYMENT RECEIPT</strong>{" "}
+                    </p>
+                    <p>{moment(statement.payment_date).format("DD/MM/YYYY")}</p>
                   </div>
                 </div>
               </div>
@@ -1703,57 +1697,79 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
 
   return (
     <div>
-      {caseDetails && caseDetails?.map((item, index) => {
-        console.log(item, "item")
-        return (
-          <div
-            key={index}
-            className="min-h-[277mm] w-[180mm] mx-auto bg-white"
-            style={{
-              height: "277mm",
-            }}
-          >
-            <div className="border border-gray-800">
-              <div className="p-5">
-                <Header statement={item} />
-                <div className="border-2 my-2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                    <p style={{ marginBottom: "8px" }}><strong>Received from  :</strong> {item.clients.client_name}</p>
-                    <p style={{ marginBottom: "8px" }}>
-                      <strong>Amount:</strong> $
-                      {item.amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p style={{ marginBottom: "8px" }}><strong>Payment Method :</strong> {item.payment_method}</p>
-                    <p style={{ marginBottom: "8px" }}><strong>Status :</strong> {item.status}</p>
+      {caseDetails &&
+        caseDetails?.map((item, index) => {
+          console.log(item, "item");
+          return (
+            <div
+              key={index}
+              className="min-h-[277mm] w-[180mm] mx-auto bg-white"
+              style={{
+                height: "277mm",
+              }}
+            >
+              <div className="border border-gray-800">
+                <div className="p-5">
+                  <Header statement={item} />
+                  <div
+                    className="border-2 my-2"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        textAlign: "center",
+                      }}
+                    >
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Received from :</strong>{" "}
+                        {item.clients.client_name}
+                      </p>
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Amount:</strong> $
+                        {item.amount.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Payment Method :</strong> {item.payment_method}
+                      </p>
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Status :</strong> {item.status}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 };
 
-
-export const AdjustmentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
-  caseDetails,
-  labData,
-  paperSize,
-}) => {
+export const AdjustmentReceiptTemplate: React.FC<
+  PrintStatementTemplateProps
+> = ({ caseDetails, labData, paperSize }) => {
   // Add ArchSelector components
 
   const Header: React.FC<{
     adjustment: any;
   }> = ({ adjustment }) => {
-    console.log("case Details", caseDetails)
-    console.log("Lab Data", labData)
+    console.log("case Details", caseDetails);
+    console.log("Lab Data", labData);
 
     return (
       <div>
         <div>
-
           <div className="py-2">
             <div className="flex justify-between items-start">
               {/* Left Section */}
@@ -1770,20 +1786,16 @@ export const AdjustmentReceiptTemplate: React.FC<PrintStatementTemplateProps> = 
                 <div>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                     <div>
+                      <div>{labData?.name}</div>
+                      <div>{labData?.office_address?.address_1}</div>
                       <div>
-                        {labData?.name}
-                      </div>
-                      <div>
-                        {labData?.office_address?.address_1}
-                      </div>
-                      <div>
-                        {labData?.office_address?.city && labData?.office_address?.state_province && labData?.office_address?.zip_postal
+                        {labData?.office_address?.city &&
+                        labData?.office_address?.state_province &&
+                        labData?.office_address?.zip_postal
                           ? `${labData.office_address.city}, ${labData.office_address.state_province} ${labData.office_address.zip_postal}`
                           : ""}
                       </div>
-                      <div>
-                        {labData?.office_address?.phone_number}
-                      </div>
+                      <div>{labData?.office_address?.phone_number}</div>
                     </div>
                   </div>
                 </div>
@@ -1792,11 +1804,20 @@ export const AdjustmentReceiptTemplate: React.FC<PrintStatementTemplateProps> = 
               {/* Right Section */}
               <div className="flex-1">
                 <div className="grid grid-cols-12 gap-4">
+                  <div className="col-span-6"></div>
                   <div className="col-span-6">
-                  </div>
-                  <div className="col-span-6">
-                    <p><strong>{adjustment.credit_amount > 0 ? "Credit Memo" : adjustment.debit_amount > 0 ? "Debit Memo" : ""}</strong> </p>
-                    <p>{moment(adjustment.payment_date).format('DD/MM/YYYY')}</p>
+                    <p>
+                      <strong>
+                        {adjustment.credit_amount > 0
+                          ? "Credit Memo"
+                          : adjustment.debit_amount > 0
+                          ? "Debit Memo"
+                          : ""}
+                      </strong>{" "}
+                    </p>
+                    <p>
+                      {moment(adjustment.payment_date).format("DD/MM/YYYY")}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1809,37 +1830,69 @@ export const AdjustmentReceiptTemplate: React.FC<PrintStatementTemplateProps> = 
 
   return (
     <div>
-      {caseDetails && caseDetails?.map((item, index) => {
-        console.log(item, "item")
-        return (
-          <div
-            key={index}
-            className="min-h-[277mm] w-[180mm] mx-auto bg-white"
-            style={{
-              height: "277mm",
-            }}
-          >
-            <div className="border border-gray-800">
-              <div className="p-5">
-                <Header adjustment={item} />
-                <div className="border-2 my-2" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                    <p style={{ marginBottom: "8px" }}><strong>Received from  :</strong> {item.client.client_name}</p>
-                    <p style={{ marginBottom: "8px" }}>
-                      <strong>{item.credit_amount > 0 ? "Credit Amount: " : "Debit Amount: "}</strong>
-                      ${item.credit_amount > 0
-                        ? item.credit_amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        : item.debit_amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
+      {caseDetails &&
+        caseDetails?.map((item, index) => {
+          console.log(item, "item");
+          return (
+            <div
+              key={index}
+              className="min-h-[277mm] w-[180mm] mx-auto bg-white"
+              style={{
+                height: "277mm",
+              }}
+            >
+              <div className="border border-gray-800">
+                <div className="p-5">
+                  <Header adjustment={item} />
+                  <div
+                    className="border-2 my-2"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        textAlign: "center",
+                      }}
+                    >
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Received from :</strong>{" "}
+                        {item.client.client_name}
+                      </p>
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>
+                          {item.credit_amount > 0
+                            ? "Credit Amount: "
+                            : "Debit Amount: "}
+                        </strong>
+                        $
+                        {item.credit_amount > 0
+                          ? item.credit_amount.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : item.debit_amount.toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                      </p>
 
-                    <p style={{ marginBottom: "8px" }}><strong>Description :</strong> {item.description}</p>
+                      <p style={{ marginBottom: "8px" }}>
+                        <strong>Description :</strong> {item.description}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
     </div>
   );
 };

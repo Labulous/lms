@@ -554,7 +554,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-
+          type,
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -672,6 +672,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
+            type: tp.type,
           },
         })),
       }
@@ -1500,8 +1501,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }, 0);
   };
 
-  console.log(caseDetail, "CaseDetails");
-
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
@@ -1551,7 +1550,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     // If there's only one group, return it
     return groupedTeeth.join(", ");
   };
-  console.log(caseDetail.products);
+  console.log(caseDetail);
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1867,12 +1866,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product?.product_type
-                                      ?.name as keyof typeof TYPE_COLORS
+                                    product.teethProduct
+                                      ?.type as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
-                              {product?.product_type?.name ?? "Null"}
+                              {product.teethProduct?.type ?? "Null"}
                             </span>
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
