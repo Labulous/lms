@@ -64,7 +64,7 @@ const MaterialSelection: React.FC = () => {
   const [materialsData, setMaterials] = useState<Materials[]>([]);
   const [isLoading, setLoading] = useState<boolean>(true);
   const [disableDefaultInsert, setDisabledDefaultButton] =
-    useState<boolean>(true);
+    useState<boolean>(false);
   const [openDialog, setOpenDialog] = useState<
     "product_types" | "materials" | null
   >(null);
@@ -129,11 +129,14 @@ const MaterialSelection: React.FC = () => {
 
   const { data: materialsApi, error: materialsError } = useQuery(
     labIdData?.lab_id
-      ? supabase.from("materials").select(
-          `
+      ? supabase
+          .from("materials")
+          .select(
+            `
            *
           `
-        )
+          )
+          .eq("lab_id", labIdData.lab_id)
       : //.eq("lab_id", labIdData?.lab_id)
         null,
     {

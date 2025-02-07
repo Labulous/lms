@@ -56,22 +56,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
       try {
         const { data, error } = await supabase
-          .from("labs")
+          .from("users")
           .select(
             `
-            name,
+            lab:labs!lab_id (
+            
+              name,
             attachements,
             office_address:office_address!office_address_id (
               address_1,
               address_2,
               city
             )
+            )
           `
           )
-          .or(
-            `super_admin_id.eq.${user?.id},admin_ids.cs.{${user?.id}},technician_ids.cs.{${user?.id}},client_ids.cs.{${user?.id}}`
-          );
-
+          .eq("id", user.id);
+        console.log(data, error, "labdata");
         if (error) {
           throw new Error(error.message);
         }
@@ -184,21 +185,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
   return (
     <aside
-      className={`bg-slate-100 text-gray-600 w-56 min-h-screen border-r border-slate-200 flex flex-col transition-all duration-300 ${isOpen ? "translate-x-0" : "-translate-x-44"
-        } md:translate-x-0`}
+      className={`bg-slate-100 text-gray-600 w-56 min-h-screen border-r border-slate-200 flex flex-col transition-all duration-300 ${
+        isOpen ? "translate-x-0" : "-translate-x-44"
+      } md:translate-x-0`}
     >
       <div className="flex items-center justify-between px-4 py-4">
         <Link to="/" className="flex items-center space-x-2">
           <img
             src={logomark}
             alt="dentalms logo logomark"
-            className={`h-7  w-auto transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`}
+            className={`h-7  w-auto transition-opacity duration-200 ${
+              isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+            }`}
           />
           <img
             src={logotext}
             alt="dentalms logo logotext"
-            className={`h-7 w-auto transition-opacity duration-200 transform ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"}`}
+            className={`h-7 w-auto transition-opacity duration-200 transform ${
+              isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+            }`}
             style={{ transform: "translateY(2px)" }}
           />
         </Link>
@@ -207,18 +212,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           className="text-gray-500 hover:text-gray-600 md:hidden"
         >
           <ChevronLeft
-            className={`h-5 w-5 transform transition-transform duration-300 ${isOpen ? "" : "rotate-180"
-              }`}
+            className={`h-5 w-5 transform transition-transform duration-300 ${
+              isOpen ? "" : "rotate-180"
+            }`}
           />
         </button>
       </div>
 
       <div className="mx-4 py-4">
-        <div className="px-2 py-2 rounded-lg border border-slate-200 bg-white/50"
-          style={{ display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "center" }}>
-          {labs[0]?.attachements ? (
+        <div
+          className="px-2 py-2 rounded-lg border border-slate-200 bg-white/50"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "left",
+            alignItems: "center",
+          }}
+        >
+          {labs[0]?.lab?.attachements ? (
             <img
-              src={labs[0].attachements}
+              src={labs[0]?.lab.attachements}
               alt="Lab Logo"
               className="h-4 w-4 text-gray-500 mt-0.5 mr-1"
               style={{ width: "30px", height: "30px", objectFit: "contain" }}
@@ -228,22 +241,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           )}
 
           <div
-            className={`transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`}
-
+            className={`transition-opacity duration-200 ${
+              isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+            }`}
           >
             <h3 className="font-semibold text-xs text-gray-900">
-              {labs[0]?.name}
+              {labs[0]?.lab?.name}
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {labs[0]?.office_address.address_1},
-              {labs[0]?.office_address?.city}
+              {labs[0]?.lab?.office_address.address_1},
+              {labs[0]?.lab?.office_address?.city}
             </p>
           </div>
         </div>
       </div>
-
-
 
       <nav className="flex-1 px-4">
         <div className="space-y-1">
@@ -263,25 +274,29 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               return (
                 <div key={item.href}>
                   <div
-                    className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${isActive
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
-                      }`}
+                    className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${
+                      isActive
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                    }`}
                     onClick={() => toggleDropdown(item.label)}
                   >
                     <Icon
-                      className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"
-                        }`}
+                      className={`h-5 w-5 flex-shrink-0 ${
+                        isActive ? "text-blue-600" : "text-gray-500"
+                      }`}
                     />
                     <span
-                      className={`flex-1 transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-                        }`}
+                      className={`flex-1 transition-opacity duration-200 ${
+                        isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+                      }`}
                     >
                       {item.label}
                     </span>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
-                        }`}
+                      className={`h-4 w-4 transition-transform duration-200 ${
+                        isOpen ? "rotate-180" : ""
+                      }`}
                     />
                   </div>
 
@@ -291,16 +306,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                         <Link
                           key={subItem.href}
                           to={subItem.href}
-                          className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm transition-colors duration-200 ${location.pathname === subItem.href
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-gray-500 hover:bg-blue-50/50 hover:text-blue-600"
-                            }`}
+                          className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm transition-colors duration-200 ${
+                            location.pathname === subItem.href
+                              ? "bg-blue-50 text-blue-600"
+                              : "text-gray-500 hover:bg-blue-50/50 hover:text-blue-600"
+                          }`}
                         >
                           <subItem.icon
-                            className={`h-5 w-5 flex-shrink-0 ${location.pathname === subItem.href
-                              ? "text-blue-600"
-                              : "text-gray-500"
-                              }`}
+                            className={`h-5 w-5 flex-shrink-0 ${
+                              location.pathname === subItem.href
+                                ? "text-blue-600"
+                                : "text-gray-500"
+                            }`}
                           />
                           <span>{subItem.label}</span>
                         </Link>
@@ -316,18 +333,21 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <Link
                 key={item.href}
                 to={item.href}
-                className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
-                  ? "bg-blue-100 text-blue-600"
-                  : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
-                  }`}
+                className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  isActive
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                }`}
               >
                 <Icon
-                  className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-blue-600" : "text-gray-500"
-                    }`}
+                  className={`h-5 w-5 flex-shrink-0 ${
+                    isActive ? "text-blue-600" : "text-gray-500"
+                  }`}
                 />
                 <span
-                  className={`transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-                    }`}
+                  className={`transition-opacity duration-200 ${
+                    isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+                  }`}
                 >
                   {item.label}
                 </span>
@@ -338,8 +358,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
         <div className="mt-8">
           <h3
-            className={`text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-              }`}
+            className={`text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 transition-opacity duration-200 ${
+              isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+            }`}
           >
             Quick Actions
           </h3>
@@ -348,20 +369,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <Link
                 key={action.href}
                 to={action.href}
-                className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${location.pathname === action.href
-                  ? "bg-blue-100 text-blue-600"
-                  : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
-                  }`}
+                className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  location.pathname === action.href
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                }`}
               >
                 <action.icon
-                  className={`h-5 w-5 flex-shrink-0 ${location.pathname === action.href
-                    ? "text-blue-600"
-                    : "text-gray-500"
-                    }`}
+                  className={`h-5 w-5 flex-shrink-0 ${
+                    location.pathname === action.href
+                      ? "text-blue-600"
+                      : "text-gray-500"
+                  }`}
                 />
                 <span
-                  className={`transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
-                    }`}
+                  className={`transition-opacity duration-200 ${
+                    isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+                  }`}
                 >
                   {action.label}
                 </span>

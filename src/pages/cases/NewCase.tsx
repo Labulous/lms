@@ -211,7 +211,6 @@ const NewCase: React.FC = () => {
     console.warn("No lab ID found.");
     return null;
   }
-
   // If no match is found, return null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
