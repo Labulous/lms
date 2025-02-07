@@ -676,7 +676,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
-            type: tp.type,
           },
           service: {
             id: tp.service?.id,
