@@ -185,10 +185,7 @@ class ProductsService {
     try {
       logger.debug("Attempting to delete product", { id });
 
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("products").delete().eq("id", id);
 
       if (error) {
         // Log the full error object for debugging
@@ -196,26 +193,27 @@ class ProductsService {
           code: error.code,
           message: error.message,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
         });
 
         // Handle foreign key violation
-        if (error.code === '23503') {
+        if (error.code === "23503") {
           // Extract the table name from the error message
           const tableMatch = error.message?.match(/table "([^"]+)"/g);
-          const referencingTable = tableMatch?.[1]?.replace(/^table "|"$/g, '') || '';
-          
+          const referencingTable =
+            tableMatch?.[1]?.replace(/^table "|"$/g, "") || "";
+
           // Format the table name for display
           const formattedTable = referencingTable
-            .replace(/_/g, ' ')
-            .replace(/case product/i, 'case')
+            .replace(/_/g, " ")
+            .replace(/case product/i, "case")
             .toLowerCase();
 
           throw new Error(
             `Cannot delete this product as it is being used in ${formattedTable}`
           );
         }
-        
+
         // For other errors, throw a generic message
         throw new Error(`Failed to delete product: ${error.message}`);
       }
@@ -243,18 +241,24 @@ class ProductsService {
     }
   }
 
-  async createProductType(input: { name: string; description: string | null; lab_id: string }) {
+  async createProductType(input: {
+    name: string;
+    description: string | null;
+    lab_id: string;
+  }) {
     try {
       const { data, error } = await supabase
         .from("product_types")
-        .insert([{
-          name: input.name.trim(),
-          description: input.description?.trim() || null,
-          lab_id: input.lab_id,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([
+          {
+            name: input.name.trim(),
+            description: input.description?.trim() || null,
+            lab_id: input.lab_id,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
         .select("*")
         .single();
 
@@ -269,7 +273,10 @@ class ProductsService {
     }
   }
 
-  async updateProductType(id: string, input: { name: string; description: string | null }) {
+  async updateProductType(
+    id: string,
+    input: { name: string; description: string | null }
+  ) {
     try {
       const { data, error } = await supabase
         .from("product_types")
@@ -277,7 +284,7 @@ class ProductsService {
           name: input.name.trim(),
           description: input.description?.trim() || null,
           is_active: true,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("id", id)
         .select("*")
@@ -294,18 +301,24 @@ class ProductsService {
     }
   }
 
-  async createMaterial(input: { name: string; description: string | null; lab_id: string }) {
+  async createMaterial(input: {
+    name: string;
+    description: string | null;
+    lab_id: string;
+  }) {
     try {
       const { data, error } = await supabase
         .from("materials")
-        .insert([{
-          name: input.name.trim(),
-          description: input.description?.trim() || null,
-          lab_id: input.lab_id,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([
+          {
+            name: input.name.trim(),
+            description: input.description?.trim() || null,
+            lab_id: input.lab_id,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
         .select("*")
         .single();
 
@@ -320,7 +333,11 @@ class ProductsService {
     }
   }
 
-  async updateMaterial(id: string, input: { name: string; description: string | null }) {
+  async updateMaterial(
+    id: string,
+    input: { name: string; description: string | null }
+  ) {
+    console.log(id,"id")
     try {
       const { data, error } = await supabase
         .from("materials")
@@ -328,16 +345,16 @@ class ProductsService {
           name: input.name.trim(),
           description: input.description?.trim() || null,
           is_active: true,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("id", id)
         .select("*")
-        .single();
 
       if (error) {
         logger.error("Error updating material", { error });
         throw error;
       }
+      console.log(data, "data");
       return data;
     } catch (error) {
       logger.error("Error in updateMaterial", { error });
@@ -347,10 +364,7 @@ class ProductsService {
 
   async deleteMaterial(id: string) {
     try {
-      const { error } = await supabase
-        .from("materials")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("materials").delete().eq("id", id);
 
       if (error) throw error;
     } catch (error) {
@@ -374,16 +388,16 @@ class ProductsService {
           code: error.code,
           message: error.message,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
         });
 
         // Handle foreign key violation
-        if (error.code === '23503') {
+        if (error.code === "23503") {
           throw new Error(
             `Cannot delete this product type as it is being used by existing products`
           );
         }
-        
+
         // For other errors, throw a generic message
         throw new Error(`Failed to delete product type: ${error.message}`);
       }
@@ -497,32 +511,30 @@ class ProductsService {
     try {
       logger.debug("Attempting to delete service", { id });
 
-      const { error } = await supabase
-        .from("services")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("services").delete().eq("id", id);
 
       if (error) {
         logger.error("Error deleting service", {
           code: error.code,
           message: error.message,
           details: error.details,
-          hint: error.hint
+          hint: error.hint,
         });
 
-        if (error.code === '23503') {
+        if (error.code === "23503") {
           const tableMatch = error.message?.match(/table "([^"]+)"/g);
-          const referencingTable = tableMatch?.[1]?.replace(/^table "|"$/g, '') || '';
-          
+          const referencingTable =
+            tableMatch?.[1]?.replace(/^table "|"$/g, "") || "";
+
           const formattedTable = referencingTable
-            .replace(/_/g, ' ')
+            .replace(/_/g, " ")
             .toLowerCase();
 
           throw new Error(
             `Cannot delete this service as it is being used in ${formattedTable}`
           );
         }
-        
+
         throw error;
       }
     } catch (error) {
