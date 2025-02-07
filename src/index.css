@@ -82,6 +82,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -127,7 +128,7 @@
 }
 
 /* Ensure the date cell content has proper spacing */
-.rbc-date-cell > div {
+.rbc-date-cell>div {
   @apply p-1;
 }
 
@@ -197,6 +198,7 @@
   transition: all 0.1s ease 0.5s;
   visibility: visible;
 }
+
 [data-title]:after {
   content: attr(data-title);
   background-color: #00ff00;
@@ -213,6 +215,7 @@
   z-index: 99999;
   visibility: hidden;
 }
+
 [data-title] {
   position: relative;
 }
