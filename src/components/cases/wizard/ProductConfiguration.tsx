@@ -102,6 +102,7 @@ interface ServiceType {
   id: string | null;
   name: string;
   price: number;
+  is_taxable: boolean;
   material?: Material;
 }
 
@@ -533,6 +534,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           name: service.name,
           id: service.id,
           price: service.price,
+          is_taxable: service.is_taxable,
         };
 
         return updatedServices;
@@ -869,6 +871,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         id: "",
         name: "",
         price: 0,
+        is_taxable: false,
       };
 
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
@@ -898,7 +901,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       new Map(prev).set(index, !(prev.get(index) || false))
     );
   };
-  console.log(selectedProducts);
+  console.log(selectedServices);
 
   useEffect(() => {
     if (isUpdate) {
@@ -1204,6 +1207,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               ? selectedServices[index].name
                               : "Select a service",
                           price: selectedServices[index].price ?? 0,
+                          is_taxable: selectedServices[index].is_taxable,
                         }}
                         onServiceSelect={(service) => {
                           handleServiceSelect(service, true, index);

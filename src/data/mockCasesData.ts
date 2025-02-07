@@ -294,6 +294,16 @@ const saveCases = async (
       user_id: cases.overview.created_by,
     };
 
+    const { data: taxData, error: taxDataError } = await supabase
+      .from("tax_configuration")
+      .select("*")
+      .eq("lab_id", cases.overview.lab_id)
+      .eq("is_active", "Active");
+
+    const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
+      return sum + (tax.rate || 0);
+    }, 0);
+
     const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
       .from("enclosed_case")
       .insert(enclosedCaseRow)
@@ -329,16 +339,6 @@ const saveCases = async (
       return;
     }
 
-    const { data: taxData, error: taxDataError } = await supabase
-      .from("tax_configuration")
-      .select("*")
-      .eq("lab_id", cases.overview.lab_id)
-      .eq("is_active", "Active");
-
-    const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
-      return sum + (tax.rate || 0);
-    }, 0);
-
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
@@ -360,44 +360,55 @@ const saveCases = async (
 
       // Step 4: Create invoice for the case
 
-      const totalAmount = cases.products.reduce(
-        (sum: number, main: any, index: number) => {
-          return (
-            sum +
-            main.subRows.reduce((subSum: number, product: any) => {
-              // Calculate the final discount for each product
-              const finalDiscount =
-                product.discount === 0
-                  ? main.discount // If product discount is 0, use the main discount
-                  : main.discount + product.discount; // Otherwise, add both main and product discounts
+      const totalAmount = cases.products.reduce((sum: number, main: any) => {
+        return (
+          sum +
+          main.subRows.reduce((subSum: number, product: any) => {
+            // Calculate the final discount for each product
+            const finalDiscount =
+              product.discount === 0
+                ? main.discount // If product discount is 0, use the main discount
+                : main.discount + product.discount; // Otherwise, add both main and product discounts
 
-              // Calculate price after the final discount
-              const priceAfterDiscount =
-                product.price - (product.price * finalDiscount) / 100;
+            // Calculate price after the final discount
+            const priceAfterDiscount =
+              product.price - (product.price * finalDiscount) / 100;
 
-              // Calculate total quantity for the product (main.quantity + product.quantity)
-              const totalQuantity =
-                main.quantity > 1
-                  ? main.quantity + product.quantity
-                  : product.quantity;
+            // Calculate total quantity for the product (main.quantity + product.quantity)
+            // const totalQuantity =
+            //   main.quantity > 1
+            //     ? main.quantity + product.quantity
+            //     : product.quantity;
 
-              // Calculate the final price (after discount) for the given quantity
-              const final_price = priceAfterDiscount * totalQuantity;
+            const totalQuantity = product.quantity;
 
-              // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
-              let amount = final_price * (product.teeth?.length || 1);
+            // Calculate the final price (after discount) for the given quantity
+            const final_price = priceAfterDiscount * totalQuantity;
 
-              amount += cases.services[index]?.price || 0;
+            // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
+            let amount = final_price * (product.teeth?.length || 1);
 
-              // If the product is taxable, add tax percentage
-              if (product.is_taxable && amount) {
-                amount += (amount * totalTaxPercent) / 100;
-              }
+            // If the product is taxable, add tax percentage
+            if (product.is_taxable && amount) {
+              amount += (amount * totalTaxPercent) / 100;
+            }
 
-              // Add the amount to the overall sum
-              return subSum + amount;
-            }, 0)
-          );
+            // Add the amount to the overall sum
+            return subSum + amount;
+          }, 0)
+        );
+      }, 0);
+
+      const serviceTotalAmount = cases.services.reduce(
+        (sum: number, service: any) => {
+          let serviceAmount = service.price || 0;
+
+          // If the service is taxable, apply tax
+          if (service.is_taxable && serviceAmount) {
+            serviceAmount += (serviceAmount * totalTaxPercent) / 100;
+          }
+
+          return sum + serviceAmount;
         },
         0
       );
@@ -406,8 +417,8 @@ const saveCases = async (
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: Number(totalAmount), // Total amount for the invoice after discount
-        due_amount: Number(totalAmount), // Same as amount since it's unpaid
+        amount: Number(totalAmount) + Number(serviceTotalAmount), // Total amount for the invoice after discount
+        due_amount: Number(totalAmount) + Number(serviceTotalAmount), // Same as amount since it's unpaid
         status: "unpaid",
         due_date: null,
       };
