@@ -24,6 +24,7 @@ import {
   MarginDesign,
   OcclusalDesign,
   AlloylDesign,
+  MaterialType,
 } from "@/types/supabase";
 import { productsService, ProductTypes } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
@@ -70,6 +71,7 @@ import { FormData as CaseFormData } from "./CaseWizard";
 import { spawn } from "child_process";
 import React from "react";
 import { Service } from "@/data/mockServiceData";
+import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -90,6 +92,19 @@ type ProductType = Database["public"]["Tables"]["products"]["Row"] & {
     name: string;
   };
 };
+
+interface Material {
+  id: string;
+  name: string;
+}
+
+interface ServiceType {
+  id: string | null;
+  name: string;
+  price: number;
+  is_taxable: boolean;
+  material?: Material;
+}
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
@@ -156,9 +171,11 @@ const ALLOY_OPTIONS = Object.values(AlloylDesign).map((value) => ({
 
 interface ProductConfigurationProps {
   selectedMaterial: SavedProduct | null;
-  onAddToCase: (product: SavedProduct) => void;
+  onAddToCase: (product: SavedProduct, service: ServiceType) => void;
   selectedProducts: SavedProduct[];
+  selectedServices: ServiceType[];
   onProductsChange: (products: SavedProduct[]) => void;
+  onServicesChange: (services: ServiceType[]) => void;
   isUpdate?: boolean;
   setIsUpdate?: React.Dispatch<React.SetStateAction<boolean>>;
   onMaterialChange: (material: SavedProduct | null) => void;
@@ -191,6 +208,7 @@ interface ProductConfigurationProps {
     customAlloy?: string;
   };
   setselectedProducts: any;
+  setselectedServices: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
 }
@@ -220,6 +238,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   formErrors,
   isUpdate,
   setIsUpdate,
+  selectedServices,
+  setselectedServices,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
@@ -258,7 +278,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
-  const [services, setServices] = useState<{ name: string; id: string }[]>([]);
+  const [services, setServices] = useState<ServiceType[]>([]);
+  const [selectedService, setSelectedService] = useState<ServiceType | null>(
+    null
+  );
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
     number[][]
@@ -297,7 +320,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  console.log(expandedRows, "expandedRows");
   useEffect(() => {
     const fetchProductTypes = async () => {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -312,10 +334,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const fetchedProductTypes = await productsService.getProductTypes(
           labData.labId
         );
-        console.log("Fetched product types:", fetchedProductTypes);
+
         setProductTypes(fetchedProductTypes);
       } catch (error) {
-        console.error("Error fetching products:", error);
         toast.error("Failed to load products");
       } finally {
         setLoading(false);
@@ -346,46 +367,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         toast.error("Error fetching products from Supabase");
         throw error;
       }
-      console.log(
-        "Fetched products:",
-        fetchedProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          material: p.material,
-          type: p.product_type,
-        }))
-      );
+
       setProducts(fetchedProducts);
     } catch (error) {
-      console.error("Error fetching products:", error);
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
+
   const fetchServices = async () => {
     try {
       setLoading(true);
       const { data: fetchedServices, error } = await supabase
         .from("services")
-        .select(
-          `
-          id,name
-        `
-        )
+        .select(`*, material:materials!material_id (name, id)`)
         .order("name")
         .eq("lab_id", lab?.labId);
 
       if (error) {
-        toast.error("Error fetching products from Supabase");
+        toast.error("Error fetching services from Supabase");
         throw error;
       }
-      const servicesWithNone = [{ id: null, name: "None" }, ...fetchedServices];
-
-      setServices(servicesWithNone);
+      setServices(fetchedServices);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
+      toast.error("Failed to load services");
     } finally {
       setLoading(false);
     }
@@ -401,12 +407,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const getShadeOptions = async (labId: string) => {
       const shadeOptions = await fetchShadeOptions(labId);
       if (shadeOptions) {
-        console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
         const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
-      } else {
-        console.log("Failed to fetch shade options.");
       }
     };
 
@@ -471,7 +474,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
     if (!index) {
@@ -509,6 +511,46 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
   };
+
+  const handleServiceSelect = (
+    value: any,
+    keepTeeth = false,
+    index?: number
+  ) => {
+    const service = services.find((p) => p.id === value.id) || null;
+
+    if (!service) return;
+    // if (!index) {
+    //   toggleRowExpansion(service.id);
+    // }
+    setSelectedService(service);
+    setselectedServices((prevSelectedServices: ServiceType[]) => {
+      if (index !== undefined) {
+        let updatedServices = [...prevSelectedServices];
+
+        // Update the subRows' product name
+        updatedServices[index] = {
+          ...updatedServices[index],
+          name: service.name,
+          id: service.id,
+          price: service.price,
+          is_taxable: service.is_taxable,
+        };
+
+        return updatedServices;
+      } else {
+        return [
+          ...prevSelectedServices,
+          {
+            id: service.id,
+            name: service.name,
+            price: service.price,
+          },
+        ];
+      }
+    });
+  };
+
   const handleProductSubSelect = (
     value: any,
     keepTeeth = false,
@@ -516,7 +558,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     SubIndex: number = 0
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
 
@@ -595,8 +636,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedType(type.name);
   };
 
-  console.log(selectedProducts, "selectedProducts");
-
   const groupSelectedTeeth = (selectedTeeth: number[]) => {
     // Sort selectedTeeth based on their order in teethArray
     const sortedTeeth = selectedTeeth.sort(
@@ -665,7 +704,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     groupSelectedTeeth(teeth);
   };
 
-  console.log(groupSelectedTeethState, "groupSelectedTeethState");
   const handleSaveShades = (index: number, subIndex?: number) => {
     // Construct the updated shades object
     const updatedShades = {
@@ -757,7 +795,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         console.log(updatedProducts, "updatedProducts");
         return updatedProducts;
       } else {
-        console.error("Invalid index provided");
         return prevSelectedProducts;
       }
     });
@@ -810,9 +847,21 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         is_taxable: false,
       };
 
+      const newService: ServiceType = {
+        id: "",
+        name: "",
+        price: 0,
+        is_taxable: false,
+      };
+
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
         ...prevSelectedProducts,
         newProduct,
+      ]);
+
+      setselectedServices((prevSelectedServices: ServiceType[]) => [
+        ...prevSelectedServices,
+        newService,
       ]);
     }
   };
@@ -946,8 +995,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
-
-  console.log(shadeData, "shadeData");
 
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
@@ -1129,7 +1176,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                      <Select
+                      <MultiColumnServiceSelector
+                        materials={MATERIALS}
+                        services={services}
+                        selectedService={{
+                          id: selectedServices[index].id ?? "",
+                          name:
+                            selectedServices[index].name.length > 0
+                              ? selectedServices[index].name
+                              : "Select a service",
+                          price: selectedServices[index].price ?? 0,
+                          is_taxable: selectedServices[index].is_taxable,
+                        }}
+                        onServiceSelect={(service) => {
+                          handleServiceSelect(service, true, index);
+                        }}
+                        disabled={loading || row.teeth.length === 0}
+                        size="xs"
+                        onClick={() => fetchServices()}
+                      />
+                      {/* <Select                     
                         disabled={
                           loading ||
                           (row.teeth.length === 0 && row.type === "Service")
@@ -1176,7 +1242,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </SelectItem>
                           )}
                         </SelectContent>
-                      </Select>
+                      </Select> */}
                     </TableCell>
 
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -2458,7 +2524,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             />
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                            <Select
+                            <MultiColumnServiceSelector
+                              materials={MATERIALS}
+                              services={services}
+                              selectedService={{
+                                id: selectedServices[index].id ?? "",
+                                name:
+                                  selectedServices[index].name.length > 0
+                                    ? selectedServices[index].name
+                                    : "Select a service",
+                                price: selectedServices[index].price ?? 0,
+                                is_taxable: selectedServices[index].is_taxable,
+                              }}
+                              onServiceSelect={(service) => {
+                                handleServiceSelect(service, true, index);
+                              }}
+                              disabled={loading || row.teeth.length === 0}
+                              size="xs"
+                              onClick={() => fetchServices()}
+                            />
+                            {/* <Select
                               disabled={loading || row.teeth.length === 0}
                               value={row_sub.additional_service_id}
                               onValueChange={(value) => {
@@ -2514,7 +2599,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectItem>
                                 )}
                               </SelectContent>
-                            </Select>
+                            </Select> */}
                           </TableCell>
 
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">

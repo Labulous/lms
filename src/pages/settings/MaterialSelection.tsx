@@ -103,7 +103,7 @@ const MaterialSelection: React.FC = () => {
         material:materials(name)
       `
                 )
-                .eq("lab_id", labIdData?.lab_id)
+            //.eq("lab_id", labIdData?.lab_id)
             : null,
         {
             revalidateOnFocus: false,
@@ -121,7 +121,7 @@ const MaterialSelection: React.FC = () => {
            *
           `
                 )
-                .eq("lab_id", labIdData?.lab_id)
+            //.eq("lab_id", labIdData?.lab_id)
             : null,
         {
             revalidateOnFocus: false,

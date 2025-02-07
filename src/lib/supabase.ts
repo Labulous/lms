@@ -3,6 +3,7 @@ import { Database } from "../types/supabase";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error("Missing Supabase URL or Anon Key");
@@ -22,3 +23,5 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     schema: "public",
   },
 });
+
+export const supabaseServiceRole = createClient(supabaseUrl, supabaseRoleKey);

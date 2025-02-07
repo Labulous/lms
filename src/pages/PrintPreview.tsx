@@ -17,42 +17,42 @@ import { ExtendedCase } from "@/components/cases/CaseDetails";
 
 interface PrintTemplateProps {
   caseData:
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }[];
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
@@ -60,52 +60,51 @@ interface PrintTemplateProps {
 
 interface PrintPreviewState {
   type:
-  | "qr-code"
-  | "lab-slip"
-  | "address-label"
-  | "patient-label"
-  | "invoice_slip"
-  | "payment_receipt"
-  | "adjustment_receipt"
-  | "statement_receipt";
+    | "qr-code"
+    | "lab-slip"
+    | "address-label"
+    | "patient-label"
+    | "invoice_slip"
+    | "payment_receipt"
+    | "adjustment_receipt";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }[];
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
 }
 
@@ -122,6 +121,7 @@ const PrintPreview = () => {
       }
       const decodedState = JSON.parse(atob(decodeURIComponent(stateParam)));
       setPreviewState(decodedState);
+      console.log("decide", decodedState);
     } catch (error) {
       console.error("Error parsing state:", error);
       navigate("/", { replace: true });
@@ -137,6 +137,12 @@ const PrintPreview = () => {
   const handlePrint = () => {
     window.print();
   };
+
+  const renderTemplate = () => {
+    // If caseData is an array, we're doing batch printing
+    console.log("printing type bgfgfgfgfgffg", type);
+    console.log(caseDetails, "caseDetails");
+    console.log(caseData, "lab datatat");
 
   const renderTemplate = () => {
     if (Array.isArray(caseData)) {
@@ -163,6 +169,7 @@ const PrintPreview = () => {
       });
     }
 
+    // Single case printing
     const props = {
       caseData,
       paperSize,
@@ -181,11 +188,23 @@ const PrintPreview = () => {
       case "invoice_slip":
         return <InvoiceTemplate {...props} />;
       case "payment_receipt":
-        return <PaymentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
+        return (
+          <PaymentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
+
       case "adjustment_receipt":
-        return <AdjustmentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
-      case "statement_receipt":
-        return <StatementReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
+        return (
+          <AdjustmentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
+
       default:
         return <div>Invalid template type</div>;
     }

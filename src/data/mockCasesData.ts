@@ -145,50 +145,53 @@ const saveCaseProduct = async (
     const caseProductId = caseProductData[0].id; // Assuming `id` is the `case_product_id`
 
     // Step 3: Map cases.products and create rows for case_product_teeth
-    const caseProductTeethRows = cases.products.flatMap((main: any) => {
-      return main.subRows.map((product: any) => {
-        return {
-          case_product_id: caseProductId, // Replace with the actual dynamic ID
-          is_range: cases.products.length > 0,
-          tooth_number: product.teeth || "",
-          pontic_teeth: product.pontic_teeth || [],
-          product_id: product.id,
-          type: product.type || "",
-          lab_id: cases.overview.lab_id || "",
-          quantity: product.quantity || 1, // Ensure at least 1
-          occlusal_shade_id:
-          product?.shades?.occlusal_shade === "manual" ||
-          product?.shades?.occlusal_shade === ""
-            ? null
-            : product?.shades?.occlusal_shade || null,
-          body_shade_id:
-            product?.shades?.body_shade === "manual" ||
-            product?.shades?.body_shade === ""
-              ? null
-              : product?.shades?.body_shade || null,
-          gingival_shade_id:
-            product?.shades?.gingival_shade === "manual" ||
-            product?.shades?.gingival_shade === ""
-              ? null
-              : product?.shades?.gingival_shade || null,
-          stump_shade_id:
-            product?.shades?.stump_shade === "manual" ||
-            product?.shades?.stump_shade === ""
-              ? null
-              : product?.shades?.stump_shade,
-          manual_body_shade: product?.shades.manual_body || null,
-          manual_occlusal_shade: product?.shades.manual_occlusal || null,
-          manual_gingival_shade: product?.shades.manual_gingival || null,
-          manual_stump_shade: product?.shades.manual_stump || null,
-          custom_body_shade: product?.shades.custom_body || null,
-          custom_occlusal_shade: product?.shades.custom_occlusal || null,
-          custom_gingival_shade: product?.shades.custom_gingival || null,
-          custom_stump_shade: product?.shades.custom_stump || null,
-          notes: product.notes || "",
-          case_id: savedCaseId,
-        };
-      });
-    });
+    const caseProductTeethRows = cases.products.flatMap(
+      (main: any, index: number) => {
+        return main.subRows.map((product: any) => {
+          return {
+            case_product_id: caseProductId, // Replace with the actual dynamic ID
+            is_range: cases.products.length > 0,
+            tooth_number: product.teeth || "",
+            pontic_teeth: product.pontic_teeth || [],
+            product_id: product.id,
+            additional_service_id: cases.services[index].id,
+            type: product.type || "",
+            lab_id: cases.overview.lab_id || "",
+            quantity: product.quantity || 1, // Ensure at least 1
+            occlusal_shade_id:
+              product.shades.occlusal_shade !== "manual" &&
+              product.shades.custom_occlusal_shade !== ""
+                ? product.shades.occlusal_shade
+                : null,
+            body_shade_id:
+              product.shades.body_shade !== "manual" &&
+              product.shades.custom_body_shade !== ""
+                ? product.shades.body_shade
+                : null,
+            gingival_shade_id:
+              product.shades.gingival_shade !== "manual" &&
+              product.shades.custom_gingival_shade !== ""
+                ? product.shades.gingival_shade
+                : null,
+            stump_shade_id:
+              product.shades.stump_shade !== "manual" &&
+              product.shades.custom_stump_shade !== ""
+                ? product.shades.stump_shade
+                : null,
+            manual_body_shade: product?.shades.manual_body || null,
+            manual_occlusal_shade: product?.shades.manual_occlusal || null,
+            manual_gingival_shade: product?.shades.manual_gingival || null,
+            manual_stump_shade: product?.shades.manual_stump || null,
+            custom_body_shade: product?.shades.custom_body || null,
+            custom_occlusal_shade: product?.shades.custom_occlusal || null,
+            custom_gingival_shade: product?.shades.custom_gingival || null,
+            custom_stump_shade: product?.shades.custom_stump || null,
+            notes: product.notes || "",
+            case_id: savedCaseId,
+          };
+        });
+      }
+    );
 
     console.log("api calling");
     console.log(caseProductTeethRows, "caseProductTeethRows");
@@ -291,6 +294,16 @@ const saveCases = async (
       user_id: cases.overview.created_by,
     };
 
+    const { data: taxData, error: taxDataError } = await supabase
+      .from("tax_configuration")
+      .select("*")
+      .eq("lab_id", cases.overview.lab_id)
+      .eq("is_active", "Active");
+
+    const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
+      return sum + (tax.rate || 0);
+    }, 0);
+
     const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
       .from("enclosed_case")
       .insert(enclosedCaseRow)
@@ -326,19 +339,10 @@ const saveCases = async (
       return;
     }
 
-    const { data: taxData, error: taxDataError } = await supabase
-      .from("tax_configuration")
-      .select("*")
-      .eq("lab_id", cases.overview.lab_id)
-      .eq("is_active", "Active");
-
-    const totalTaxPercent = taxData?.reduce((sum: number, tax: any) => {
-      return sum + (tax.rate || 0);
-    }, 0);
-
     if (data) {
       const savedCaseId = data[0]?.id; // Assuming the 'id' of the saved/upserted case is returned
       const productIds = cases.products.map((item: any) => item.id);
+      const serviceIds = cases.services.map((item: any) => item.id);
 
       // Step 3: Save case products
       try {
@@ -346,6 +350,7 @@ const saveCases = async (
           user_id: cases.overview.created_by,
           case_id: savedCaseId,
           products_id: productIds,
+          services_id: serviceIds,
         };
         await saveCaseProduct(caseProduct, cases, navigate, savedCaseId); // Save each case product
         console.log("All case products saved successfully.");
@@ -370,10 +375,12 @@ const saveCases = async (
               product.price - (product.price * finalDiscount) / 100;
 
             // Calculate total quantity for the product (main.quantity + product.quantity)
-            const totalQuantity =
-              main.quantity > 1
-                ? main.quantity + product.quantity
-                : product.quantity;
+            // const totalQuantity =
+            //   main.quantity > 1
+            //     ? main.quantity + product.quantity
+            //     : product.quantity;
+
+            const totalQuantity = product.quantity;
 
             // Calculate the final price (after discount) for the given quantity
             const final_price = priceAfterDiscount * totalQuantity;
@@ -382,7 +389,7 @@ const saveCases = async (
             let amount = final_price * (product.teeth?.length || 1);
 
             // If the product is taxable, add tax percentage
-            if (product.is_taxable) {
+            if (product.is_taxable && amount) {
               amount += (amount * totalTaxPercent) / 100;
             }
 
@@ -392,12 +399,26 @@ const saveCases = async (
         );
       }, 0);
 
+      const serviceTotalAmount = cases.services.reduce(
+        (sum: number, service: any) => {
+          let serviceAmount = service.price || 0;
+
+          // If the service is taxable, apply tax
+          if (service.is_taxable && serviceAmount) {
+            serviceAmount += (serviceAmount * totalTaxPercent) / 100;
+          }
+
+          return sum + serviceAmount;
+        },
+        0
+      );
+
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: Number(totalAmount), // Total amount for the invoice after discount
-        due_amount: Number(totalAmount), // Same as amount since it's unpaid
+        amount: Number(totalAmount) + Number(serviceTotalAmount), // Total amount for the invoice after discount
+        due_amount: Number(totalAmount) + Number(serviceTotalAmount), // Same as amount since it's unpaid
         status: "unpaid",
         due_date: null,
       };

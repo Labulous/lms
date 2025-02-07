@@ -22,6 +22,7 @@ import {
 } from "@/components/cases/CaseDetails";
 import { FileWithStatus } from "@/components/cases/wizard/steps/FileUploads";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { ServiceType } from "./NewCase";
 
 export interface LoadingState {
   action: "save" | "update" | null;
@@ -77,6 +78,7 @@ const UpdateCase: React.FC = () => {
   const [isUpdate, setIsUpdate] = useState<boolean>(false);
 
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
+  const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
     isLoading: false,
@@ -94,6 +96,10 @@ const UpdateCase: React.FC = () => {
 
   const handleProductsChange = (products: SavedProduct[]) => {
     setSelectedProducts(products);
+  };
+
+  const handleServicesChange = (services: ServiceType[]) => {
+    setSelectedServices(services);
   };
 
   const handleCaseDetailsChange = (details: any) => {
@@ -184,7 +190,8 @@ const UpdateCase: React.FC = () => {
         ),
         tag:working_tags!working_tag_id (
           name,
-          color
+          color,
+          id
         ),
         working_pan_name,
         working_pan_color,
@@ -244,6 +251,10 @@ const UpdateCase: React.FC = () => {
           case_product_id,
           tooth_number,
           product_id,
+          additional_service_id,
+          quantity,
+          type,
+          service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -315,7 +326,6 @@ const UpdateCase: React.FC = () => {
     }
   );
 
-  // console.log(caseDataa, "caseDataa");
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
@@ -358,6 +368,9 @@ const UpdateCase: React.FC = () => {
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
+            service: tp.service,
+            quantity: tp.quantity,
+            type: tp.type,
           },
         })),
       }
@@ -381,7 +394,6 @@ const UpdateCase: React.FC = () => {
           setClients(clients);
         }
       } catch (error) {
-        console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
       } finally {
         setLoading(false);
@@ -492,7 +504,7 @@ const UpdateCase: React.FC = () => {
         enclosed_item_id: transformedData.enclosed_case_id,
         files: selectedFiles,
       };
-      console.log(newCase, "newCase");
+
       await updateCase(
         newCase,
         navigate,
@@ -502,7 +514,6 @@ const UpdateCase: React.FC = () => {
         Number(caseDetail?.invoice[0].due_amount)
       );
     } catch (error) {
-      console.error("Error creating case:", error);
       toast.error("Failed to create case");
     }
   };
@@ -517,7 +528,6 @@ const UpdateCase: React.FC = () => {
       const lab = await getLabIdByUserId(user?.id as string);
 
       if (!lab?.labId) {
-        console.error("Lab ID not found.");
         return;
       }
       try {
@@ -528,7 +538,6 @@ const UpdateCase: React.FC = () => {
             })
           : [];
         setSelectedFiles(files);
-        // console.log(caseDetails, "caseDetails  ");
         const productsIdArray = caseDetails?.product_ids[0].products_id;
         const caseProductId = caseDetails?.product_ids[0]?.id;
 
@@ -552,7 +561,7 @@ const UpdateCase: React.FC = () => {
           deliveryMethodError: "",
           appointmentDate: caseDataApi.appointment_date || "",
           workingPanName: caseDataApi.working_pan_name || "",
-          workingTagName: caseDataApi.tags?.id || null,
+          workingTagName: caseDataApi.tag?.id || null,
           workingPanColor: caseDataApi.working_pan_color || "",
           is_appointment_TBD: caseDataApi.is_appointment_TBD,
           enclosedItems: {
@@ -598,13 +607,26 @@ const UpdateCase: React.FC = () => {
           ...(caseDataApi as any),
           products: caseDataApi.products,
         });
-        console.log(caseDataApi.products, "caseDataApi.products");
+
+        setSelectedServices(() => {
+          const services: ServiceType[] = [];
+          caseDataApi.products.forEach((item: any) => {
+            services.push({
+              id: item.teethProduct?.service?.id,
+              name: item.teethProduct?.service?.name,
+              price: item.teethProduct?.service?.price,
+              is_taxable: item.teethProduct?.service?.is_taxable,
+            });
+          });
+
+          return services;
+        });
+
         setSelectedProducts(() => {
           const groupedProducts: any = {};
 
           caseDataApi.products.forEach((item: any) => {
             const productId = item?.id || "";
-
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
                 id: productId,
@@ -617,6 +639,7 @@ const UpdateCase: React.FC = () => {
                 pontic_teeth: new Set(), // To store unique pontic teeth
                 notes: item?.teethProduct?.notes || "",
                 subRows: [], // Subrows for each individual tooth
+                quantity: item?.teethProduct?.quantity,
               };
             }
 
@@ -646,22 +669,28 @@ const UpdateCase: React.FC = () => {
                   : [],
                 notes: item?.teethProduct?.notes || "",
                 shades: {
-                  body_shade: item.teethProduct?.body_shade_id || "",
-                  gingival_shade: item?.teethProduct?.gingival_shade_id || "",
-                  occlusal_shade: item?.teethProduct?.occlusal_shade_id || "",
-                  stump_shade: item.teethProduct?.stump_shade_id || "",
-                  custom_body: item.teethProduct?.custom_body_shade || null,
+                  body_shade: item.teethProduct?.body_shade?.name || "",
+                  gingival_shade:
+                    item?.teethProduct?.gingival_shade?.name || "",
+                  occlusal_shade:
+                    item?.teethProduct?.occlusal_shade?.name || "",
+                  stump_shade: item.teethProduct?.stump_shade?.name || "",
+                  custom_body:
+                    item.teethProduct?.custom_body_shade?.name || null,
                   custom_occlusal:
-                    item.teethProduct?.custom_occlusal_shade || null,
+                    item.teethProduct?.custom_occlusal_shade?.name || null,
                   custom_gingival:
-                    item.teethProduct?.custom_gingival_shade || null,
-                  custom_stump: item.teethProduct?.custom_stump_shade || null,
-                  manual_body: item.teethProduct?.manual_body_shade || null,
+                    item.teethProduct?.custom_gingival_shade?.name || null,
+                  custom_stump:
+                    item.teethProduct?.custom_stump_shade?.name || null,
+                  manual_body:
+                    item.teethProduct?.manual_body_shade?.name || null,
                   manual_occlusal:
-                    item.teethProduct?.manual_occlusal_shade || null,
+                    item.teethProduct?.manual_occlusal_shade?.name || null,
                   manual_gingival:
-                    item.teethProduct?.manual_gingival_shade || null,
-                  manual_stump: item.teethProduct?.manual_stump_shade || null,
+                    item.teethProduct?.manual_gingival_shade?.name || null,
+                  manual_stump:
+                    item.teethProduct?.manual_stump_shade?.name || null,
                 },
               });
             });
@@ -676,9 +705,8 @@ const UpdateCase: React.FC = () => {
             })
           );
         });
-        setIsUpdate(true)
+        setIsUpdate(true);
       } catch (error) {
-        console.error("Error fetching case data:", error);
         setError(
           error instanceof Error
             ? error.message
@@ -692,12 +720,10 @@ const UpdateCase: React.FC = () => {
       fetchCaseData();
     }
 
-    console.log("use effect running");
     return () => {
       null;
     };
   }, [caseId, clients]);
-  console.log(caseDetail, "case Detail");
 
   return (
     <div
@@ -783,6 +809,9 @@ const UpdateCase: React.FC = () => {
             formErrors={errors}
             isUpdate={isUpdate}
             setIsUpdate={setIsUpdate}
+            onServicesChange={(services) => handleServicesChange(services)}
+            selectedServices={selectedServices}
+            setselectedServices={setSelectedServices}
           />
         </div>
 
