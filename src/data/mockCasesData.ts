@@ -20,6 +20,7 @@ export const CASE_STATUSES = [
   "on_hold",
   "completed",
   "cancelled",
+  "draft",
 ] as const;
 
 export type CaseStatus = (typeof CASE_STATUSES)[number];
@@ -160,22 +161,22 @@ const saveCaseProduct = async (
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
               product.shades.occlusal_shade !== "manual" &&
-                product.shades.custom_occlusal_shade !== ""
+              product.shades.custom_occlusal_shade !== ""
                 ? product.shades.occlusal_shade
                 : null,
             body_shade_id:
               product.shades.body_shade !== "manual" &&
-                product.shades.custom_body_shade !== ""
+              product.shades.custom_body_shade !== ""
                 ? product.shades.body_shade
                 : null,
             gingival_shade_id:
               product.shades.gingival_shade !== "manual" &&
-                product.shades.custom_gingival_shade !== ""
+              product.shades.custom_gingival_shade !== ""
                 ? product.shades.gingival_shade
                 : null,
             stump_shade_id:
               product.shades.stump_shade !== "manual" &&
-                product.shades.custom_stump_shade !== ""
+              product.shades.custom_stump_shade !== ""
                 ? product.shades.stump_shade
                 : null,
             manual_body_shade: product?.shades.manual_body || null,
@@ -577,22 +578,22 @@ const updateCases = async (
           pontic_teeth: product.pontic_teeth || [],
           occlusal_shade_id:
             product?.shades?.occlusal_shade === "manual" ||
-              product?.shades?.occlusal_shade === ""
+            product?.shades?.occlusal_shade === ""
               ? null
               : product?.shades?.occlusal_shade || null,
           body_shade_id:
             product?.shades?.body_shade === "manual" ||
-              product?.shades?.body_shade === ""
+            product?.shades?.body_shade === ""
               ? null
               : product?.shades?.body_shade || null,
           gingival_shade_id:
             product?.shades?.gingival_shade === "manual" ||
-              product?.shades?.gingival_shade === ""
+            product?.shades?.gingival_shade === ""
               ? null
               : product?.shades?.gingival_shade || null,
           stump_shade_id:
             product?.shades?.stump_shade === "manual" ||
-              product?.shades?.stump_shade === ""
+            product?.shades?.stump_shade === ""
               ? null
               : product?.shades?.stump_shade || null,
           manual_body_shade: product?.shades?.manual_body || null,

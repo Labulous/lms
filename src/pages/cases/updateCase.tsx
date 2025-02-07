@@ -356,7 +356,7 @@ const UpdateCase: React.FC = () => {
             body_shade: tp.body_shade,
             gingival_shade: tp.gingival_shade,
             additional_service_id: tp.additional_service_id,
-            type:tp.type,
+            type: tp.type,
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
             manual_body_shade: tp.manual_body_shade,
@@ -370,7 +370,6 @@ const UpdateCase: React.FC = () => {
             notes: tp.notes,
             service: tp.service,
             quantity: tp.quantity,
-            type: tp.type,
           },
         })),
       }
