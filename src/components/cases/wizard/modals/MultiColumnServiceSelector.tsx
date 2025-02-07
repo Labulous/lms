@@ -21,6 +21,7 @@ interface ServiceType {
   id: string | null;
   name: string;
   price: number;
+  is_taxable: boolean;
   material?: Material;
 }
 
