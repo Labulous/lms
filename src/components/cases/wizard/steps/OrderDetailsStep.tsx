@@ -859,7 +859,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                                   ? "border-2 border-black"
                                   : "border-2 border-gray-200"
                               }`}
-                              onClick={() => onChange("workingPanColor", undefined)}
+                              onClick={() =>
+                                onChange("workingPanColor", undefined)
+                              }
                             >
                               <div
                                 className="absolute inset-0"
@@ -881,9 +883,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                                   style={{
                                     backgroundColor: item,
                                   }}
-                                  onClick={() =>
-                                    onChange("workingPanColor", item)
-                                  }
+                                  onClick={() => {
+                                    onChange("workingPanColor", item);
+                                    setIsAddingPan(false);
+                                  }}
                                 ></div>
                               );
                             })}

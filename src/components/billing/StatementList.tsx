@@ -552,7 +552,7 @@ const StatementList = ({ statement }: StatementList) => {
         </div>
 
         <div className="flex items-center">
-          {selectedStatements && selectedStatements.length > 0 && (
+          {/* {selectedStatements && selectedStatements.length > 0 && (
             <>
               <span className="text-sm text-muted-foreground mr-2">
                 {selectedStatements.length}{" "}
@@ -563,13 +563,12 @@ const StatementList = ({ statement }: StatementList) => {
                 variant="default"
                 size="sm"
                 onClick={() => setIsPreviewModalOpen(true)}
-              //onClick={handlePrintReceipts}
               >
                 <PrinterIcon className="mr-2 h-4 w-4" />
                 Print Statement
               </Button>
             </>
-          )}
+          )} */}
         </div>
 
         <div className="flex items-center gap-4">
@@ -592,7 +591,7 @@ const StatementList = ({ statement }: StatementList) => {
             )}
           </div>
 
-          <Select value={clientStatus} onValueChange={setClientStatus}>
+          {/* <Select value={clientStatus} onValueChange={setClientStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Client Status" />
             </SelectTrigger>
@@ -600,7 +599,7 @@ const StatementList = ({ statement }: StatementList) => {
               <SelectItem value="active">Active Client</SelectItem>
               <SelectItem value="inactive">Inactive Client</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
       </div>
 
@@ -654,9 +653,9 @@ const StatementList = ({ statement }: StatementList) => {
                 </TableCell>
                 <TableCell>{formatDate(statement.last_sent)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon">
+                  {/* <Button variant="ghost" size="icon">
                     <Settings2 className="h-4 w-4" />
-                  </Button>
+                  </Button> */}
                 </TableCell>
 
                 <TableCell>

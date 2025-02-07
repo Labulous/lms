@@ -3,6 +3,11 @@ import { useNavigate } from "react-router-dom";
 import DoctorFields from "./DoctorFields";
 import { Client, ClientInput } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 
 interface Doctor {
   name: string;
@@ -38,7 +43,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   if (!formData) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -124,231 +129,185 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 max-w-4xl mx-auto p-6 bg-white rounded-lg shadow"
-    >
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold mb-6">Edit Client</h2>
-
-        {/* Account Number Display */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Account Number
-          </label>
-          <div className="mt-1 relative">
-            <div
-              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-100 text-gray-500 select-none"
-              aria-readonly="true"
-            >
-              {client?.accountNumber || ""}
-            </div>
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <svg
-                className="h-5 w-5 text-gray-400"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-1 text-sm text-gray-500">
-            Account number cannot be modified
-          </p>
-        </div>
-
-        {/* Client Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Client Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Client Name
-            </label>
-            <input
-              type="text"
-              name="clientName"
-              value={formData.clientName}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Phone
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Status
-            </label>
-            <input
-              type="text"
-              name="status"
-              value={formData.status || ''}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Address Information */}
-        <div className="mt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Street
-              </label>
-              <input
-                type="text"
-                name="address.street"
-                value={formData.address?.street || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Edit Client</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Account Number Display */}
+          <div className="space-y-2">
+            <Label>Account Number</Label>
+            <div className="relative">
+              <Input
+                value={client?.accountNumber || ""}
+                disabled
+                className="bg-muted"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                City
-              </label>
-              <input
-                type="text"
-                name="address.city"
-                value={formData.address?.city || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                State
-              </label>
-              <input
-                type="text"
-                name="address.state"
-                value={formData.address?.state || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Zip Code
-              </label>
-              <input
-                type="text"
-                name="address.zipCode"
-                value={formData.address?.zipCode || ''}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Doctors</h3>
-          {(formData?.doctors ?? []).map((doctor, index) => (
-            <DoctorFields
-              key={index}
-              doctor={doctor}
-              onChange={(field, value) =>
-                handleDoctorChange(index, field as keyof Doctor, value)
-              }
-              onRemove={() => removeDoctor(index)}
-              showRemove={
-                formData?.doctors ? formData?.doctors?.length > 1 : false
-              }
-            />
-          ))}
-
-          <button
-            type="button"
-            onClick={addDoctor}
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Add Another Doctor
-          </button>
-        </div>
-
-        <div className="mt-8 flex justify-end space-x-4">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            {loading ? (
-              <>
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  className="h-5 w-5 text-muted-foreground"
                   xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
                   <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
+                    fillRule="evenodd"
+                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
-                Updating Client...
-              </>
-            ) : (
-              "Update Client"
-            )}
-          </button>
-        </div>
-      </div>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Account number cannot be modified
+            </p>
+          </div>
+
+          {/* Client Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="clientName">Client Name *</Label>
+              <Input
+                id="clientName"
+                name="clientName"
+                value={formData.clientName}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                name="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Input
+                id="status"
+                name="status"
+                value={formData.status || ''}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+
+          {/* Address Information */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Address</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="street">Street</Label>
+                <Input
+                  id="street"
+                  name="address.street"
+                  value={formData.address?.street || ''}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  name="address.city"
+                  value={formData.address?.city || ''}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  name="address.state"
+                  value={formData.address?.state || ''}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">ZIP Code</Label>
+                <Input
+                  id="zipCode"
+                  name="address.zipCode"
+                  value={formData.address?.zipCode || ''}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Doctors Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Doctors</h3>
+            {(formData?.doctors ?? []).map((doctor, index) => (
+              <DoctorFields
+                key={index}
+                doctor={doctor}
+                onChange={(field, value) =>
+                  handleDoctorChange(index, field as keyof Doctor, value)
+                }
+                onRemove={() => removeDoctor(index)}
+                showRemove={
+                  formData?.doctors ? formData?.doctors?.length > 1 : false
+                }
+              />
+            ))}
+
+            <Button
+              type="button"
+              onClick={addDoctor}
+              variant="secondary"
+            >
+              Add Another Doctor
+            </Button>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating Client...
+                </>
+              ) : (
+                "Update Client"
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 };

@@ -31,13 +31,13 @@ interface CasesDues {
   doctor: { name: string };
   products: any[];
   invoicesData:
-    | {
-        amount: number;
-        due_amount: number;
-        status: String;
-        created_at: string;
-      }[]
-    | [];
+  | {
+    amount: number;
+    due_amount: number;
+    status: String;
+    created_at: string;
+  }[]
+  | [];
 }
 
 export interface CalendarEvents {
@@ -58,13 +58,13 @@ export interface CalendarEvents {
     doctor: { name: string };
     case_products: { name: string; product_type: { name: string } }[];
     invoicesData:
-      | {
-          amount: number;
-          due_amount: number;
-          status: String;
-          created_at: string;
-        }[]
-      | [];
+    | {
+      amount: number;
+      due_amount: number;
+      status: String;
+      created_at: string;
+    }[]
+    | [];
   }[];
 }
 
@@ -326,6 +326,8 @@ const Home: React.FC = () => {
         };
       }
     );
+
+    console.log(calendarEvents);
 
     setKeyMetrics([
       {

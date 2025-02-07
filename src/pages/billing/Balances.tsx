@@ -13,7 +13,7 @@ const Balances = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select>
+          {/* <Select>
             <SelectTrigger className="w-[130px]">
               <SelectValue placeholder="Print" />
             </SelectTrigger>
@@ -31,7 +31,7 @@ const Balances = () => {
               <SelectItem value="send-selected">Send to Selected</SelectItem>
               <SelectItem value="customize">Customize Message</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
       </div>
 

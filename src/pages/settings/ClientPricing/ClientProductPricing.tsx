@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -93,6 +93,69 @@ const ClientProductPricing = ({
   );
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc' | null;
+  }>({
+    key: '',
+    direction: null
+  });
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (current.key === key) {
+        if (current.direction === 'asc') {
+          return { key, direction: 'desc' };
+        }
+        if (current.direction === 'desc') {
+          return { key: '', direction: null };
+        }
+      }
+      return { key, direction: 'asc' };
+    });
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    if (sortConfig.key !== columnKey) {
+      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    }
+    if (sortConfig.direction === 'asc') {
+      return <ArrowUp className="ml-2 h-4 w-4" />;
+    }
+    if (sortConfig.direction === 'desc') {
+      return <ArrowDown className="ml-2 h-4 w-4" />;
+    }
+    return null;
+  };
+
+  const sortData = (data: any[]) => {
+    if (!sortConfig.key || !sortConfig.direction) return data;
+
+    return [...data].sort((a, b) => {
+      if (sortConfig.key === 'name') {
+        const aName = a.name || (a.default && a.default.name) || '';
+        const bName = b.name || (b.default && b.default.name) || '';
+        return sortConfig.direction === 'asc' 
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
+      }
+      if (sortConfig.key === 'material') {
+        const aMaterial = (a.material && a.material.name) || (a.default && a.default.material && a.default.material.name) || '';
+        const bMaterial = (b.material && b.material.name) || (b.default && b.default.material && b.default.material.name) || '';
+        return sortConfig.direction === 'asc'
+          ? aMaterial.localeCompare(bMaterial)
+          : bMaterial.localeCompare(aMaterial);
+      }
+      if (sortConfig.key === 'price') {
+        const aPrice = a.price || (a.default && a.default.price) || 0;
+        const bPrice = b.price || (b.default && b.default.price) || 0;
+        return sortConfig.direction === 'asc'
+          ? aPrice - bPrice
+          : bPrice - aPrice;
+      }
+      return 0;
+    });
+  };
 
   // const { user } = useAuth();
 
@@ -503,86 +566,132 @@ const ClientProductPricing = ({
                   <Table>
                     <TableHeader className="sticky top-0 bg-white z-10">
                       <TableRow className="bg-muted hover:bg-muted">
-                        <TableHead>Name</TableHead>
-                        <TableHead>Material</TableHead>
-                        <TableHead>Default Price</TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('name')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Name
+                            {getSortIcon('name')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('material')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Material
+                            {getSortIcon('material')}
+                          </Button>
+                        </TableHead>
+                        <TableHead>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleSort('price')}
+                            className="h-8 p-0 font-medium"
+                          >
+                            Default Price
+                            {getSortIcon('price')}
+                          </Button>
+                        </TableHead>
                         <TableHead>New Price</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="overflow-y-scroll">
-                      {editableProducts?.map((product) => (
-                        <TableRow
-                          key={product.id}
-                          className="hover:bg-muted/50"
-                        >
-                          <TableCell className="font-medium">
-                            {product.name}
-                          </TableCell>
-                          <TableCell>{product.material.name}</TableCell>
-                          <TableCell>${product.price.toFixed(2)}</TableCell>
-                          <TableCell>
-                            {selectedClient !== "default" ? (
-                              <Input
-                                type="number"
-                                value={
-                                  selectedClient !== "default"
-                                    ? getClientPrice(
-                                        product.id,
-                                        selectedClient
-                                      ) ?? product.price
-                                    : product.price
-                                }
-                                onChange={(e) =>
-                                  handlePriceChange(product.id, e.target.value)
-                                }
-                                step="0.01"
-                                min="0"
-                                className="w-24"
-                              />
-                            ) : (
-                              <Input
-                                type="number"
-                                placeholder="Ener new"
-                                value={
-                                  defaultClientPrices.find(
-                                    (item) => item.productId === product.id
-                                  )?.price || 0
-                                }
-                                onChange={(e) => {
-                                  const newPrice =
-                                    parseFloat(e.target.value) || 0;
-                                  setDefaultClientPrices((prevPrices) => {
-                                    const index = prevPrices.findIndex(
-                                      (item) => item.productId === product.id
-                                    );
-                                    if (index !== -1) {
-                                      // Update existing item
-                                      const updatedPrices = [...prevPrices];
-                                      updatedPrices[index] = {
-                                        ...updatedPrices[index],
-                                        price: newPrice,
-                                      };
-                                      return updatedPrices;
-                                    } else {
-                                      // Add new item
-                                      return [
-                                        ...prevPrices,
-                                        {
-                                          productId: product.id,
-                                          price: newPrice,
-                                        },
-                                      ];
+                      {sortData(editableProducts)
+                        ?.sort((a, b) => {
+                          const aHasNewPrice = selectedClient !== "default" 
+                            ? !!getClientPrice(a.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === a.id);
+                          const bHasNewPrice = selectedClient !== "default"
+                            ? !!getClientPrice(b.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === b.id);
+                          return Number(bHasNewPrice) - Number(aHasNewPrice); // Convert booleans to numbers for subtraction
+                        })
+                        .map((product) => {
+                          const hasNewPrice = selectedClient !== "default"
+                            ? !!getClientPrice(product.id, selectedClient)
+                            : !!defaultClientPrices.find((item) => item.productId === product.id);
+                          
+                          return (
+                            <TableRow
+                              key={product.id}
+                              className={cn(
+                                "hover:bg-muted/50",
+                                selectedClient !== "default" && hasNewPrice && "bg-blue-50"
+                              )}
+                            >
+                              <TableCell className="font-medium">
+                                {product.name}
+                              </TableCell>
+                              <TableCell>{product.material.name}</TableCell>
+                              <TableCell>${product.price.toFixed(2)}</TableCell>
+                              <TableCell>
+                                {selectedClient !== "default" ? (
+                                  <Input
+                                    type="number"
+                                    value={
+                                      selectedClient !== "default"
+                                        ? getClientPrice(
+                                            product.id,
+                                            selectedClient
+                                          ) ?? product.price
+                                        : product.price
                                     }
-                                  });
-                                }}
-                                step="0.01"
-                                min="0"
-                                className="w-24"
-                              />
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                    onChange={(e) =>
+                                      handlePriceChange(product.id, e.target.value)
+                                    }
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                  />
+                                ) : (
+                                  <Input
+                                    type="number"
+                                    placeholder="Ener new"
+                                    value={
+                                      defaultClientPrices.find(
+                                        (item) => item.productId === product.id
+                                      )?.price || 0
+                                    }
+                                    onChange={(e) => {
+                                      const newPrice =
+                                        parseFloat(e.target.value) || 0;
+                                      setDefaultClientPrices((prevPrices) => {
+                                        const index = prevPrices.findIndex(
+                                          (item) => item.productId === product.id
+                                        );
+                                        if (index !== -1) {
+                                          // Update existing item
+                                          const updatedPrices = [...prevPrices];
+                                          updatedPrices[index] = {
+                                            ...updatedPrices[index],
+                                            price: newPrice,
+                                          };
+                                          return updatedPrices;
+                                        } else {
+                                          // Add new item
+                                          return [
+                                            ...prevPrices,
+                                            {
+                                              productId: product.id,
+                                              price: newPrice,
+                                            },
+                                          ];
+                                        }
+                                      });
+                                    }}
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                  />
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
                   </Table>
                 </div>
@@ -638,12 +747,48 @@ const ClientProductPricing = ({
                     />
                   </TableHead>
                 )}
-                <TableHead>Name</TableHead>
-                <TableHead>Material</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('name')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('material')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Material
+                    {getSortIcon('material')}
+                  </Button>
+                </TableHead>
                 {selectedClient !== "default" && (
-                  <TableHead>Client Price</TableHead>
+                  <TableHead>
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort('price')}
+                      className="h-8 p-0 font-medium"
+                    >
+                      Client Price
+                      {getSortIcon('price')}
+                    </Button>
+                  </TableHead>
                 )}
-                <TableHead>Default Price</TableHead>
+                <TableHead>
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort('price')}
+                    className="h-8 p-0 font-medium"
+                  >
+                    Default Price
+                    {getSortIcon('price')}
+                  </Button>
+                </TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -659,7 +804,7 @@ const ClientProductPricing = ({
                   </TableCell>
                 </TableRow>
               ) : selectedClient !== "default" ? (
-                specialProducts.map((product) => (
+                sortData(specialProducts).map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
@@ -713,7 +858,7 @@ const ClientProductPricing = ({
                   </TableRow>
                 ))
               ) : (
-                editableProducts.map((product) => (
+                sortData(editableProducts).map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>

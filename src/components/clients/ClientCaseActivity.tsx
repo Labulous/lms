@@ -63,7 +63,7 @@ export function ClientCaseActivity({ clientId }: ClientCaseActivityProps) {
           client:clients(id, client_name, phone),
           doctor:doctors(id, name, client:clients(id, client_name, phone))
         `)
-        .eq("client.id", clientId)
+        .eq("client_id", clientId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

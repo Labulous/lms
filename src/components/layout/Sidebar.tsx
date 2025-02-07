@@ -98,7 +98,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     {
       icon: Home,
       label: "Dashboard",
-      href: "/",
+      href: "/dashboard",
       roles: ["admin", "super_admin", "technician", "client"],
     },
     {
@@ -254,6 +254,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               item.subItems?.some(
                 (subItem) => location.pathname === subItem.href
               );
+
+            //console.log("Test" + isActive);
             const isOpen = openDropdowns.includes(item.label);
 
             // If the item has subItems, render as a dropdown

@@ -74,9 +74,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     }
   };
 
-  useEffect(() => {
-    console.log("invoiceRef.current after mount:", invoiceRef.current);
-  }, []);
   const handlePrint = (type: string) => {
     // Create the preview URL with state encoded in base64
     const previewState = {
@@ -109,7 +106,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   };
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) {
-      console.log("Invoice reference is missing");
       return;
     }
 
@@ -123,8 +119,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
         logging: false,
         useCORS: true,
       });
-
-      console.log("Canvas created successfully");
 
       // Calculate PDF dimensions
       const imgData = canvas.toDataURL("image/png");
@@ -150,10 +144,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
 
       // Save the PDF
       pdf.save(`Invoice-${caseDetails[0]?.case_number || "unknown"}.pdf`);
-
-      console.log("PDF downloaded successfully");
     } catch (err) {
-      console.error("Error generating PDF:", err);
       setError("Failed to generate PDF");
     } finally {
       setIsDownloading(false);
