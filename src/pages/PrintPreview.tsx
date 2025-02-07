@@ -110,7 +110,9 @@ interface PrintPreviewState {
 
 const PrintPreview = () => {
   const [searchParams] = useSearchParams();
-  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(null);
+  const [previewState, setPreviewState] = useState<PrintPreviewState | null>(
+    null
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -144,112 +146,122 @@ const PrintPreview = () => {
     console.log(caseDetails, "caseDetails");
     console.log(caseData, "lab datatat");
 
-  const renderTemplate = () => {
-    if (Array.isArray(caseData)) {
-      return caseData.map((singleCaseData, index) => {
-        const singleProps = {
-          caseData: singleCaseData,
-          paperSize,
-          caseDetails,
-        };
-        switch (type) {
-          case "qr-code":
-            return <QRCodeTemplate key={index} {...singleProps} />;
-          case "lab-slip":
-            return <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={caseDetails} />;
-          case "address-label":
-            return <AddressLabelTemplate key={index} {...singleProps} />;
-          case "patient-label":
-            return <PatientLabelTemplate key={index} {...singleProps} />;
-          case "invoice_slip":
-            return <InvoiceTemplate key={index} {...singleProps} />;
-          default:
-            return <div key={index}>Invalid template type</div>;
-        }
-      });
-    }
+    const renderTemplate = () => {
+      if (Array.isArray(caseData)) {
+        return caseData.map((singleCaseData, index) => {
+          const singleProps = {
+            caseData: singleCaseData,
+            paperSize,
+            caseDetails,
+          };
+          switch (type) {
+            case "qr-code":
+              return <QRCodeTemplate key={index} {...singleProps} />;
+            case "lab-slip":
+              return (
+                <LabSlipTemplate
+                  paperSize="LETTER"
+                  key={index}
+                  caseDetails={caseDetails}
+                />
+              );
+            case "address-label":
+              return <AddressLabelTemplate key={index} {...singleProps} />;
+            case "patient-label":
+              return <PatientLabelTemplate key={index} {...singleProps} />;
+            case "invoice_slip":
+              return <InvoiceTemplate key={index} {...singleProps} />;
+            default:
+              return <div key={index}>Invalid template type</div>;
+          }
+        });
+      }
 
-    // Single case printing
-    const props = {
-      caseData,
-      paperSize,
-      caseDetails,
+      // Single case printing
+      const props = {
+        caseData,
+        paperSize,
+        caseDetails,
+      };
+
+      switch (type) {
+        case "qr-code":
+          return <QRCodeTemplate {...props} />;
+        case "lab-slip":
+          return <LabSlipTemplate {...props} />;
+        case "address-label":
+          return <AddressLabelTemplate {...props} />;
+        case "patient-label":
+          return <PatientLabelTemplate {...props} />;
+        case "invoice_slip":
+          return <InvoiceTemplate {...props} />;
+        case "payment_receipt":
+          return (
+            <PaymentReceiptTemplate
+              paperSize={paperSize}
+              labData={caseData}
+              caseDetails={caseDetails}
+            />
+          );
+
+        case "adjustment_receipt":
+          return (
+            <AdjustmentReceiptTemplate
+              paperSize={paperSize}
+              labData={caseData}
+              caseDetails={caseDetails}
+            />
+          );
+
+        default:
+          return <div>Invalid template type</div>;
+      }
     };
 
-    switch (type) {
-      case "qr-code":
-        return <QRCodeTemplate {...props} />;
-      case "lab-slip":
-        return <LabSlipTemplate {...props} />;
-      case "address-label":
-        return <AddressLabelTemplate {...props} />;
-      case "patient-label":
-        return <PatientLabelTemplate {...props} />;
-      case "invoice_slip":
-        return <InvoiceTemplate {...props} />;
-      case "payment_receipt":
-        return (
-          <PaymentReceiptTemplate
-            paperSize={paperSize}
-            labData={caseData}
-            caseDetails={caseDetails}
-          />
-        );
+    const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
+    const containerStyle = {
+      width: `${dimensions.width / 72}in`,
+      height: `${dimensions.height / 72}in`,
+      margin: "0",
+      backgroundColor: "white",
+      position: "relative" as const,
+    };
 
-      case "adjustment_receipt":
-        return (
-          <AdjustmentReceiptTemplate
-            paperSize={paperSize}
-            labData={caseData}
-            caseDetails={caseDetails}
-          />
-        );
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-6 flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Print Preview</h1>
+            <Button onClick={handlePrint} className="gap-2">
+              <Printer className="h-4 w-4" />
+              Print
+            </Button>
+          </div>
 
-      default:
-        return <div>Invalid template type</div>;
-    }
-  };
-
-  const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
-  const containerStyle = {
-    width: `${dimensions.width / 72}in`,
-    height: `${dimensions.height / 72}in`,
-    margin: "0",
-    backgroundColor: "white",
-    position: "relative" as const,
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Print Preview</h1>
-          <Button onClick={handlePrint} className="gap-2">
-            <Printer className="h-4 w-4" />
-            Print
-          </Button>
-        </div>
-
-        <div className="bg-white shadow-lg rounded-lg overflow-auto">
-          <div className="print-content">
-            {Array.isArray(caseData) ? (
-              caseData.map((_, index) => (
-                <div key={index} style={containerStyle} className="print-container mb-8">
-                  {(renderTemplate() as React.ReactElement[])[index]}
+          <div className="bg-white shadow-lg rounded-lg overflow-auto">
+            <div className="print-content">
+              {Array.isArray(caseData) ? (
+                caseData.map((_, index) => (
+                  <div
+                    key={index}
+                    style={containerStyle}
+                    className="print-container mb-8"
+                  >
+                    {(renderTemplate() as React.ReactElement[])[index]}
+                  </div>
+                ))
+              ) : (
+                <div style={containerStyle} className="print-container">
+                  {renderTemplate()}
                 </div>
-              ))
-            ) : (
-              <div style={containerStyle} className="print-container">
-                {renderTemplate()}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Print-specific styles */}
-      <style>
-        {`
+        {/* Print-specific styles */}
+        <style>
+          {`
           @media print {
             @page {
               size: ${paperSize.toLowerCase()};
@@ -312,14 +324,14 @@ const PrintPreview = () => {
             }
           }
         `}
-      </style>
+        </style>
 
-      {/* Footer for page numbering */}
-      <div className="page-footer">
-        <span className="page-number"></span>
+        {/* Footer for page numbering */}
+        <div className="page-footer">
+          <span className="page-number"></span>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 };
-
 export default PrintPreview;

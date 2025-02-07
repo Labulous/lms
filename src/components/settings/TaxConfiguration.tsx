@@ -62,7 +62,7 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
       fetchTaxes();
       setDialogOpen(false);
       toast.success("Tax created successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error?.message);
     }
   };
@@ -94,13 +94,13 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
 
   const handleToggleStatus = async (tax: Tax) => {
     try {
-      await updateTax(labId, tax.id, {
+      await updateTax(labId, tax?.id as string, {
         is_active: tax.is_active === "Active" ? "Inactive" : "Active",
         updated_at: new Date().toISOString(),
       });
       fetchTaxes();
       toast.success("Tax status updated successfully");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error?.message);
     }
   };
@@ -191,7 +191,7 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
         onOpenChange={setDialogOpen}
         initialValues={selectedTax || undefined}
         mode={mode}
-        onSubmit={(values) =>
+        onSubmit={(values: any) =>
           mode === "create" ? handleCreateTax(values) : handleUpdateTax(values)
         }
       />

@@ -365,10 +365,7 @@ const saveCases = async (
           sum +
           main.subRows.reduce((subSum: number, product: any) => {
             // Calculate the final discount for each product
-            const finalDiscount =
-              product.discount === 0
-                ? main.discount // If product discount is 0, use the main discount
-                : main.discount + product.discount; // Otherwise, add both main and product discounts
+            const finalDiscount = product.discount; // Otherwise, add both main and product discounts
 
             // Calculate price after the final discount
             const priceAfterDiscount =
@@ -680,20 +677,14 @@ const updateCases = async (
         sum +
         main.subRows.reduce((subSum: number, product: any) => {
           // Calculate the final discount for each product
-          const finalDiscount =
-            product.discount === 0
-              ? main.discount // If product discount is 0, use the main discount
-              : main.discount + product.discount; // Otherwise, add both main and product discounts
+          const finalDiscount = product.discount; // Otherwise, add both main and product discounts
 
           // Calculate price after the final discount
           const priceAfterDiscount =
             product.price - (product.price * finalDiscount) / 100;
 
           // Calculate total quantity for the product (main.quantity + product.quantity)
-          const totalQuantity =
-            main.quantity > 1
-              ? main.quantity + product.quantity
-              : product.quantity;
+          const totalQuantity = product.quantity;
 
           // Calculate the final price (after discount) for the given quantity
           const final_price = priceAfterDiscount * totalQuantity;

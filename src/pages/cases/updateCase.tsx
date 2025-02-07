@@ -370,7 +370,6 @@ const UpdateCase: React.FC = () => {
             notes: tp.notes,
             service: tp.service,
             quantity: tp.quantity,
-            type: tp.type,
           },
         })),
       }
