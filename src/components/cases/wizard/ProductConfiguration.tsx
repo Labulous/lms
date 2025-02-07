@@ -901,7 +901,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       new Map(prev).set(index, !(prev.get(index) || false))
     );
   };
-  console.log(selectedServices);
 
   useEffect(() => {
     if (isUpdate) {
@@ -2555,6 +2554,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     ? selectedServices[index].name
                                     : "Select a service",
                                 price: selectedServices[index].price ?? 0,
+                                is_taxable: selectedServices[index].is_taxable,
                               }}
                               onServiceSelect={(service) => {
                                 handleServiceSelect(service, true, index);

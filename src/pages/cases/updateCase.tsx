@@ -253,6 +253,7 @@ const UpdateCase: React.FC = () => {
           product_id,
           additional_service_id,
           quantity,
+          type,
           service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
@@ -368,6 +369,7 @@ const UpdateCase: React.FC = () => {
             notes: tp.notes,
             service: tp.service,
             quantity: tp.quantity,
+            type: tp.type,
           },
         })),
       }
@@ -612,6 +614,7 @@ const UpdateCase: React.FC = () => {
               id: item.teethProduct?.service?.id,
               name: item.teethProduct?.service?.name,
               price: item.teethProduct?.service?.price,
+              is_taxable: item.teethProduct?.service?.is_taxable,
             });
           });
 
@@ -623,12 +626,11 @@ const UpdateCase: React.FC = () => {
 
           caseDataApi.products.forEach((item: any) => {
             const productId = item?.id || "";
-
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
                 id: productId,
                 name: item?.name || "",
-                type: item?.product_type?.name || "",
+                type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.additional_service_id,
                 discount: item?.discounted_price?.discount || 0,
