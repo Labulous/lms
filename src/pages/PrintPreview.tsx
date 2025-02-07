@@ -66,8 +66,7 @@ interface PrintPreviewState {
   | "patient-label"
   | "invoice_slip"
   | "payment_receipt"
-  | "adjustment_receipt"
-  | "statement_receipt";
+  | "adjustment_receipt";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
   | {
@@ -181,11 +180,23 @@ const PrintPreview = () => {
       case "invoice_slip":
         return <InvoiceTemplate {...props} />;
       case "payment_receipt":
-        return <PaymentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
+        return (
+          <PaymentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
+
       case "adjustment_receipt":
-        return <AdjustmentReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
-      case "statement_receipt":
-        return <StatementReceiptTemplate paperSize={paperSize} labData={caseData} caseDetails={caseDetails} />;
+        return (
+          <AdjustmentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
+
       default:
         return <div>Invalid template type</div>;
     }

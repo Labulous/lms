@@ -1,4 +1,4 @@
-import { useState, useEffect, SetStateAction, useRef } from "react";
+import React, { useState, useEffect, SetStateAction, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   User,
@@ -458,9 +458,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const { data: caseDataa, error: caseError } = useQuery(
     activeCaseId
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
         id,
         created_at,
         received_date,
@@ -554,9 +554,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-
+          type,
           tooth_number,
           product_id,
+          additional_service_id,
+          service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -618,9 +620,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           )
           )
       `
-          )
-          .eq("id", activeCaseId)
-          .single()
+        )
+        .eq("id", activeCaseId)
+        .single()
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true,
@@ -637,46 +639,52 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-        ...caseItem,
-        labDetail: lab,
-        custom_occlusal_details: caseDataa?.custom_occulusal_details,
-        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-          id: tp.product.id,
-          name: tp.product.name,
-          price: tp.product.price,
-          lead_time: tp.product.lead_time,
-          is_client_visible: tp.product.is_client_visible,
-          is_taxable: tp.product.is_taxable,
-          created_at: tp.product.created_at,
-          updated_at: tp.product.updated_at,
-          requires_shade: tp.product.requires_shade,
-          material: tp.product.material,
-          product_type: tp.product.product_type,
-          billing_type: tp.product.billing_type,
-          discounted_price: caseItem?.discounted_price[index],
-          teethProduct: {
-            id: tp.id,
-            is_range: tp.is_range,
-            tooth_number: tp.tooth_number,
-            product_id: tp.product_id,
-            occlusal_shade: tp.occlusal_shade,
-            body_shade: tp.body_shade,
-            gingival_shade: tp.gingival_shade,
-            stump_shade: tp.stump_shade,
-            manual_occlusal_shade: tp.manual_occlusal_shade,
-            manual_body_shade: tp.manual_body_shade,
-            type: tp.type,
-            manual_gingival_shade: tp.manual_gingival_shade,
-            manual_stump_shade: tp.manual_stump_shade,
-            custom_occlusal_shade: tp.custom_occlusal_shade,
-            custom_body_shade: tp.custom_body_shade,
-            custom_gingival_shade: tp.custom_gingival_shade,
-            custom_stump_shade: tp.custom_stump_shade,
-            custom_occlusal_details: tp.occlusal_shade,
-            notes: tp.notes,
-          },
-        })),
-      }
+      ...caseItem,
+      labDetail: lab,
+      custom_occlusal_details: caseDataa?.custom_occulusal_details,
+      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+        id: tp.product.id,
+        name: tp.product.name,
+        price: tp.product.price,
+        lead_time: tp.product.lead_time,
+        is_client_visible: tp.product.is_client_visible,
+        is_taxable: tp.product.is_taxable,
+        created_at: tp.product.created_at,
+        updated_at: tp.product.updated_at,
+        requires_shade: tp.product.requires_shade,
+        material: tp.product.material,
+        product_type: tp.product.product_type,
+        billing_type: tp.product.billing_type,
+        discounted_price: caseItem?.discounted_price[index],
+        teethProduct: {
+          id: tp.id,
+          is_range: tp.is_range,
+          tooth_number: tp.tooth_number,
+          product_id: tp.product_id,
+          occlusal_shade: tp.occlusal_shade,
+          body_shade: tp.body_shade,
+          gingival_shade: tp.gingival_shade,
+          stump_shade: tp.stump_shade,
+          manual_occlusal_shade: tp.manual_occlusal_shade,
+          manual_body_shade: tp.manual_body_shade,
+          type: tp.type,
+          manual_gingival_shade: tp.manual_gingival_shade,
+          manual_stump_shade: tp.manual_stump_shade,
+          custom_occlusal_shade: tp.custom_occlusal_shade,
+          custom_body_shade: tp.custom_body_shade,
+          custom_gingival_shade: tp.custom_gingival_shade,
+          custom_stump_shade: tp.custom_stump_shade,
+          custom_occlusal_details: tp.occlusal_shade,
+          notes: tp.notes,
+          type: tp.type,
+        },
+        service: {
+          id: tp.service?.id,
+          name: tp.service?.name,
+          price: tp.service?.price,
+        },
+      })),
+    }
     : null;
 
   const fetchCaseData = async (refetch?: boolean) => {
@@ -1519,8 +1527,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }, 0);
   };
 
-  console.log(caseDetail, "CaseDetails");
-
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
@@ -1570,7 +1576,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     // If there's only one group, return it
     return groupedTeeth.join(", ");
   };
-  console.log(lab, "lab");
+  console.log(caseDetail);
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1639,7 +1645,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         <p>
                           {
                             CASE_STATUS_DESCRIPTIONS[
-                              caseDetail.status as CaseStatus
+                            caseDetail.status as CaseStatus
                             ]
                           }
                         </p>
@@ -1712,7 +1718,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <DropdownMenuItem onClick={handleEditClick}>
                       Edit Case
                     </DropdownMenuItem>
-                    <DropdownMenuItem
+                    {/* <DropdownMenuItem
                       onClick={() => {
                         if (caseDetail.status === "completed") {
                           toast.error("Case is Already Completed.");
@@ -1722,7 +1728,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       }}
                     >
                       On Hold
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuItem
                       onClick={() => {
                         if (caseDetail.status === "completed") {
@@ -1886,7 +1892,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               style={{
                                 backgroundColor:
                                   TYPE_COLORS[
-                                    product?.teethProduct?.type as keyof typeof TYPE_COLORS
+                                  product?.teethProduct?.type as keyof typeof TYPE_COLORS
                                   ] || TYPE_COLORS.Other,
                               }}
                             >
@@ -1902,8 +1908,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             {product?.teethProduct?.tooth_number.length >= 1
                               ? formatTeethRange(
-                                  product.teethProduct.tooth_number
-                                )
+                                product.teethProduct.tooth_number
+                              )
                               : null}
                           </TableCell>
                           <TableCell className="w-[1px] p-0">
@@ -1924,8 +1930,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <TableCell className="text-xs py-1.5 pl-4 pr-0">
                             <div className="space-y-0">
                               {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ||
-                              product?.teethProduct?.manual_occlusal_shade ? (
+                                product?.teethProduct?.custom_occlusal_shade ||
+                                product?.teethProduct?.manual_occlusal_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -1943,8 +1949,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -1959,8 +1965,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               ) : null}
                               {/* Body shade */}
                               {product?.teethProduct?.body_shade?.name ||
-                              product?.teethProduct?.custom_body_shade ||
-                              product?.teethProduct?.manual_body_shade ? (
+                                product?.teethProduct?.custom_body_shade ||
+                                product?.teethProduct?.manual_body_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">Body:</span>
@@ -1976,8 +1982,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -1993,8 +1999,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Gingival shade */}
                               {product?.teethProduct?.gingival_shade?.name ||
-                              product?.teethProduct?.custom_gingival_shade ||
-                              product?.teethProduct?.manual_gingival_shade ? (
+                                product?.teethProduct?.custom_gingival_shade ||
+                                product?.teethProduct?.manual_gingival_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -2012,8 +2018,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -2029,8 +2035,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                               {/* Stump shade */}
                               {product?.teethProduct?.custom_stump_shade ||
-                              product?.teethProduct?.stump_shade_id ||
-                              product?.teethProduct?.manual_stump_shade ? (
+                                product?.teethProduct?.stump_shade ||
+                                product?.teethProduct?.manual_stump_shade ? (
                                 <p>
                                   <div className="flex gap-2">
                                     <span className="text-gray-500">
@@ -2040,7 +2046,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                       <p>
                                         {product?.teethProduct
                                           ?.manual_stump_shade ||
-                                          product?.teethProduct?.stump_shade_id
+                                          product?.teethProduct?.stump_shade
                                             ?.name}
                                       </p>{" "}
                                       <p
@@ -2048,8 +2054,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         style={{
                                           color:
                                             TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                            product?.product_type
+                                              ?.name as keyof typeof TYPE_COLORS
                                             ] || TYPE_COLORS.Other,
                                         }}
                                       >
@@ -2151,7 +2157,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <TableHeader className="bg-slate-100 border-b border-slate-200">
                       <TableRow>
                         <TableHead className="w-32 text-xs py-0.5 pl-4 pr-0">
-                          Tooth
+                          Tooth / Service
                         </TableHead>
                         <TableHead className="w-[1px] p-0">
                           <Separator
@@ -2221,14 +2227,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             product?.discounted_price.quantity || 1;
                           const subtotal = finalPrice * quantity;
 
-                          return (
-                            <TableRow key={index}>
+                          const serviceRow = product.service ? (
+                            <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.teethProduct.tooth_number?.length > 1
-                                  ? formatTeethRange(
-                                      product.teethProduct?.tooth_number
-                                    )
-                                  : product.teethProduct?.tooth_number[0]}
+                                Service
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2237,7 +2239,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.name || "-"}
+                                {product.service.name}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2246,7 +2248,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product?.discounted_price?.quantity || "-"}
+                                1
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2255,7 +2257,16 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product?.discounted_price?.price}
+                                ${product.service.price}
+                              </TableCell>
+                              <TableCell className="w-[1px] p-0">
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-full"
+                                />
+                              </TableCell>
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                                0%
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2264,13 +2275,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {discount > 0 ? (
-                                  <span className="text-green-600">
-                                    {product?.discounted_price?.discount}%
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-400">0%</span>
-                                )}
+                                ${product.service.price}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2278,21 +2283,87 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   className="h-full"
                                 />
                               </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                $
-                                {product?.discounted_price?.final_price?.toLocaleString()}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
-                                $
-                                {product?.discounted_price?.total?.toLocaleString()}
+                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                ${product.service.price}
                               </TableCell>
                             </TableRow>
+                          ) : null;
+
+                          return (
+                            <React.Fragment key={index}>
+                              <TableRow>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product.teethProduct.tooth_number?.length > 1
+                                    ? formatTeethRange(
+                                      product.teethProduct?.tooth_number
+                                    )
+                                    : product.teethProduct?.tooth_number[0]}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product.name || "-"}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {product?.discounted_price?.quantity || "-"}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  ${product?.discounted_price?.price}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  {discount > 0 ? (
+                                    <span className="text-green-600">
+                                      {product?.discounted_price?.discount}%
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400">0%</span>
+                                  )}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                  $
+                                  {product?.discounted_price?.final_price.toLocaleString()}
+                                </TableCell>
+                                <TableCell className="w-[1px] p-0">
+                                  <Separator
+                                    orientation="vertical"
+                                    className="h-full"
+                                  />
+                                </TableCell>
+                                <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
+                                  $
+                                  {product?.discounted_price?.total.toLocaleString()}
+                                </TableCell>
+                              </TableRow>
+                              {serviceRow}
+                            </React.Fragment>
                           );
                         })}
                       <TableRow className="border-t border-gray-200 bg-gray-50 w-full">
@@ -2331,7 +2402,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
                   <Package className="mr-2" size={20} /> Products
@@ -2386,7 +2457,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       body_shade?: { name: string };
                       gingival_shade?: { name: string };
                       occlusal_shade?: { name: string };
-                      stump_shade_id?: { name: string };
+                      stump_shade?: { name: string };
                     },
                     index: number
                   ) => (
@@ -2437,7 +2508,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   Stump Shade:
                                 </span>
                                 <span>
-                                  {product.stump_shade_id?.name || "N/A"}
+                                  {product.stump_shade?.name || "N/A"}
                                 </span>
                               </div>
                             </div>
@@ -2448,7 +2519,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   )
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           <div className="space-y-3">
@@ -2517,7 +2588,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusal_type
                                 ? caseDetail?.occlusal_type
                                 : caseDetail.custom_occulusal_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2528,7 +2599,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.contact_type
                                 ? caseDetail?.contact_type
                                 : caseDetail?.custom_contact_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2537,7 +2608,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.pontic_type
                                 ? caseDetail?.pontic_type
                                 : caseDetail?.custom_pontic_details ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                         </div>{" "}
@@ -2550,7 +2621,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.margin_design_type
                                 ? caseDetail?.margin_design_type
                                 : caseDetail?.custom_margin_design_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2561,7 +2632,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusion_design_type
                                 ? caseDetail?.occlusion_design_type
                                 : caseDetail?.custom_occlusion_design_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2570,7 +2641,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.alloy_type
                                 ? caseDetail?.alloy_type
                                 : caseDetail?.custon_alloy_type ||
-                                  "Not specified"}
+                                "Not specified"}
                             </p>
                           </div>
                         </div>
@@ -2716,8 +2787,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           ?.map((file, index) => {
                             const fileName = file
                               ? decodeURIComponent(
-                                  file.split("/").pop()?.split("?")[0] || ""
-                                )
+                                file.split("/").pop()?.split("?")[0] || ""
+                              )
                               : "";
                             const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
                               fileName
@@ -2770,10 +2841,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           })}
                         {(!caseDetail?.attachements ||
                           caseDetail.attachements.length === 0) && (
-                          <p className="text-sm text-gray-500">
-                            No attachments found
-                          </p>
-                        )}
+                            <p className="text-sm text-gray-500">
+                              No attachments found
+                            </p>
+                          )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

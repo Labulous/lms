@@ -65,7 +65,7 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
   onNavigate,
   label,
   filterType = "due_date",
-  onFilterChange = () => {},
+  onFilterChange = () => { },
 }) => (
   <div className="rbc-toolbar">
     <div className="flex items-center gap-2">
@@ -101,8 +101,8 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
             {filterType === "due_date"
               ? "Due Date"
               : filterType === "on_hold"
-              ? "On Hold"
-              : filterType}
+                ? "On Hold"
+                : filterType}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-40 p-1">
@@ -329,7 +329,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                   }
                   {
                     <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.id===1 && event.title}
+                      {event.id === 1 && event.title}
                     </div>
                   }
                 </div>
@@ -379,8 +379,8 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                             event.status === "in_progress"
                               ? "default"
                               : event.status === "on_hold"
-                              ? "secondary"
-                              : "outline"
+                                ? "secondary"
+                                : "outline"
                           }
                           className="text-[10px] px-2 py-0"
                         >
@@ -502,9 +502,8 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
     <>
       <div className="calendar-wrapper" style={{ height }}>
         <div
-          className={`calendar-container ${
-            animationDirection ? `slide-${animationDirection}` : ""
-          }`}
+          className={`calendar-container ${animationDirection ? `slide-${animationDirection}` : ""
+            }`}
         >
           <Calendar
             localizer={localizer}
@@ -514,7 +513,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             style={{ height }}
             views={["month"]} // Make sure to include the right views
             components={components}
-            // onNavigate={calendarNavigate}
+            onNavigate={calendarNavigate}
             date={currentDate}
             toolbar={true}
             defaultDate={new Date()}

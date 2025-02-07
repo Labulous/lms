@@ -62,13 +62,14 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
       fetchTaxes();
       setDialogOpen(false);
       toast.success("Tax created successfully");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error?.message);
     }
   };
 
-  const handleUpdateTax = async (values: Tax) => {
-    console.log(values, "values");
+  const handleUpdateTax = async (
+    values: Omit<Tax, "id" | "createdAt" | "updatedAt">
+  ) => {
     if (!selectedTax) return;
     try {
       await updateTax(labId, selectedTax.id as string, values);
@@ -93,13 +94,13 @@ const TaxConfiguration: React.FC<TaxConfigurationProps> = ({ labId }) => {
 
   const handleToggleStatus = async (tax: Tax) => {
     try {
-      await updateTax(labId, tax?.id as string, {
+      await updateTax(labId, tax?.id, {
         is_active: tax.is_active === "Active" ? "Inactive" : "Active",
         updated_at: new Date().toISOString(),
       });
       fetchTaxes();
       toast.success("Tax status updated successfully");
-    } catch (error: any) {
+    } catch (error) {
       toast.error(error?.message);
     }
   };

@@ -215,10 +215,9 @@ const DailyCountsCard = ({
                       <div
                         className={`
                           h-2 flex-1 rounded-full transition-all duration-200
-                          ${
-                            segment.status === "completed"
-                              ? "bg-emerald-500 hover:bg-emerald-600"
-                              : "bg-gray-200 hover:bg-gray-300"
+                          ${segment.status === "completed"
+                            ? "bg-emerald-500 hover:bg-emerald-600"
+                            : "bg-gray-200 hover:bg-gray-300"
                           }
                         `}
                       />
@@ -267,7 +266,7 @@ const DailyCountsCard = ({
                   <div className="flex items-center space-x-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
                     <span className="text-red-600 font-medium">
-                      {totalDue -todayDue} Past Due
+                      {totalDue - todayDue} Past Due
                     </span>
                   </div>
                   <div className="flex items-center space-x-1">

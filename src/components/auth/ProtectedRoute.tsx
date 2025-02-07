@@ -13,20 +13,15 @@ interface ProtectedRouteProps {
   requiredRole?: Role | Role[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  requiredRole,
-}) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
 
+  // 🔹 Move useEffect to the top level
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const {
-          data: { session },
-          error,
-        } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
           logger.error("Session check failed:", error);
@@ -50,17 +45,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     checkSession();
   }, []);
 
-  // Show loading state while auth is being determined
-  // if (authLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen bg-white">
-  //       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
-  //     </div>
-  //   );
-  // }
+  // 🔹 Show a loading indicator until authentication is determined
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
+      </div>
+    );
+  }
 
-  // Redirect to login if no user
-  if (!user && !authLoading) {
+  // 🔹 Redirect to login if no user is authenticated
+  if (!user) {
     logger.info("Redirecting to login - no authenticated user", {
       path: location.pathname,
       from: location.state?.from?.pathname || location.pathname,
@@ -68,7 +63,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Check role requirements if specified
+  // 🔹 Check role requirements
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     const userRole = user?.role as Role;

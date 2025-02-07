@@ -24,6 +24,7 @@ import {
   MarginDesign,
   OcclusalDesign,
   AlloylDesign,
+  MaterialType,
 } from "@/types/supabase";
 import { productsService, ProductTypes } from "@/services/productsService";
 import ToothSelector, { TYPE_COLORS } from "./modals/ToothSelector";
@@ -70,6 +71,7 @@ import { FormData as CaseFormData } from "./CaseWizard";
 import { spawn } from "child_process";
 import React from "react";
 import { Service } from "@/data/mockServiceData";
+import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -91,15 +93,28 @@ type ProductType = Database["public"]["Tables"]["products"]["Row"] & {
   };
 };
 
+interface Material {
+  id: string;
+  name: string;
+}
+
+interface ServiceType {
+  id: string | null;
+  name: string;
+  price: number;
+  is_taxable: boolean;
+  material?: Material;
+}
+
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
   value,
   label:
     value === OcclusalType.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 
 const CONTACT_OPTIONS = Object.values(ContactType).map((value) => ({
@@ -108,9 +123,9 @@ const CONTACT_OPTIONS = Object.values(ContactType).map((value) => ({
     value === ContactType.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 
 const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
@@ -119,9 +134,9 @@ const PONTIC_OPTIONS = Object.values(PonticType).map((value) => ({
     value === PonticType.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 const MARGIN_OPTIONS = Object.values(MarginDesign).map((value) => ({
   value,
@@ -129,9 +144,9 @@ const MARGIN_OPTIONS = Object.values(MarginDesign).map((value) => ({
     value === MarginDesign.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 const OCCLUSION_OPTIONS = Object.values(OcclusalDesign).map((value) => ({
   value,
@@ -139,9 +154,9 @@ const OCCLUSION_OPTIONS = Object.values(OcclusalDesign).map((value) => ({
     value === OcclusalDesign.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 const ALLOY_OPTIONS = Object.values(AlloylDesign).map((value) => ({
   value,
@@ -149,16 +164,18 @@ const ALLOY_OPTIONS = Object.values(AlloylDesign).map((value) => ({
     value === AlloylDesign.NotApplicable
       ? "N/A"
       : value
-          .split("_")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" "),
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
 }));
 
 interface ProductConfigurationProps {
   selectedMaterial: SavedProduct | null;
-  onAddToCase: (product: SavedProduct) => void;
+  onAddToCase: (product: SavedProduct, service: ServiceType) => void;
   selectedProducts: SavedProduct[];
+  selectedServices: ServiceType[];
   onProductsChange: (products: SavedProduct[]) => void;
+  onServicesChange: (services: ServiceType[]) => void;
   isUpdate?: boolean;
   setIsUpdate?: React.Dispatch<React.SetStateAction<boolean>>;
   onMaterialChange: (material: SavedProduct | null) => void;
@@ -191,6 +208,7 @@ interface ProductConfigurationProps {
     customAlloy?: string;
   };
   setselectedProducts: any;
+  setselectedServices: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
 }
@@ -220,6 +238,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   formErrors,
   isUpdate,
   setIsUpdate,
+  selectedServices,
+  setselectedServices,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
@@ -258,7 +278,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
-  const [services, setServices] = useState<{ name: string; id: string }[]>([]);
+  const [services, setServices] = useState<ServiceType[]>([]);
+  const [selectedService, setSelectedService] = useState<ServiceType | null>(
+    null
+  );
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
     number[][]
@@ -297,7 +320,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  console.log(expandedRows, "expandedRows");
   useEffect(() => {
     const fetchProductTypes = async () => {
       const labData = await getLabIdByUserId(user?.id as string);
@@ -312,10 +334,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const fetchedProductTypes = await productsService.getProductTypes(
           labData.labId
         );
-        console.log("Fetched product types:", fetchedProductTypes);
+
         setProductTypes(fetchedProductTypes);
       } catch (error) {
-        console.error("Error fetching products:", error);
         toast.error("Failed to load products");
       } finally {
         setLoading(false);
@@ -346,46 +367,31 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         toast.error("Error fetching products from Supabase");
         throw error;
       }
-      console.log(
-        "Fetched products:",
-        fetchedProducts.map((p) => ({
-          id: p.id,
-          name: p.name,
-          material: p.material,
-          type: p.product_type,
-        }))
-      );
+
       setProducts(fetchedProducts);
     } catch (error) {
-      console.error("Error fetching products:", error);
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
+
   const fetchServices = async () => {
     try {
       setLoading(true);
       const { data: fetchedServices, error } = await supabase
         .from("services")
-        .select(
-          `
-          id,name
-        `
-        )
+        .select(`*, material:materials!material_id (name, id)`)
         .order("name")
         .eq("lab_id", lab?.labId);
 
       if (error) {
-        toast.error("Error fetching products from Supabase");
+        toast.error("Error fetching services from Supabase");
         throw error;
       }
-      const servicesWithNone = [{ id: null, name: "None" }, ...fetchedServices];
-
-      setServices(servicesWithNone);
+      setServices(fetchedServices);
     } catch (error) {
-      console.error("Error fetching products:", error);
-      toast.error("Failed to load products");
+      toast.error("Failed to load services");
     } finally {
       setLoading(false);
     }
@@ -401,12 +407,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const getShadeOptions = async (labId: string) => {
       const shadeOptions = await fetchShadeOptions(labId);
       if (shadeOptions) {
-        console.log("Shade Options:", shadeOptions);
         // Append a custom value to the end of the shades array
         const customShade = { name: "Manual", id: "manual" }; // Example custom value
         setShadesItems([...shadeOptions, customShade]); // Using spread operator to add the custom value at the end
-      } else {
-        console.log("Failed to fetch shade options.");
       }
     };
 
@@ -471,7 +474,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
     if (!index) {
@@ -509,6 +511,46 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     });
   };
+
+  const handleServiceSelect = (
+    value: any,
+    keepTeeth = false,
+    index?: number
+  ) => {
+    const service = services.find((p) => p.id === value.id) || null;
+
+    if (!service) return;
+    // if (!index) {
+    //   toggleRowExpansion(service.id);
+    // }
+    setSelectedService(service);
+    setselectedServices((prevSelectedServices: ServiceType[]) => {
+      if (index !== undefined) {
+        let updatedServices = [...prevSelectedServices];
+
+        // Update the subRows' product name
+        updatedServices[index] = {
+          ...updatedServices[index],
+          name: service.name,
+          id: service.id,
+          price: service.price,
+          is_taxable: service.is_taxable,
+        };
+
+        return updatedServices;
+      } else {
+        return [
+          ...prevSelectedServices,
+          {
+            id: service.id,
+            name: service.name,
+            price: service.price,
+          },
+        ];
+      }
+    });
+  };
+
   const handleProductSubSelect = (
     value: any,
     keepTeeth = false,
@@ -516,7 +558,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     SubIndex: number = 0
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-    console.log(product, "product");
 
     if (!product) return;
 
@@ -595,8 +636,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedType(type.name);
   };
 
-  console.log(selectedProducts, "selectedProducts");
-
   const groupSelectedTeeth = (selectedTeeth: number[]) => {
     // Sort selectedTeeth based on their order in teethArray
     const sortedTeeth = selectedTeeth.sort(
@@ -665,7 +704,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     groupSelectedTeeth(teeth);
   };
 
-  console.log(groupSelectedTeethState, "groupSelectedTeethState");
   const handleSaveShades = (index: number, subIndex?: number) => {
     // Construct the updated shades object
     const updatedShades = {
@@ -709,55 +747,54 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           subRows:
             subIndex !== undefined
               ? updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
-                  ...subRow,
-                  shades: {
-                    occlusal_shade:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.occlusal_shade || "",
-                    body_shade:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade ||
-                      "",
-                    gingival_shade:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.gingival_shade || "",
-                    stump_shade:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
-                      "",
-                    custom_body:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
-                      "",
-                    custom_gingival:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.custom_gingival || "",
-                    custom_occlusal:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.custom_occlusal || "",
-                    custom_stump:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump ||
-                      "",
-                    manual_body:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body ||
-                      "",
-                    manual_gingival:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.manual_gingival || "",
-                    manual_occlusal:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.manual_occlusal || "",
-                    manual_stump:
-                      shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump ||
-                      "",
-                  }, // Apply the same updated shades to each subRow
-                }))
+                ...subRow,
+                shades: {
+                  occlusal_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.occlusal_shade || "",
+                  body_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade ||
+                    "",
+                  gingival_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.gingival_shade || "",
+                  stump_shade:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
+                    "",
+                  custom_body:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
+                    "",
+                  custom_gingival:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.custom_gingival || "",
+                  custom_occlusal:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.custom_occlusal || "",
+                  custom_stump:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_stump ||
+                    "",
+                  manual_body:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_body ||
+                    "",
+                  manual_gingival:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.manual_gingival || "",
+                  manual_occlusal:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]
+                      ?.manual_occlusal || "",
+                  manual_stump:
+                    shadeData[index]?.subRow?.[subIndex ?? 0]?.manual_stump ||
+                    "",
+                }, // Apply the same updated shades to each subRow
+              }))
               : updatedProducts?.[index]?.subRows?.map((subRow, subIndex) => ({
-                  ...subRow,
-                  shades: updatedShades, // Apply the same updated shades to each subRow
-                })),
+                ...subRow,
+                shades: updatedShades, // Apply the same updated shades to each subRow
+              })),
         };
         console.log(updatedProducts, "updatedProducts");
         return updatedProducts;
       } else {
-        console.error("Invalid index provided");
         return prevSelectedProducts;
       }
     });
@@ -810,9 +847,21 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         is_taxable: false,
       };
 
+      const newService: ServiceType = {
+        id: "",
+        name: "",
+        price: 0,
+        is_taxable: false,
+      };
+
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
         ...prevSelectedProducts,
         newProduct,
+      ]);
+
+      setselectedServices((prevSelectedServices: ServiceType[]) => [
+        ...prevSelectedServices,
+        newService,
       ]);
     }
   };
@@ -844,29 +893,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               : item.shades?.manual_body &&
                 !item.shades.custom_body &&
                 !item.shades?.body_shade
-              ? "manual"
-              : null,
+                ? "manual"
+                : null,
             gingival_shade: item.shades?.gingival_shade
               ? item.shades.gingival_shade
               : item.shades?.manual_gingival &&
                 !item.shades.custom_gingival &&
                 !item.shades?.gingival_shade
-              ? "manual"
-              : null,
+                ? "manual"
+                : null,
             occlusal_shade: item.shades?.occlusal_shade
               ? item.shades.occlusal_shade
               : item.shades?.manual_occlusal &&
                 !item.shades.custom_occlusal &&
                 !item.shades?.occlusal_shade
-              ? "manual"
-              : null,
+                ? "manual"
+                : null,
             stump_shade: item.shades?.stump_shade
               ? item.shades.stump_shade
               : item.shades?.manual_stump &&
                 !item.shades.custom_stump &&
                 !item.shades?.stump_shade
-              ? "manual"
-              : null,
+                ? "manual"
+                : null,
             custom_body: item.shades?.custom_body || "",
             custom_gingival: item.shades?.custom_gingival || "",
             custom_occlusal: item.shades?.custom_occlusal || "",
@@ -886,29 +935,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   : item.shades?.manual_body &&
                     !item.shades.custom_body &&
                     !item.shades?.body_shade
-                  ? "manual"
-                  : null,
+                    ? "manual"
+                    : null,
                 gingival_shade: item.shades?.gingival_shade
                   ? item.shades.gingival_shade
                   : item.shades?.manual_gingival &&
                     !item.shades.custom_gingival &&
                     !item.shades?.gingival_shade
-                  ? "manual"
-                  : null,
+                    ? "manual"
+                    : null,
                 occlusal_shade: item.shades?.occlusal_shade
                   ? item.shades.occlusal_shade
                   : item.shades?.manual_occlusal &&
                     !item.shades.custom_occlusal &&
                     !item.shades?.occlusal_shade
-                  ? "manual"
-                  : null,
+                    ? "manual"
+                    : null,
                 stump_shade: item.shades?.stump_shade
                   ? item.shades.stump_shade
                   : item.shades?.manual_stump &&
                     !item.shades.custom_stump &&
                     !item.shades?.stump_shade
-                  ? "manual"
-                  : null,
+                    ? "manual"
+                    : null,
                 custom_body: item.shades?.custom_body || "",
                 custom_gingival: item.shades?.custom_gingival || "",
                 custom_occlusal: item.shades?.custom_occlusal || "",
@@ -946,8 +995,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
-
-  console.log(shadeData, "shadeData");
 
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
@@ -1066,8 +1113,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 ? formatTeethRange(row.teeth)
                                 : "Select Teeth"
                               : row.teeth?.length > 0
-                              ? row.teeth?.join(",")
-                              : "Select Teeth"}
+                                ? row.teeth?.join(",")
+                                : "Select Teeth"}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -1101,7 +1148,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               selectedPontic: row.pontic_teeth as number[],
                             }}
                             addedTeethMap={new Map()}
-                            onAddToShadeTable={() => {}}
+                            onAddToShadeTable={() => { }}
                             ponticTeeth={ponticTeeth}
                             setPonticTeeth={setPonticTeeth}
                             groupSelectedTeethState={groupSelectedTeethState}
@@ -1129,7 +1176,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                      <Select
+                      <MultiColumnServiceSelector
+                        materials={MATERIALS}
+                        services={services}
+                        selectedService={{
+                          id: selectedServices[index].id ?? "",
+                          name:
+                            selectedServices[index].name.length > 0
+                              ? selectedServices[index].name
+                              : "Select a service",
+                          price: selectedServices[index].price ?? 0,
+                          is_taxable: selectedServices[index].is_taxable,
+                        }}
+                        onServiceSelect={(service) => {
+                          handleServiceSelect(service, true, index);
+                        }}
+                        disabled={loading || row.teeth.length === 0}
+                        size="xs"
+                        onClick={() => fetchServices()}
+                      />
+                      {/* <Select                     
                         disabled={
                           loading ||
                           (row.teeth.length === 0 && row.type === "Service")
@@ -1176,7 +1242,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             </SelectItem>
                           )}
                         </SelectContent>
-                      </Select>
+                      </Select> */}
                     </TableCell>
 
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -1186,95 +1252,94 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className={`h-7 text-xs ${
-                                row.shades?.body_shade ||
-                                row.shades?.gingival_shade ||
-                                row.shades?.occlusal_shade ||
-                                row.shades?.stump_shade
+                              className={`h-7 text-xs ${row.shades?.body_shade ||
+                                  row.shades?.gingival_shade ||
+                                  row.shades?.occlusal_shade ||
+                                  row.shades?.stump_shade
                                   ? "text-blue-600"
                                   : ""
-                              }`}
+                                }`}
                               disabled={
                                 row.teeth.length === 0 && row.type !== "Service"
                               }
                               onClick={() => toggleShadePopover(index)}
                             >
                               {row.shades?.body_shade ||
-                              row.shades?.gingival_shade ||
-                              row.shades?.occlusal_shade ||
-                              row.shades?.custom_body ||
-                              row.shades?.custom_gingival ||
-                              row.shades?.custom_occlusal ||
-                              row.shades?.manual_occlusal ||
-                              row.shades?.manual_gingival ||
-                              row.shades?.manual_body ||
-                              row.shades?.manual_stump ||
-                              row.shades?.custom_stump ||
-                              row.shades?.stump_shade ? (
+                                row.shades?.gingival_shade ||
+                                row.shades?.occlusal_shade ||
+                                row.shades?.custom_body ||
+                                row.shades?.custom_gingival ||
+                                row.shades?.custom_occlusal ||
+                                row.shades?.manual_occlusal ||
+                                row.shades?.manual_gingival ||
+                                row.shades?.manual_body ||
+                                row.shades?.manual_stump ||
+                                row.shades?.custom_stump ||
+                                row.shades?.stump_shade ? (
                                 <div>
                                   {shadeData[index]?.occlusal_shade === "manual"
                                     ? shadeData[index]?.manual_occlusal
                                     : shadesItems.filter(
-                                        (item) =>
-                                          item.id ===
-                                          shadeData[index]?.occlusal_shade
-                                      )[0]?.name || (
-                                        <span
-                                          className="text-red-600"
-                                          title="custom"
-                                        >
-                                          {shadeData[index]?.custom_occlusal ||
-                                            "--"}
-                                        </span>
-                                      )}
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index]?.occlusal_shade
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_occlusal ||
+                                          "--"}
+                                      </span>
+                                    )}
                                   /
                                   {shadeData[index]?.body_shade === "manual"
                                     ? shadeData[index]?.manual_body
                                     : shadesItems.filter(
-                                        (item) =>
-                                          item.id ===
-                                          shadeData[index]?.body_shade
-                                      )[0]?.name || (
-                                        <span
-                                          className="text-red-600"
-                                          title="custom"
-                                        >
-                                          {shadeData[index]?.custom_body ||
-                                            "--"}
-                                        </span>
-                                      )}
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index]?.body_shade
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_body ||
+                                          "--"}
+                                      </span>
+                                    )}
                                   /
                                   {shadeData[index]?.gingival_shade === "manual"
                                     ? shadeData[index]?.manual_gingival
                                     : shadesItems.filter(
-                                        (item) =>
-                                          item.id ===
-                                          shadeData[index]?.gingival_shade
-                                      )[0]?.name || (
-                                        <span
-                                          className="text-red-600"
-                                          title="custom"
-                                        >
-                                          {shadeData[index]?.custom_gingival ||
-                                            "--"}
-                                        </span>
-                                      )}
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index]?.gingival_shade
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_gingival ||
+                                          "--"}
+                                      </span>
+                                    )}
                                   /
                                   {shadeData[index]?.stump_shade === "manual"
                                     ? shadeData[index]?.manual_stump
                                     : shadesItems.filter(
-                                        (item) =>
-                                          item.id ===
-                                          shadeData[index]?.stump_shade
-                                      )[0]?.name || (
-                                        <span
-                                          className="text-red-600"
-                                          title="custom"
-                                        >
-                                          {shadeData[index]?.custom_stump ||
-                                            "--"}
-                                        </span>
-                                      )}
+                                      (item) =>
+                                        item.id ===
+                                        shadeData[index]?.stump_shade
+                                    )[0]?.name || (
+                                      <span
+                                        className="text-red-600"
+                                        title="custom"
+                                      >
+                                        {shadeData[index]?.custom_stump ||
+                                          "--"}
+                                      </span>
+                                    )}
                                 </div>
                               ) : (
                                 " Add Shade"
@@ -1336,26 +1401,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData?.[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      occlusal_shade: value,
-                                                      manual_occlusal: "",
-                                                      id: row.id,
-                                                      custom_occlusal: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    occlusal_shade: value,
+                                                    manual_occlusal: "",
+                                                    id: row.id,
+                                                    custom_occlusal: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  occlusal_shade: value,
-                                                  manual_occlusal: "",
-                                                  id: row.id,
-                                                  custom_occlusal: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                occlusal_shade: value,
+                                                manual_occlusal: "",
+                                                id: row.id,
+                                                custom_occlusal: "",
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1397,30 +1462,30 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_occlusal:
-                                                          e.target.value,
-                                                        occlusal_shade: e.target
-                                                          .value
-                                                          ? "manual"
-                                                          : "",
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_occlusal:
+                                                        e.target.value,
+                                                      occlusal_shade: e.target
+                                                        .value
+                                                        ? "manual"
+                                                        : "",
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_occlusal:
-                                                      e.target.value,
-                                                    occlusal_shade: e.target
-                                                      .value
-                                                      ? "manual"
-                                                      : "",
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_occlusal:
+                                                    e.target.value,
+                                                  occlusal_shade: e.target
+                                                    .value
+                                                    ? "manual"
+                                                    : "",
+                                                })),
                                           };
                                         } else {
                                           updatedShadeData[index] = {
@@ -1432,22 +1497,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_occlusal: "",
-                                                        occlusal_shade: null,
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_occlusal: "",
+                                                      occlusal_shade: null,
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_occlusal: "",
-                                                    occlusal_shade: null,
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_occlusal: "",
+                                                  occlusal_shade: null,
+                                                })),
                                           };
                                         }
 
@@ -1475,28 +1540,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      custom_occlusal:
-                                                        e.target.value.toUpperCase(),
-                                                      id: row.id,
-                                                      manual_occlusal: "",
-                                                      occlusal_shade: null,
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    custom_occlusal:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row.id,
+                                                    manual_occlusal: "",
+                                                    occlusal_shade: null,
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  custom_occlusal:
-                                                    e.target.value.toUpperCase(),
-                                                  id: row.id,
-                                                  manual_occlusal: "",
-                                                  occlusal_shade: null,
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                custom_occlusal:
+                                                  e.target.value.toUpperCase(),
+                                                id: row.id,
+                                                manual_occlusal: "",
+                                                occlusal_shade: null,
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1523,26 +1588,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      body_shade: value,
-                                                      id: row.id,
-                                                      manual_body: "",
-                                                      custom_body: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    body_shade: value,
+                                                    id: row.id,
+                                                    manual_body: "",
+                                                    custom_body: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  body_shade: value,
-                                                  id: row.id,
-                                                  manual_body: "",
-                                                  custom_body: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                body_shade: value,
+                                                id: row.id,
+                                                manual_body: "",
+                                                custom_body: "",
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1582,25 +1647,25 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_body:
-                                                          e.target.value,
-                                                        body_shade: "manual",
-                                                        custom_body: "",
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_body:
+                                                        e.target.value,
+                                                      body_shade: "manual",
+                                                      custom_body: "",
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_body: e.target.value,
-                                                    body_shade: "manual",
-                                                    custom_body: "",
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_body: e.target.value,
+                                                  body_shade: "manual",
+                                                  custom_body: "",
+                                                })),
                                           };
                                         } else {
                                           updatedShadeData[index] = {
@@ -1612,18 +1677,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? selectedProducts[0].teeth.map(
-                                                    (item) => ({
-                                                      manual_body: "",
-                                                      body_shade: null,
-                                                    })
-                                                  )
-                                                : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
+                                                  (item) => ({
                                                     manual_body: "",
-                                                    id: row.id,
                                                     body_shade: null,
-                                                  })),
+                                                  })
+                                                )
+                                                : selectedProducts[
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_body: "",
+                                                  id: row.id,
+                                                  body_shade: null,
+                                                })),
                                           };
                                         }
                                         return updatedShadeData;
@@ -1648,28 +1713,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      custom_body:
-                                                        e.target.value.toUpperCase(),
-                                                      id: row.id,
-                                                      body_shade: null,
-                                                      manual_body: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    custom_body:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row.id,
+                                                    body_shade: null,
+                                                    manual_body: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  custom_body:
-                                                    e.target.value.toUpperCase(),
-                                                  id: row.id,
-                                                  body_shade: null,
-                                                  manual_body: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                custom_body:
+                                                  e.target.value.toUpperCase(),
+                                                id: row.id,
+                                                body_shade: null,
+                                                manual_body: "",
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1698,26 +1763,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      gingival_shade: value,
-                                                      manual_gingival: "",
-                                                      id: row.id,
-                                                      custom_gingival: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    gingival_shade: value,
+                                                    manual_gingival: "",
+                                                    id: row.id,
+                                                    custom_gingival: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  gingival_shade: value,
-                                                  manual_gingival: "",
-                                                  id: row.id,
-                                                  custom_gingival: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                gingival_shade: value,
+                                                manual_gingival: "",
+                                                id: row.id,
+                                                custom_gingival: "",
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1757,29 +1822,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_gingival:
-                                                          e.target.value,
-                                                        id: row.id,
-                                                        gingival_shade:
-                                                          "manual",
-                                                        custom_gingival: "",
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_gingival:
+                                                        e.target.value,
+                                                      id: row.id,
+                                                      gingival_shade:
+                                                        "manual",
+                                                      custom_gingival: "",
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_gingival:
-                                                      e.target.value,
-                                                    id: row.id,
-                                                    gingival_shade: "manual",
-                                                    custom_gingival: "",
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_gingival:
+                                                    e.target.value,
+                                                  id: row.id,
+                                                  gingival_shade: "manual",
+                                                  custom_gingival: "",
+                                                })),
                                           };
                                         } else {
                                           updatedShadeData[index] = {
@@ -1791,24 +1856,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_gingival: "",
-                                                        id: row.id,
-                                                        gingival_shade: null,
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_gingival: "",
+                                                      id: row.id,
+                                                      gingival_shade: null,
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_gingival: "",
-                                                    id: row.id,
-                                                    gingival_shade: null,
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_gingival: "",
+                                                  id: row.id,
+                                                  gingival_shade: null,
+                                                })),
                                           };
                                         }
                                         return updatedShadeData;
@@ -1833,28 +1898,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      custom_gingival:
-                                                        e.target.value.toUpperCase(),
-                                                      id: row.id,
-                                                      gingival_shade: null,
-                                                      manual_gingival: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    custom_gingival:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row.id,
+                                                    gingival_shade: null,
+                                                    manual_gingival: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  custom_gingival:
-                                                    e.target.value.toUpperCase(),
-                                                  id: row.id,
-                                                  gingival_shade: null,
-                                                  manual_gingival: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                custom_gingival:
+                                                  e.target.value.toUpperCase(),
+                                                id: row.id,
+                                                gingival_shade: null,
+                                                manual_gingival: "",
+                                              })),
                                         };
 
                                         return updatedShadeData;
@@ -1882,24 +1947,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      stump_shade: value,
-                                                      manual_stump: "",
-                                                      custom_stump: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    stump_shade: value,
+                                                    manual_stump: "",
+                                                    custom_stump: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  stump_shade: value,
-                                                  manual_stump: "",
-                                                  custom_stump: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                stump_shade: value,
+                                                manual_stump: "",
+                                                custom_stump: "",
+                                              })),
                                         };
                                         return updatedShadeData;
                                       });
@@ -1939,28 +2004,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_stump:
-                                                          e.target.value,
-                                                        id: row.id,
-                                                        stump_shade: "manual",
-                                                        custom_stump: "",
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_stump:
+                                                        e.target.value,
+                                                      id: row.id,
+                                                      stump_shade: "manual",
+                                                      custom_stump: "",
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_stump:
-                                                      e.target.value,
-                                                    id: row.id,
-                                                    stump_shade: "manual",
-                                                    custom_stump: "",
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_stump:
+                                                    e.target.value,
+                                                  id: row.id,
+                                                  stump_shade: "manual",
+                                                  custom_stump: "",
+                                                })),
                                           };
                                         } else {
                                           updatedShadeData[index] = {
@@ -1972,24 +2037,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               updatedShadeData?.[index]?.subRow
                                                 ?.length ?? 0 > 0
                                                 ? updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, subIndex) => {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_stump: "",
-                                                        id: row.id,
-                                                        stump_shade: null,
-                                                      };
-                                                    }
-                                                  )
+                                                  index
+                                                ]?.subRow?.map(
+                                                  (subRowItem, subIndex) => {
+                                                    return {
+                                                      ...subRowItem,
+                                                      manual_stump: "",
+                                                      id: row.id,
+                                                      stump_shade: null,
+                                                    };
+                                                  }
+                                                )
                                                 : selectedProducts[
-                                                    index
-                                                  ].teeth.map((item) => ({
-                                                    manual_stump: "",
-                                                    id: row.id,
-                                                    stump_shade: null,
-                                                  })),
+                                                  index
+                                                ].teeth.map((item) => ({
+                                                  manual_stump: "",
+                                                  id: row.id,
+                                                  stump_shade: null,
+                                                })),
                                           };
                                         }
                                         return updatedShadeData;
@@ -2014,28 +2079,28 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             updatedShadeData?.[index]?.subRow
                                               ?.length ?? 0 > 0
                                               ? updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, subIndex) => {
-                                                    return {
-                                                      ...subRowItem,
-                                                      custom_stump:
-                                                        e.target.value.toUpperCase(),
-                                                      id: row.id,
-                                                      stump_shade: null,
-                                                      manual_stump: "",
-                                                    };
-                                                  }
-                                                )
+                                                index
+                                              ]?.subRow?.map(
+                                                (subRowItem, subIndex) => {
+                                                  return {
+                                                    ...subRowItem,
+                                                    custom_stump:
+                                                      e.target.value.toUpperCase(),
+                                                    id: row.id,
+                                                    stump_shade: null,
+                                                    manual_stump: "",
+                                                  };
+                                                }
+                                              )
                                               : selectedProducts[
-                                                  index
-                                                ].teeth.map((item) => ({
-                                                  custom_stump:
-                                                    e.target.value.toUpperCase(),
-                                                  id: row.id,
-                                                  stump_shade: null,
-                                                  manual_stump: "",
-                                                })),
+                                                index
+                                              ].teeth.map((item) => ({
+                                                custom_stump:
+                                                  e.target.value.toUpperCase(),
+                                                id: row.id,
+                                                stump_shade: null,
+                                                manual_stump: "",
+                                              })),
                                         };
 
                                         return updatedShadeData;
@@ -2415,7 +2480,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   className={cn(
                                     "w-full h-9 px-3 py-2 text-sm justify-start font-normal border rounded-md",
                                     row_sub.teeth.length === 0 &&
-                                      "text-muted-foreground"
+                                    "text-muted-foreground"
                                   )}
                                 >
                                   {row_sub.teeth[0]}
@@ -2458,7 +2523,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             />
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                            <Select
+                            <MultiColumnServiceSelector
+                              materials={MATERIALS}
+                              services={services}
+                              selectedService={{
+                                id: selectedServices[index].id ?? "",
+                                name:
+                                  selectedServices[index].name.length > 0
+                                    ? selectedServices[index].name
+                                    : "Select a service",
+                                price: selectedServices[index].price ?? 0,
+                                is_taxable: selectedServices[index].is_taxable,
+                              }}
+                              onServiceSelect={(service) => {
+                                handleServiceSelect(service, true, index);
+                              }}
+                              disabled={loading || row.teeth.length === 0}
+                              size="xs"
+                              onClick={() => fetchServices()}
+                            />
+                            {/* <Select
                               disabled={loading || row.teeth.length === 0}
                               value={row_sub.additional_service_id}
                               onValueChange={(value) => {
@@ -2514,7 +2598,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   </SelectItem>
                                 )}
                               </SelectContent>
-                            </Select>
+                            </Select> */}
                           </TableCell>
 
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -2530,125 +2614,124 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className={`h-7 text-sm ${
-                                      shadeData[index]?.body_shade ||
-                                      shadeData[index]?.gingival_shade ||
-                                      shadeData[index]?.occlusal_shade ||
-                                      shadeData[index]?.stump_shade
+                                    className={`h-7 text-sm ${shadeData[index]?.body_shade ||
+                                        shadeData[index]?.gingival_shade ||
+                                        shadeData[index]?.occlusal_shade ||
+                                        shadeData[index]?.stump_shade
                                         ? "text-blue-600"
                                         : ""
-                                    }`}
+                                      }`}
                                     disabled={row_sub.teeth.length === 0}
                                     onClick={() =>
                                       toggleShadePopover(subIndex + index + 100)
                                     }
                                   >
                                     {shadeData[index]?.body_shade ||
-                                    shadeData[index]?.gingival_shade ||
-                                    shadeData[index]?.occlusal_shade ||
-                                    shadeData[index]?.custom_body ||
-                                    shadeData[index]?.custom_gingival ||
-                                    shadeData[index]?.custom_occlusal ||
-                                    shadeData[index]?.manual_occlusal ||
-                                    shadeData[index]?.manual_gingival ||
-                                    shadeData[index]?.manual_body ||
-                                    shadeData[index]?.manual_stump ||
-                                    shadeData[index]?.custom_stump ||
-                                    (row?.subRows &&
-                                      row?.subRows?.length > 0) ||
-                                    shadeData[index]?.stump_shade ? (
+                                      shadeData[index]?.gingival_shade ||
+                                      shadeData[index]?.occlusal_shade ||
+                                      shadeData[index]?.custom_body ||
+                                      shadeData[index]?.custom_gingival ||
+                                      shadeData[index]?.custom_occlusal ||
+                                      shadeData[index]?.manual_occlusal ||
+                                      shadeData[index]?.manual_gingival ||
+                                      shadeData[index]?.manual_body ||
+                                      shadeData[index]?.manual_stump ||
+                                      shadeData[index]?.custom_stump ||
+                                      (row?.subRows &&
+                                        row?.subRows?.length > 0) ||
+                                      shadeData[index]?.stump_shade ? (
                                       <div>
                                         {shadeData[index]?.subRow?.[
                                           originalIndex
                                         ]?.occlusal_shade === "manual"
                                           ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_occlusal
+                                            originalIndex
+                                          ]?.manual_occlusal
                                           : shadesItems.filter(
-                                              (item) =>
-                                                item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.occlusal_shade
-                                            )[0]?.name || (
-                                              <span
-                                                className="text-red-600"
-                                                title="custom"
-                                              >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_occlusal || "--"}
-                                              </span>
-                                            )}
+                                            (item) =>
+                                              item.id ===
+                                              shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.occlusal_shade
+                                          )[0]?.name || (
+                                            <span
+                                              className="text-red-600"
+                                              title="custom"
+                                            >
+                                              {shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.custom_occlusal || "--"}
+                                            </span>
+                                          )}
                                         /
                                         {shadeData[index]?.subRow?.[
                                           originalIndex
                                         ]?.body_shade === "manual"
                                           ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_body
+                                            originalIndex
+                                          ]?.manual_body
                                           : shadesItems.filter(
-                                              (item) =>
-                                                item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.body_shade
-                                            )[0]?.name || (
-                                              <span
-                                                className="text-red-600"
-                                                title="custom"
-                                              >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_body || "--"}
-                                              </span>
-                                            )}
+                                            (item) =>
+                                              item.id ===
+                                              shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.body_shade
+                                          )[0]?.name || (
+                                            <span
+                                              className="text-red-600"
+                                              title="custom"
+                                            >
+                                              {shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.custom_body || "--"}
+                                            </span>
+                                          )}
                                         /
                                         {shadeData[index]?.subRow?.[
                                           originalIndex
                                         ]?.gingival_shade === "manual"
                                           ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_gingival
+                                            originalIndex
+                                          ]?.manual_gingival
                                           : shadesItems.filter(
-                                              (item) =>
-                                                item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.gingival_shade
-                                            )[0]?.name || (
-                                              <span
-                                                className="text-red-600"
-                                                title="custom"
-                                              >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_gingival || "--"}
-                                              </span>
-                                            )}
+                                            (item) =>
+                                              item.id ===
+                                              shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.gingival_shade
+                                          )[0]?.name || (
+                                            <span
+                                              className="text-red-600"
+                                              title="custom"
+                                            >
+                                              {shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.custom_gingival || "--"}
+                                            </span>
+                                          )}
                                         /
                                         {shadeData[index]?.subRow?.[
                                           originalIndex
                                         ]?.stump_shade === "manual"
                                           ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_stump
+                                            originalIndex
+                                          ]?.manual_stump
                                           : shadesItems.filter(
-                                              (item) =>
-                                                item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.stump_shade
-                                            )[0]?.name || (
-                                              <span
-                                                className="text-red-600"
-                                                title="custom"
-                                              >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_stump || "--"}
-                                              </span>
-                                            )}
+                                            (item) =>
+                                              item.id ===
+                                              shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.stump_shade
+                                          )[0]?.name || (
+                                            <span
+                                              className="text-red-600"
+                                              title="custom"
+                                            >
+                                              {shadeData[index]?.subRow?.[
+                                                originalIndex
+                                              ]?.custom_stump || "--"}
+                                            </span>
+                                          )}
                                       </div>
                                     ) : (
                                       " Add Shade"
@@ -2730,12 +2813,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    occlusal_shade: value,
-                                                    manual_occlusal: "",
-                                                    custom_occlusal: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      occlusal_shade: value,
+                                                      manual_occlusal: "",
+                                                      custom_occlusal: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -2794,19 +2877,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem; // Keep other subRow items unchanged
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    manual_occlusal:
-                                                      e.target.value,
-                                                    occlusal_shade: e.target
-                                                      .value
-                                                      ? "manual"
-                                                      : "",
-                                                    custom_occlusal: e.target
-                                                      .value
-                                                      ? ""
-                                                      : "",
-                                                  },
-                                                ], // Default to an empty array if subRow is undefined or null
+                                                    {
+                                                      manual_occlusal:
+                                                        e.target.value,
+                                                      occlusal_shade: e.target
+                                                        .value
+                                                        ? "manual"
+                                                        : "",
+                                                      custom_occlusal: e.target
+                                                        .value
+                                                        ? ""
+                                                        : "",
+                                                    },
+                                                  ], // Default to an empty array if subRow is undefined or null
                                               };
 
                                               return updatedShadeData;
@@ -2889,12 +2972,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    body_shade: value,
-                                                    manual_body: "",
-                                                    custom_body: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      body_shade: value,
+                                                      manual_body: "",
+                                                      custom_body: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -2951,15 +3034,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem; // Keep other subRow items unchanged
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    manual_body: e.target.value,
-                                                    id: row_sub.id,
-                                                    body_shade: e.target.value
-                                                      ? "manual"
-                                                      : "",
-                                                    custom_body: "",
-                                                  },
-                                                ], // Default to an empty array if subRow is undefined or null
+                                                    {
+                                                      manual_body: e.target.value,
+                                                      id: row_sub.id,
+                                                      body_shade: e.target.value
+                                                        ? "manual"
+                                                        : "",
+                                                      custom_body: "",
+                                                    },
+                                                  ], // Default to an empty array if subRow is undefined or null
                                               };
 
                                               return updatedShadeData;
@@ -2999,14 +3082,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    custom_body:
-                                                      e.target.value.toUpperCase(),
-                                                    id: row_sub.id,
-                                                    body_shade: null,
-                                                    manual_body: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      custom_body:
+                                                        e.target.value.toUpperCase(),
+                                                      id: row_sub.id,
+                                                      body_shade: null,
+                                                      manual_body: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3050,12 +3133,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    gingival_shade: value,
-                                                    manual_gingival: "",
-                                                    custom_gingival: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      gingival_shade: value,
+                                                      manual_gingival: "",
+                                                      custom_gingival: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3110,14 +3193,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    manual_gingival:
-                                                      e.target.value,
-                                                    gingival_shade: "manual",
-                                                    custom_gingival: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
+                                                    {
+                                                      manual_gingival:
+                                                        e.target.value,
+                                                      gingival_shade: "manual",
+                                                      custom_gingival: "",
+                                                      id: row_sub.id,
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3156,13 +3239,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    custom_gingival:
-                                                      e.target.value.toUpperCase(),
-                                                    gingival_shade: null,
-                                                    manual_gingival: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      custom_gingival:
+                                                        e.target.value.toUpperCase(),
+                                                      gingival_shade: null,
+                                                      manual_gingival: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3204,12 +3287,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    stump_shade: value,
-                                                    manual_stump: "",
-                                                    custom_stump: "",
-                                                  },
-                                                ],
+                                                    {
+                                                      stump_shade: value,
+                                                      manual_stump: "",
+                                                      custom_stump: "",
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3266,16 +3349,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    manual_stump:
-                                                      e.target.value,
-                                                    stump_shade: e.target.value
-                                                      ? "manual"
-                                                      : "",
-                                                    custom_stump: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
+                                                    {
+                                                      manual_stump:
+                                                        e.target.value,
+                                                      stump_shade: e.target.value
+                                                        ? "manual"
+                                                        : "",
+                                                      custom_stump: "",
+                                                      id: row_sub.id,
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
@@ -3315,14 +3398,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     return subRowItem;
                                                   }
                                                 ) ?? [
-                                                  {
-                                                    custom_stump:
-                                                      e.target.value.toUpperCase(),
-                                                    stump_shade: null,
-                                                    manual_stump: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
+                                                    {
+                                                      custom_stump:
+                                                        e.target.value.toUpperCase(),
+                                                      stump_shade: null,
+                                                      manual_stump: "",
+                                                      id: row_sub.id,
+                                                    },
+                                                  ],
                                               };
 
                                               return updatedShadeData;
