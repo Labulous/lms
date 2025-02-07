@@ -1693,7 +1693,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <DropdownMenuItem onClick={handleEditClick}>
                       Edit Case
                     </DropdownMenuItem>
-                    <DropdownMenuItem
+                    {/* <DropdownMenuItem
                       onClick={() => {
                         if (caseDetail.status === "completed") {
                           toast.error("Case is Already Completed.");
@@ -1703,7 +1703,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       }}
                     >
                       On Hold
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuItem
                       onClick={() => {
                         if (caseDetail.status === "completed") {
@@ -2313,7 +2313,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               </CardContent>
             </Card>
 
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-xl">
                   <Package className="mr-2" size={20} /> Products
@@ -2430,7 +2430,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   )
                 )}
               </CardContent>
-            </Card>
+            </Card> */}
           </div>
 
           <div className="space-y-3">
