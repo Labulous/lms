@@ -285,7 +285,13 @@ export interface labDetail {
   name: string;
   id?: string;
   attachements?: string;
-  office_address: OfficeAddress; // office_address should be an array of objects
+  office_address: OfficeAddress;
+  lab?: {
+    name: string;
+    id?: string;
+    attachements?: string;
+    office_address: OfficeAddress;
+  };
 }
 
 /**
