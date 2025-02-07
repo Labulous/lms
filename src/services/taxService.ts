@@ -65,7 +65,7 @@ export const createTax = async (
 
 export const updateTax = async (
   labId: string,
-  id: string,
+  id: string | undefined,
   tax: Partial<Omit<Tax, "id" | "createdAt" | "updatedAt">>
 ): Promise<Tax> => {
   // TODO: Replace with actual API call
