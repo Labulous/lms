@@ -391,7 +391,21 @@ const UpdateCase: React.FC = () => {
         const clients = await clientsService.getClients(labData.labId);
 
         if (Array.isArray(clients)) {
-          setClients(clients);
+          if (user?.role === "client") {
+            clients.filter((client) => {
+              if (client.email === user?.email) {
+                setFormData((prevData) => ({
+                  ...prevData,
+                  clientId: client.id,
+                }));
+              }
+            });
+            setClients(
+              clients.filter((client) => client.email === user?.email)
+            );
+          } else {
+            setClients(clients);
+          }
         }
       } catch (error) {
         toast.error("Failed to load clients");

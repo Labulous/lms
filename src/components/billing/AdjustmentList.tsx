@@ -16,10 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MoreVertical, PrinterIcon, X } from "lucide-react";
+import { Eye, MoreVertical, PrinterIcon, Settings2, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 import { Checkbox } from "../ui/checkbox";
 import AdjustmentReceiptPreviewModal from "./print/AdjustmentReceiptPreviewModal";
 import { labDetail } from "@/types/supabase";
@@ -63,11 +68,12 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   };
 
   const handleSelectsAdjustment = (adjustmentId: string, checked: boolean) => {
-
     if (checked) {
       setSelectedAdjustments([...selectedAdjustments, adjustmentId]);
     } else {
-      setSelectedAdjustments(selectedAdjustments.filter((id) => id !== adjustmentId));
+      setSelectedAdjustments(
+        selectedAdjustments.filter((id) => id !== adjustmentId)
+      );
     }
   };
 
@@ -78,7 +84,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
       setSelectedAdjustments([]);
     }
   };
-
 
   const handleSelectAllAdjustment = (checked: boolean) => {
     if (checked) {
@@ -139,13 +144,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
     }
   }, [user?.id]);
 
-
-
   console.log(adjustments, "adjustmentsadjustments");
 
   return (
     <div className="space-y-4">
-
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center">
           {selectedAdjustments && selectedAdjustments.length > 0 && (
@@ -228,9 +230,14 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
               <TableRow key={adjustment.id}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedAdjustments.includes(adjustment?.id.toString())}
+                    checked={selectedAdjustments.includes(
+                      adjustment?.id.toString()
+                    )}
                     onCheckedChange={(checked) =>
-                      handleSelectsAdjustment(adjustment?.id.toString(), checked as boolean)
+                      handleSelectsAdjustment(
+                        adjustment?.id.toString(),
+                        checked as boolean
+                      )
                     }
                     aria-label={`Select adjustment ${adjustment?.id.toString()}`}
                   />
@@ -250,11 +257,22 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                     ? `$${adjustment.debit_amount.toFixed(2)}`
                     : "-"}
                 </TableCell>
+                {user?.role != "client" && (
+                  <TableCell>
+                    <Button variant="ghost" size="icon">
+                      <Settings2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                )}
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                        <div className="" >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
+                        <div className="">
                           <MoreVertical className="h-4 w-4" />
                           <span className="sr-only">Open menu</span>
                         </div>
@@ -266,7 +284,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                     >
                       <DropdownMenuItem
                         onClick={() => {
-                          handleSelectAdjustment(adjustment.id.toString(), true as boolean)
+                          handleSelectAdjustment(
+                            adjustment.id.toString(),
+                            true as boolean
+                          );
                           setIsPreviewModalOpen(true);
                         }}
                         className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
@@ -275,7 +296,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -298,7 +318,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
         </Select>
         <div className="text-sm text-muted-foreground">1-2 of 2</div>
       </div>
-
 
       {isPreviewModalOpen && (
         <AdjustmentReceiptPreviewModal

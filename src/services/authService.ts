@@ -1,4 +1,4 @@
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseServiceRole } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
 import { Database, labDetail } from "@/types/supabase";
 
@@ -46,10 +46,10 @@ export const login = async (email: string, password: string): Promise<void> => {
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
@@ -160,7 +160,6 @@ export const getCurrentUser = async () => {
   }
 };
 
-//owner of app . who will be super here.
 export const signUp = async (
   email: string,
   password: string,
@@ -242,19 +241,19 @@ export const signUp = async (
       error:
         error instanceof Error
           ? {
-              message: error.message,
-              name: error.name,
-              stack: error.stack,
-            }
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+          }
           : error,
     });
     throw error;
   }
 };
+
 export const createUserByAdmins = async (
   labId: string,
-  // role: "admin" | "technician" | "client",
-  role: string,
+  role: "admin" | "technician" | "client",
   name: string,
   firstname: string,
   lastname: string,
@@ -276,13 +275,8 @@ export const createUserByAdmins = async (
 ): Promise<void> => {
   try {
     // 1. Check if the email already exists in Auth and Users table
-    // const { data: authData, error: authError } = await supabase
-    //   .from("auth.users")
-    //   .select("id")
-    //   .eq("email", email);
-
     const { data: authData, error: authError } = await supabase
-      .from("users")
+      .from("auth.users")
       .select("id")
       .eq("email", email);
 
@@ -381,8 +375,8 @@ export const createUserByAdmins = async (
       role === "admin"
         ? "admin_ids"
         : role === "technician"
-        ? "technician_ids"
-        : "client_ids"; // Add to client_ids for clients
+          ? "technician_ids"
+          : "client_ids"; // Add to client_ids for clients
 
     // Fetch the current IDs/emails for the specified field
     const { data: labData, error: fetchError } = await supabase
@@ -414,12 +408,116 @@ export const createUserByAdmins = async (
     }
 
     console.log(
-      `${
-        role.charAt(0).toUpperCase() + role.slice(1)
+      `${role.charAt(0).toUpperCase() + role.slice(1)
       } created and lab updated successfully!`
     );
   } catch (error) {
     console.error("Error in createUser function:", error);
+    throw error;
+  }
+};
+
+//Create Client in users table
+export const createClientByAdmin = async (
+  labId: string,
+  name: string,
+  email: string,
+  password: string,
+  role: "admin" | "technician" | "client"
+): Promise<void> => {
+  try {
+    // 1. Check if the email already exists in the users table
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", email);
+
+    if (userError) {
+      console.error(
+        "Error checking users table for existing email:",
+        userError
+      );
+      throw new Error("Error checking for existing email in users table.");
+    }
+
+    if (userData.length > 0) {
+      throw new Error("User already exists in users table.");
+    }
+
+    // 2. Create the new user using the Admin API
+    const { data: newUser, error: createUserError } =
+      await supabaseServiceRole.auth.admin.createUser({
+        email: email,
+        password: password,
+        user_metadata: {
+          name: name,
+          role: role,
+          lab_id: labId,
+          email_verified: true,
+        },
+        email_confirm: true,
+      });
+
+    if (createUserError) {
+      console.error("User  creation failed:", createUserError);
+      throw new Error("User  creation failed.");
+    }
+
+    const newUserId = newUser.user?.id;
+    console.log(newUserId);
+    if (!newUserId) {
+      throw new Error("No user ID returned after signup.");
+    }
+
+    // 3. Insert the new user into the 'users' table with the specified role
+    const { error: insertError } = await supabase.from("users").insert([
+      {
+        id: newUserId,
+        name: name,
+        email: email,
+        role: role, // Set the role as provided
+        lab_id: labId,
+      },
+    ]);
+
+    if (insertError) {
+      console.error("Error inserting user into users table:", insertError);
+      throw insertError;
+    }
+
+    console.log("User created successfully!");
+
+    // 4. Update the labs table to append the new user ID to client_ids
+    const { data: labData, error: labFetchError } = await supabase
+      .from("labs")
+      .select("client_ids")
+      .eq("id", labId)
+      .single();
+
+    if (labFetchError) {
+      console.error("Error fetching labs table data:", labFetchError);
+      throw labFetchError;
+    }
+
+    const currentClientIds = labData?.client_ids || [];
+
+    // 5. Add the new user ID to the client_ids array
+    const updatedClientIds = [...currentClientIds, newUserId];
+
+    // 6. Update the labs table with the new client_ids array
+    const { error: updateLabError } = await supabase
+      .from("labs")
+      .update({ client_ids: updatedClientIds })
+      .eq("id", labId);
+
+    if (updateLabError) {
+      console.error("Error updating labs table:", updateLabError);
+      throw updateLabError;
+    }
+
+    console.log("User created and labs table updated successfully!");
+  } catch (error) {
+    console.error("Error in createClientByAdmin function:", error);
     throw error;
   }
 };
@@ -495,6 +593,150 @@ export const getLabDataByUserId = async (
   } catch (error) {
     console.error("Error in getLabIdByUserId function:", error);
     throw error;
+  }
+};
+
+//Check Email exist in users table
+export const checkEmailExists = async (email: string): Promise<boolean> => {
+  try {
+    // Query the 'users' table to check for the email
+    const { data: userData, error } = await supabase
+      .from("users")
+      .select("id") // Only need the id to check existence
+      .eq("email", email);
+
+    if (error) {
+      console.error("Error checking for email in users table:", error);
+      throw new Error("Error occurred while checking email existence.");
+    }
+
+    // Return true if email exists, false otherwise
+    return userData && userData.length > 0;
+  } catch (error) {
+    console.error("Error in checkEmailExists function:", error);
+    throw error;
+  }
+};
+
+//Chanage Password by Client
+export const changeUserPasswordById = async (
+  userId: string,
+  newPassword: string
+): Promise<void> => {
+  try {
+    const { error } = await supabaseServiceRole.auth.admin.updateUserById(
+      userId,
+      {
+        password: newPassword,
+      }
+    );
+
+    if (error) {
+      console.error("Error changing password:", error);
+      throw new Error("Failed to change password.");
+    }
+
+    console.log("Password changed successfully!");
+  } catch (error) {
+    console.error("Error in changeUserPasswordById function:", error);
+    throw error;
+  }
+};
+
+//Fetch the client's new email, pending approval.
+export const fetchPendingApprovals = async () => {
+  const { data, error } = await supabaseServiceRole
+    .from("pending_approvals")
+    .select("*");
+
+  if (error) {
+    console.error("Error fetching pending approvals:", error);
+    return [];
+  }
+
+  return data;
+};
+
+//The admin has approved the client's new email address
+export const approvePendingApproval = async (
+  approvalId: string,
+  clientId: string,
+  userId: string,
+  newEmail: string
+) => {
+  try {
+    // Update the pending_approvals table
+    const { error } = await supabaseServiceRole
+      .from("pending_approvals")
+      .update({
+        status: "approved", // Set the status to approved
+      })
+      .eq("id", approvalId) // Match the approvalId
+      .eq("client_id", clientId) // Match the clientId
+      .eq("user_id", userId); // Match the userId
+
+    // Update the email for the client table
+    const { error: clientError } = await supabaseServiceRole
+      .from("clients")
+      .update({ email: newEmail })
+      .eq("id", clientId);
+
+    // Update the email for the users table
+    const { error: userError } = await supabaseServiceRole
+      .from("users")
+      .update({ email: newEmail })
+      .eq("id", userId);
+
+    // ✅ Update the email in the Supabase Auth system
+    const { error: authError } =
+      await supabaseServiceRole.auth.admin.updateUserById(userId, {
+        email: newEmail,
+      });
+
+    if (error || clientError || userError || authError) {
+      console.error(
+        "Error updating email:",
+        error || clientError || userError || authError
+      );
+      throw new Error("Failed to update email.");
+    }
+
+    console.log("Approval and email updated successfully.");
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error("Error in approval process:", error);
+    return { success: false, error }; // Return error response if any issues occur
+  }
+};
+
+//The admin has denied the client's new email address
+export const denyPendingApproval = async (
+  approvalId: string,
+  clientId: string,
+  userId: string,
+  newEmail: string
+) => {
+  try {
+    // Update the pending_approvals table
+    const { error } = await supabaseServiceRole
+      .from("pending_approvals")
+      .update({
+        status: "denied", // Set the status to denied
+      })
+      .eq("id", approvalId) // Match the approvalId
+      .eq("client_id", clientId) // Match the clientId
+      .eq("user_id", userId); // Match the userId
+
+    if (error) {
+      console.error("Error updating pending approval:", error);
+      throw new Error("Failed to update pending approval status.");
+    }
+
+    console.log("Approval has been successfully denied.");
+    return { success: true }; // Return success response
+  } catch (error) {
+    console.error("Error in denying approval process:", error);
+    return { success: false, error }; // Return error response if any issues occur
   }
 };
 

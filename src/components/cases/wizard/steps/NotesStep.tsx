@@ -38,18 +38,18 @@ const NotesStep: React.FC<NotesStepProps> = ({
   return (
     <div className="bg-slate-50 h-full flex flex-col">
       <div className="flex-1 space-y-2">
-        <Label htmlFor="instructionNotes">Instruction Notes</Label>
+        <Label htmlFor="instructionNotes">Instruction / Rx Form</Label>
         <Textarea
           id="instructionNotes"
           name="instructionNotes"
           value={formData.notes?.instructionNotes || ""}
           onChange={handleInputChange}
-          placeholder="Enter any instruction notes here..."
+          placeholder="Enter any instruction here or use for Rx Form..."
           className="bg-white h-[200px] resize-none"
         />
         <p className="text-xs text-gray-500">
-          Add any instruction notes about the case that are relevant for admin
-          staff or clients.
+          Add any instruction about the case that are relevant for the lab staff
+          or use this note as an Rx Form.
         </p>
 
         {errors?.notes?.instructionNotes && (

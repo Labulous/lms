@@ -27,6 +27,11 @@ import WorkingTagsSettings from "./pages/settings/working-tags-page";
 import PrintPreview from "./pages/PrintPreview";
 import WorkingPansSettings from "./pages/settings/working-pans-page";
 import Dashboard from "./pages/Dashboard";
+import ClientProfile from "./components/clients/ClientProfile";
+import ClientAdjustments from "./pages/billing/ClientAdjustments";
+import ClientStatements from "./pages/billing/ClientStatements";
+import { useAuth } from "./contexts/AuthContext";
+import ClientDashboard from "./pages/ClientDashboard";
 import { UserManagement } from "./pages/settings/UserManagement";
 import { LABProfile } from "./pages/settings/lab-profile";
 import TaxConfigurationPage from "./pages/settings/tax-configuration";
@@ -34,8 +39,13 @@ import TaxConfigurationPage from "./pages/settings/tax-configuration";
 import Home1 from "./pages/Home1";
 import { MyAccount } from "./pages/settings/my-account";
 import ClientPricing from "./pages/settings/ClientPricing/ClientPricing";
+import ClientPendingRequest from "./components/clients/ClientPendingRequest";
+import ChangePasswordForm from "./components/settings/ChangePassword";
+import Patients from "./pages/Patients";
 
 const App: React.FC = () => {
+  const { user } = useAuth();
+
   return (
     <ErrorBoundary>
       <>
@@ -49,7 +59,11 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute requiredRole={["admin", "technician", "super_admin"]}>
                 <Layout>
-                  <Dashboard />
+                  {user?.role === "client" ? (
+                    <ClientDashboard />
+                  ) : (
+                    <Dashboard />
+                  )}
                 </Layout>
               </ProtectedRoute>
             }
@@ -58,7 +72,7 @@ const App: React.FC = () => {
             path="/cases/*"
             element={
               <ProtectedRoute
-                requiredRole={["admin", "technician", "super_admin"]}
+                requiredRole={["admin", "technician", "super_admin", "client"]}
               >
                 <Layout>
                   <Cases />
@@ -94,6 +108,16 @@ const App: React.FC = () => {
               <ProtectedRoute requiredRole={["admin", "super_admin"]}>
                 <Layout>
                   <Inventory />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client-pending-request"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+                <Layout>
+                  <ClientPendingRequest />
                 </Layout>
               </ProtectedRoute>
             }
@@ -193,7 +217,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/invoices"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Invoices />
                 </Layout>
@@ -213,7 +237,7 @@ const App: React.FC = () => {
           <Route
             path="/billing/balance"
             element={
-              <ProtectedRoute requiredRole={["admin", "super_admin"]}>
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
                 <Layout>
                   <Balances />
                 </Layout>
@@ -231,6 +255,16 @@ const App: React.FC = () => {
             }
           />
           <Route
+            path="/billing/client-statements"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientStatements />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/billing/adjustments"
             element={
               <ProtectedRoute requiredRole={["admin", "super_admin"]}>
@@ -240,8 +274,48 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/billing/client-adjustments"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientAdjustments />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client-profile"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ClientProfile />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute requiredRole={["client"]}>
+                <Layout>
+                  <ChangePasswordForm />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/print-preview" element={<PrintPreview />} />
           <Route path="*" element={<Navigate to="/" replace />} />
+          <Route
+            path="/patients/*"
+            element={
+              <ProtectedRoute requiredRole={["admin", "super_admin", "client"]}>
+                <Layout>
+                  <Patients />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </>
     </ErrorBoundary>

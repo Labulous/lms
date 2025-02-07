@@ -16,6 +16,8 @@ import {
   Building2,
   ChevronDown,
   CreditCard,
+  UserCircle,
+  MessageCircle,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import logomark from "../../assets/logomark.svg";
@@ -102,10 +104,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin", "super_admin", "technician", "client"],
     },
     {
+      icon: UserCircle,
+      label: "Profile",
+      href: "/client-profile",
+      roles: ["client"],
+    },
+    {
       icon: Briefcase,
       label: "Cases",
       href: "/cases",
-      roles: ["admin", "super_admin", "technician"],
+      roles: ["admin", "super_admin", "technician", "client"],
     },
     {
       icon: Truck,
@@ -140,6 +148,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         },
       ],
     },
+    {
+      icon: DollarSign,
+      label: "Billing",
+      href: "/billing",
+      roles: ["client"],
+      subItems: [
+        { label: "Invoices", href: "/billing/invoices", icon: FileText },
+        // { label: "Payments", href: "/billing/payments", icon: CreditCard },
+        { label: "Balance Tracking", href: "/billing/balance", icon: Activity },
+        {
+          label: "Statements",
+          href: "/billing/client-statements",
+          icon: FileText,
+        },
+        {
+          label: "Adjustments",
+          href: "/billing/client-adjustments",
+          icon: DollarSign,
+        },
+      ],
+    },
     // {
     //   icon: BarChart2,
     //   label: "Reports",
@@ -151,6 +180,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       label: "Inventory",
       href: "/inventory",
       roles: ["admin", "super_admin"],
+    },
+    {
+      icon: MessageCircle,
+      label: "Client Pending Request",
+      href: "/client-pending-request",
+      roles: ["admin", "super_admin"],
+    },
+    {
+      icon: Users,
+      label: "Patients",
+      href: "/patients",
+      roles: ["admin", "super_admin", "client"],
     },
   ];
 
@@ -198,7 +239,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <img
             src={logotext}
             alt="dentalms logo logotext"
-            className={`h-7 w-auto transition-opacity duration-200 transform ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"}`}
+            className={`h-7 w-auto transition-opacity duration-200 transform ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
+              }`}
             style={{ transform: "translateY(2px)" }}
           />
         </Link>
@@ -214,8 +256,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       </div>
 
       <div className="mx-4 py-4">
-        <div className="px-2 py-2 rounded-lg border border-slate-200 bg-white/50"
-          style={{ display: "flex", flexDirection: "row", justifyContent: "left", alignItems: "center" }}>
+        <div
+          className="px-2 py-3 rounded-lg border border-slate-200 bg-white/50"
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "left",
+            alignItems: "center",
+          }}
+        >
           {labs[0]?.attachements ? (
             <img
               src={labs[0].attachements}
@@ -230,7 +279,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <div
             className={`transition-opacity duration-200 ${isOpen ? "opacity-100" : "opacity-0 md:opacity-100"
               }`}
-
           >
             <h3 className="font-semibold text-xs text-gray-900">
               {labs[0]?.name}
@@ -242,8 +290,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </div>
         </div>
       </div>
-
-
 
       <nav className="flex-1 px-4">
         <div className="space-y-1">
@@ -264,8 +310,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 <div key={item.href}>
                   <div
                     className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${isActive
-                      ? "bg-blue-100 text-blue-600"
-                      : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                        ? "bg-blue-100 text-blue-600"
+                        : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
                       }`}
                     onClick={() => toggleDropdown(item.label)}
                   >
@@ -292,14 +338,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                           key={subItem.href}
                           to={subItem.href}
                           className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm transition-colors duration-200 ${location.pathname === subItem.href
-                            ? "bg-blue-50 text-blue-600"
-                            : "text-gray-500 hover:bg-blue-50/50 hover:text-blue-600"
+                              ? "bg-blue-50 text-blue-600"
+                              : "text-gray-500 hover:bg-blue-50/50 hover:text-blue-600"
                             }`}
                         >
                           <subItem.icon
                             className={`h-5 w-5 flex-shrink-0 ${location.pathname === subItem.href
-                              ? "text-blue-600"
-                              : "text-gray-500"
+                                ? "text-blue-600"
+                                : "text-gray-500"
                               }`}
                           />
                           <span>{subItem.label}</span>
@@ -317,8 +363,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 key={item.href}
                 to={item.href}
                 className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
-                  ? "bg-blue-100 text-blue-600"
-                  : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
                   }`}
               >
                 <Icon
@@ -349,14 +395,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 key={action.href}
                 to={action.href}
                 className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${location.pathname === action.href
-                  ? "bg-blue-100 text-blue-600"
-                  : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
+                    ? "bg-blue-100 text-blue-600"
+                    : "text-gray-600 hover:bg-blue-50/50 hover:text-blue-600"
                   }`}
               >
                 <action.icon
                   className={`h-5 w-5 flex-shrink-0 ${location.pathname === action.href
-                    ? "text-blue-600"
-                    : "text-gray-500"
+                      ? "text-blue-600"
+                      : "text-gray-500"
                     }`}
                 />
                 <span

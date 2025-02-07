@@ -53,9 +53,9 @@ const Login: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100">
         <div className={`w-[400px] bg-white rounded-lg shadow-lg p-8 transition-all duration-500 ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
           <div className="flex flex-col items-center">
-            <img 
+            <img
               src={logomark}
-              alt="Labulous" 
+              alt="Labulous"
               className={`w-12 h-12 mb-4 transition-all duration-500 delay-100 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
             />
             <h2 className={`text-2xl font-semibold text-gray-900 mb-1 transition-all duration-500 delay-200 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -65,7 +65,7 @@ const Login: React.FC = () => {
               Glad to see you again 👋
             </p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className={`transition-all duration-500 delay-400 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
