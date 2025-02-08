@@ -117,22 +117,30 @@ const PrintPreview = () => {
 
   useEffect(() => {
     try {
-      const stateParam = searchParams.get("state");
-      if (!stateParam) {
-        throw new Error("No state parameter found");
+      const storedState = localStorage.getItem("printData");
+      if (!storedState) {
+        throw new Error("No preview state found in localStorage");
       }
-      const decodedState = JSON.parse(atob(decodeURIComponent(stateParam)));
+
+      const decodedState = JSON.parse(storedState);
+
+      if (!decodedState) {
+        throw new Error("Decoded state is empty or invalid");
+      }
+
       setPreviewState(decodedState);
-      console.log("decide", decodedState);
+      console.log("Decoded State:", decodedState);
     } catch (error) {
       console.error("Error parsing state:", error);
-      navigate("/", { replace: true });
+      // navigate("/", { replace: true });
     }
-  }, [searchParams, navigate]);
+  }, []);
 
   if (!previewState) {
-    return null;
+    return <>not found</>;
   }
+
+  console.log("Decoded State:", previewState);
 
   const { type, paperSize = "LETTER", caseData, caseDetails } = previewState;
 
@@ -140,7 +148,6 @@ const PrintPreview = () => {
     window.print();
   };
 
-  const renderTemplate = () => {
     // If caseData is an array, we're doing batch printing
     console.log("printing type bgfgfgfgfgffg", type);
     console.log(caseDetails, "caseDetails");
@@ -332,6 +339,6 @@ const PrintPreview = () => {
         </div>
       </div>
     );
-  };
+
 };
 export default PrintPreview;
