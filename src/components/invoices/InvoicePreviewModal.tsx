@@ -75,7 +75,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   };
 
   const handlePrint = (type: string) => {
-    // Create the preview URL with state encoded in base64
+    // Create the preview state
     const previewState = {
       type,
       paperSize: selectedPaperSize,
@@ -100,10 +100,13 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
       caseDetails: caseDetails,
     };
 
-    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
-    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
-    window.open(previewUrl, "_blank");
+    // Store in localStorage
+    localStorage.setItem("printData", JSON.stringify(previewState));
+
+    // Open the print preview page
+    window.open(`${window.location.origin}/print-preview`, "_blank");
   };
+
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) {
       return;

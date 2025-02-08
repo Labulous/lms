@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, Percent, Minus } from "lucide-react";
+import { X, Plus, StickyNote, Percent, Minus, Pencil } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -72,6 +72,8 @@ import { spawn } from "child_process";
 import React from "react";
 import { Service } from "@/data/mockServiceData";
 import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
+import { AddProductValuesDialog } from "@/components/settings/AddProductValuesDialog";
+import EditProductValuesDialog from "@/components/settings/EditProductValuesDialog";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -298,10 +300,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   >(new Map());
   const [openTypePopover, setOpenTypePopover] = useState<string | null>(null);
   const [openTeethPopover, setOpenTeethPopover] = useState<string | null>(null);
+
+  const [openDialog, setOpenDialog] = useState<"product_types" | null>(null);
+  const [openEditDialog, setOpenEditDialog] = useState<"product_types" | null>(
+    null
+  );
   const { user } = useAuth();
 
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-
+  const handleOpenDialog = (type: "product_types") => {
+    setOpenEditDialog(null); // Close edit dialog if open
+    setOpenDialog(type);
+  };
+  const handleOpenEditDialog = (type: "product_types") => {
+    setOpenDialog(null); // Close add dialog if open
+    setOpenEditDialog(type);
+  };
   const toggleRowExpansion = (rowId: string) => {
     setExpandedRows((prev) => {
       const newArray = [...prev];
@@ -320,29 +334,34 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
+  const fetchProductTypes = async () => {
+    const labData = await getLabIdByUserId(user?.id as string);
+    if (!labData) {
+      toast.error("Unable to get Lab Id");
+      return null;
+    }
+    setLab(labData);
+    try {
+      setLoading(true);
+
+      const fetchedProductTypes = await productsService.getProductTypes(
+        labData.labId
+      );
+
+      // Adding new fields to productTypes
+      const updatedProductTypes = [
+        ...fetchedProductTypes,
+        { id: "add", name: "Add Product Type" },
+      ];
+
+      setProductTypes(updatedProductTypes);
+    } catch (error) {
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchProductTypes = async () => {
-      const labData = await getLabIdByUserId(user?.id as string);
-      if (!labData) {
-        toast.error("Unable to get Lab Id");
-        return null;
-      }
-      setLab(labData);
-      try {
-        setLoading(true);
-
-        const fetchedProductTypes = await productsService.getProductTypes(
-          labData.labId
-        );
-
-        setProductTypes(fetchedProductTypes);
-      } catch (error) {
-        toast.error("Failed to load products");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProductTypes();
   }, []);
 
@@ -1066,7 +1085,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[200px] p-0">
-                          <div className="grid gap-1">
+                          <div className="grid gap-0.5">
                             {productTypes.map((type) => (
                               <Button
                                 key={type.id}
@@ -1080,17 +1099,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     : "hover:bg-gray-50"
                                 )}
                                 onClick={() => {
-                                  handleProductTypeChange(type, index);
-                                  setOpenTypePopover(null);
+                                  if (type.id !== "add") {
+                                    handleProductTypeChange(type, index);
+                                    setOpenTypePopover(null);
+                                  }
                                 }}
                               >
-                                {type.name}
+                                {type.id === "add" ? (
+                                  <>
+                                    <div
+                                      className={`grid grid-cols-2 text-sm gap-2 w-full`}
+                                    >
+                                      <button
+                                        onClick={() => {
+                                          handleOpenDialog("product_types");
+                                          setOpenTypePopover(null);
+                                        }}
+                                        className="bg-green-100 py-1 text-center text-xs text-green-700 hover:bg-green-200 w-full rounded-sm flex gap-1 px-2"
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                        Add Type
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleOpenEditDialog("product_types");
+                                          setOpenTypePopover(null);
+                                        }}
+                                        className="bg-blue-100 py-1 text-center text-xs text-blue-700 hover:bg-blue-200 w-full rounded-sm flex gap-1 px-2"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                        Edit Type
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  type.name
+                                )}
                               </Button>
                             ))}
                           </div>
                         </PopoverContent>
                       </Popover>
                     </TableCell>
+
                     <TableCell className="border-b">
                       <Popover
                         open={openTeethPopover === row.id}
@@ -4123,6 +4174,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           </div>
         </div>
       </div>
+
+      <AddProductValuesDialog
+        open={openDialog === "product_types"}
+        onOpenChange={(open: boolean) => !open && setOpenDialog(null)}
+        type="product_types"
+        labId={lab?.labId as string}
+        reCall={() => fetchProductTypes()}
+      />
+      <EditProductValuesDialog
+        open={openEditDialog === "product_types"}
+        onOpenChange={(open: boolean) => !open && setOpenEditDialog(null)}
+        title="Product Types"
+        type="product_types"
+        labId={lab?.labId as string}
+        reCall={() => fetchProductTypes()}
+      />
     </div>
   );
 };

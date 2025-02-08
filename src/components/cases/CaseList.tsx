@@ -64,7 +64,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { shortMonths } from "@/lib/months";
@@ -1091,20 +1097,12 @@ const CaseList: React.FC = () => {
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
-    console.log(selectedId, "selectedId");
+
     if (selectedCases.length === 0 && !selectedId) return;
-    console.log(
-      cases.filter((item) =>
-        selectedId && selectedId?.length > 0
-          ? selectedId?.includes(item.id)
-          : selectedCasesIds.includes(item.id)
-      ),
-      "hi"
-    );
-    // Create the preview URL with state encoded in base64
+
     const previewState = {
       type: option,
-      paperSize: "LETTER", // Default to letter size
+      paperSize: "LETTER", // Default paper size
       caseData:
         selectedCases.length > 0
           ? selectedCases.map((caseItem) => ({
@@ -1120,8 +1118,8 @@ const CaseList: React.FC = () => {
             }))
           : cases
               .filter((item) =>
-                selectedId && selectedId?.length > 0
-                  ? selectedId?.includes(item.id)
+                selectedId && selectedId.length > 0
+                  ? selectedId.includes(item.id)
                   : selectedCasesIds.includes(item.id)
               )
               .map((caseItem) => ({
@@ -1136,14 +1134,18 @@ const CaseList: React.FC = () => {
                 tag: caseItem.tag,
               })),
       caseDetails: cases.filter((item) =>
-        selectedId && selectedId?.length > 0
-          ? selectedId?.includes(item.id)
+        selectedId && selectedId.length > 0
+          ? selectedId.includes(item.id)
           : selectedCasesIds.includes(item.id)
       ),
     };
 
-    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
-    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    // Use a fixed storage key so that the data always overrides the previous entry.
+    const storageKey = "printData";
+    localStorage.setItem(storageKey, JSON.stringify(previewState));
+
+    // Build the preview URL with the fixed key in the query string.
+    const previewUrl = `${window.location.origin}/print-preview?stateKey=${storageKey}`;
     window.open(previewUrl, "_blank");
   };
 

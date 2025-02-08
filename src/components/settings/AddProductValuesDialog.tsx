@@ -17,6 +17,7 @@ interface AddProductValuesDialogProps {
   onOpenChange: (open: boolean) => void;
   type: "product_types" | "materials";
   labId: string;
+  reCall?: () => void;
 }
 
 export function AddProductValuesDialog({
@@ -24,6 +25,7 @@ export function AddProductValuesDialog({
   onOpenChange,
   type,
   labId,
+  reCall,
 }: AddProductValuesDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -57,15 +59,25 @@ export function AddProductValuesDialog({
           lab_id: labId,
         });
       }
-      toast.success(`${type === "product_types" ? "Product type" : "Material"} created successfully`);
+      toast.success(
+        `${
+          type === "product_types" ? "Product type" : "Material"
+        } created successfully`
+      );
       setName("");
       setDescription("");
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error creating value:", error);
-      toast.error(error.message || `Failed to create ${type === "product_types" ? "product type" : "material"}`);
+      toast.error(
+        error.message ||
+          `Failed to create ${
+            type === "product_types" ? "product type" : "material"
+          }`
+      );
     } finally {
       setIsLoading(false);
+      reCall && reCall();
     }
   };
 
@@ -73,9 +85,12 @@ export function AddProductValuesDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add {type === "product_types" ? "Product Type" : "Material"}</DialogTitle>
+          <DialogTitle>
+            Add {type === "product_types" ? "Product Type" : "Material"}
+          </DialogTitle>
           <DialogDescription>
-            Add a new {type === "product_types" ? "product type" : "material"} to your catalog.
+            Add a new {type === "product_types" ? "product type" : "material"}{" "}
+            to your catalog.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

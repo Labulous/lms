@@ -1014,7 +1014,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const handlePrint = (type: string) => {
     if (!caseDetail) return;
 
-    // Create the preview URL with state encoded in base64
+    // Create the preview data
     const previewState = {
       type,
       paperSize: selectedPaperSize,
@@ -1032,9 +1032,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       caseDetails: [{ ...caseDetail, lab }],
     };
 
-    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
-    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
-    window.open(previewUrl, "_blank");
+    // Store data in localStorage
+    localStorage.setItem("printData", JSON.stringify(previewState));
+
+    // Open the print preview page
+    window.open(`${window.location.origin}/print-preview`, "_blank");
   };
 
   const handleDownloadFile = async (fileUrl: string) => {
