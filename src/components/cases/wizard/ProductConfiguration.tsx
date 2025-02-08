@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, Percent, Minus } from "lucide-react";
+import { X, Plus, StickyNote, Percent, Minus, Pencil } from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -352,7 +352,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       const updatedProductTypes = [
         ...fetchedProductTypes,
         { id: "add", name: "Add Product Type" },
-        { id: "edit", name: "Edit Product Type" },
       ];
 
       setProductTypes(updatedProductTypes);
@@ -1086,7 +1085,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[200px] p-0">
-                          <div className="grid gap-1">
+                          <div className="grid gap-0.5">
                             {productTypes.map((type) => (
                               <Button
                                 key={type.id}
@@ -1097,27 +1096,45 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   "justify-start text-left h-auto py-2 px-3 w-full text-sm",
                                   row.type === type.name
                                     ? "hover:opacity-90"
-                                    : "hover:bg-gray-50",
-                                  type.id === "add" &&
-                                    "bg-green-100 text-green-700 hover:bg-green-200",
-                                  type.id === "edit" &&
-                                    "bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                    : "hover:bg-gray-50"
                                 )}
                                 onClick={() => {
-                                  if (type.id === "edit" || type.id === "add") {
-                                    setOpenTypePopover(null);
-                                    if (type.id === "edit") {
-                                      handleOpenEditDialog("product_types");
-                                    } else {
-                                      handleOpenDialog("product_types");
-                                    }
-                                  } else {
+                                  if (type.id !== "add") {
                                     handleProductTypeChange(type, index);
                                     setOpenTypePopover(null);
                                   }
                                 }}
                               >
-                                {type.name}
+                                {type.id === "add" ? (
+                                  <>
+                                    <div
+                                      className={`grid grid-cols-2 text-sm gap-2 w-full`}
+                                    >
+                                      <button
+                                        onClick={() => {
+                                          handleOpenDialog("product_types");
+                                          setOpenTypePopover(null);
+                                        }}
+                                        className="bg-green-100 py-1 text-center text-xs text-green-700 hover:bg-green-200 w-full rounded-sm flex gap-1 px-2"
+                                      >
+                                        <Plus className="w-4 h-4" />
+                                        Add Type
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          handleOpenEditDialog("product_types");
+                                          setOpenTypePopover(null);
+                                        }}
+                                        className="bg-blue-100 py-1 text-center text-xs text-blue-700 hover:bg-blue-200 w-full rounded-sm flex gap-1 px-2"
+                                      >
+                                        <Pencil className="w-4 h-4" />
+                                        Edit Type
+                                      </button>
+                                    </div>
+                                  </>
+                                ) : (
+                                  type.name
+                                )}
                               </Button>
                             ))}
                           </div>
