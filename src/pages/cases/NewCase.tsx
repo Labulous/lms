@@ -330,7 +330,7 @@ const NewCase: React.FC = () => {
       toast.error("Failed to create case");
     }
   };
-  console.log(selectedProducts, "products");
+  console.log(formData, "formdata");
   return (
     <div
       className="p-6"
