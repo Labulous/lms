@@ -216,7 +216,7 @@ const MaterialSelection: React.FC = () => {
                 disabled={disableDefaultInsert}
                 onClick={() => {
                   setDisabledDefaultButton(true);
-                  handleSetDefaultMaterials();
+                  handleSetDefaultMaterials(labIdData.lab_id);
                 }}
               >
                 <span className="text-sm font-medium flex gap-2">
