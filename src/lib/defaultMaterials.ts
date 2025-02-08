@@ -33,12 +33,12 @@ export const defaultMaterials = [
   },
 ];
 
-export const handleSetDefaultMaterials = async () => {
+export const handleSetDefaultMaterials = async (lab_id: string) => {
   try {
     // Insert the default materials into the Supabase database
     const { data, error } = await supabase
       .from("materials") // Replace with your table name
-      .insert(defaultMaterials); // Use insert to add new records
+      .insert(defaultMaterials.map((item) => ({ ...item, lab_id: lab_id }))); // Use insert to add new records
 
     if (error) {
       throw error;
