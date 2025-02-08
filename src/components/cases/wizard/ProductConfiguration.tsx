@@ -72,6 +72,8 @@ import { spawn } from "child_process";
 import React from "react";
 import { Service } from "@/data/mockServiceData";
 import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
+import { AddProductValuesDialog } from "@/components/settings/AddProductValuesDialog";
+import EditProductValuesDialog from "@/components/settings/EditProductValuesDialog";
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -298,10 +300,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   >(new Map());
   const [openTypePopover, setOpenTypePopover] = useState<string | null>(null);
   const [openTeethPopover, setOpenTeethPopover] = useState<string | null>(null);
+
+  const [openDialog, setOpenDialog] = useState<"product_types" | null>(null);
+  const [openEditDialog, setOpenEditDialog] = useState<"product_types" | null>(
+    null
+  );
   const { user } = useAuth();
 
   const [expandedRows, setExpandedRows] = useState<string[]>([]);
-
+  const handleOpenDialog = (type: "product_types") => {
+    setOpenEditDialog(null); // Close edit dialog if open
+    setOpenDialog(type);
+  };
+  const handleOpenEditDialog = (type: "product_types") => {
+    setOpenDialog(null); // Close add dialog if open
+    setOpenEditDialog(type);
+  };
   const toggleRowExpansion = (rowId: string) => {
     setExpandedRows((prev) => {
       const newArray = [...prev];
@@ -320,29 +334,35 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
+  const fetchProductTypes = async () => {
+    const labData = await getLabIdByUserId(user?.id as string);
+    if (!labData) {
+      toast.error("Unable to get Lab Id");
+      return null;
+    }
+    setLab(labData);
+    try {
+      setLoading(true);
+
+      const fetchedProductTypes = await productsService.getProductTypes(
+        labData.labId
+      );
+
+      // Adding new fields to productTypes
+      const updatedProductTypes = [
+        ...fetchedProductTypes,
+        { id: "add", name: "Add Product Type" },
+        { id: "edit", name: "Edit Product Type" },
+      ];
+
+      setProductTypes(updatedProductTypes);
+    } catch (error) {
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
-    const fetchProductTypes = async () => {
-      const labData = await getLabIdByUserId(user?.id as string);
-      if (!labData) {
-        toast.error("Unable to get Lab Id");
-        return null;
-      }
-      setLab(labData);
-      try {
-        setLoading(true);
-
-        const fetchedProductTypes = await productsService.getProductTypes(
-          labData.labId
-        );
-
-        setProductTypes(fetchedProductTypes);
-      } catch (error) {
-        toast.error("Failed to load products");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProductTypes();
   }, []);
 
@@ -1077,11 +1097,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   "justify-start text-left h-auto py-2 px-3 w-full text-sm",
                                   row.type === type.name
                                     ? "hover:opacity-90"
-                                    : "hover:bg-gray-50"
+                                    : "hover:bg-gray-50",
+                                  type.id === "add" &&
+                                    "bg-green-100 text-green-700 hover:bg-green-200",
+                                  type.id === "edit" &&
+                                    "bg-blue-100 text-blue-700 hover:bg-blue-200"
                                 )}
                                 onClick={() => {
-                                  handleProductTypeChange(type, index);
-                                  setOpenTypePopover(null);
+                                  if (type.id === "edit" || type.id === "add") {
+                                    setOpenTypePopover(null);
+                                    if (type.id === "edit") {
+                                      handleOpenEditDialog("product_types");
+                                    } else {
+                                      handleOpenDialog("product_types");
+                                    }
+                                  } else {
+                                    handleProductTypeChange(type, index);
+                                    setOpenTypePopover(null);
+                                  }
                                 }}
                               >
                                 {type.name}
@@ -1091,6 +1124,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
+
                     <TableCell className="border-b">
                       <Popover
                         open={openTeethPopover === row.id}
@@ -4123,6 +4157,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           </div>
         </div>
       </div>
+
+      <AddProductValuesDialog
+        open={openDialog === "product_types"}
+        onOpenChange={(open: boolean) => !open && setOpenDialog(null)}
+        type="product_types"
+        labId={lab?.labId as string}
+        reCall={() => fetchProductTypes()}
+      />
+      <EditProductValuesDialog
+        open={openEditDialog === "product_types"}
+        onOpenChange={(open: boolean) => !open && setOpenEditDialog(null)}
+        title="Product Types"
+        type="product_types"
+        labId={lab?.labId as string}
+        reCall={() => fetchProductTypes()}
+      />
     </div>
   );
 };

@@ -33,6 +33,7 @@ interface EditProductValuesDialogProps {
   title: string;
   type: "product_types" | "materials";
   labId: string;
+  reCall?: () => void;
 }
 
 export default function EditProductValuesDialog({
@@ -41,6 +42,7 @@ export default function EditProductValuesDialog({
   title,
   type,
   labId,
+  reCall,
 }: EditProductValuesDialogProps) {
   const [values, setValues] = useState<Value[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -85,7 +87,7 @@ export default function EditProductValuesDialog({
     setEditForm({
       id: value.id,
       name: value.name,
-      description: value.description
+      description: value.description,
     });
   };
 
@@ -100,13 +102,13 @@ export default function EditProductValuesDialog({
       if (type === "product_types") {
         await productsService.updateProductType(updatedValue.id, {
           name: updatedValue.name.trim(),
-          description: updatedValue.description?.trim() || null
+          description: updatedValue.description?.trim() || null,
         });
       } else {
-        console.log(updatedValue,"updatedValue")
+        console.log(updatedValue, "updatedValue");
         await productsService.updateMaterial(updatedValue.id, {
           name: updatedValue.name.trim(),
-          description: updatedValue.description?.trim() || null
+          description: updatedValue.description?.trim() || null,
         });
       }
       toast.success(`${title} updated successfully`);
@@ -117,6 +119,7 @@ export default function EditProductValuesDialog({
       toast.error(error.message || `Failed to update ${title.toLowerCase()}`);
     } finally {
       setIsLoading(false);
+      reCall && reCall();
     }
   };
 
@@ -135,6 +138,7 @@ export default function EditProductValuesDialog({
       toast.error(error.message || `Failed to delete ${title.toLowerCase()}`);
     } finally {
       setIsLoading(false);
+      reCall && reCall();
     }
   };
 
@@ -149,7 +153,8 @@ export default function EditProductValuesDialog({
         <DialogHeader>
           <DialogTitle>Edit {title}</DialogTitle>
           <DialogDescription>
-            View and edit existing {title.toLowerCase()}. Click the pencil icon to modify or the trash icon to delete.
+            View and edit existing {title.toLowerCase()}. Click the pencil icon
+            to modify or the trash icon to delete.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
