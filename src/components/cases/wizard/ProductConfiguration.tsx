@@ -1231,13 +1231,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         materials={MATERIALS}
                         services={services}
                         selectedService={{
-                          id: selectedServices[index].id ?? "",
+                          id: selectedServices?.[index]?.id ?? "",
                           name:
-                            selectedServices[index].name.length > 0
-                              ? selectedServices[index].name
+                            selectedServices?.[index]?.name?.length > 0
+                              ? selectedServices?.[index]?.name
                               : "Select a service",
-                          price: selectedServices[index].price ?? 0,
-                          is_taxable: selectedServices[index].is_taxable,
+                          price: selectedServices?.[index]?.price ?? 0,
+                          is_taxable: selectedServices?.[index]?.is_taxable,
                         }}
                         onServiceSelect={(service) => {
                           handleServiceSelect(service, true, index);
@@ -2579,13 +2579,14 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               materials={MATERIALS}
                               services={services}
                               selectedService={{
-                                id: selectedServices[index].id ?? "",
+                                id: selectedServices?.[index]?.id ?? "",
                                 name:
-                                  selectedServices[index].name.length > 0
-                                    ? selectedServices[index].name
+                                  selectedServices?.[index]?.name.length > 0
+                                    ? selectedServices?.[index]?.name
                                     : "Select a service",
-                                price: selectedServices[index].price ?? 0,
-                                is_taxable: selectedServices[index].is_taxable,
+                                price: selectedServices?.[index]?.price ?? 0,
+                                is_taxable:
+                                  selectedServices?.[index]?.is_taxable,
                               }}
                               onServiceSelect={(service) => {
                                 handleServiceSelect(service, true, index);
