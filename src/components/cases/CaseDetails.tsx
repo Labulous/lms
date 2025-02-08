@@ -176,6 +176,7 @@ export interface ExtendedCase {
   custom_occlusal_details: string;
   margin_design_type: string;
   occlusion_design_type: string;
+  is_appointment_TBD: string;
   alloy_type: string;
   custom_margin_design_type: string;
   custom_occlusion_design_type: string;
@@ -288,6 +289,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isApiLoad, setIsApiLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   let location = useLocation();
   const [editingInvoice, setEditingInvoice] = useState<ExtendedCase | null>(
@@ -470,6 +472,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         due_date,
         attachements,
         case_number,
+        is_appointment_TBD,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -991,6 +994,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       }
       setError("No case ID provided");
       setLoading(false);
+      setIsApiLoad(false);
       return;
     }
 
@@ -1089,6 +1093,15 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     );
   }
 
+  if (isApiLoad && !caseDetail) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-gray-600">Loading case details....</p>
+        </div>
+      </div>
+    );
+  }
   if (!caseDetail) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1098,7 +1111,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       </div>
     );
   }
-
   const handleCreateNewWorkStation = () => {
     setSelectedFiles([]);
     const newCreateStep = {
@@ -1789,7 +1801,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     Appointment Date
                   </span>
                   <span className="text-sm font-medium">
-                    {caseDetail.isDueDateTBD
+                    {caseDetail.is_appointment_TBD
                       ? "TBD"
                       : formatDateWithTime(caseDetail.appointment_date)}
                   </span>
