@@ -323,12 +323,6 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
         }
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Services
-        </Button>
-      </DialogTrigger>
       <DialogContent
         className="max-w-[1440px] max-h-[80vh] overflow-y-auto"
         onOpenAutoFocus={(e) => {
