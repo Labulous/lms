@@ -2386,7 +2386,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           className="text-xs py-2 pl-4 pr-0 text-right"
                         >
                           Paid Amount: $
-                          {caseDetail.invoice[0].amount -
+                          {caseDetail.invoice[0]?.amount -
                             Number(caseDetail?.invoice?.[0]?.due_amount || 0)}
                         </TableCell>
                         <TableCell
