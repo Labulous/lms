@@ -334,7 +334,51 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     workstation_type_id: "",
     case_id: activeCaseId as string,
   });
+  const fetchServices = async () => {
+    const lab = await getLabDataByUserId(user?.id as string);
+    if (!lab?.id) {
+      console.error("Lab ID not found.");
+      return;
+    }
+    if (!lab?.id) {
+      console.log("No lab ID provided.");
+      return;
+    }
+    const { data, error } = await supabase
+      .from("services")
+      .select("id,name,price,is_taxable")
+      .eq("lab_id", lab.id);
 
+    if (error) {
+      console.error("Failed to fetch services:", error);
+      return; // Early exit if error occurs
+    }
+
+    console.log(data, "datadata");
+    if (data) {
+      setCaseDetail((detail: any) => ({
+        ...detail,
+        products: detail?.products
+          ? detail.products.map((item: any) => ({
+              ...item,
+              service: item.additional_services_id
+                ? data
+                    .filter(
+                      (service) =>
+                        Array.isArray(item.additional_services_id) &&
+                        item.additional_services_id.includes(service.id)
+                    )
+                    .map((service) => ({
+                      id: service.id,
+                      name: service.name,
+                      price: service.price,
+                    }))[0]
+                : [],
+            }))
+          : [],
+      }));
+    }
+  };
   const getWorkStationDetails = async (case_ceated_at: string) => {
     try {
       const lab = await getLabDataByUserId(user?.id as string);
@@ -344,6 +388,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       }
       console.log(lab, "lablab");
       setLab(lab);
+
       const { data: workStationData, error: workStationError } = await supabase
         .from("workstation_log")
         .select(
@@ -387,6 +432,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         setError(workStationError?.message || "");
       } else {
         console.log(workStationData, "workStationData");
+        fetchServices();
 
         let workStationDataApi: any = workStationData;
         const steps = [
@@ -458,6 +504,23 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     } finally {
     }
   };
+
+  // const {
+  //   data: labIdData,
+  //   error: labError,
+  //   isLoading: isLabLoading,
+  // } = useQuery(
+  //   supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+  //   {
+  //     revalidateOnFocus: false,
+  //     revalidateOnReconnect: false,
+  //   }
+  // );
+
+  // if (labError) {
+  //   return <div>Loading!!!</div>;
+  // }
+
   const { data: caseDataa, error: caseError } = useQuery(
     activeCaseId
       ? supabase
@@ -639,45 +702,31 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   if (caseError) {
     return <div>Error fetching case data: {caseError.message}</div>;
   }
-  const {
-    data: labIdData,
-    error: labError,
-    isLoading: isLabLoading,
-  } = useQuery(
-    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
 
-  if (labError) {
-    return <div>Loading!!!</div>;
-  }
+  // const { data: servicesData, error: servicesError } = useQuery(
+  //   caseDataa && activeCaseId && labIdData?.lab_id
+  //     ? supabase
+  //         .from("services")
+  //         .select(
+  //           `
+  //      id,name,price,is_taxable
+  //     `
+  //         )
+  //         .eq("lab_id", labIdData?.lab_id)
+  //     : null, // Fetching a single record based on `activeCaseId`
+  //   {
+  //     revalidateOnFocus: false,
+  //     revalidateOnReconnect: false,
+  //   }
+  // );
+  // if (servicesError) {
+  //   return <div>Error fetching case data</div>;
+  // }
+  // if (!servicesData) {
+  //   return <div>Case Details Loading....</div>;
+  // }
+  // console.log(servicesData, lab?.id, "servicesData");
 
-  const { data: servicesData, error: servicesError } = useQuery(
-    caseDataa && activeCaseId && labIdData?.lab_id
-      ? supabase
-          .from("services")
-          .select(
-            `
-       id,name,price,is_taxable
-      `
-          )
-          .eq("lab_id", labIdData?.lab_id)
-      : null, // Fetching a single record based on `activeCaseId`
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
-  );
-  if (servicesError) {
-    return <div>Error fetching case data</div>;
-  }
-  if (!servicesData) {
-    return <div>Case Details Loading....</div>;
-  }
-  console.log(servicesData, lab?.id, "servicesData");
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
@@ -697,6 +746,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           material: tp.product.material,
           product_type: tp.product.product_type,
           billing_type: tp.product.billing_type,
+          additional_services_id:
+            caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
           teethProduct: {
             id: tp.id,
@@ -719,18 +770,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
           },
-
-          service:
-            servicesData && tp.additional_services_id &&
-            servicesData
-              .filter((service) =>
-                tp.additional_services_id.includes(service.id)
-              )
-              .map((service) => ({
-                id: service.id,
-                name: service.name,
-                price: service.price,
-              }))[0] || null,
         })),
       }
     : null;
@@ -1051,6 +1090,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     setCaseDetail(caseDetailApi);
 
     setCaseRefresh(false);
+
     hasRun.current = true; // Mark as executed
   }, [caseDetailApi]); // Dependency
   const handleCompleteStage = async (stageName: string) => {
@@ -1060,7 +1100,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const handlePhotoUpload = async (file: File) => {
     console.log(`Uploading photo: ${file.name}`);
   };
-
+  console.log(caseDetail, "case detail");
   const handlePrint = (type: string) => {
     if (!caseDetail) return;
 
@@ -1127,7 +1167,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center bg-red-50 p-6 rounded-lg">
           <div className="text-red-600 text-xl mb-2">Error</div>
-          <p className="text-gray-700">{error}</p>
+          <p className="text-gray-700">{"error"}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
