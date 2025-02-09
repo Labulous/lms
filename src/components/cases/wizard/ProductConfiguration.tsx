@@ -716,7 +716,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
         // Ensure that subRows exists at the specified index and SubIndex
         if (updatedProducts[index]?.subRows) {
-          let updatedSubRows = [...updatedProducts[index].subRows]; // Create a new array to avoid mutation
+          let updatedSubRows:any = [...updatedProducts[index].subRows]; // Create a new array to avoid mutation
 
           if (updatedSubRows[SubIndex]) {
             // If subRow at SubIndex exists, update it
@@ -2841,7 +2841,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <div className="space-y-2 w-full">
                                   <div className="flex justify-between w-full">
                                     <Label className="text-xs">
-                                      Add Services
+                                      Add Services 
                                     </Label>
                                     <Button
                                       size="sm"
