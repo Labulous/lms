@@ -44,7 +44,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus, StickyNote, Percent, Minus, Pencil } from "lucide-react";
+import {
+  X,
+  Plus,
+  StickyNote,
+  Percent,
+  Minus,
+  Pencil,
+  Cross,
+  CrossIcon,
+} from "lucide-react";
 import { Stepper } from "@/components/ui/stepper";
 import { toast } from "react-hot-toast";
 import { v4 as uuidv4 } from "uuid";
@@ -106,6 +115,33 @@ interface ServiceType {
   price: number;
   is_taxable: boolean;
   material?: Material;
+  subRows?: {
+    services: {
+      id: string | null;
+      name: string;
+      price: number;
+      is_taxable: boolean;
+      material?: Material;
+    }[];
+  }[];
+}
+interface SelectedServiceType {
+  services: {
+    id: string | null;
+    name: string;
+    price: number;
+    is_taxable: boolean;
+    material?: Material;
+    subRows?: {
+      services: {
+        id: string | null;
+        name: string;
+        price: number;
+        is_taxable: boolean;
+        material?: Material;
+      }[];
+    }[];
+  }[];
 }
 
 const OCCLUSAL_OPTIONS = Object.values(OcclusalType).map((value) => ({
@@ -281,9 +317,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
   const [services, setServices] = useState<ServiceType[]>([]);
-  const [selectedService, setSelectedService] = useState<ServiceType | null>(
-    null
-  );
+  const [SelectedSubServices, setSelectedSubServices] = useState<
+    SelectedServiceType[]
+  >([]);
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
   const [groupSelectedTeethState, setGroupSelectedTeethState] = useState<
     number[][]
@@ -292,6 +328,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [notePopoverOpen, setNotePopoverOpen] = useState<Map<number, boolean>>(
     new Map()
   );
+  const [servicesPopoverOpen, setServicesPopoverOpen] = useState<
+    Map<number, boolean>
+  >(new Map());
   const [shadePopoverOpen, setShadePopoverOpen] = useState<
     Map<number, boolean>
   >(new Map());
@@ -531,81 +570,202 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  const handleServiceSelect = (
-    value: any,
-    keepTeeth = false,
-    index?: number
-  ) => {
-    const service = services.find((p) => p.id === value.id) || null;
+  const handleServiceSelect = (service: Service, index: number) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      let updatedProducts = [...prevSelectedProducts];
 
-    if (!service) return;
-    // if (!index) {
-    //   toggleRowExpansion(service.id);
-    // }
-    setSelectedService(service);
-    setselectedServices((prevSelectedServices: ServiceType[]) => {
-      if (index !== undefined) {
-        let updatedServices = [...prevSelectedServices];
+      // Initialize services array if it's undefined
+      if (!updatedProducts[index].services) {
+        updatedProducts[index].services = [];
+      }
 
-        // Update the subRows' product name
-        updatedServices[index] = {
-          ...updatedServices[index],
-          name: service.name,
-          id: service.id,
-          price: service.price,
-          is_taxable: service.is_taxable,
-        };
-
-        return updatedServices;
-      } else {
-        return [
-          ...prevSelectedServices,
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        services: [
+          ...updatedProducts[index].services, // Add existing services
           {
-            id: service.id,
+            id: service.id as string,
             name: service.name,
             price: service.price,
+            is_taxable: service.is_taxable,
           },
-        ];
+        ],
+        subRows: updatedProducts?.[index]?.subRows?.map((item) => ({
+          ...item,
+          services: [
+            ...(item?.services || []), // Add existing subRow services if available
+            {
+              id: service.id as string,
+              name: service.name,
+              price: service.price,
+              is_taxable: service.is_taxable,
+            },
+          ],
+        })),
+      };
+
+      return updatedProducts;
+    });
+  };
+
+  const handleSubServiceSelect = (
+    value: any,
+    index: number | undefined,
+    SubIndex: number = 0
+  ) => {
+    const service = services.find((p) => p.id === value.id) || null;
+    if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
+
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      let updatedProducts = [...prevSelectedProducts]; // Make a copy of the products array to avoid mutation
+
+      // Ensure subRows exists at the index and that the SubIndex is valid
+      if (updatedProducts[index]?.subRows) {
+        let updatedSubRows = [...updatedProducts[index].subRows]; // Make a copy of subRows to avoid mutation
+
+        if (updatedSubRows[SubIndex]?.services) {
+          let updatedServices = [...updatedSubRows[SubIndex].services]; // Make a copy of the services array
+
+          // Check if the service already exists in the services array
+          const serviceExists = updatedServices.some(
+            (s) => s.id === service.id
+          );
+
+          if (!serviceExists) {
+            // If service doesn't exist, add it
+            updatedServices.push({
+              ...updatedSubRows[SubIndex],
+              id: service.id,
+              name: service.name,
+              // Include other necessary service fields
+            });
+          }
+
+          // Update the subRow at SubIndex with the new services array
+          updatedSubRows[SubIndex] = {
+            ...updatedSubRows[SubIndex],
+            services: updatedServices,
+          };
+        } else {
+          // If services doesn't exist at SubIndex, initialize it with the selected service
+          updatedSubRows[SubIndex] = {
+            ...updatedSubRows[SubIndex],
+            services: [
+              {
+                ...updatedSubRows[SubIndex],
+                id: service.id,
+                name: service.name,
+                // Include other necessary service fields
+              },
+            ],
+          };
+        }
+
+        // Update the product with the new subRows
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          subRows: updatedSubRows,
+        };
+
+        return updatedProducts;
       }
+
+      return updatedProducts;
+    });
+  };
+
+  const handleRemoveServices = (id: string) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      let updatedProducts = prevSelectedProducts.map((product) => {
+        // Remove the service from the main services array
+        const updatedServices =
+          product.services?.filter((service) => service.id !== id) || [];
+
+        // Remove the service from subRows' services array
+        const updatedSubRows = product.subRows?.map((subRow) => {
+          return {
+            ...subRow,
+            services:
+              subRow.services?.filter((service) => service.id !== id) || [],
+          };
+        });
+
+        return {
+          ...product,
+          services: updatedServices, // Update the main services array
+          subRows: updatedSubRows, // Update the subRows with the modified services
+        };
+      });
+
+      return updatedProducts;
     });
   };
 
   const handleProductSubSelect = (
     value: any,
-    keepTeeth = false,
     index?: number,
     SubIndex: number = 0
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
-
     if (!product) return;
-
-    setSelectedProduct(product);
 
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
+        // Create a copy of the previous selected products to avoid direct mutation
         let updatedProducts = [...prevSelectedProducts];
 
-        // Update only the subRow at the specified SubIndex
-        if (
-          updatedProducts[index]?.subRows &&
-          updatedProducts[index].subRows[SubIndex]
-        ) {
-          updatedProducts[index].subRows[SubIndex] = {
-            ...updatedProducts[index].subRows[SubIndex],
-            name: product.name,
-            id: product.id,
-            price: product.price,
-          };
-        }
+        // Ensure that subRows exists at the specified index and SubIndex
+        if (updatedProducts[index]?.subRows) {
+          let updatedSubRows = [...updatedProducts[index].subRows]; // Create a new array to avoid mutation
 
-        return updatedProducts;
+          if (updatedSubRows[SubIndex]) {
+            // If subRow at SubIndex exists, update it
+            updatedSubRows[SubIndex] = {
+              ...updatedSubRows[SubIndex],
+              name: product.name,
+              id: product.id,
+              price: product.price,
+            };
+          } else {
+            // If subRow at SubIndex doesn't exist, create a new entry
+            updatedSubRows[SubIndex] = {
+              name: product.name,
+              id: product.id,
+              price: product.price,
+            };
+          }
+
+          // Assign the updated subRows back to the selected product
+          updatedProducts[index] = {
+            ...updatedProducts[index],
+            subRows: updatedSubRows,
+          };
+
+          return updatedProducts;
+        } else {
+          // If subRows does not exist at all, initialize it with the new item
+          updatedProducts[index] = {
+            ...updatedProducts[index],
+            subRows: [
+              {
+                ...updatedProducts[index],
+                name: product.name,
+                id: product.id,
+                price: product.price,
+              },
+            ],
+          };
+
+          return updatedProducts;
+        }
       } else {
+        // If index is not provided, create a new entry in the selected products
         return [
           ...prevSelectedProducts,
           {
             id: product.id,
             name: product.name,
+            // Add other necessary fields as required
           },
         ];
       }
@@ -871,6 +1031,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         name: "",
         price: 0,
         is_taxable: false,
+        subRows: [],
       };
 
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => [
@@ -886,6 +1047,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
   const toggleNotePopover = (index: number) => {
     setNotePopoverOpen((prev) =>
+      new Map(prev).set(index, !(prev.get(index) || false))
+    );
+  };
+  const toggleServicesPopover = (index: number) => {
+    setServicesPopoverOpen((prev) =>
       new Map(prev).set(index, !(prev.get(index) || false))
     );
   };
@@ -1021,6 +1187,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -1227,73 +1394,114 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                      <MultiColumnServiceSelector
-                        materials={MATERIALS}
-                        services={services}
-                        selectedService={{
-                          id: selectedServices?.[index]?.id ?? "",
-                          name:
-                            selectedServices?.[index]?.name?.length > 0
-                              ? selectedServices?.[index]?.name
-                              : "Select a service",
-                          price: selectedServices?.[index]?.price ?? 0,
-                          is_taxable: selectedServices?.[index]?.is_taxable,
-                        }}
-                        onServiceSelect={(service) => {
-                          handleServiceSelect(service, true, index);
-                        }}
-                        disabled={loading || row.teeth.length === 0}
-                        size="xs"
-                        onClick={() => fetchServices()}
-                      />
-                      {/* <Select                     
-                        disabled={
-                          loading ||
-                          (row.teeth.length === 0 && row.type === "Service")
-                        }
-                        onValueChange={(value) => {
-                          setselectedProducts(
-                            (prevSelectedProducts: SavedProduct[]) => {
-                              const updatedProducts = [...prevSelectedProducts];
-
-                              if (
-                                index >= 0 &&
-                                index < updatedProducts.length
-                              ) {
-                                updatedProducts[index] = {
-                                  ...updatedProducts[index],
-                                  additional_service_id: value, // Update the main row's note
-                                  subRows: updatedProducts?.[
-                                    index
-                                  ]?.subRows?.map((subRow) => ({
-                                    ...subRow,
-                                    additional_service_id: value, // Update the note for each subRow
-                                  })),
-                                };
-                              }
-
-                              return updatedProducts;
-                            }
-                          );
-                        }}
-                      >
-                        <SelectTrigger className={cn("bg-white text-xs")}>
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {services && services.length > 0 ? (
-                            services.map((service) => (
-                              <SelectItem key={service.id} value={service.id}>
-                                {service.name || "Unnamed material"}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value="_no_clients" disabled>
-                              No Service available
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select> */}
+                      <Popover open={servicesPopoverOpen.get(index) || false}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={cn(
+                              "h-6 w-6",
+                              row.notes ? "text-blue-600" : "",
+                              "hover:text-blue-600"
+                            )}
+                            disabled={!row.id && row.type !== "Service"}
+                            onClick={() => toggleServicesPopover(index)}
+                          >
+                            <span className="text-xs">
+                              {" "}
+                              {row?.services?.length === 0 || !row?.services ? (
+                                "Add Services"
+                              ) : (
+                                <span className="text-blue-600">
+                                  {row?.services?.length} Added
+                                </span>
+                              )}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-80 p-3"
+                          onEscapeKeyDown={(e) => {
+                            e.preventDefault();
+                            setServicesPopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                          onInteractOutside={(e) => {
+                            e.preventDefault();
+                            setServicesPopoverOpen((prev) => {
+                              const updated = new Map(prev);
+                              updated.set(index, false);
+                              return updated;
+                            });
+                          }}
+                          align="end"
+                        >
+                          <div className="space-y-2 w-full">
+                            <div className="flex justify-between w-full">
+                              <Label className="text-xs">
+                                Add Services main
+                              </Label>
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  setServicesPopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(index, false);
+                                    return updated;
+                                  })
+                                }
+                              >
+                                Save
+                              </Button>
+                            </div>
+                            <MultiColumnServiceSelector
+                              materials={MATERIALS}
+                              services={services}
+                              selectedService={{
+                                id: selectedServices?.[index]?.id ?? "",
+                                name:
+                                  selectedServices?.[index]?.name?.length > 0
+                                    ? selectedServices?.[index]?.name
+                                    : "Select a service",
+                                price: selectedServices?.[index]?.price ?? 0,
+                                is_taxable:
+                                  selectedServices?.[index]?.is_taxable,
+                              }}
+                              onServiceSelect={(service) => {
+                                handleServiceSelect(service, index);
+                              }}
+                              disabled={loading || row.teeth.length === 0}
+                              size="xs"
+                              onClick={() => fetchServices()}
+                            />
+                            <div className="w-full">
+                              <div className="grid grid-cols-1 gap-2 w-full">
+                                {row?.services?.map((item) => {
+                                  return (
+                                    <div className="flex items-center justify-center">
+                                      <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
+                                        <p>{item.name}</p>
+                                        <p>{item.price}</p>
+                                      </div>
+                                      <X
+                                        onClick={() =>
+                                          handleRemoveServices(
+                                            item.id as string
+                                          )
+                                        }
+                                        className="w-4 h-4 text-red-500 cursor-pointer"
+                                      />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </TableCell>
 
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -2565,7 +2773,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               onProductSelect={(product) => {
                                 handleProductSubSelect(
                                   product,
-                                  true,
                                   index,
                                   originalIndex
                                 );
@@ -2575,83 +2782,134 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             />
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
-                            <MultiColumnServiceSelector
-                              materials={MATERIALS}
-                              services={services}
-                              selectedService={{
-                                id: selectedServices?.[index]?.id ?? "",
-                                name:
-                                  selectedServices?.[index]?.name.length > 0
-                                    ? selectedServices?.[index]?.name
-                                    : "Select a service",
-                                price: selectedServices?.[index]?.price ?? 0,
-                                is_taxable:
-                                  selectedServices?.[index]?.is_taxable,
-                              }}
-                              onServiceSelect={(service) => {
-                                handleServiceSelect(service, true, index);
-                              }}
-                              disabled={loading || row.teeth.length === 0}
-                              size="xs"
-                              onClick={() => fetchServices()}
-                            />
-                            {/* <Select
-                              disabled={loading || row.teeth.length === 0}
-                              value={row_sub.additional_service_id}
-                              onValueChange={(value) => {
-                                setselectedProducts(
-                                  (prevSelectedProducts: SavedProduct[]) => {
-                                    const updatedProducts = [
-                                      ...prevSelectedProducts,
-                                    ];
-
-                                    if (
-                                      index >= 0 &&
-                                      index < updatedProducts.length
-                                    ) {
-                                      updatedProducts[index] = {
-                                        ...updatedProducts[index],
-                                        subRows:
-                                          updatedProducts[index]?.subRows?.map(
-                                            (subRow, subIndex) => {
-                                              if (subIndex === originalIndex) {
-                                                // Only update the specific subRow at originalIndex
-                                                return {
-                                                  ...subRow,
-                                                  additional_service_id: value,
-                                                };
-                                              }
-                                              return subRow; // Keep other subRows unchanged
-                                            }
-                                          ) ?? [], // In case subRows is undefined or null, default to an empty array
-                                      };
-                                    }
-
-                                    return updatedProducts;
-                                  }
-                                );
-                              }}
+                            <Popover
+                              open={
+                                servicesPopoverOpen.get(
+                                  subIndex + index + 100
+                                ) || false
+                              }
                             >
-                              <SelectTrigger className={cn("bg-white")}>
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {services && services.length > 0 ? (
-                                  services.map((service) => (
-                                    <SelectItem
-                                      key={service.id}
-                                      value={service.id}
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-6 w-6",
+                                    row.notes ? "text-blue-600" : "",
+                                    "hover:text-blue-600"
+                                  )}
+                                  disabled={!row.id && row.type !== "Service"}
+                                  onClick={() =>
+                                    toggleServicesPopover(
+                                      subIndex + index + 100
+                                    )
+                                  }
+                                >
+                                  <span className="text-xs">
+                                    {" "}
+                                    {row_sub?.services?.length === 0 ||
+                                    !row.services ? (
+                                      "Add Services"
+                                    ) : (
+                                      <span className="text-blue-600">
+                                        {row_sub?.services?.length} Added
+                                      </span>
+                                    )}
+                                  </span>
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-80 p-3"
+                                onEscapeKeyDown={(e) => {
+                                  e.preventDefault();
+                                  setServicesPopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                onInteractOutside={(e) => {
+                                  e.preventDefault();
+                                  setServicesPopoverOpen((prev) => {
+                                    const updated = new Map(prev);
+                                    updated.set(subIndex + index + 100, false);
+                                    return updated;
+                                  });
+                                }}
+                                align="end"
+                              >
+                                <div className="space-y-2 w-full">
+                                  <div className="flex justify-between w-full">
+                                    <Label className="text-xs">
+                                      Add Services
+                                    </Label>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        setServicesPopoverOpen((prev) => {
+                                          const updated = new Map(prev);
+                                          updated.set(
+                                            subIndex + index + 100,
+                                            false
+                                          );
+                                          return updated;
+                                        })
+                                      }
                                     >
-                                      {service.name || "Unnamed material"}
-                                    </SelectItem>
-                                  ))
-                                ) : (
-                                  <SelectItem value="_no_clients" disabled>
-                                    No Service available
-                                  </SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select> */}
+                                      Save
+                                    </Button>
+                                  </div>
+                                  <MultiColumnServiceSelector
+                                    materials={MATERIALS}
+                                    services={services}
+                                    selectedService={{
+                                      id: selectedServices?.[index]?.id ?? "",
+                                      name:
+                                        selectedServices?.[index]?.name
+                                          ?.length > 0
+                                          ? selectedServices?.[index]?.name
+                                          : "Select a service",
+                                      price:
+                                        selectedServices?.[index]?.price ?? 0,
+                                      is_taxable:
+                                        selectedServices?.[index]?.is_taxable,
+                                    }}
+                                    onServiceSelect={(service) => {
+                                      handleSubServiceSelect(
+                                        service,
+                                        originalIndex
+                                      );
+                                    }}
+                                    disabled={loading || row.teeth.length === 0}
+                                    size="xs"
+                                    onClick={() => fetchServices()}
+                                  />
+
+                                  <div className="w-full">
+                                    <div className="grid grid-cols-1 gap-2 w-full">
+                                      {row_sub?.services?.map((item) => {
+                                        return (
+                                          <div className="flex items-center justify-center">
+                                            <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
+                                              <p>{item.name}</p>
+                                              <p>{item.price}</p>
+                                            </div>
+                                            <X
+                                              onClick={() =>
+                                                handleRemoveServices(
+                                                  item.id as string
+                                                )
+                                              }
+                                              className="w-4 h-4 text-red-500 cursor-pointer"
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </TableCell>
 
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">

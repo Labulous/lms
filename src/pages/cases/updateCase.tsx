@@ -251,10 +251,9 @@ const UpdateCase: React.FC = () => {
           case_product_id,
           tooth_number,
           product_id,
-          additional_service_id,
+          additional_services_id,
           quantity,
           type,
-          service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -325,7 +324,22 @@ const UpdateCase: React.FC = () => {
       revalidateOnReconnect: false,
     }
   );
-
+  const { data: servicesData, error: servicesError } = useQuery(
+    caseId && lab?.labId
+      ? supabase
+          .from("services")
+          .select(
+            `
+       id,name,price,is_taxable
+      `
+          )
+          .eq("lab_id", lab.labId)
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
@@ -355,8 +369,8 @@ const UpdateCase: React.FC = () => {
             occlusal_shade: tp.occlusal_shade,
             body_shade: tp.body_shade,
             gingival_shade: tp.gingival_shade,
-            additional_service_id: tp.additional_service_id,
-            type:tp.type,
+            additional_services_id: tp.additional_services_id,
+            type: tp.type,
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
             manual_body_shade: tp.manual_body_shade,
@@ -541,6 +555,8 @@ const UpdateCase: React.FC = () => {
         const caseProductId = caseDetails?.product_ids[0]?.id;
 
         const caseDataApi: any = caseDetailApi;
+        // const { data: servicesData, error: serviceError } = await supabase
+        //   .from("services").eq("id", "");
 
         setFormData((prevData) => ({
           ...prevData,
@@ -620,11 +636,11 @@ const UpdateCase: React.FC = () => {
 
           return services;
         });
-
+        console.log(caseDataApi, "api");
         setSelectedProducts(() => {
           const groupedProducts: any = {};
 
-          caseDataApi.products.forEach((item: any) => {
+          caseDataApi.products.forEach((item: any, index: number) => {
             const productId = item?.id || "";
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
@@ -632,7 +648,21 @@ const UpdateCase: React.FC = () => {
                 name: item?.name || "",
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
-                additional_service_id: item.additional_service_id,
+                additional_service_id:
+                  caseDataApi.teethProduct[index].additional_services_id,
+                services:
+                  servicesData &&
+                  servicesData
+                    .filter((service) => {
+                      // Filter by checking if the service.id is in the additional_services_id array
+                      return item?.additional_services_id?.includes(service.id);
+                    })
+                    .map((service) => ({
+                      id: service.id,
+                      name: service.name,
+                      price: service.price,
+                      is_taxable: service.is_taxable,
+                    })),
                 discount: item?.discounted_price?.discount || 0,
                 teeth: new Set(), // To store unique teeth numbers
                 pontic_teeth: new Set(), // To store unique pontic teeth
@@ -652,12 +682,15 @@ const UpdateCase: React.FC = () => {
 
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
+              console.log(item, "itemitem");
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
+
+                // Map to only return the service id
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
-                additional_service_id: item.additional_service_id ?? null,
+                additional_service_id: item.teethProduct.additional_services_id,
                 quantity: item.discounted_price.quantity,
                 discount: item?.discounted_price?.discount || 0,
                 discounted_price_id: item.discounted_price?.id,
@@ -722,8 +755,48 @@ const UpdateCase: React.FC = () => {
     return () => {
       null;
     };
-  }, [caseId, clients]);
+  }, [caseId, clients, servicesData]);
 
+  useEffect(() => {
+    if (servicesData) {
+      setSelectedProducts((prevSelectedProducts) => {
+        return prevSelectedProducts.map((product) => {
+          // Ensure services array exists as an empty array if it doesn't exist
+
+          const servicesForSubRow = servicesData
+            .filter((service) =>
+              product.additional_service_id.includes(service.id)
+            )
+            .map((service) => ({
+              id: service.id,
+              name: service.name,
+              price: service.price,
+              is_taxable: service.is_taxable,
+            }));
+
+          const updatedProduct = {
+            ...product,
+            services: servicesForSubRow || [], // Initialize services as an empty array if not already defined
+            subRows: product.subRows?.map((subRow) => ({
+              ...subRow,
+              services: servicesData
+                .filter((service) =>
+                  subRow.additional_service_id.includes(service.id)
+                )
+                .map((service) => ({
+                  id: service.id,
+                  name: service.name,
+                  price: service.price,
+                  is_taxable: service.is_taxable,
+                })), // Initialize services as an empty array for subRows
+            })),
+          };
+
+          return updatedProduct;
+        });
+      });
+    }
+  }, [isUpdate]);
   return (
     <div
       className="p-6"

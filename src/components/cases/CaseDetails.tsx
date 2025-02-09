@@ -560,8 +560,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           type,
           tooth_number,
           product_id,
-          additional_service_id,
-          service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
+          additional_services_id,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
