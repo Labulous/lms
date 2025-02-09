@@ -1410,7 +1410,7 @@ console.log(index, SubIndex,"index")
                             <span className="text-xs">
                               {" "}
                               {row?.services?.length === 0 || !row?.services ? (
-                                "Add Services"
+                                "Add Services (All)"
                               ) : (
                                 <span className="text-blue-600">
                                   {row?.services?.length} Added
