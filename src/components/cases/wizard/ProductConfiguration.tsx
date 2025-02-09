@@ -1426,7 +1426,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 "Add Services (All)"
                               ) : (
                                 <span className="text-blue-600">
-                                  {row?.services?.length} Added
+                                  {row?.services?.length } Added
                                 </span>
                               )}
                             </span>
@@ -2820,7 +2820,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 >
                                   <span className="text-xs">
                                     {" "}
-                                    {row_sub?.services?.length === 0 ||
+                                    {!row_sub?.services?.[index] ||
                                     !row.services ? (
                                       "Add Services"
                                     ) : (
