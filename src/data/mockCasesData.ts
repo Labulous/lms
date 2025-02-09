@@ -154,8 +154,10 @@ const saveCaseProduct = async (
             tooth_number: product.teeth || "",
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
-            additional_service_id: cases.services[index].id,
             type: product.type || "",
+            additional_services_id: product.services.map(
+              (item: { id: string }) => item.id
+            ),
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -350,7 +352,7 @@ const saveCases = async (
           user_id: cases.overview.created_by,
           case_id: savedCaseId,
           products_id: productIds,
-          services_id: serviceIds,
+          // services_id: serviceIds,
         };
         await saveCaseProduct(caseProduct, cases, navigate, savedCaseId); // Save each case product
         console.log("All case products saved successfully.");
@@ -567,8 +569,10 @@ const updateCases = async (
           case_product_id: caseProductData?.[0].id,
           type: product.type || "",
           lab_id: cases.overview.lab_id || "",
+          additional_services_id: product.services.map(
+            (item: { id: string }) => item.id
+          ),
           quantity: (product.quantity ?? 1) + (main.quantity ?? 0), // Ensure quantity calculation is safe
-          additional_service_id: product.additional_service_id || null,
           notes: product.notes || "",
           tooth_number: product.teeth || [],
           pontic_teeth: product.pontic_teeth || [],

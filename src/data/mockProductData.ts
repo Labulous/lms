@@ -1,4 +1,4 @@
-import { ShadeData } from "@/types/supabase";
+import { Material, ShadeData } from "@/types/supabase";
 
 export interface ProductShades {
   occlusal: string;
@@ -25,6 +25,18 @@ export interface SavedProduct {
   subRows?: SavedProduct[];
   pontic_teeth?: number[];
   is_taxable: boolean;
+  services?: {
+    id: string | null;
+    name: string;
+    price: number;
+    is_taxable: boolean;
+    subRows?: {
+      id: string | null;
+      name: string;
+      price: number;
+      is_taxable: boolean;
+    }[];
+  }[];
 }
 
 export interface Product {

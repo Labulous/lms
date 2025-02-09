@@ -342,6 +342,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.error("Lab ID not found.");
         return;
       }
+      console.log(lab, "lablab");
       setLab(lab);
       const { data: workStationData, error: workStationError } = await supabase
         .from("workstation_log")
@@ -560,8 +561,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           type,
           tooth_number,
           product_id,
-          additional_service_id,
-          service:services!case_product_teeth_additional_service_id_fkey (id, name, price),
+          additional_services_id,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -639,6 +639,45 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   if (caseError) {
     return <div>Error fetching case data: {caseError.message}</div>;
   }
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  if (labError) {
+    return <div>Loading!!!</div>;
+  }
+
+  const { data: servicesData, error: servicesError } = useQuery(
+    caseDataa && activeCaseId && labIdData?.lab_id
+      ? supabase
+          .from("services")
+          .select(
+            `
+       id,name,price,is_taxable
+      `
+          )
+          .eq("lab_id", labIdData?.lab_id)
+      : null, // Fetching a single record based on `activeCaseId`
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+  if (servicesError) {
+    return <div>Error fetching case data</div>;
+  }
+  if (!servicesData) {
+    return <div>Case Details Loading....</div>;
+  }
+  console.log(servicesData, lab?.id, "servicesData");
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
@@ -680,11 +719,18 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
           },
-          service: {
-            id: tp.service?.id,
-            name: tp.service?.name,
-            price: tp.service?.price,
-          },
+
+          service:
+            servicesData && tp.additional_services_id &&
+            servicesData
+              .filter((service) =>
+                tp.additional_services_id.includes(service.id)
+              )
+              .map((service) => ({
+                id: service.id,
+                name: service.name,
+                price: service.price,
+              }))[0] || null,
         })),
       }
     : null;

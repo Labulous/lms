@@ -465,10 +465,10 @@ export const getLabDataByUserId = async (
     // Fetch all labs
 
     const { data, error } = await supabase
-      .from("labs")
+      .from("users")
       .select(
-        `
-               name,
+        ` lab:labs!lab_id (
+         name,
                id,
                office_address:office_address!office_address_id (
                  address_1,
@@ -479,19 +479,19 @@ export const getLabDataByUserId = async (
                  country,
                  phone_number
                )
+        
+        )
+              
              `
       )
-      .or(
-        `super_admin_id.eq.${userId},admin_ids.cs.{${userId}},technician_ids.cs.{${userId}},client_ids.cs.{${userId}}`
-      )
-      .single();
+      .eq("id", userId);
 
     if (error) {
       throw new Error(error.message);
     }
 
     // If no match is found, return null
-    return data as unknown as labDetail;
+    return data[0].lab as unknown as labDetail;
   } catch (error) {
     console.error("Error in getLabIdByUserId function:", error);
     throw error;

@@ -43,8 +43,16 @@ export interface ServiceType {
   price: number;
   is_taxable: boolean;
   material?: Material;
+  subRows?: {
+    services: {
+      id: string | null;
+      name: string;
+      price: number;
+      is_taxable: boolean;
+      material?: Material;
+    }[];
+  }[];
 }
-
 const NewCase: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -95,7 +103,7 @@ const NewCase: React.FC = () => {
     setSelectedProducts((prev) => [...prev, product]);
     setSelectedServices((prev) => [...prev, service]);
   };
-
+console.log(selectedProducts,"selected products")
   const handleCategoryChange = (category: SavedProduct | null) => {
     setSelectedCategory(category);
   };
