@@ -615,64 +615,77 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
-
+  
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts]; // Make a copy of the products array to avoid mutation
-console.log(index, SubIndex,"index")
+  
       // Ensure subRows exists at the index and that the SubIndex is valid
       if (updatedProducts[index]?.subRows) {
         let updatedSubRows = [...updatedProducts[index].subRows]; // Make a copy of subRows to avoid mutation
-
+  
+        // Add the service to the main product's services array (if not already there)
+        let updatedServices = [...updatedProducts[index].services || []];
+        const serviceExistsInMain = updatedServices.some((s) => s.id === service.id);
+        
+        if (!serviceExistsInMain) {
+          updatedServices.push({
+            id: service.id,
+            name: service.name,
+            price: service.price,
+            is_taxable: service.is_taxable,
+          });
+        }
+  
+        // Now update the services for the specific subRow
         if (updatedSubRows[SubIndex]?.services) {
-          let updatedServices = [...updatedSubRows[SubIndex].services]; // Make a copy of the services array
-
-          // Check if the service already exists in the services array
-          const serviceExists = updatedServices.some(
-            (s) => s.id === service.id
-          );
-
-          if (!serviceExists) {
-            // If service doesn't exist, add it
-            updatedServices.push({
-              ...updatedSubRows[SubIndex],
+          let updatedSubServices = [...updatedSubRows[SubIndex].services];
+  
+          // Check if the service already exists in the subRow services array
+          const serviceExistsInSub = updatedSubServices.some((s) => s.id === service.id);
+  
+          if (!serviceExistsInSub) {
+            // Add the service if it doesn't exist
+            updatedSubServices.push({
               id: service.id,
               name: service.name,
-              // Include other necessary service fields
+              price: service.price,
+              is_taxable: service.is_taxable,
             });
           }
-
-          // Update the subRow at SubIndex with the new services array
+  
           updatedSubRows[SubIndex] = {
             ...updatedSubRows[SubIndex],
-            services: updatedServices,
+            services: updatedSubServices,
           };
         } else {
-          // If services doesn't exist at SubIndex, initialize it with the selected service
+          // Initialize services at SubIndex if it doesn't exist
           updatedSubRows[SubIndex] = {
             ...updatedSubRows[SubIndex],
             services: [
               {
-                ...updatedSubRows[SubIndex],
                 id: service.id,
                 name: service.name,
-                // Include other necessary service fields
+                price: service.price,
+                is_taxable: service.is_taxable,
               },
             ],
           };
         }
-
-        // Update the product with the new subRows
+  
+        // Update the product with the new services and subRows
         updatedProducts[index] = {
           ...updatedProducts[index],
-          subRows: updatedSubRows,
+          services: updatedServices, // Update the main product's services array
+          subRows: updatedSubRows,    // Update subRows
         };
-
+  
         return updatedProducts;
       }
-
+  
       return updatedProducts;
     });
   };
+  
 
   const handleRemoveServices = (id: string) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
