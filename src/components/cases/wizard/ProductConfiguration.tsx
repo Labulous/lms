@@ -618,7 +618,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts]; // Make a copy of the products array to avoid mutation
-
+console.log(index, SubIndex,"index")
       // Ensure subRows exists at the index and that the SubIndex is valid
       if (updatedProducts[index]?.subRows) {
         let updatedSubRows = [...updatedProducts[index].subRows]; // Make a copy of subRows to avoid mutation
@@ -1410,7 +1410,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <span className="text-xs">
                               {" "}
                               {row?.services?.length === 0 || !row?.services ? (
-                                "Add Services"
+                                "Add Services (All)"
                               ) : (
                                 <span className="text-blue-600">
                                   {row?.services?.length} Added
@@ -2877,6 +2877,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     onServiceSelect={(service) => {
                                       handleSubServiceSelect(
                                         service,
+                                        index,
                                         originalIndex
                                       );
                                     }}
