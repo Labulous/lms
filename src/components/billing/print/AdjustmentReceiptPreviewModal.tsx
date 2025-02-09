@@ -94,9 +94,11 @@ const AdjustmentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
       caseData: labData,
       caseDetails: caseDetails,
     };
+    const storageKey = "printData";
+    localStorage.setItem(storageKey, JSON.stringify(previewState));
 
-    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
-    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
+    // Build the preview URL with the fixed key in the query string.
+    const previewUrl = `${window.location.origin}/print-preview?stateKey=${storageKey}`;
     console.log("printingu", previewUrl)
     window.open(previewUrl, "_blank");
   };

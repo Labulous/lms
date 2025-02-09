@@ -137,7 +137,7 @@ const PrintPreview = () => {
   }, []);
 
   if (!previewState) {
-    return <>not found</>;
+    return <>Loading....</>;
   }
 
   console.log("Decoded State:", previewState);
