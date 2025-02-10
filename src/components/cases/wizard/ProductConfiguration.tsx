@@ -4420,9 +4420,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       >
                         <RadioGroupItem
                           value={option.value}
-                          id={`occlusion-${option.value}`}
+                          id={`occlusion-design-${option.value}`}
                         />
-                        <Label htmlFor={`occlusion-${option.value}`}>
+                        <Label htmlFor={`occlusion-design-${option.value}`}>
                           {option.label}
                         </Label>
                       </div>
@@ -4433,7 +4433,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </p>
                     )}
                   </RadioGroup>
-                  {initialCaseDetails?.ponticType === OcclusalDesign.Custom && (
+                  {initialCaseDetails?.occlusalDesign === OcclusalDesign.Custom && (
                     <Input
                       value={initialCaseDetails?.customOcclusalDesign || ""}
                       onChange={(e) =>
@@ -4479,7 +4479,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </p>
                     )}
                   </RadioGroup>
-                  {initialCaseDetails?.ponticType === PonticType.Custom && (
+                  {initialCaseDetails?.alloyType === PonticType.Custom && (
                     <Input
                       value={initialCaseDetails?.customAlloy || ""}
                       onChange={(e) =>

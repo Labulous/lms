@@ -542,7 +542,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       </span>
                                       {item.teethProduct.type !== "Bridge"
                                         ? item.teethProduct?.tooth_number
-                                            .map((item:number) => item)
+                                            .map((item: number) => item)
                                             .join(",")
                                         : formatTeethRange(
                                             item.teethProduct?.tooth_number
@@ -1580,7 +1580,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
   return (
     <div>
       {cases?.map((item, index) => {
-        console.log(item, "item");
+        console.log(item, "itemy");
         return (
           <div
             key={index}
@@ -1637,9 +1637,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                           Occlusal Type
                         </div>
                         <div className="font-bold text-[10px] min-h-[14px]">
-                          {item.occlusal_type ||
-                            item.custom_occlusal_details ||
-                            ""}
+                          {item.occlusal_type !== "custom"
+                            ? item.occlusal_type
+                            : item.custom_occlusal_details || ""}
                         </div>
                       </div>
                       <div>
@@ -1649,9 +1649,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="font-bold text-[10px] min-h-[14px]">
                           {item.contact_type === "not_applicable"
                             ? ""
-                            : item.contact_type ||
-                              item.custom_contact_details ||
-                              ""}
+                            : item.contact_type !== "custom"
+                            ? item.contact_type
+                            : item.custom_contact_details || ""}
                         </div>
                       </div>
                       <div>
@@ -1661,9 +1661,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="font-bold text-[10px] min-h-[14px]">
                           {item.pontic_type === "not_applicable"
                             ? ""
-                            : item.pontic_type ||
-                              item.custom_pontic_details ||
-                              ""}
+                            : item.pontic_type !== "custom"
+                            ? item.pontic_type
+                            : item.custom_pontic_details || ""}
                         </div>
                       </div>
                       <div>
@@ -1673,9 +1673,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="font-bold text-[10px] min-h-[14px]">
                           {item.margin_design_type === "not_applicable"
                             ? ""
-                            : item.margin_design_type ||
-                              item.custom_margin_design_type ||
-                              ""}
+                            : item.margin_design_type !== "custom"
+                            ? item.margin_design_type
+                            : item.custom_margin_design_type || ""}
                         </div>
                       </div>
                       <div>
@@ -1685,9 +1685,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="font-bold text-[10px] min-h-[14px]">
                           {item.occlusion_design_type === "not_applicable"
                             ? ""
-                            : item.occlusion_design_type ||
-                              item.custom_occlusion_design_type ||
-                              ""}
+                            : item.occlusion_design_type !== "custom"
+                            ? item.occlusion_design_type
+                            : item.custom_margin_design_type || ""}
                         </div>
                       </div>
                       <div>
@@ -1695,7 +1695,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         <div className="font-bold text-[10px] min-h-[14px]">
                           {item.alloy_type === "not_applicable"
                             ? ""
-                            : item.alloy_type || item.custon_alloy_type || ""}
+                            : item.alloy_type !== "custom"
+                            ? item.alloy_type
+                            : item.custon_alloy_type || ""}
                         </div>
                       </div>
                     </div>
