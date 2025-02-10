@@ -542,7 +542,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       </span>
                                       {item.teethProduct.type !== "Bridge"
                                         ? item.teethProduct?.tooth_number
-                                            .map((item:number) => item)
+                                            .map((item: number) => item)
                                             .join(",")
                                         : formatTeethRange(
                                             item.teethProduct?.tooth_number
@@ -1108,8 +1108,36 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       // If there's only one group, return it
       return groupedTeeth.join(", ");
     };
-    console.log(teeth.teethProduct);
 
+    const services = Object.values(
+      teeth.service.reduce(
+        (
+          acc: any,
+          {
+            service,
+            teeth_number,
+          }: { service: { name: string }; teeth_number: number[] }
+        ) => {
+          const serviceName = service.name;
+
+          if (!acc[serviceName]) {
+            acc[serviceName] = {
+              name: serviceName,
+              teeth: [],
+            };
+          }
+
+          // Merge teeth numbers and remove duplicates
+          acc[serviceName].teeth = [
+            ...new Set([...acc[serviceName].teeth, ...teeth_number]),
+          ];
+
+          return acc;
+        },
+        {}
+      )
+    );
+    console.log(services, "services");
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1118,14 +1146,28 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
         <div className="space-y-0.5">
           <div className="flex">
             <span className="w-16">Tooth #: </span>
-            <div className="font-bold">
-              {formatTeethRange(teeth?.teethProduct.tooth_number)}
-            </div>
+            {teeth?.teethProduct.tooth_number.length > 0 && (
+              <div className="font-bold">
+                {teeth.teethProduct.type === "Bridge" ? (
+                  <span>
+                    {formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
+                    <span className="text-xs text-primary">(Bridge)</span>
+                  </span>
+                ) : (
+                  <span>
+                    #
+                    {teeth?.teethProduct.tooth_number
+                      .map((item: number) => item)
+                      .join(",#")}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
             <div className="flex ml-2">
-              <span className="w-20 text-[10px]">Pontic Teeth #: </span>
-              <div className="font-bold text-[10px]">
+              <span className="w-20 text-xs">Pontic Teeth #: </span>
+              <div className="font-bold text-xs">
                 {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
@@ -1139,7 +1181,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div className="font-bold">{teeth?.name}</div>
           </div>
           <div className="pt-2">
-            <div className="flex">
+            {/* <div className="flex">
               <span className="w-16 text-[10px]">Shades: </span>
             </div>
             <div className="space-y-0.5 ml-4">
@@ -1243,21 +1285,44 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                       ))}
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <div className="flex mt-2">
-              <span className="w-16 text-[10px]">Note: </span>
-              <div className="font-bold ml-1 text-[10px]">
+              <span className="w-16 text-xs">Note: </span>
+              <div className="font-bold ml-1 text-xs">
                 {teeth?.teethProduct?.notes || "N/A"}
               </div>
             </div>
             <div className="flex flex-col mt-2">
-              <h2 className="w-16 text-[10px]">Services:</h2>
-              <div className=" ml-1 text-[10px]">
-                {teeth?.service ? (
-                  <div>
-                    <div>name : {teeth.service.name}</div>
-                    <div>Price : ${teeth.service.price}</div>
+              <h2 className="w-16 text-xs">Services:</h2>
+              <div className=" ml-1 text-xs">
+                {services.length > 0 ? (
+                  <div className="flex flex-col">
+                    {services.map((item: any, index) => {
+                      return (
+                        <div key={index} className="flex gap-1">
+                          <div>{item.name}</div>
+                          <div className="font-bold">
+                            {teeth.teethProduct.type !== "Bridge" ? (
+                              <>
+                                (#
+                                {item.teeth
+                                  .map((item: number) => item)
+                                  .join(",#")}
+                                )
+                              </>
+                            ) : (
+                              <>
+                                ( <span>{formatTeethRange(item.teeth)} </span>)
+                                <span className="text-xs text-primary">
+                                  (Bridge)
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <></>
@@ -1556,6 +1621,29 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             acc[productId].discounted_price.total +=
               product.discounted_price.total;
           }
+
+          // Check for service differences and associate teeth numbers with each service
+          if (product.service) {
+            const existingService = acc[productId].service.find(
+              (serviceObj: any) => serviceObj.service === product.service
+            );
+
+            if (existingService) {
+              // If the service already exists, merge the teeth numbers
+              existingService.teeth_number = [
+                ...new Set([
+                  ...existingService.teeth_number,
+                  ...product.teethProduct.tooth_number,
+                ]),
+              ];
+            } else {
+              // If the service doesn't exist, add it with the corresponding teeth numbers
+              acc[productId].service.push({
+                service: product.service,
+                teeth_number: [...product.teethProduct.tooth_number],
+              });
+            }
+          }
         } else {
           // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
           acc[productId] = {
@@ -1564,6 +1652,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               ...product.teethProduct,
               tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
             },
+            service: product.service
+              ? [
+                  {
+                    service: product.service,
+                    teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
+                  },
+                ]
+              : [], // Initialize with current service in an array
           };
         }
 
@@ -1577,10 +1673,10 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
     };
   });
 
+  console.log(cases, "itemy");
   return (
     <div>
       {cases?.map((item, index) => {
-        console.log(item, "item");
         return (
           <div
             key={index}
@@ -1633,69 +1729,71 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                   <div className="p-2">
                     <div className="grid grid-cols-6 gap-4">
                       <div>
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-xs text-gray-600">
                           Occlusal Type
                         </div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
-                          {item.occlusal_type ||
-                            item.custom_occlusal_details ||
-                            ""}
+                        <div className="font-bold text-xs min-h-[14px]">
+                          {item.occlusal_type !== "custom"
+                            ? item.occlusal_type
+                            : item.custom_occlusal_details || ""}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-xs text-gray-600">
                           Contact Type
                         </div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
+                        <div className="font-bold text-xs min-h-[14px]">
                           {item.contact_type === "not_applicable"
                             ? ""
-                            : item.contact_type ||
-                              item.custom_contact_details ||
-                              ""}
+                            : item.contact_type !== "custom"
+                            ? item.contact_type
+                            : item.custom_contact_details || ""}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-xs text-gray-600">
                           Pontic Type
                         </div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
+                        <div className="font-bold text-xs min-h-[14px]">
                           {item.pontic_type === "not_applicable"
                             ? ""
-                            : item.pontic_type ||
-                              item.custom_pontic_details ||
-                              ""}
+                            : item.pontic_type !== "custom"
+                            ? item.pontic_type
+                            : item.custom_pontic_details || ""}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-xs text-gray-600">
                           Margin Design
                         </div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
+                        <div className="font-bold text-xs min-h-[14px]">
                           {item.margin_design_type === "not_applicable"
                             ? ""
-                            : item.margin_design_type ||
-                              item.custom_margin_design_type ||
-                              ""}
+                            : item.margin_design_type !== "custom"
+                            ? item.margin_design_type
+                            : item.custom_margin_design_type || ""}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-gray-600">
+                        <div className="text-xs text-gray-600">
                           Occlusal Design
                         </div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
+                        <div className="font-bold text-xs min-h-[14px]">
                           {item.occlusion_design_type === "not_applicable"
                             ? ""
-                            : item.occlusion_design_type ||
-                              item.custom_occlusion_design_type ||
-                              ""}
+                            : item.occlusion_design_type !== "custom"
+                            ? item.occlusion_design_type
+                            : item.custom_margin_design_type || ""}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] text-gray-600">Alloy</div>
-                        <div className="font-bold text-[10px] min-h-[14px]">
+                        <div className="text-xs text-gray-600">Alloy</div>
+                        <div className="font-bold text-xs min-h-[14px]">
                           {item.alloy_type === "not_applicable"
                             ? ""
-                            : item.alloy_type || item.custon_alloy_type || ""}
+                            : item.alloy_type !== "custom"
+                            ? item.alloy_type
+                            : item.custon_alloy_type || ""}
                         </div>
                       </div>
                     </div>
