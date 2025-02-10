@@ -66,7 +66,7 @@ interface PrintPreviewState {
     | "patient-label"
     | "invoice_slip"
     | "payment_receipt"
-    | "adjustment_receipt";
+    | "adjustment_receipt" | "statement_receipt";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
     | {
@@ -202,6 +202,8 @@ const PrintPreview = () => {
           return <PatientLabelTemplate {...props} />;
         case "invoice_slip":
           return <InvoiceTemplate {...props} />;
+        case "statement_receipt":
+          return <StatementReceiptTemplate {...props} labData={caseData} />;
         case "payment_receipt":
           return (
             <PaymentReceiptTemplate
