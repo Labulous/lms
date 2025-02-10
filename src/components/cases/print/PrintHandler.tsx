@@ -44,7 +44,6 @@ const PrintHandler: React.FC<PrintHandlerProps> = ({
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = async () => {
-    debugger;
     if (!printRef.current) return;
 
     try {

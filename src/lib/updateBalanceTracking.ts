@@ -11,7 +11,6 @@ function calculateDaysOverdue(dueDate: string): number {
 
 export async function updateBalanceTracking(client_id?: string) {
   try {
-    debugger;
     // Step 1: Fetch all unpaid or partially paid invoices
     // const { data: invoices, error: invoiceError } = await supabase
     //   .from("invoices")
