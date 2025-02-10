@@ -57,7 +57,9 @@ const App: React.FC = () => {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute requiredRole={["admin", "technician", "super_admin"]}>
+              <ProtectedRoute
+                requiredRole={["admin", "technician", "super_admin"]}
+              >
                 <Layout>
                   {user?.role === "client" ? (
                     <ClientDashboard />
@@ -305,7 +307,6 @@ const App: React.FC = () => {
             }
           />
           <Route path="/print-preview" element={<PrintPreview />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
           <Route
             path="/patients/*"
             element={
@@ -316,6 +317,7 @@ const App: React.FC = () => {
               </ProtectedRoute>
             }
           />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </>
     </ErrorBoundary>
