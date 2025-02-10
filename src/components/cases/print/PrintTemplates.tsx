@@ -540,9 +540,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       <span className="font-normal">
                                         Teeth:{" "}
                                       </span>
-                                      {formatTeethRange(
-                                        item.teethProduct?.tooth_number
-                                      )}
+                                      {item.teethProduct.type !== "Bridge"
+                                        ? item.teethProduct?.tooth_number
+                                            .map((item:number) => item)
+                                            .join(",")
+                                        : formatTeethRange(
+                                            item.teethProduct?.tooth_number
+                                          )}
                                     </p>
                                     <p
                                       className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
