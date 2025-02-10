@@ -1425,7 +1425,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell className="py-1.5 pl-4 pr-0 border-b">
+                    <TableCell colSpan={1} className="py-1.5 pl-4 pr-0 border-b">
                       <MultiColumnProductSelector
                         materials={MATERIALS}
                         products={products}
