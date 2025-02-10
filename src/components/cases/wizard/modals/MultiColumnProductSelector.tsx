@@ -20,6 +20,7 @@ interface MultiColumnProductSelectorProps {
   disabled?: boolean;
   size?: "default" | "xs";
   onClick: () => void;
+  clientSpecialProducts: { product_id: string; price: number }[] | null;
 }
 
 const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
@@ -30,6 +31,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   disabled = false,
   size = "default",
   onClick,
+  clientSpecialProducts,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -190,10 +192,13 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                         setOpen(false);
                       }}
                     >
-                      <div>
+                      <div className="flex justify-between w-full">
                         <div className="font-medium">{product.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {/* {product.material.name} */}
+                        <div className="text-xs text-primary">
+                          $
+                          {clientSpecialProducts?.filter(
+                            (item) => item.product_id === product.id
+                          )?.[0]?.price || product.price}
                         </div>
                       </div>
                     </Button>

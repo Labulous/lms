@@ -89,6 +89,7 @@ interface OrderDetailsStepProps {
   loading?: boolean;
   isAddingPan: boolean;
   setIsAddingPan: React.Dispatch<SetStateAction<boolean>>;
+  handleClientChange?: (clientId: string) => void;
 }
 
 const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
@@ -99,6 +100,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   loading = false,
   isAddingPan,
   setIsAddingPan,
+  handleClientChange,
 }) => {
   // Debug log for initial render and props
   const { user } = useAuth();
@@ -388,6 +390,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       onValueChange={(value) => {
                         onChange("clientId", value);
                         onChange("doctorId" as keyof CaseFormData, undefined); // Reset doctor when client changes
+                        handleClientChange && handleClientChange(value);
                       }}
                     >
                       <SelectTrigger

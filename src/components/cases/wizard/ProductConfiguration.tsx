@@ -249,6 +249,8 @@ interface ProductConfigurationProps {
   setselectedServices: any;
   formData?: FormData;
   formErrors: Partial<FormData>;
+  clientSpecialProducts: { product_id: string; price: number }[] | null;
+  clientSpecialServices: { service_id: string; price: number }[] | null;
 }
 
 interface ProductRow {
@@ -278,6 +280,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   setIsUpdate,
   selectedServices,
   setselectedServices,
+  clientSpecialProducts,
+  clientSpecialServices,
 }) => {
   const emptyRow: ProductRow = {
     id: uuidv4(),
@@ -547,12 +551,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           ...updatedProducts[index],
           name: product.name,
           id: product.id,
-          price: product.price,
+          price:
+            clientSpecialProducts?.filter(
+              (item) => item.product_id === product.id
+            )?.[0]?.price || product.price,
           subRows: updatedProducts?.[index]?.subRows?.map((subRow) => ({
             ...subRow,
             name: product.name,
             id: product.id,
-            price: product.price, // Update the name for each subRow
+            price:
+              clientSpecialProducts?.filter(
+                (item) => item.product_id === product.id
+              )?.[0]?.price || product.price,
             is_taxable: product.is_taxable,
           })),
         };
@@ -586,7 +596,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           {
             id: service.id as string,
             name: service.name,
-            price: service.price,
+            price:
+              clientSpecialServices?.filter(
+                (item) => item.service_id === service.id
+              )?.[0]?.price || service.price,
             is_taxable: service.is_taxable,
           },
         ],
@@ -597,7 +610,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             {
               id: service.id as string,
               name: service.name,
-              price: service.price,
+              price:
+                clientSpecialServices?.filter(
+                  (item) => item.service_id === service.id
+                )?.[0]?.price || service.price,
               is_taxable: service.is_taxable,
             },
           ],
@@ -615,44 +631,54 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
-  
+
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts]; // Make a copy of the products array to avoid mutation
-  
+
       // Ensure subRows exists at the index and that the SubIndex is valid
       if (updatedProducts[index]?.subRows) {
         let updatedSubRows = [...updatedProducts[index].subRows]; // Make a copy of subRows to avoid mutation
-  
+
         // Add the service to the main product's services array (if not already there)
-        let updatedServices = [...updatedProducts[index].services || []];
-        const serviceExistsInMain = updatedServices.some((s) => s.id === service.id);
-        
+        let updatedServices = [...(updatedProducts[index].services || [])];
+        const serviceExistsInMain = updatedServices.some(
+          (s) => s.id === service.id
+        );
+
         if (!serviceExistsInMain) {
           updatedServices.push({
             id: service.id,
             name: service.name,
-            price: service.price,
+            price:
+              clientSpecialServices?.filter(
+                (item) => item.service_id === service.id
+              )?.[0]?.price || service.price,
             is_taxable: service.is_taxable,
           });
         }
-  
+
         // Now update the services for the specific subRow
         if (updatedSubRows[SubIndex]?.services) {
           let updatedSubServices = [...updatedSubRows[SubIndex].services];
-  
+
           // Check if the service already exists in the subRow services array
-          const serviceExistsInSub = updatedSubServices.some((s) => s.id === service.id);
-  
+          const serviceExistsInSub = updatedSubServices.some(
+            (s) => s.id === service.id
+          );
+
           if (!serviceExistsInSub) {
             // Add the service if it doesn't exist
             updatedSubServices.push({
               id: service.id,
               name: service.name,
-              price: service.price,
+              price:
+                clientSpecialServices?.filter(
+                  (item) => item.service_id === service.id
+                )?.[0]?.price || service.price,
               is_taxable: service.is_taxable,
             });
           }
-  
+
           updatedSubRows[SubIndex] = {
             ...updatedSubRows[SubIndex],
             services: updatedSubServices,
@@ -665,27 +691,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               {
                 id: service.id,
                 name: service.name,
-                price: service.price,
+                price:
+                  clientSpecialServices?.filter(
+                    (item) => item.service_id === service.id
+                  )?.[0]?.price || service.price,
                 is_taxable: service.is_taxable,
               },
             ],
           };
         }
-  
+
         // Update the product with the new services and subRows
         updatedProducts[index] = {
           ...updatedProducts[index],
           services: updatedServices, // Update the main product's services array
-          subRows: updatedSubRows,    // Update subRows
+          subRows: updatedSubRows, // Update subRows
         };
-  
+
         return updatedProducts;
       }
-  
+
       return updatedProducts;
     });
   };
-  
 
   const handleRemoveServices = (id: string) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
@@ -729,7 +757,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
         // Ensure that subRows exists at the specified index and SubIndex
         if (updatedProducts[index]?.subRows) {
-          let updatedSubRows:any = [...updatedProducts[index].subRows]; // Create a new array to avoid mutation
+          let updatedSubRows: any = [...updatedProducts[index].subRows]; // Create a new array to avoid mutation
 
           if (updatedSubRows[SubIndex]) {
             // If subRow at SubIndex exists, update it
@@ -737,14 +765,20 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               ...updatedSubRows[SubIndex],
               name: product.name,
               id: product.id,
-              price: product.price,
+              price:
+                clientSpecialProducts?.filter(
+                  (item) => item.product_id === product.id
+                )?.[0]?.price || product.price,
             };
           } else {
             // If subRow at SubIndex doesn't exist, create a new entry
             updatedSubRows[SubIndex] = {
               name: product.name,
               id: product.id,
-              price: product.price,
+              price:
+                clientSpecialProducts?.filter(
+                  (item) => item.product_id === product.id
+                )?.[0]?.price || product.price,
             };
           }
 
@@ -764,7 +798,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 ...updatedProducts[index],
                 name: product.name,
                 id: product.id,
-                price: product.price,
+                price:
+                  clientSpecialProducts?.filter(
+                    (item) => item.product_id === product.id
+                  )?.[0]?.price || product.price,
               },
             ],
           };
@@ -1404,6 +1441,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         disabled={loading || row.teeth.length === 0}
                         size="xs"
                         onClick={() => fetchedProducts(row.type)}
+                        clientSpecialProducts={clientSpecialProducts}
                       />
                     </TableCell>
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -1426,7 +1464,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 "Add Services (All)"
                               ) : (
                                 <span className="text-blue-600">
-                                  {row?.services?.length } Added
+                                  {row?.services?.length} Added
                                 </span>
                               )}
                             </span>
@@ -1489,6 +1527,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               disabled={loading || row.teeth.length === 0}
                               size="xs"
                               onClick={() => fetchServices()}
+                              clientSpecialServices={clientSpecialServices}
                             />
                             <div className="w-full">
                               <div className="grid grid-cols-1 gap-2 w-full">
@@ -2756,7 +2795,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       "text-muted-foreground"
                                   )}
                                 >
-                                  {row_sub.teeth[0]}
+                                  {row_sub.teeth[0]}{" "}
+                                  {ponticTeeth.has(row_sub.teeth[0]) ? <span className="ml-2 text-primary text-xs">(Pontic)</span> : ""}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
@@ -2792,6 +2832,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               }}
                               size="xs"
                               onClick={() => fetchedProducts(row_sub.type)}
+                              clientSpecialProducts={clientSpecialProducts}
                             />
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
@@ -2854,7 +2895,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <div className="space-y-2 w-full">
                                   <div className="flex justify-between w-full">
                                     <Label className="text-xs">
-                                      Add Services 
+                                      Add Services
                                     </Label>
                                     <Button
                                       size="sm"
@@ -2897,6 +2938,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     disabled={loading || row.teeth.length === 0}
                                     size="xs"
                                     onClick={() => fetchServices()}
+                                    clientSpecialServices={
+                                      clientSpecialServices
+                                    }
                                   />
 
                                   <div className="w-full">
