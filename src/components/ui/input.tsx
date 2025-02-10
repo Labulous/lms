@@ -7,6 +7,12 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
+    const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+      if (type === 'number') {
+        e.currentTarget.select();
+      }
+    };
+
     return (
       <input
         type={type}
@@ -15,6 +21,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className
         )}
         ref={ref}
+        onClick={handleClick}
         {...props}
       />
     )
