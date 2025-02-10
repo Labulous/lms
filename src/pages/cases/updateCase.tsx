@@ -260,21 +260,25 @@ const UpdateCase: React.FC = () => {
           quantity,
           type,
           occlusal_shade:shade_options!occlusal_shade_id (
+          id,
           name,
           category,
           is_active
           ),
            body_shade:shade_options!body_shade_id (
+           id,
            name,
            category,
             is_active
             ),
             gingival_shade:shade_options!gingival_shade_id (
+            id,
             name,
             category,
              is_active
              ),
              stump_shade:shade_options!stump_shade_id (
+             id,
                name,
               category,
               is_active
@@ -535,6 +539,7 @@ const UpdateCase: React.FC = () => {
       toast.error("Failed to create case");
     }
   };
+  console.log(caseDetailApi, "caseDetailApicaseDetailApi");
 
   useEffect(() => {
     if (!caseId) {
@@ -644,8 +649,8 @@ const UpdateCase: React.FC = () => {
         console.log(caseDataApi, "api");
         setSelectedProducts(() => {
           const groupedProducts: any = {};
-
           caseDataApi.products.forEach((item: any, index: number) => {
+            console.log(item,"itemitem")
             const productId = item?.id || "";
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
@@ -687,7 +692,7 @@ const UpdateCase: React.FC = () => {
 
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
-              console.log(item, "itemitem");
+              console.log(item , "itemitem");
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
@@ -706,28 +711,28 @@ const UpdateCase: React.FC = () => {
                   : [],
                 notes: item?.teethProduct?.notes || "",
                 shades: {
-                  body_shade: item.teethProduct?.body_shade?.name || "",
+                  body_shade: item.teethProduct?.body_shade?.id || "",
                   gingival_shade:
-                    item?.teethProduct?.gingival_shade?.name || "",
+                    item?.teethProduct?.gingival_shade?.id || "",
                   occlusal_shade:
-                    item?.teethProduct?.occlusal_shade?.name || "",
-                  stump_shade: item.teethProduct?.stump_shade?.name || "",
+                    item?.teethProduct?.occlusal_shade?.id || "",
+                  stump_shade: item.teethProduct?.stump_shade?.id || "",
                   custom_body:
-                    item.teethProduct?.custom_body_shade?.name || null,
+                    item.teethProduct?.custom_body_shade || null,
                   custom_occlusal:
-                    item.teethProduct?.custom_occlusal_shade?.name || null,
+                    item.teethProduct?.custom_occlusal_shade || null,
                   custom_gingival:
-                    item.teethProduct?.custom_gingival_shade?.name || null,
+                    item.teethProduct?.custom_gingival_shade || null,
                   custom_stump:
-                    item.teethProduct?.custom_stump_shade?.name || null,
+                    item.teethProduct?.custom_stump_shade || null,
                   manual_body:
-                    item.teethProduct?.manual_body_shade?.name || null,
+                    item.teethProduct?.manual_body_shade || null,
                   manual_occlusal:
-                    item.teethProduct?.manual_occlusal_shade?.name || null,
+                    item.teethProduct?.manual_occlusal_shade || null,
                   manual_gingival:
-                    item.teethProduct?.manual_gingival_shade?.name || null,
+                    item.teethProduct?.manual_gingival_shade || null,
                   manual_stump:
-                    item.teethProduct?.manual_stump_shade?.name || null,
+                    item.teethProduct?.manual_stump_shade || null,
                 },
               });
             });
@@ -761,13 +766,13 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, clients, servicesData]);
-
+  console.log(selectedProducts, "selected products");
   useEffect(() => {
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
         return prevSelectedProducts.map((product) => {
           // Ensure services array exists as an empty array if it doesn't exist
-
+          console.log(prevSelectedProducts, "prevSelectedProducts");
           const servicesForSubRow = servicesData
             .filter((service) =>
               product.additional_service_id.includes(service.id)
@@ -784,6 +789,7 @@ const UpdateCase: React.FC = () => {
             services: servicesForSubRow || [], // Initialize services as an empty array if not already defined
             subRows: product.subRows?.map((subRow) => ({
               ...subRow,
+              ...subRow.shades,
               services: servicesData
                 .filter((service) =>
                   subRow.additional_service_id.includes(service.id)

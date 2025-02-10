@@ -936,10 +936,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const handleSaveShades = (index: number, subIndex?: number) => {
     // Construct the updated shades object
     const updatedShades = {
-      occlusal_shade: shadeData[index]?.occlusal_shade || "",
-      body_shade: shadeData[index]?.body_shade || "",
-      gingival_shade: shadeData[index]?.gingival_shade || "",
-      stump_shade: shadeData[index]?.stump_shade || "",
+      occlusal_shade: shadeData[index]?.occlusal_shade || null,
+      body_shade: shadeData[index]?.body_shade || null,
+      gingival_shade: shadeData[index]?.gingival_shade || null,
+      stump_shade: shadeData[index]?.stump_shade || null,
       custom_body: shadeData[index]?.custom_body || "",
       custom_gingival: shadeData[index]?.custom_gingival || "",
       custom_occlusal: shadeData[index]?.custom_occlusal || "",
@@ -950,10 +950,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       manual_stump: shadeData[index]?.manual_stump || "",
       // Generate subRows based on the length of the teeth array
       subRow: selectedProducts[index].teeth.map((item) => ({
-        occlusal_shade: shadeData[index]?.occlusal_shade || "",
-        body_shade: shadeData[index]?.body_shade || "",
-        gingival_shade: shadeData[index]?.gingival_shade || "",
-        stump_shade: shadeData[index]?.stump_shade || "",
+        occlusal_shade: shadeData[index]?.occlusal_shade || null,
+        body_shade: shadeData[index]?.body_shade || null,
+        gingival_shade: shadeData[index]?.gingival_shade || null,
+        stump_shade: shadeData[index]?.stump_shade || null,
         custom_body: shadeData[index]?.custom_body || "",
         custom_gingival: shadeData[index]?.custom_gingival || "",
         custom_occlusal: shadeData[index]?.custom_occlusal || "",
@@ -980,16 +980,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   shades: {
                     occlusal_shade:
                       shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.occlusal_shade || "",
+                        ?.occlusal_shade || null,
                     body_shade:
                       shadeData[index]?.subRow?.[subIndex ?? 0]?.body_shade ||
-                      "",
+                      null,
                     gingival_shade:
                       shadeData[index]?.subRow?.[subIndex ?? 0]
-                        ?.gingival_shade || "",
+                        ?.gingival_shade || null,
                     stump_shade:
                       shadeData[index]?.subRow?.[subIndex ?? 0]?.stump_shade ||
-                      "",
+                      null,
                     custom_body:
                       shadeData[index]?.subRow?.[subIndex ?? 0]?.custom_body ||
                       "",
@@ -1119,6 +1119,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     if (isUpdate) {
+      console.log(selectedProducts, "selectedProductsselectedProducts updated");
       if (selectedProducts.length > 0) {
         const shades: ShadeData[] = selectedProducts.map((item) => {
           const baseShades: ShadeData = {
@@ -1230,7 +1231,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
-
+  console.log(shadeData, "Shades data");
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
     if (a.name === "Custom") return 1; // "Custom" should go to the bottom
@@ -2796,7 +2797,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   )}
                                 >
                                   {row_sub.teeth[0]}{" "}
-                                  {ponticTeeth.has(row_sub.teeth[0]) ? <span className="ml-2 text-primary text-xs">(Pontic)</span> : ""}
+                                  {ponticTeeth.has(row_sub.teeth[0]) ? (
+                                    <span className="ml-2 text-primary text-xs">
+                                      (Pontic)
+                                    </span>
+                                  ) : (
+                                    ""
+                                  )}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
@@ -3711,7 +3718,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                         stump_shade: e.target
                                                           .value
                                                           ? "manual"
-                                                          : "",
+                                                          : null,
                                                         custom_stump: "",
                                                         id: row_sub.id,
                                                       };
@@ -3724,7 +3731,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                       e.target.value,
                                                     stump_shade: e.target.value
                                                       ? "manual"
-                                                      : "",
+                                                      : null,
                                                     custom_stump: "",
                                                     id: row_sub.id,
                                                   },
