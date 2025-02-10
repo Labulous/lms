@@ -76,7 +76,12 @@ const UpdateCase: React.FC = () => {
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUpdate, setIsUpdate] = useState<boolean>(false);
-
+  const [clientSpecialProducts, setClientSpecialProducts] = useState<
+    { product_id: string; price: number }[] | null
+  >([]);
+  const [clientSpecialServices, setClientSpecialServices] = useState<
+    { service_id: string; price: number }[] | null
+  >([]);
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -797,6 +802,37 @@ const UpdateCase: React.FC = () => {
       });
     }
   }, [isUpdate]);
+
+  const handleClientChange = async (clientId: string) => {
+    const { data: products, error: productError } = await supabase
+      .from("special_product_prices")
+      .select(
+        `
+       product_id,
+       price
+       )
+      `
+      )
+      .eq("client_id", clientId);
+    if (productError) {
+      toast.error("Failed to fetch Special Prices");
+    }
+    setClientSpecialProducts(products as any);
+    const { data: services, error: serviceError } = await supabase
+      .from("special_service_prices")
+      .select(
+        `
+       service_id,
+       price
+       )
+      `
+      )
+      .eq("client_id", clientId);
+    if (serviceError) {
+      toast.error("Failed to fetch Special Prices");
+    }
+    setClientSpecialServices(services as any);
+  };
   return (
     <div
       className="p-6"
@@ -862,6 +898,7 @@ const UpdateCase: React.FC = () => {
               loading={loading}
               isAddingPan={isAddingPan}
               setIsAddingPan={setIsAddingPan}
+              handleClientChange={handleClientChange}
             />
           </div>
         </div>
@@ -884,6 +921,8 @@ const UpdateCase: React.FC = () => {
             onServicesChange={(services) => handleServicesChange(services)}
             selectedServices={selectedServices}
             setselectedServices={setSelectedServices}
+            clientSpecialProducts={clientSpecialProducts}
+            clientSpecialServices={clientSpecialServices}
           />
         </div>
 

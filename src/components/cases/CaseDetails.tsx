@@ -1436,7 +1436,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }, 0);
   };
   const handleSaveInvoice = async (updatedInvoice: Invoice) => {
-    debugger;
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
 

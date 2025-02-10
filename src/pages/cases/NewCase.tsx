@@ -94,6 +94,12 @@ const NewCase: React.FC = () => {
 
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+  const [clientSpecialProducts, setClientSpecialProducts] = useState<
+    { product_id: string; price: number }[] | null
+  >([]);
+  const [clientSpecialServices, setClientSpecialServices] = useState<
+    { service_id: string; price: number }[] | null
+  >([]);
   const [loadingState, setLoadingState] = useState<LoadingState>({
     action: null,
     isLoading: false,
@@ -103,7 +109,6 @@ const NewCase: React.FC = () => {
     setSelectedProducts((prev) => [...prev, product]);
     setSelectedServices((prev) => [...prev, service]);
   };
-console.log(selectedProducts,"selected products")
   const handleCategoryChange = (category: SavedProduct | null) => {
     setSelectedCategory(category);
   };
@@ -339,6 +344,38 @@ console.log(selectedProducts,"selected products")
     }
   };
   console.log(formData, "formdata");
+  const handleClientChange = async (clientId: string) => {
+    const { data: products, error: productError } = await supabase
+      .from("special_product_prices")
+      .select(
+        `
+       product_id,
+       price
+       )
+      `
+      )
+      .eq("client_id", clientId);
+    if (productError) {
+      toast.error("Failed to fetch Special Prices");
+    }
+    setClientSpecialProducts(products as any);
+    const { data: services, error: serviceError } = await supabase
+      .from("special_service_prices")
+      .select(
+        `
+       service_id,
+       price
+       )
+      `
+      )
+      .eq("client_id", clientId);
+    if (serviceError) {
+      toast.error("Failed to fetch Special Prices");
+    }
+    setClientSpecialServices(services as any);
+  };
+
+  console.log(selectedProducts,"selected")
   return (
     <div
       className="p-6"
@@ -367,6 +404,7 @@ console.log(selectedProducts,"selected products")
               loading={loading}
               isAddingPan={isAddingPan}
               setIsAddingPan={setIsAddingPan}
+              handleClientChange={handleClientChange}
             />
           </div>
         </div>
@@ -386,6 +424,8 @@ console.log(selectedProducts,"selected products")
             onServicesChange={(services) => handleServicesChange(services)}
             selectedServices={selectedServices}
             setselectedServices={setSelectedServices}
+            clientSpecialProducts={clientSpecialProducts}
+            clientSpecialServices={clientSpecialServices}
           />
         </div>
 

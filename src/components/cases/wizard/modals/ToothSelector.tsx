@@ -638,7 +638,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
 
     // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux)
-    if ((event.metaKey || event.ctrlKey) && billingType === "perTooth") {
+    // && billingType === "perTooth"
+    if ((event.metaKey || event.ctrlKey) ) {
       const newIndividualSelections = new Set(individualSelections);
 
       if (newIndividualSelections.has(toothNumber)) {

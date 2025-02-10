@@ -30,7 +30,6 @@ const StatementReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
   labData,
 }) => {
 
-  debugger;
   console.log('payment data....................', caseDetails)
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -107,7 +106,6 @@ const StatementReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
   };
 
   const handleDownloadPDF = async () => {
-    debugger;
     if (!invoiceRef.current) {
       console.log("Invoice reference is missing");
       return;

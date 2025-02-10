@@ -33,6 +33,7 @@ interface MultiColumnServiceSelectorProps {
   disabled?: boolean;
   size?: "default" | "xs";
   onClick: () => void;
+  clientSpecialServices: { service_id: string; price: number }[] | null;
 }
 
 const MultiColumnServiceSelector: React.FC<MultiColumnServiceSelectorProps> = ({
@@ -43,6 +44,7 @@ const MultiColumnServiceSelector: React.FC<MultiColumnServiceSelectorProps> = ({
   disabled = false,
   size = "default",
   onClick,
+  clientSpecialServices,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -203,10 +205,13 @@ const MultiColumnServiceSelector: React.FC<MultiColumnServiceSelectorProps> = ({
                         setOpen(false);
                       }}
                     >
-                      <div>
+                      <div className="flex justify-between w-full">
                         <div className="font-medium">{product.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {/* {product.material.name} */}
+                        <div className="text-xs text-primary">
+                          $
+                          {clientSpecialServices?.filter(
+                            (item) => item.service_id === product.id
+                          )?.[0]?.price || product.price}
                         </div>
                       </div>
                     </Button>

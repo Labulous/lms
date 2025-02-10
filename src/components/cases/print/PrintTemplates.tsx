@@ -269,7 +269,66 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           // If there's only one group, return it
           return groupedTeeth.join(", ");
         };
+        console.log(invoice.products, "invoiceproducts");
 
+        function mergeProducts(products: any) {
+          const mergedMap = new Map();
+
+          // Iterate through the products array
+          products.forEach((product: any) => {
+            // Create a key for identifying the product by its properties
+            const key = JSON.stringify({
+              id: product.id,
+              shades: {
+                occlusal: product.teethProduct.occlusal_shade,
+                body: product.teethProduct.body_shade,
+                gingival: product.teethProduct.gingival_shade,
+                stump: product.teethProduct.stump_shade,
+              },
+              service: product.service?.id,
+            });
+
+            // Check if this product has already been merged
+            if (mergedMap.has(key)) {
+              const existingProduct = mergedMap.get(key);
+
+              // Merge the tooth_number array, ensuring no duplicates
+              const mergedToothNumbers = [
+                ...new Set([
+                  ...existingProduct.teethProduct.tooth_number,
+                  ...product.teethProduct.tooth_number,
+                ]),
+              ];
+              existingProduct.teethProduct.tooth_number = mergedToothNumbers;
+
+              // Sum up price, final_price, and total for merged products
+              if (
+                existingProduct.discounted_price &&
+                product.discounted_price
+              ) {
+                existingProduct.discounted_price.price +=
+                  product.discounted_price.price;
+                existingProduct.discounted_price.final_price +=
+                  product.discounted_price.final_price;
+                existingProduct.discounted_price.total +=
+                  product.discounted_price.total;
+              }
+            } else {
+              // For the first occurrence, create a shallow copy to prevent modifying the original data
+              mergedMap.set(key, {
+                ...product,
+                discounted_price: { ...product.discounted_price },
+                teethProduct: { ...product.teethProduct },
+              });
+            }
+          });
+
+          // Return the merged products as a new array (does not affect the original `products` array)
+          return Array.from(mergedMap.values());
+        }
+
+        const products = mergeProducts(invoice.products);
+        console.log(products, "products");
         return (
           <div
             key={index}
@@ -419,7 +478,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           </h2>
                         </div>
 
-                        {invoice?.products.map((item: any, index: number) => {
+                        {products.map((item: any, index: number) => {
                           const serviceRow = item.service ? (
                             <div
                               className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
@@ -428,7 +487,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               <div className="space-y-1 font-medium col-span-6 pl-2">
                                 <div>
                                   <p>{item.service.name}</p>
-                                  <p>Service</p>
+                                  <p className="font-bold">Service</p>
                                 </div>
                               </div>
                               <p
@@ -456,7 +515,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 ${item.service.price?.toLocaleString()}
                               </p>
                             </div>
-                          ) : null;
+                          ) : (
+                            <></>
+                          );
 
                           return (
                             <React.Fragment key={index}>
@@ -1186,6 +1247,19 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                 {teeth?.teethProduct?.notes || "N/A"}
               </div>
             </div>
+            <div className="flex flex-col mt-2">
+              <h2 className="w-16 text-[10px]">Services:</h2>
+              <div className=" ml-1 text-[10px]">
+                {teeth?.service ? (
+                  <div>
+                    <div>name : {teeth.service.name}</div>
+                    <div>Price : ${teeth.service.price}</div>
+                  </div>
+                ) : (
+                  <></>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         {/* Selected teeth */}
@@ -1455,19 +1529,37 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       caseItem.products.reduce((acc: any, product: any) => {
         const productId = product.id;
 
-        // Check if the product ID and teethProduct exist
+        // Check if the product has a valid id and teethProduct with tooth_number
         if (!productId || !product.teethProduct?.tooth_number) {
           return acc;
         }
 
-        // If the product already exists in the accumulator, merge the tooth numbers
+        // If the product already exists in the accumulator, merge the tooth numbers and sum prices
         if (acc[productId]) {
-          acc[productId].teeth.push(...product.teethProduct.tooth_number);
+          acc[productId].teethProduct.tooth_number = [
+            ...new Set([
+              ...acc[productId].teethProduct.tooth_number,
+              ...product.teethProduct.tooth_number,
+            ]),
+          ];
+
+          // Sum the discounted prices
+          if (acc[productId].discounted_price && product.discounted_price) {
+            acc[productId].discounted_price.price +=
+              product.discounted_price.price;
+            acc[productId].discounted_price.final_price +=
+              product.discounted_price.final_price;
+            acc[productId].discounted_price.total +=
+              product.discounted_price.total;
+          }
         } else {
-          // Create a new product entry in the accumulator
+          // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
           acc[productId] = {
             ...product,
-            teeth: [...product.teethProduct.tooth_number], // Initialize with the current tooth_number
+            teethProduct: {
+              ...product.teethProduct,
+              tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
+            },
           };
         }
 
@@ -1477,11 +1569,10 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
 
     return {
       ...caseItem,
-      products: consolidatedProducts, // Replace products with consolidated products
+      products: consolidatedProducts, // Replace products with the consolidated ones
     };
   });
 
-  console.log(cases, "Cases");
   return (
     <div>
       {cases?.map((item, index) => {
@@ -1941,7 +2032,6 @@ export const StatementReceiptTemplate: React.FC<
   const Header: React.FC<{
     adjustment: any;
   }> = ({ adjustment }) => {
-    debugger;
     console.log("case Details", caseDetails);
     console.log("Lab Data", labData);
 
