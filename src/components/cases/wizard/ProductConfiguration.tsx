@@ -1425,7 +1425,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell colSpan={1} className="py-1.5 pl-4 pr-0 border-b">
+                    <TableCell
+                      colSpan={1}
+                      className="py-1.5 pl-4 pr-0 border-b"
+                    >
                       <MultiColumnProductSelector
                         materials={MATERIALS}
                         products={products}
@@ -1452,23 +1455,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             variant="ghost"
                             size="icon"
                             className={cn(
-                              "h-6 w-6",
+                              "py-0",
                               row.notes ? "text-blue-600" : "",
                               "hover:text-blue-600"
                             )}
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
                           >
-                            <span className="text-xs">
+                            <Button
+                              className="text-xs py-0 h-[30px] -ml-2"
+                              variant={"outline"}
+                            >
                               {" "}
                               {row?.services?.length === 0 || !row?.services ? (
                                 "Add Services (All)"
                               ) : (
-                                <span className="text-blue-600">
+                                <span className="text-blue-600 py-0">
                                   {row?.services?.length} Added
                                 </span>
                               )}
-                            </span>
+                            </Button>
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
@@ -1493,9 +1499,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         >
                           <div className="space-y-2 w-full">
                             <div className="flex justify-between w-full">
-                              <Label className="text-xs">
-                                Add Services main
-                              </Label>
+                              <Label className="text-xs">Add Services</Label>
                               <Button
                                 size="sm"
                                 onClick={() =>
@@ -2866,17 +2870,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     )
                                   }
                                 >
-                                  <span className="text-xs">
-                                    {" "}
-                                    {!row_sub?.services?.[index] ||
-                                    !row.services ? (
-                                      "Add Services"
-                                    ) : (
-                                      <span className="text-blue-600">
-                                        {row_sub?.services?.length} Added
-                                      </span>
-                                    )}
-                                  </span>
+                                  <Button
+                                    className="text-xs py-0 h-[30px]"
+                                    variant={"outline"}
+                                  >
+                                    <span className="text-xs">
+                                      {" "}
+                                      {!row_sub?.services?.[index] ||
+                                      !row.services ? (
+                                        "Add Services"
+                                      ) : (
+                                        <span className="text-blue-600">
+                                          {row_sub?.services?.length} Added
+                                        </span>
+                                      )}
+                                    </span>
+                                  </Button>
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
@@ -4433,7 +4442,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </p>
                     )}
                   </RadioGroup>
-                  {initialCaseDetails?.occlusalDesign === OcclusalDesign.Custom && (
+                  {initialCaseDetails?.occlusalDesign ===
+                    OcclusalDesign.Custom && (
                     <Input
                       value={initialCaseDetails?.customOcclusalDesign || ""}
                       onChange={(e) =>
