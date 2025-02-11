@@ -1016,7 +1016,12 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
   {
     /* Item Table - Details */
   }
-  const TeetDetail = ({ teeth, teethDetail, itemsLength }: any) => {
+  const TeetDetail = ({
+    teeth,
+    teethDetail,
+    itemsLength,
+    teethproducts,
+  }: any) => {
     const TYPE_FILL_CLASSES = {
       [DefaultProductType.Crown]: "fill-blue-500",
       [DefaultProductType.Bridge]: "fill-purple-500",
@@ -1137,7 +1142,63 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
         {}
       )
     );
-    console.log(services, "services");
+
+    const groupShades: any = Object.values(
+      teethproducts?.reduce((acc: any, product: any) => {
+        // Create a unique key by combining the tooth numbers and relevant shades
+        const shadeKey = [
+          product.body_shade,
+          product.stump_shade,
+          product.gingival_shade,
+          product.occlusal_shade,
+          product.custom_body_shade,
+          product.manual_body_shade,
+          product.custom_stump_shade,
+          product.manual_stump_shade,
+          product.custom_gingival_shade,
+          product.custom_occlusal_shade,
+          product.manual_gingival_shade,
+          product.manual_occlusal_shade,
+        ].join("-");
+
+        // If the product with this combination of shades doesn't exist in the accumulator, create it
+        if (!acc[shadeKey]) {
+          acc[shadeKey] = {
+            tooth_numbers: [...product.tooth_number],
+            product: product.product, // Merge product details (no need to repeat)
+            body_shade: product.body_shade,
+            stump_shade: product.stump_shade,
+            gingival_shade: product.gingival_shade,
+            occlusal_shade: product.occlusal_shade,
+            custom_body_shade: product.custom_body_shade,
+            manual_body_shade: product.manual_body_shade,
+            custom_stump_shade: product.custom_stump_shade,
+            manual_stump_shade: product.manual_stump_shade,
+            custom_gingival_shade: product.custom_gingival_shade,
+            custom_occlusal_shade: product.custom_occlusal_shade,
+            manual_gingival_shade: product.manual_gingival_shade,
+            manual_occlusal_shade: product.manual_occlusal_shade,
+            additional_services_id: product.additional_services_id,
+          };
+        } else {
+          // If the product already exists, merge the tooth numbers without duplication
+          acc[shadeKey].tooth_numbers = [
+            ...new Set([
+              ...acc[shadeKey].tooth_numbers,
+              ...product.tooth_number,
+            ]),
+          ];
+        }
+
+        return acc;
+      }, {})
+    );
+
+    console.log(groupShades);
+
+    console.log(groupShades, "groupShades");
+
+    console.log(teeth, "teeths");
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1181,111 +1242,140 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div className="font-bold">{teeth?.name}</div>
           </div>
           <div className="pt-2">
-            {/* <div className="flex">
+            <div className="flex">
               <span className="w-16 text-[10px]">Shades: </span>
             </div>
-            <div className="space-y-0.5 ml-4">
-              <div className="flex">
-                <span className="w-20 text-[10px]">Incisal: </span>
-                <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_occlusal_shade
-                    ? teeth.teethProduct?.manual_occlusal_shade
-                    : teeth.teethProduct?.occlusal_shade?.name ||
-                      (teeth?.teethProduct?.custom_occlusal_shade ? (
-                        <p
-                          className="font-semibold ml-1"
-                          style={{
-                            color:
-                              TYPE_COLORS[
-                                teeth?.product_type
-                                  ?.name as keyof typeof TYPE_COLORS
-                              ] || TYPE_COLORS.Other,
-                          }}
-                        >
-                          {teeth?.teethProduct?.custom_occlusal_shade || "N/A"}{" "}
-                          {teeth?.teethProduct?.custom_occlusal_shade &&
-                            "(cus)"}
-                        </p>
-                      ) : (
-                        "N/A"
-                      ))}
-                </div>
-              </div>
-              <div className="flex">
-                <span className="w-20 text-[10px]">Body: </span>
-                <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_body_shade
-                    ? teeth.teethProduct?.manual_body_shade
-                    : teeth.teethProduct?.body_shade?.name ||
-                      (teeth?.teethProduct?.custom_body_shade ? (
-                        <p
-                          className="font-semibold ml-1"
-                          style={{
-                            color:
-                              TYPE_COLORS[
-                                teeth?.product_type
-                                  ?.name as keyof typeof TYPE_COLORS
-                              ] || TYPE_COLORS.Other,
-                          }}
-                        >
-                          {teeth?.teethProduct?.custom_body_shade || "N/A"}{" "}
-                          {teeth?.teethProduct?.custom_body_shade && "(cus)"}
-                        </p>
-                      ) : (
-                        "N/A"
-                      ))}
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-1 w-full">
+              {groupShades &&
+                groupShades.length > 1 &&
+                groupShades.map((teethItem: any) => {
+                  return (
+                    <div className="space-y-0.5 ml-4 border p-2">
+                      <div className="flex text-xs">
+                        <span className="w-16">Tooth </span>
+                        {teethItem.tooth_numbers.length > 0 && (
+                          <div className="font-bold">
+                            {teeth.teethProduct.type === "Bridge" ? (
+                              <span className="text-[10px]">
+                                {formatTeethRange(teethItem.tooth_numbers)}{" "}
+                                <span className="text-xs text-primary">
+                                  (Bridge)
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px]">
+                                #
+                                {teethItem.tooth_numbers
+                                  .map((item: number) => item)
+                                  .join(",#")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex">
+                        <span className="w-20 text-[10px]">Incisal: </span>
+                        <div className="font-bold ml-1 text-[10px]">
+                          {teethItem.manual_occlusal_shade
+                            ? teethItem.manual_occlusal_shade
+                            : teethItem.occlusal_shade?.name ||
+                              (teethItem?.custom_occlusal_shade ? (
+                                <p
+                                  className="font-semibold ml-1"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
+                                        teeth?.product_type
+                                          ?.name as keyof typeof TYPE_COLORS
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {teethItem?.custom_occlusal_shade || "N/A"}{" "}
+                                  {teethItem?.custom_occlusal_shade && "(cus)"}
+                                </p>
+                              ) : (
+                                "N/A"
+                              ))}
+                        </div>
+                      </div>
+                      <div className="flex">
+                        <span className="w-20 text-[10px]">Body: </span>
+                        <div className="font-bold ml-1 text-[10px]">
+                          {teethItem.manual_body_shade
+                            ? teethItem.manual_body_shade
+                            : teethItem.body_shade?.name ||
+                              (teethItem?.custom_body_shade ? (
+                                <p
+                                  className="font-semibold ml-1"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
+                                        teeth?.product_type
+                                          ?.name as keyof typeof TYPE_COLORS
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {teethItem?.custom_body_shade || "N/A"}{" "}
+                                  {teethItem?.custom_body_shade && "(cus)"}
+                                </p>
+                              ) : (
+                                "N/A"
+                              ))}
+                        </div>
+                      </div>
 
-              <div className="flex">
-                <span className="w-20 text-[10px]">Gingival: </span>
-                <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_gingival_shade
-                    ? teeth.teethProduct?.manual_gingival_shade
-                    : teeth.teethProduct?.gingival_shade?.name ||
-                      (teeth?.teethProduct?.custom_gingival_shade ? (
-                        <p
-                          className="font-semibold ml-1"
-                          style={{
-                            color:
-                              TYPE_COLORS[
-                                teeth?.product_type
-                                  ?.name as keyof typeof TYPE_COLORS
-                              ] || TYPE_COLORS.Other,
-                          }}
-                        >
-                          {teeth?.teethProduct?.custom_gingival_shade || "N/A"}
-                        </p>
-                      ) : (
-                        "N/A"
-                      ))}
-                </div>
-              </div>
-              <div className="flex">
-                <span className="w-20 text-[10px]">Stump: </span>
-                <div className="font-bold ml-1 text-[10px]">
-                  {teeth.teethProduct?.manual_stump_shade
-                    ? teeth.teethProduct?.manual_stump_shade
-                    : teeth.teethProduct?.stump_shade?.name ||
-                      (teeth?.teethProduct?.custom_stump_shade ? (
-                        <p
-                          className="font-semibold ml-1"
-                          style={{
-                            color:
-                              TYPE_COLORS[
-                                teeth?.product_type
-                                  ?.name as keyof typeof TYPE_COLORS
-                              ] || TYPE_COLORS.Other,
-                          }}
-                        >
-                          {teeth?.teethProduct?.custom_stump_shade}
-                        </p>
-                      ) : (
-                        "N/A"
-                      ))}
-                </div>
-              </div>
-            </div> */}
+                      <div className="flex">
+                        <span className="w-20 text-[10px]">Gingival: </span>
+                        <div className="font-bold ml-1 text-[10px]">
+                          {teethItem.manual_gingival_shade
+                            ? teethItem.manual_gingival_shade
+                            : teethItem.gingival_shade?.name ||
+                              (teethItem?.custom_gingival_shade ? (
+                                <p
+                                  className="font-semibold ml-1"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
+                                        teeth?.product_type
+                                          ?.name as keyof typeof TYPE_COLORS
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {teethItem?.custom_gingival_shade || "N/A"}
+                                </p>
+                              ) : (
+                                "N/A"
+                              ))}
+                        </div>
+                      </div>
+                      <div className="flex">
+                        <span className="w-20 text-[10px]">Stump: </span>
+                        <div className="font-bold ml-1 text-[10px]">
+                          {teethItem.manual_stump_shade
+                            ? teethItem.manual_stump_shade
+                            : teethItem.stump_shade?.name ||
+                              (teethItem?.custom_stump_shade ? (
+                                <p
+                                  className="font-semibold ml-1"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
+                                        teeth?.product_type
+                                          ?.name as keyof typeof TYPE_COLORS
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {teethItem?.custom_stump_shade}
+                                </p>
+                              ) : (
+                                "N/A"
+                              ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
 
             <div className="flex mt-2">
               <span className="w-16 text-xs">Note: </span>
@@ -1363,118 +1453,122 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         : "scale(1)",
                   }}
                 >
-                  <div className="flex">
-                    <span className="w-16">Incisal: </span>
-                    <div className="font-bold ml-1 flex gap-x-2">
-                      <p>
-                        {teeth.teethProduct?.manual_occlusal_shade
-                          ? teeth.teethProduct?.manual_occlusal_shade
-                          : teeth.teethProduct?.occlusal_shade?.name ||
-                            (teeth?.teethProduct?.custom_occlusal_shade ? (
-                              <p
-                                className="font-semibold ml-1"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
-                                      teeth?.product_type
-                                        ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {teeth?.teethProduct?.custom_occlusal_shade ||
-                                  "N/A"}{" "}
-                                {teeth?.teethProduct?.custom_occlusal_shade &&
-                                  "(cus)"}
-                              </p>
-                            ) : (
-                              "N/A"
-                            ))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <span className="w-16">Body: </span>
-                    <div className="font-bold ml-1 flex gap-x-2">
-                      <p>
-                        {teeth.teethProduct?.manual_body_shade
-                          ? teeth.teethProduct?.manual_body_shade
-                          : teeth.teethProduct?.body_shade?.name ||
-                            (teeth?.teethProduct?.custom_body_shade ? (
-                              <p
-                                className="font-semibold ml-1"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
-                                      teeth?.product_type
-                                        ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {teeth?.teethProduct?.custom_body_shade ||
-                                  "N/A"}{" "}
-                                {teeth?.teethProduct?.custom_body_shade &&
-                                  "(cus)"}
-                              </p>
-                            ) : (
-                              "N/A"
-                            ))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <span className="w-16">Gingival: </span>
-                    <div className="font-bold ml-1 flex gap-x-2">
-                      <p>
-                        {teeth.teethProduct?.manual_gingival_shade
-                          ? teeth.teethProduct?.manual_gingival_shade
-                          : teeth.teethProduct?.gingival_shade?.name ||
-                            (teeth?.teethProduct?.custom_gingival_shade ? (
-                              <p
-                                className="font-semibold ml-1"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
-                                      teeth?.product_type
-                                        ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {teeth?.teethProduct?.custom_gingival_shade ||
-                                  "N/A"}
-                              </p>
-                            ) : (
-                              "N/A"
-                            ))}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="h-2"></div>
-                  <div className="flex">
-                    <span className="w-16">Stump: </span>
-                    <div className="font-bold ml-1 flex gap-x-2">
-                      <p>
-                        {teeth.teethProduct?.manual_stump_shade
-                          ? teeth.teethProduct?.manual_stump_shade
-                          : teeth.teethProduct?.stump_shade?.name ||
-                            (teeth?.teethProduct?.custom_stump_shade ? (
-                              <p
-                                className="font-semibold ml-1"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
-                                      teeth?.product_type
-                                        ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {teeth?.teethProduct?.custom_stump_shade}
-                              </p>
-                            ) : (
-                              "N/A"
-                            ))}
-                      </p>
-                    </div>
-                  </div>
+                  {groupShades.length === 1 && (
+                    <>
+                      <div className="flex">
+                        <span className="w-16">Incisal: </span>
+                        <div className="font-bold ml-1 flex gap-x-2">
+                          <p>
+                            {groupShades?.[0]?.manual_occlusal_shade
+                              ? groupShades?.[0]?.manual_occlusal_shade
+                              : groupShades?.[0]?.occlusal_shade?.name ||
+                                (groupShades?.[0]?.custom_occlusal_shade ? (
+                                  <p
+                                    className="font-semibold ml-1"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {teeth?.teethProduct
+                                      ?.custom_occlusal_shade || "N/A"}{" "}
+                                    {teeth?.teethProduct
+                                      ?.custom_occlusal_shade && "(cus)"}
+                                  </p>
+                                ) : (
+                                  "N/A"
+                                ))}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex">
+                        <span className="w-16">Body: </span>
+                        <div className="font-bold ml-1 flex gap-x-2">
+                          <p>
+                            {groupShades?.[0]?.manual_body_shade
+                              ? groupShades?.[0]?.manual_body_shade
+                              : groupShades?.[0]?.body_shade?.name ||
+                                (groupShades?.[0]?.custom_body_shade ? (
+                                  <p
+                                    className="font-semibold ml-1"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {groupShades?.[0]?.custom_body_shade ||
+                                      "N/A"}{" "}
+                                    {groupShades?.[0]?.custom_body_shade &&
+                                      "(cus)"}
+                                  </p>
+                                ) : (
+                                  "N/A"
+                                ))}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex">
+                        <span className="w-16">Gingival: </span>
+                        <div className="font-bold ml-1 flex gap-x-2">
+                          <p>
+                            {groupShades?.[0]?.manual_gingival_shade
+                              ? groupShades?.[0]?.manual_gingival_shade
+                              : groupShades?.[0]?.gingival_shade?.name ||
+                                (groupShades?.[0]?.custom_gingival_shade ? (
+                                  <p
+                                    className="font-semibold ml-1"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {teeth?.teethProduct
+                                      ?.custom_gingival_shade || "N/A"}
+                                  </p>
+                                ) : (
+                                  "N/A"
+                                ))}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="h-2"></div>
+                      <div className="flex">
+                        <span className="w-16">Stump: </span>
+                        <div className="font-bold ml-1 flex gap-x-2">
+                          <p>
+                            {groupShades?.[0]?.manual_stump_shade
+                              ? groupShades?.[0]?.manual_stump_shade
+                              : groupShades?.[0]?.stump_shade?.name ||
+                                (groupShades?.[0]?.custom_stump_shade ? (
+                                  <p
+                                    className="font-semibold ml-1"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {groupShades?.[0]?.custom_stump_shade}
+                                  </p>
+                                ) : (
+                                  "N/A"
+                                ))}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </foreignObject>
 
@@ -1710,6 +1804,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                               teeth={teeth}
                               teethDetail={item}
                               itemsLength={item.products.length}
+                              teethproducts={item.teethProduct}
                             />
                           </div>
                         </div>
@@ -1751,9 +1846,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-600">
-                          Pontic Type
-                        </div>
+                        <div className="text-xs text-gray-600">Pontic Type</div>
                         <div className="font-bold text-xs min-h-[14px]">
                           {item.pontic_type === "not_applicable"
                             ? ""
