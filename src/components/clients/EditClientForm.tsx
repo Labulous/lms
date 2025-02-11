@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { Textarea } from "../ui/textarea";
 
 interface Doctor {
   name: string;
@@ -31,11 +32,16 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ClientInput | null>(null);
-
+  console.log(client, "client here");
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
-      const { id, created_at, updated_at, tax_rate, ...clientData } = client;
+      const {
+        id,
+        created_at,
+        updated_at,
+        ...clientData
+      } = client;
       setFormData(clientData);
     }
   }, [client]);
@@ -47,7 +53,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
       </div>
     );
   }
-
+console.log(formData,'formData')
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -122,7 +128,8 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
       await onSubmit(formData);
       toast.success("Client updated successfully");
       // Navigate to client details page
-      navigate(`/clients/${client?.id}`);
+      console.log(formData,"form")
+      // navigate(`/clients/${client?.id}`);
     } catch (error) {
       toast.error("Failed to update client");
       console.error("Error updating client:", error);
@@ -133,7 +140,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Client</CardTitle>
+          <CardTitle>Edit Client hi</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Account Number Display */}
@@ -213,7 +220,85 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               />
             </div>
           </div>
-
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Additional Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="tax_rate">Tax Rate (%)</Label>
+                <Input
+                  id="tax_rate"
+                  name="tax_rate"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={formData.tax_rate}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="additional_lead_time">
+                  Additional Lead Time (Days)
+                </Label>
+                <Input
+                  id="additional_lead_time"
+                  name="additional_lead_time"
+                  type="number"
+                  min="0"
+                  value={formData.additional_lead_time}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="salesRepName">Sales Representative</Label>
+                <Input
+                  id="salesRepName"
+                  name="sales_rep_name"
+                  value={formData.sales_rep_name}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="clinicRegistrationNumber">
+                  Clinic Registration Number
+                </Label>
+                <Input
+                  id="clinicRegistrationNumber"
+                  name="clinicRegistrationNumber"
+                  value={formData.clinicRegistrationNumber}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="sales_rep_note">Sales Rep Notes</Label>
+                <Textarea
+                  id="sales_rep_note"
+                  name="sales_rep_note"
+                  value={formData.sales_rep_note}
+                  onChange={handleInputChange}
+                  className="mt-1 h-24"
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  className="mt-1 h-24"
+                />
+              </div>
+            </div>
+          </div>
           {/* Address Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Address</h3>

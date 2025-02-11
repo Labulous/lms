@@ -66,6 +66,7 @@ const Clients: React.FC = () => {
   const handleUpdateClient = async (clientId: string, data: ClientInput) => {
     try {
       await clientsService.updateClient(clientId, data);
+      console.log(data,"data from")
       await fetchClients(); // Refresh the list
       toast.success("Client updated successfully");
     } catch (err: any) {

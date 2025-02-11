@@ -34,11 +34,17 @@ export interface Client {
   created_at?: string;
   updated_at?: string;
   tax_rate?: number;
+  sales_rep_name?: string;
+  sales_rep_note?: string;
 }
 export interface ClientType {
   id?: string;
   client_name?: string;
   account_number?: string;
+  tax_rate: number;
+  sales_rep_name: string;
+  sales_rep_note: string;
+  additional_lead_time: string;
 }
 
 export interface ClientInput
@@ -51,6 +57,10 @@ export interface ClientInput
   lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
   tax_rate?: number;
+  additional_phone?: number;
+  sales_rep_name?: string;
+  sales_rep_note?: string;
+  additional_lead_time?: string;
 }
 class ClientsService {
   // private async generateAccountNumber(): Promise<string> {
@@ -78,6 +88,10 @@ class ClientsService {
         contactName: client.contact_name,
         phone: client.phone,
         email: client.email,
+        tax_rate: client.tax_rate,
+        sales_rep_name: client.sales_rep_name,
+        sales_rep_note: client.sales_rep_note,
+        additional_lead_time: client.additional_lead_time,
         address: {
           street: client.street,
           city: client.city,
@@ -128,6 +142,10 @@ class ClientsService {
       zip_code: client.address?.zipCode,
       clinic_registration_number: client.clinicRegistrationNumber,
       notes: client.notes,
+      tax_rate: client.tax_rate,
+      sales_rep_name: client.sales_rep_name,
+      sales_rep_note: client.sales_rep_note,
+      additional_lead_time: client.additional_lead_time,
       account_number: client.accountNumber, // Keep the account number when updating
       lab_id: client.lab_id, // Include lab_id in the transformation
     };
@@ -287,7 +305,7 @@ class ClientsService {
       }
 
       const typedClient = client as unknown as ClientType;
-
+      console.log(client, "clientclient");
       logger.info("Raw client data from DB", {
         client: typedClient,
         hasData: !!typedClient,
@@ -295,6 +313,10 @@ class ClientsService {
         id: typedClient.id,
         accountNumber: typedClient.account_number,
         clientName: typedClient.client_name,
+        tax_rate: typedClient.tax_rate,
+        sales_rep_name: typedClient.sales_rep_name,
+        sales_rep_note: typedClient.sales_rep_note,
+        additional_lead_time: typedClient.additional_lead_time,
       });
 
       const { data: doctors, error: doctorsError } = await supabase
