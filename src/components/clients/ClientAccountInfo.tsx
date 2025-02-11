@@ -1,9 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import {
-  Client,
-  ClientInput,
-  Doctor,
-} from "../../services/clientsService";
+import { Client, ClientInput, Doctor } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -69,7 +65,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
       },
       clinicRegistrationNumber: client.clinicRegistrationNumber,
       notes: client.notes ?? "",
-      doctors: client.doctors.map(doctor => ({
+      doctors: client.doctors.map((doctor) => ({
         name: doctor.name,
         email: doctor.email,
         phone: doctor.phone,
@@ -181,11 +177,17 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <Tooltip>
                   <TooltipTrigger>
                     <Badge variant="outline">
-                      Last Updated: {client.updated_at ? format(new Date(client.updated_at), "PPp") : "N/A"}
+                      Last Updated:{" "}
+                      {client.updated_at
+                        ? format(new Date(client.updated_at), "PPp")
+                        : "N/A"}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Created: {client.created_at ? format(new Date(client.created_at), "PPp") : "N/A"}
+                    Created:{" "}
+                    {client.created_at
+                      ? format(new Date(client.created_at), "PPp")
+                      : "N/A"}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -194,38 +196,22 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           <div className="space-x-2">
             {!isEditing ? (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEditClick}
-                >
+                <Button variant="outline" size="sm" onClick={handleEditClick}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={onDelete}
-                >
+                <Button variant="destructive" size="sm" onClick={onDelete}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSave}
-                >
+                <Button variant="default" size="sm" onClick={handleSave}>
                   <Save className="h-4 w-4 mr-2" />
                   Save
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancel}
-                >
+                <Button variant="outline" size="sm" onClick={handleCancel}>
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
@@ -243,9 +229,14 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Account Number</Label>
                   <Input
-                    value={client.accountNumber}
-                    disabled
+                    name="accountNumber"
+                    value={
+                      isEditing
+                        ? editedData?.accountNumber ?? ""
+                        : client.accountNumber
+                    }
                     className="bg-muted"
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div className="space-y-2">
@@ -254,7 +245,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     <Building className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="clientName"
-                      value={isEditing ? editedData?.clientName ?? "" : client.clientName}
+                      value={
+                        isEditing
+                          ? editedData?.clientName ?? ""
+                          : client.clientName
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -267,7 +262,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="contactName"
-                      value={isEditing ? editedData?.contactName ?? "" : client.contactName}
+                      value={
+                        isEditing
+                          ? editedData?.contactName ?? ""
+                          : client.contactName
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -314,7 +313,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="address.street"
-                      value={isEditing ? editedData?.address?.street ?? "" : client.address.street}
+                      value={
+                        isEditing
+                          ? editedData?.address?.street ?? ""
+                          : client.address.street
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -325,7 +328,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   <Label className="text-sm font-medium">City</Label>
                   <Input
                     name="address.city"
-                    value={isEditing ? editedData?.address?.city ?? "" : client.address.city}
+                    value={
+                      isEditing
+                        ? editedData?.address?.city ?? ""
+                        : client.address.city
+                    }
                     onChange={handleInputChange}
                     disabled={!isEditing}
                   />
@@ -334,7 +341,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   <Label className="text-sm font-medium">State</Label>
                   <Input
                     name="address.state"
-                    value={isEditing ? editedData?.address?.state ?? "" : client.address.state}
+                    value={
+                      isEditing
+                        ? editedData?.address?.state ?? ""
+                        : client.address.state
+                    }
                     onChange={handleInputChange}
                     disabled={!isEditing}
                   />
@@ -343,7 +354,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   <Label className="text-sm font-medium">Zip Code</Label>
                   <Input
                     name="address.zipCode"
-                    value={isEditing ? editedData?.address?.zipCode ?? "" : client.address.zipCode}
+                    value={
+                      isEditing
+                        ? editedData?.address?.zipCode ?? ""
+                        : client.address.zipCode
+                    }
                     onChange={handleInputChange}
                     disabled={!isEditing}
                   />
@@ -358,10 +373,16 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Clinic Registration Number</Label>
+                <Label className="text-sm font-medium">
+                  Clinic Registration Number
+                </Label>
                 <Input
                   name="clinicRegistrationNumber"
-                  value={isEditing ? editedData?.clinicRegistrationNumber ?? "" : client.clinicRegistrationNumber}
+                  value={
+                    isEditing
+                      ? editedData?.clinicRegistrationNumber ?? ""
+                      : client.clinicRegistrationNumber
+                  }
                   onChange={handleInputChange}
                   disabled={!isEditing}
                 />
@@ -370,7 +391,9 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <Label className="text-sm font-medium">Notes</Label>
                 <Textarea
                   name="notes"
-                  value={isEditing ? editedData?.notes ?? "" : client.notes ?? ""}
+                  value={
+                    isEditing ? editedData?.notes ?? "" : client.notes ?? ""
+                  }
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="min-h-[100px]"
@@ -383,11 +406,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
               <CardTitle className="text-lg">Doctors</CardTitle>
               {isEditing && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={addDoctor}
-                >
+                <Button variant="outline" size="sm" onClick={addDoctor}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Add Doctor
                 </Button>
@@ -423,7 +442,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                             <Input
                               value={doctor.name}
                               onChange={(e) =>
-                                handleDoctorChange(index, "name", e.target.value)
+                                handleDoctorChange(
+                                  index,
+                                  "name",
+                                  e.target.value
+                                )
                               }
                               disabled={!isEditing}
                             />
@@ -434,7 +457,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                               type="email"
                               value={doctor.email}
                               onChange={(e) =>
-                                handleDoctorChange(index, "email", e.target.value)
+                                handleDoctorChange(
+                                  index,
+                                  "email",
+                                  e.target.value
+                                )
                               }
                               disabled={!isEditing}
                             />
@@ -445,7 +472,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                               type="tel"
                               value={doctor.phone}
                               onChange={(e) =>
-                                handleDoctorChange(index, "phone", e.target.value)
+                                handleDoctorChange(
+                                  index,
+                                  "phone",
+                                  e.target.value
+                                )
                               }
                               disabled={!isEditing}
                             />
@@ -455,7 +486,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                             <Input
                               value={doctor.notes ?? ""}
                               onChange={(e) =>
-                                handleDoctorChange(index, "notes", e.target.value)
+                                handleDoctorChange(
+                                  index,
+                                  "notes",
+                                  e.target.value
+                                )
                               }
                               disabled={!isEditing}
                             />

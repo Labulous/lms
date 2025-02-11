@@ -35,7 +35,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
-      const { id, created_at, updated_at, ...clientData } = client;
+      const { id, created_at, updated_at, tax_rate, ...clientData } = client;
       setFormData(clientData);
     }
   }, [client]);
@@ -52,18 +52,19 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    console.log(name, value);
     setFormData((prev) => {
       if (!prev) return null;
 
       // Handle nested address fields
-      if (name.startsWith('address.')) {
-        const field = name.split('.')[1];
+      if (name.startsWith("address.")) {
+        const field = name.split(".")[1];
         return {
           ...prev,
           address: {
             ...prev.address,
-            [field]: value
-          }
+            [field]: value,
+          },
         };
       }
 
@@ -140,9 +141,11 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             <Label>Account Number</Label>
             <div className="relative">
               <Input
-                value={client?.accountNumber || ""}
-                disabled
-                className="bg-muted"
+                value={formData?.accountNumber || ""}
+                type="tel"
+                name="accountNumber"
+                className=""
+                onChange={handleInputChange}
               />
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <svg
@@ -159,9 +162,9 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 </svg>
               </div>
             </div>
-            <p className="text-sm text-muted-foreground">
+            {/* <p className="text-sm text-muted-foreground">
               Account number cannot be modified
-            </p>
+            </p> */}
           </div>
 
           {/* Client Information */}
@@ -205,7 +208,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               <Input
                 id="status"
                 name="status"
-                value={formData.status || ''}
+                value={formData.status || ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -220,7 +223,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 <Input
                   id="street"
                   name="address.street"
-                  value={formData.address?.street || ''}
+                  value={formData.address?.street || ""}
                   onChange={handleInputChange}
                 />
               </div>
@@ -230,7 +233,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 <Input
                   id="city"
                   name="address.city"
-                  value={formData.address?.city || ''}
+                  value={formData.address?.city || ""}
                   onChange={handleInputChange}
                 />
               </div>
@@ -240,7 +243,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 <Input
                   id="state"
                   name="address.state"
-                  value={formData.address?.state || ''}
+                  value={formData.address?.state || ""}
                   onChange={handleInputChange}
                 />
               </div>
@@ -250,7 +253,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 <Input
                   id="zipCode"
                   name="address.zipCode"
-                  value={formData.address?.zipCode || ''}
+                  value={formData.address?.zipCode || ""}
                   onChange={handleInputChange}
                 />
               </div>
@@ -274,28 +277,17 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               />
             ))}
 
-            <Button
-              type="button"
-              onClick={addDoctor}
-              variant="secondary"
-            >
+            <Button type="button" onClick={addDoctor} variant="secondary">
               Add Another Doctor
             </Button>
           </div>
 
           {/* Form Actions */}
           <div className="flex justify-end space-x-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-            >
+            <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

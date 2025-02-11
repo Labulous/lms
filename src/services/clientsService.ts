@@ -33,6 +33,7 @@ export interface Client {
   doctors: Doctor[];
   created_at?: string;
   updated_at?: string;
+  tax_rate?: number;
 }
 export interface ClientType {
   id?: string;
@@ -49,6 +50,7 @@ export interface ClientInput
   account_number?: string;
   lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
+  tax_rate?: number;
 }
 class ClientsService {
   // private async generateAccountNumber(): Promise<string> {
