@@ -423,6 +423,45 @@ export interface ToothInfo {
   gingival_shade: Shade;
   stump_shade_id: Shade;
 }
+
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  zipCode?: string;
+}
+
+export interface Doctor {
+  name: string;
+  phone: string;
+  email: string;
+  notes: string;
+}
+
+export interface Client {
+  id: string;
+  lab_id: string;
+  client_name: string;
+  contact_name: string;
+  phone: string;
+  email: string;
+  address: Address;
+  billing_address?: Address;
+  clinic_registration_number: string;
+  notes: string;
+  doctors: Doctor[];
+  account_number: string;
+  created_at: string;
+  updated_at: string;
+  billing_email: string;
+  other_email?: string;
+  additional_phone?: string;
+  tax_rate?: number;
+  sales_rep_name?: string;
+  sales_rep_note?: string;
+  additional_lead_time?: number;
+}
+
 export interface Database {
   public: {
     Tables: {
