@@ -1255,7 +1255,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="w-[100px] text-xs">Type</TableHead>
                 <TableHead className="w-[120px] text-xs">Teeth</TableHead>
                 <TableHead className="text-xs">Material/Product</TableHead>
-                <TableHead className="w-[100px] text-xs">
+                <TableHead className="w-[130px] text-xs">
                   Additional Services
                 </TableHead>
                 <TableHead className="text-xs">Shades</TableHead>
@@ -1457,7 +1457,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             className={cn(
                               "py-0",
                               row.notes ? "text-blue-600" : "",
-                              "hover:text-blue-600"
+                              "hover:text-blue-600 ml-5"
                             )}
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
@@ -2871,7 +2871,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   }
                                 >
                                   <Button
-                                    className="text-xs py-0 h-[30px]"
+                                    className="text-xs py-0 h-[30px] ml-5"
                                     variant={"outline"}
                                   >
                                     <span className="text-xs">
