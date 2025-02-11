@@ -237,7 +237,6 @@ const ProductsServices: React.FC = () => {
       setServices(servicesApi);
     }
     if (materialsApi) {
-      console.log("hi");
       setMaterials(materialsApi);
     }
   }, [activeTab]);
@@ -667,6 +666,7 @@ const ProductsServices: React.FC = () => {
             onBatchDelete={handleBatchDelete}
             onBatchAdd={handleBatchAdd}
             activeTab={activeTab}
+            materialsData={materialsData}
           />
         </TabsContent>
 
