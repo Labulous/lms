@@ -94,14 +94,16 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            "w-[80%] justify-between mr-2",
+            "w-full justify-between mr-2 max-w-56",
             size === "xs" ? "h-7 text-xs" : "",
             disabled ? "opacity-50 cursor-not-allowed" : ""
           )}
           disabled={disabled}
           onClick={() => onClick()}
         >
-          {selectedProduct ? selectedProduct.name : "Select product..."}
+          {selectedProduct
+            ? selectedProduct.name.substring(0, 28) + "..."
+            : "Select product..."}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50 " />
         </Button>
       </PopoverTrigger>

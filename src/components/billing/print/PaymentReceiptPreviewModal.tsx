@@ -29,9 +29,7 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
   caseDetails,
   labData,
 }) => {
-
-
-  console.log('payment data....................', caseDetails)
+  console.log("payment data....................", caseDetails);
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +84,6 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
     console.log("invoiceRef.current after mount:", invoiceRef.current);
   }, []);
   const handlePrint = (type: string) => {
-
     // Create the preview URL with state encoded in base64
     const previewState = {
       type,
@@ -95,9 +92,12 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
       caseDetails: caseDetails,
     };
 
-    const stateParam = encodeURIComponent(btoa(JSON.stringify(previewState)));
-    const previewUrl = `${window.location.origin}/print-preview?state=${stateParam}`;
-    console.log("printingu", previewUrl)
+    // Use a fixed storage key so that the data always overrides the previous entry.
+    const storageKey = "printData";
+    localStorage.setItem(storageKey, JSON.stringify(previewState));
+
+    // Build the preview URL with the fixed key in the query string.
+    const previewUrl = `${window.location.origin}/print-preview?stateKey=${storageKey}`;
     window.open(previewUrl, "_blank");
   };
 
@@ -155,7 +155,6 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
   //   }
   // };
 
-
   const handleDownloadPDF = async () => {
     if (!invoiceRef.current) {
       console.log("Invoice reference is missing");
@@ -195,8 +194,6 @@ const PaymentReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
       setIsDownloading(false);
     }
   };
-
-
 
   if (!isOpen) return null;
 

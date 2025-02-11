@@ -61,6 +61,7 @@ interface ProductListProps {
   ) => void;
   onBatchAdd?: (products: ProductInput[]) => Promise<void>;
   activeTab?: string;
+  materialsData?: any[];
 }
 
 const ProductList: React.FC<ProductListProps> = ({
@@ -70,6 +71,7 @@ const ProductList: React.FC<ProductListProps> = ({
   onBatchDelete,
   onBatchAdd,
   activeTab,
+  materialsData,
 }) => {
   // State
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -90,22 +92,13 @@ const ProductList: React.FC<ProductListProps> = ({
     const urlParams = location.pathname + location.search;
 
     if (urlParams.includes("products&")) {
-
       const afterAmpersand = urlParams.split("products&")[1];
-
-      setMaterialFilter([afterAmpersand]);
+      setMaterialFilter([afterAmpersand.split("%20").join(" ")]);
     }
-  }, [location])
+  }, [location]);
 
   // Get unique materials from products
-  const materials = useMemo(() => {
-    const uniqueMaterials = new Set(
-      products
-        .map((p) => p.material?.name)
-        .filter((name): name is string => name !== undefined && name !== null)
-    );
-    return Array.from(uniqueMaterials).map((name) => ({ id: name, name }));
-  }, [products]);
+  const materials = materialsData;
 
   //console.log(materials, "materialsData");
 
@@ -136,7 +129,7 @@ const ProductList: React.FC<ProductListProps> = ({
     () => getFilteredProducts(),
     [products, searchTerm, materialFilter]
   );
-
+console.log(materialFilter,"materialFilter")
   // Sorting
   const handleSort = (
     key: keyof Database["public"]["Tables"]["products"]["Row"]
@@ -271,7 +264,7 @@ const ProductList: React.FC<ProductListProps> = ({
                   )}
                 </div>
                 <div className="flex flex-col gap-2">
-                  {materials.map((material) => (
+                  {materials?.map((material) => (
                     <div key={material.id} className="flex items-center gap-2">
                       <Checkbox
                         id={`material-${material.id}`}
@@ -386,7 +379,7 @@ const ProductList: React.FC<ProductListProps> = ({
                           </Button>
                         )}
                       </div>
-                      {materials.map((material) => (
+                      {materials?.map((material) => (
                         <div
                           key={material.id}
                           className="flex items-center space-x-2"
