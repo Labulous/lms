@@ -65,6 +65,14 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         city: client.address.city,
         state: client.address.state,
         zipCode: client.address.zipCode,
+        country: client.address.country,
+      },
+      billingAddress: {
+        street: client.billingAddress.street,
+        city: client.billingAddress.city,
+        state: client.billingAddress.state,
+        zipCode: client.billingAddress.zipCode,
+        country: client.billingAddress.country,
       },
       clinicRegistrationNumber: client.clinicRegistrationNumber,
       taxRate: client.taxRate,
@@ -294,12 +302,18 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Additional Phone</Label>
+                  <Label className="text-sm font-medium">
+                    Additional Phone
+                  </Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="additionalPhone"
-                      value={isEditing ? editedData?.additionalPhone ?? "" : client.additionalPhone}
+                      value={
+                        isEditing
+                          ? editedData?.additionalPhone ?? ""
+                          : client.additionalPhone
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -325,7 +339,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="billingEmail"
-                      value={isEditing ? editedData?.billingEmail ?? "" : client.billingEmail}
+                      value={
+                        isEditing
+                          ? editedData?.billingEmail ?? ""
+                          : client.billingEmail
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -338,7 +356,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="otherEmail"
-                      value={isEditing ? editedData?.otherEmail ?? "" : client.otherEmail}
+                      value={
+                        isEditing
+                          ? editedData?.otherEmail ?? ""
+                          : client.otherEmail
+                      }
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -447,17 +469,27 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <Label className="text-sm font-medium">Sales Rep Name</Label>
                 <Input
                   name="salesRepName"
-                  value={isEditing ? editedData?.salesRepName ?? "" : client.salesRepName}
+                  value={
+                    isEditing
+                      ? editedData?.salesRepName ?? ""
+                      : client.salesRepName
+                  }
                   onChange={handleInputChange}
                   disabled={!isEditing}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Additional Lead Time (Days)</Label>
+                <Label className="text-sm font-medium">
+                  Additional Lead Time (Days)
+                </Label>
                 <Input
                   name="additionalLeadTime"
                   type="number"
-                  value={isEditing ? editedData?.additionalLeadTime ?? "" : client.additionalLeadTime}
+                  value={
+                    isEditing
+                      ? editedData?.additionalLeadTime ?? ""
+                      : client.additionalLeadTime
+                  }
                   onChange={handleInputChange}
                   disabled={!isEditing}
                 />
@@ -466,7 +498,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <Label className="text-sm font-medium">Sales Rep Note</Label>
                 <Textarea
                   name="salesRepNote"
-                  value={isEditing ? editedData?.salesRepNote ?? "" : client.salesRepNote}
+                  value={
+                    isEditing
+                      ? editedData?.salesRepNote ?? ""
+                      : client.salesRepNote
+                  }
                   onChange={handleInputChange}
                   disabled={!isEditing}
                   className="min-h-[100px]"

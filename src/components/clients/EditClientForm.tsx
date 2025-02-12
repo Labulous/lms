@@ -32,16 +32,13 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ClientInput | null>(null);
+  const [sameAsDelivery, setSameAsDelivery] = useState(false);
+  const [otherEmailInputs, setOtherEmailInputs] = useState([1]);
 
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
-      const {
-        id,
-        created_at,
-        updated_at,
-        ...clientData
-      } = client;
+      const { id, created_at, updated_at, ...clientData } = client;
       setFormData({
         accountNumber: clientData.accountNumber,
         clientName: clientData.clientName,
@@ -56,6 +53,14 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
           city: clientData.address.city,
           state: clientData.address.state,
           zipCode: clientData.address.zipCode,
+          country: clientData.address.country,
+        },
+        billingAddress: {
+          street: clientData.billingAddress.street,
+          city: clientData.billingAddress.city,
+          state: clientData.billingAddress.state,
+          zipCode: clientData.billingAddress.zipCode,
+          country: clientData.billingAddress.country,
         },
         clinicRegistrationNumber: clientData.clinicRegistrationNumber,
         taxRate: clientData.taxRate,
@@ -71,6 +76,9 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
         })),
       });
     }
+    setOtherEmailInputs(
+      client?.otherEmail?.map((_item, idex) => idex + 1) || [1]
+    );
   }, [client]);
 
   if (!formData) {
@@ -85,6 +93,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    console.log(name,"name")
     setFormData((prev) => {
       if (!prev) return null;
 
@@ -95,6 +104,16 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
           ...prev,
           address: {
             ...prev.address,
+            [field]: value,
+          },
+        };
+      }
+      if (name.startsWith("billingAddress.")) {
+        const field = name.split(".")[1];
+        return {
+          ...prev,
+          billingAddress: {
+            ...prev.billingAddress,
             [field]: value,
           },
         };
@@ -160,7 +179,46 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
       console.error("Error updating client:", error);
     }
   };
+  const handleSameAsDeliveryChange = (checked: boolean) => {
+    setSameAsDelivery(checked);
+    if (checked) {
+      setFormData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          billingAddress: {
+            street: prev.billingAddress?.street || "",
+            city: prev.billingAddress?.city || "",
+            state: prev.billingAddress?.state || "",
+            zipCode: prev.billingAddress?.zipCode || "",
+            country: prev.billingAddress?.country || "",
+          },
+        };
+      });
+    }
+  };
+  const handleOtherEmail = (
+    index: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!Array.isArray(formData.otherEmail)) return;
+    const newOtherEmails = [...formData.otherEmail];
+    newOtherEmails[index] = event.target.value;
+    setFormData({ ...formData, otherEmail: newOtherEmails });
+  };
 
+  const addOtherEmail = () => {
+    setOtherEmailInputs([...otherEmailInputs, otherEmailInputs.length + 1]);
+  };
+
+  const removeOtherEmail = (index: number) => {
+    if (!Array.isArray(formData.otherEmail)) return;
+    const newOtherEmails = formData.otherEmail.filter((_, i) => i !== index);
+    setFormData({ ...formData, otherEmail: newOtherEmails });
+    setOtherEmailInputs(otherEmailInputs.slice(0, -1));
+  };
+  console.log(sameAsDelivery, "sameAsDelivery");
+  console.log(formData, "Formdata");
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
       <Card>
@@ -251,17 +309,6 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="email">Primary Email*</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                />
-              </div>
-              <div>
                 <Label htmlFor="billingEmail">Billing Email*</Label>
                 <Input
                   id="billingEmail"
@@ -282,6 +329,84 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                   onChange={handleInputChange}
                   className="mt-1"
                 />
+              </div>
+            </div>
+            <div className="space-y-4">
+              <h3 className="font-medium text-sm text-muted-foreground">
+                Contact Information
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="phone">Primary Phone*</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="additionalPhone">Additional Phone</Label>
+                  <Input
+                    id="additionalPhone"
+                    name="additionalPhone"
+                    value={formData.additionalPhone}
+                    onChange={handleInputChange}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="billingEmail">Billing Email*</Label>
+                  <Input
+                    id="billingEmail"
+                    name="billingEmail"
+                    type="email"
+                    required
+                    value={formData.billingEmail}
+                    onChange={handleInputChange}
+                    className="mt-1"
+                  />
+                </div>
+                {otherEmailInputs.map((_, index) => (
+                  <div
+                    key={index}
+                    className="mt-2 flex flex-col items-center gap-2"
+                  >
+                    <Label htmlFor={`otherEmail-${index}`}>
+                      Other Email {index + 1}
+                    </Label>
+                    <div className="flex justify-center gap-1 items-center">
+                      <Input
+                        id={`otherEmail-${index}`}
+                        name={`otherEmail-${index}`}
+                        type="email"
+                        value={formData?.otherEmail?.[index] || ""}
+                        onChange={(e) => handleOtherEmail(index, e)}
+                        className="mt-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeOtherEmail(index)}
+                        className="border  px-2 py-1  rounded"
+                      >
+                        X
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex flex-col mt-2">
+                  <Label htmlFor={`otherEmail-`}>Other Email</Label>
+                  <button
+                    type="button"
+                    onClick={addOtherEmail}
+                    className="mt-2 bg-blue-500 text-white px-2 py-2 rounded"
+                  >
+                    Add Other Email
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -365,51 +490,154 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             </div>
           </div>
           {/* Address Information */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="street">Street</Label>
-                <Input
-                  id="street"
-                  name="address.street"
-                  value={formData.address?.street || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
+          <div className="flex gap-5">
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Address</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="street">Street</Label>
+                  <Input
+                    id="street"
+                    name="address.street"
+                    value={formData.address?.street || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  name="address.city"
-                  value={formData.address?.city || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    name="address.city"
+                    value={formData.address?.city || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  name="address.state"
-                  value={formData.address?.state || ""}
-                  onChange={handleInputChange}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Input
+                    id="state"
+                    name="address.state"
+                    value={formData.address?.state || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input
-                  id="zipCode"
-                  name="address.zipCode"
-                  value={formData.address?.zipCode || ""}
-                  onChange={handleInputChange}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Input
+                    id="zipCode"
+                    name="address.zipCode"
+                    value={formData.address?.zipCode || ""}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Billing Address
+                </h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="sameAsDelivery"
+                    checked={sameAsDelivery}
+                    onChange={(e) =>
+                      handleSameAsDeliveryChange(e.target.checked)
+                    }
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="sameAsDelivery" className="text-sm">
+                    Same as Primary
+                  </Label>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="billingAddress.street">Street</Label>
+                  <Input
+                    id="billingAddress.street"
+                    name="billingAddress.street"
+                    value={
+                      sameAsDelivery
+                        ? formData.address.street
+                        : formData.billingAddress?.street
+                    }
+                    onChange={handleInputChange}
+                    disabled={sameAsDelivery}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="billingAddress.city">City</Label>
+                    <Input
+                      id="billingAddress.city"
+                      name="billingAddress.city"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.city
+                          : formData.billingAddress?.city
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingAddress.state">State</Label>
+                    <Input
+                      id="billingAddress.state"
+                      name="billingAddress.state"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.state
+                          : formData.billingAddress?.state
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div>
+                    <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
+                    <Input
+                      id="billingAddress.zipCode"
+                      name="billingAddress.zipCode"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.zipCode
+                          : formData.billingAddress?.zipCode
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>{" "}
+                  <div>
+                    <Label htmlFor="billingAddress.zipCode">Country</Label>
+                    <Input
+                      id="billingAddress.country"
+                      name="billingAddress.country"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.country
+                          : formData.billingAddress?.country
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-
           {/* Doctors Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Doctors</h3>
