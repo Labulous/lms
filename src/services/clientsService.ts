@@ -495,28 +495,31 @@ class ClientsService {
 
   async deleteClient(id: string): Promise<void> {
     try {
-      // Delete related records in cases first
-      const { error: deleteCasesError } = await supabase
+      // Archive related records in cases
+      const { error: archiveCasesError } = await supabase
         .from("cases")
-        .delete()
+        .update({ is_archive: true })
         .eq("client_id", id);
 
-      if (deleteCasesError) throw deleteCasesError;
+      if (archiveCasesError) throw archiveCasesError;
 
-      // Delete related records in special_service_prices
-      const { error: deletePricesError } = await supabase
+      // Archive related records in special_service_prices
+      const { error: archivePricesError } = await supabase
         .from("special_service_prices")
-        .delete()
+        .update({ is_archive: true })
         .eq("client_id", id);
 
-      if (deletePricesError) throw deletePricesError;
+      if (archivePricesError) throw archivePricesError;
 
-      // Now, delete the client
-      const { error } = await supabase.from("clients").delete().eq("id", id);
+      // Archive the client
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archive: true })
+        .eq("id", id);
 
       if (error) throw error;
     } catch (error) {
-      logger.error("Error deleting client", { id, error });
+      logger.error("Error archiving client", { id, error });
       throw error;
     }
   }

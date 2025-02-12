@@ -20,6 +20,7 @@ export const login = async (email: string, password: string): Promise<void> => {
       email,
       timestamp: new Date().toISOString(),
     });
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -34,6 +35,12 @@ export const login = async (email: string, password: string): Promise<void> => {
         },
       });
       throw error;
+    }
+
+    // Fetch user data after login
+    const userData = await getCurrentUser();
+    if (userData) {
+      // localStorage.setItem("user", JSON.stringify(userData)); // ✅ Set user in localStorage
     }
 
     logger.info("Login successful", {
@@ -56,18 +63,27 @@ export const login = async (email: string, password: string): Promise<void> => {
   }
 };
 
+// export const logout = async (): Promise<void> => {
+//   try {
+//     logger.info("Logging out user");
+//     const { error } = await supabase.auth.signOut();
+//     if (error) {
+//       logger.error("Logout failed", error);
+//       throw error;
+//     }
+//     logger.info("Logout successful");
+//   } catch (error) {
+//     logger.error("Unexpected error during logout", error);
+//     throw error;
+//   }
+// };
 export const logout = async (): Promise<void> => {
   try {
-    logger.info("Logging out user");
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      logger.error("Logout failed", error);
-      throw error;
-    }
-    logger.info("Logout successful");
+    await supabase.auth.signOut();
+    localStorage.removeItem("user");
   } catch (error) {
-    logger.error("Unexpected error during logout", error);
-    throw error;
+  } finally {
+    localStorage.removeItem("user");
   }
 };
 
