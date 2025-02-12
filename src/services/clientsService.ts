@@ -39,7 +39,7 @@ export interface Client {
   additionalLeadTime?: number;
   additionalPhone?: string;
   billingEmail?: string;
-  otherEmail?: string;
+  otherEmail?: string[];
 }
 
 export interface ClientType {
@@ -68,7 +68,8 @@ export interface ClientInput
   additionalLeadTime?: number;
   additionalPhone?: string;
   billingEmail?: string;
-  otherEmail?: string;
+  otherEmail?: string[];
+
 }
 
 class ClientsService {
@@ -109,7 +110,9 @@ class ClientsService {
         clinicRegistrationNumber: client.clinic_registration_number,
         taxRate: client.tax_rate ? Number(client.tax_rate) : undefined,
         salesRepName: client.sales_rep_name,
-        additionalLeadTime: client.additional_lead_time ? Number(client.additional_lead_time) : undefined,
+        additionalLeadTime: client.additional_lead_time
+          ? Number(client.additional_lead_time)
+          : undefined,
         salesRepNote: client.sales_rep_note,
         notes: client.notes,
         doctors: doctors.map((doctor) => ({

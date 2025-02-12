@@ -23,7 +23,7 @@ interface ClientInput {
   notes: string;
   doctors: Doctor[];
   billingEmail: string;
-  otherEmail?: string;
+  otherEmail?: string[];
   additionalPhone?: string;
   taxRate?: number;
   salesRepName?: string;
@@ -59,6 +59,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       city: "",
       state: "",
       zipCode: "",
+      country: "",
     },
     billingAddress: {
       street: "",
@@ -70,7 +71,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     notes: "",
     doctors: [{ name: "", phone: "", email: "", notes: "" }],
     billingEmail: "",
-    otherEmail: "",
+    otherEmail: [""],
     additionalPhone: "",
     taxRate: 0,
     salesRepName: "",
@@ -79,7 +80,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     account_number: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const {
     data: labIdData,
     error: labError,
@@ -235,6 +235,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
           city: "",
           state: "",
           zipCode: "",
+          country: "",
         },
         billingAddress: {
           street: "",
@@ -246,7 +247,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
         notes: "",
         doctors: [{ name: "", phone: "", email: "", notes: "" }],
         billingEmail: "",
-        otherEmail: "",
+        otherEmail: [],
         additionalPhone: "",
         taxRate: 0,
         salesRepName: "",
@@ -263,6 +264,30 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     }
   };
   console.log(formData, "formData");
+
+  const [otherEmailInputs, setOtherEmailInputs] = useState([1]);
+
+  const handleOtherEmail = (
+    index: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!Array.isArray(formData.otherEmail)) return;
+    const newOtherEmails = [...formData.otherEmail];
+    newOtherEmails[index] = event.target.value;
+    setFormData({ ...formData, otherEmail: newOtherEmails });
+  };
+
+  const addOtherEmail = () => {
+    setOtherEmailInputs([...otherEmailInputs, otherEmailInputs.length + 1]);
+  };
+
+  const removeOtherEmail = (index: number) => {
+    if (!Array.isArray(formData.otherEmail)) return;
+    const newOtherEmails = formData.otherEmail.filter((_, i) => i !== index);
+    setFormData({ ...formData, otherEmail: newOtherEmails });
+    setOtherEmailInputs(otherEmailInputs.slice(0, -1));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
       <Card className="shadow-sm">
@@ -342,37 +367,53 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="email">Primary Email*</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                />
-              </div>
-              <div>
                 <Label htmlFor="billingEmail">Billing Email*</Label>
                 <Input
                   id="billingEmail"
                   name="billingEmail"
                   type="email"
+                  required
                   value={formData.billingEmail}
                   onChange={handleInputChange}
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="otherEmail">Other Email</Label>
-                <Input
-                  id="otherEmail"
-                  name="otherEmail"
-                  type="email"
-                  value={formData.otherEmail}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                />
+              {otherEmailInputs.map((_, index) => (
+                <div
+                  key={index}
+                  className="mt-2 flex flex-col items-center gap-2"
+                >
+                  <Label htmlFor={`otherEmail-${index}`}>
+                    Other Email {index + 1}
+                  </Label>
+                  <div className="flex justify-center gap-1 items-center">
+                    <Input
+                      id={`otherEmail-${index}`}
+                      name={`otherEmail-${index}`}
+                      type="email"
+                      value={formData?.otherEmail?.[index] || ""}
+                      onChange={(e) => handleOtherEmail(index, e)}
+                      className="mt-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeOtherEmail(index)}
+                      className="border  px-2 py-1  rounded"
+                    >
+                      X
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="flex flex-col mt-2">
+                <Label htmlFor={`otherEmail-`}>Other Email</Label>
+                <button
+                  type="button"
+                  onClick={addOtherEmail}
+                  className="mt-2 bg-blue-500 text-white px-2 py-2 rounded"
+                >
+                  Add Other Email
+                </button>
               </div>
             </div>
           </div>
@@ -417,15 +458,27 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="address.zipCode">Zip Code</Label>
-                  <Input
-                    id="address.zipCode"
-                    name="address.zipCode"
-                    value={formData.address.zipCode}
-                    onChange={handleInputChange}
-                    className="mt-1"
-                  />
+                <div className="flex gap-2">
+                  <div>
+                    <Label htmlFor="address.zipCode">Zip Code</Label>
+                    <Input
+                      id="address.zipCode"
+                      name="address.zipCode"
+                      value={formData.address.zipCode}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address.country">Country</Label>
+                    <Input
+                      id="address.country"
+                      name="address.country"
+                      value={formData.address.country}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -499,20 +552,37 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
-                  <Input
-                    id="billingAddress.zipCode"
-                    name="billingAddress.zipCode"
-                    value={
-                      sameAsDelivery
-                        ? formData.address.zipCode
-                        : formData.billingAddress?.zipCode
-                    }
-                    onChange={handleInputChange}
-                    disabled={sameAsDelivery}
-                    className="mt-1"
-                  />
+                <div className="flex gap-2">
+                  <div>
+                    <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
+                    <Input
+                      id="billingAddress.zipCode"
+                      name="billingAddress.zipCode"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.zipCode
+                          : formData.billingAddress?.zipCode
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>{" "}
+                  <div>
+                    <Label htmlFor="billingAddress.zipCode">Country</Label>
+                    <Input
+                      id="billingAddress.country"
+                      name="billingAddress.country"
+                      value={
+                        sameAsDelivery
+                          ? formData.address.country
+                          : formData.billingAddress?.country
+                      }
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
