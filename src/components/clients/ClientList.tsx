@@ -112,6 +112,12 @@ const ClientList: React.FC<ClientListProps> = ({
       cell: ({ row }) => (
         <div className="font-medium">{row.getValue("accountNumber")}</div>
       ),
+      filterFn: (row, id, value) => {
+        const cellValue = row.getValue(id);
+        return cellValue != null 
+          ? cellValue.toString().toLowerCase().includes(value.toLowerCase())
+          : false;
+      },
     },
     {
       accessorKey: "clientName",
@@ -280,12 +286,22 @@ const ClientList: React.FC<ClientListProps> = ({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Filter clients..."
+            placeholder="Filter by client name..."
             value={
               (table.getColumn("clientName")?.getFilterValue() as string) ?? ""
             }
             onChange={(event) =>
               table.getColumn("clientName")?.setFilterValue(event.target.value)
+            }
+            className="max-w-sm"
+          />
+          <Input
+            placeholder="Filter by account #..."
+            value={
+              (table.getColumn("accountNumber")?.getFilterValue() as string) ?? ""
+            }
+            onChange={(event) =>
+              table.getColumn("accountNumber")?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
           />
