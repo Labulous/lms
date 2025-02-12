@@ -224,7 +224,8 @@ class ClientsService {
         .from("clients")
         .select("*")
         .eq("lab_id", labId)
-        .order("client_name", { ascending: false });
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("updated_at", { ascending: false });
 
       if (clientsError) {
         logger.error("Error fetching clients", {

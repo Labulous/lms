@@ -182,6 +182,7 @@ const ClientProductPricing = ({
           `
           )
           .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null,
     {
       revalidateOnFocus: false,
@@ -231,7 +232,8 @@ const ClientProductPricing = ({
              )
              )`
           )
-          .eq("client_id", selectedClient); // Assuming selectedClient is the client ID
+          .eq("client_id", selectedClient) // Assuming selectedClient is the client ID
+          .or("is_archive.is.null,is_archive.eq.false"); // Includes null and false values
 
         if (error) {
           throw new Error(`Error fetching special prices: ${error.message}`);
