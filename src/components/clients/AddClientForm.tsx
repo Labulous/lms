@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Client, Address, Doctor } from "@/types/supabase";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ClientInput {
   clientName: string;
@@ -27,6 +29,7 @@ interface ClientInput {
   salesRepName?: string;
   salesRepNote?: string;
   additionalLeadTime?: number;
+  lab_id?: string;
 }
 
 interface AddClientFormProps {
@@ -44,7 +47,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
 }) => {
   const [nextAccountNumber, setNextAccountNumber] = useState<string>("");
   const [sameAsDelivery, setSameAsDelivery] = useState(false);
-
+  const { user } = useAuth();
   const [formData, setFormData] = useState<ClientInput>({
     clientName: "",
     contactName: "",
@@ -74,6 +77,18 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     additionalLeadTime: 0,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
 
   useEffect(() => {
     const fetchNextAccountNumber = async () => {
@@ -198,7 +213,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     setIsSubmitting(true);
     try {
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         throw new Error("No authenticated user found");
       }
@@ -211,26 +228,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       }
 
       const clientData = {
-        client_name: formData.clientName,
-        contact_name: formData.contactName,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        billing_address: formData.billingAddress,
-        clinic_registration_number: formData.clinicRegistrationNumber,
-        notes: formData.notes,
-        doctors: formData.doctors,
-        billing_email: formData.billingEmail,
-        other_email: formData.otherEmail,
-        additional_phone: formData.additionalPhone,
-        tax_rate: formData.taxRate,
-        sales_rep_name: formData.salesRepName,
-        sales_rep_note: formData.salesRepNote,
-        additional_lead_time: formData.additionalLeadTime,
+        ...formData,
         lab_id: labData.labId,
       };
 
-      await onSubmit(formData);
+      await onSubmit(clientData);
 
       setFormData({
         clientName: "",
@@ -285,7 +287,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
         <CardContent className="space-y-6">
           {/* Basic Information Section */}
           <div className="space-y-4">
-            <h3 className="font-medium text-sm text-muted-foreground">Basic Information</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Basic Information
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="clientName">Client/Practice Name*</Label>
@@ -313,7 +317,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
 
           {/* Contact Information Section */}
           <div className="space-y-4">
-            <h3 className="font-medium text-sm text-muted-foreground">Contact Information</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Contact Information
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone">Primary Phone*</Label>
@@ -380,7 +386,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
           <div className="grid grid-cols-2 gap-6">
             {/* Primary Address */}
             <div className="space-y-4">
-              <h3 className="font-medium text-sm text-muted-foreground">Primary Address</h3>
+              <h3 className="font-medium text-sm text-muted-foreground">
+                Primary Address
+              </h3>
               <div className="space-y-3">
                 <div>
                   <Label htmlFor="address.street">Street*</Label>
@@ -433,16 +441,22 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             {/* Billing Address */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-sm text-muted-foreground">Billing Address</h3>
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Billing Address
+                </h3>
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     id="sameAsDelivery"
                     checked={sameAsDelivery}
-                    onChange={(e) => handleSameAsDeliveryChange(e.target.checked)}
+                    onChange={(e) =>
+                      handleSameAsDeliveryChange(e.target.checked)
+                    }
                     className="h-4 w-4"
                   />
-                  <Label htmlFor="sameAsDelivery" className="text-sm">Same as Primary</Label>
+                  <Label htmlFor="sameAsDelivery" className="text-sm">
+                    Same as Primary
+                  </Label>
                 </div>
               </div>
               <div className="space-y-3">
@@ -451,7 +465,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   <Input
                     id="billingAddress.street"
                     name="billingAddress.street"
-                    value={sameAsDelivery ? formData.address.street : formData.billingAddress?.street}
+                    value={
+                      sameAsDelivery
+                        ? formData.address.street
+                        : formData.billingAddress?.street
+                    }
                     onChange={handleInputChange}
                     disabled={sameAsDelivery}
                     className="mt-1"
@@ -463,7 +481,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     <Input
                       id="billingAddress.city"
                       name="billingAddress.city"
-                      value={sameAsDelivery ? formData.address.city : formData.billingAddress?.city}
+                      value={
+                        sameAsDelivery
+                          ? formData.address.city
+                          : formData.billingAddress?.city
+                      }
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
@@ -474,7 +496,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     <Input
                       id="billingAddress.state"
                       name="billingAddress.state"
-                      value={sameAsDelivery ? formData.address.state : formData.billingAddress?.state}
+                      value={
+                        sameAsDelivery
+                          ? formData.address.state
+                          : formData.billingAddress?.state
+                      }
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
@@ -486,7 +512,11 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   <Input
                     id="billingAddress.zipCode"
                     name="billingAddress.zipCode"
-                    value={sameAsDelivery ? formData.address.zipCode : formData.billingAddress?.zipCode}
+                    value={
+                      sameAsDelivery
+                        ? formData.address.zipCode
+                        : formData.billingAddress?.zipCode
+                    }
                     onChange={handleInputChange}
                     disabled={sameAsDelivery}
                     className="mt-1"
@@ -498,7 +528,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
 
           {/* Additional Information */}
           <div className="space-y-4">
-            <h3 className="font-medium text-sm text-muted-foreground">Additional Information</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Additional Information
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="taxRate">Tax Rate (%)</Label>
@@ -515,7 +547,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="additionalLeadTime">Additional Lead Time (Days)</Label>
+                <Label htmlFor="additionalLeadTime">
+                  Additional Lead Time (Days)
+                </Label>
                 <Input
                   id="additionalLeadTime"
                   name="additionalLeadTime"
@@ -537,7 +571,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="clinicRegistrationNumber">Clinic Registration Number</Label>
+                <Label htmlFor="clinicRegistrationNumber">
+                  Clinic Registration Number
+                </Label>
                 <Input
                   id="clinicRegistrationNumber"
                   name="clinicRegistrationNumber"
@@ -573,7 +609,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
 
           {/* Doctor Information */}
           <div className="space-y-4">
-            <h3 className="font-medium text-sm text-muted-foreground">Doctor Information</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Doctor Information
+            </h3>
             {formData.doctors.map((doctor, index) => (
               <DoctorFields
                 key={index}
@@ -584,14 +622,16 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     ...updatedDoctors[index],
                     [field]: value,
                   };
-                  setFormData(prev => ({
+                  setFormData((prev) => ({
                     ...prev,
                     doctors: updatedDoctors,
                   }));
                 }}
                 onRemove={() => {
-                  const updatedDoctors = formData.doctors.filter((_, i) => i !== index);
-                  setFormData(prev => ({
+                  const updatedDoctors = formData.doctors.filter(
+                    (_, i) => i !== index
+                  );
+                  setFormData((prev) => ({
                     ...prev,
                     doctors: updatedDoctors,
                   }));
@@ -603,7 +643,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
               type="button"
               variant="outline"
               onClick={() => {
-                setFormData(prev => ({
+                setFormData((prev) => ({
                   ...prev,
                   doctors: [
                     ...prev.doctors,

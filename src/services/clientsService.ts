@@ -495,6 +495,23 @@ class ClientsService {
 
   async deleteClient(id: string): Promise<void> {
     try {
+      // Delete related records in cases first
+      const { error: deleteCasesError } = await supabase
+        .from("cases")
+        .delete()
+        .eq("client_id", id);
+
+      if (deleteCasesError) throw deleteCasesError;
+
+      // Delete related records in special_service_prices
+      const { error: deletePricesError } = await supabase
+        .from("special_service_prices")
+        .delete()
+        .eq("client_id", id);
+
+      if (deletePricesError) throw deletePricesError;
+
+      // Now, delete the client
       const { error } = await supabase.from("clients").delete().eq("id", id);
 
       if (error) throw error;
