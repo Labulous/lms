@@ -194,6 +194,7 @@ const NewCase: React.FC = () => {
             `
           )
           .eq("lab_id", labIdData.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .order("client_name", { ascending: true })
       : null,
     {
@@ -375,7 +376,7 @@ const NewCase: React.FC = () => {
     setClientSpecialServices(services as any);
   };
 
-  console.log(selectedProducts,"selected")
+  console.log(selectedProducts, "selected");
   return (
     <div
       className="p-6"

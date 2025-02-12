@@ -61,6 +61,7 @@ const ClientPricing = () => {
              id, client_name            `
           )
           .eq("lab_id", labIdData.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .order("client_name", { ascending: true })
       : null,
     {
