@@ -5,6 +5,7 @@ import { validateAccountNumber } from "../utils/accountNumberFormatter";
 const logger = createLogger({ module: "ClientsService" });
 
 export interface Address {
+  country: string;
   street: string;
   city: string;
   state: string;
@@ -27,6 +28,7 @@ export interface Client {
   phone: string;
   email: string;
   address: Address;
+  billingAddress: Address;
   status?: string | undefined | any;
   clinicRegistrationNumber: string;
   notes: string;
@@ -69,7 +71,7 @@ export interface ClientInput
   additionalPhone?: string;
   billingEmail?: string;
   otherEmail?: string[];
-
+  billingAddress: Address;
 }
 
 class ClientsService {
@@ -106,6 +108,14 @@ class ClientsService {
           city: client.city,
           state: client.state,
           zipCode: client.zip_code,
+          country: client.country,
+        },
+        billingAddress: {
+          street: client.billing_street,
+          city: client.billing_city,
+          state: client.billing_state,
+          zipCode: client.billing_zip_code,
+          country: client.billing_country,
         },
         clinicRegistrationNumber: client.clinic_registration_number,
         taxRate: client.tax_rate ? Number(client.tax_rate) : undefined,
@@ -150,6 +160,12 @@ class ClientsService {
       city: client.address.city,
       state: client.address.state,
       zip_code: client.address.zipCode,
+      country: client.address.country,
+      billing_street: client.billingAddress.street,
+      billing_city: client.billingAddress.city,
+      billing_state: client.billingAddress.state,
+      billing_zip_code: client.billingAddress.zipCode,
+      billing_country: client.billingAddress.country,
       clinic_registration_number: client.clinicRegistrationNumber,
       tax_rate: client.taxRate,
       sales_rep_name: client.salesRepName,

@@ -66,6 +66,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       city: "",
       state: "",
       zipCode: "",
+      country: "",
     },
     clinicRegistrationNumber: "",
     notes: "",
@@ -192,6 +193,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
           city: prev.address.city,
           state: prev.address.state,
           zipCode: prev.address.zipCode,
+          country: prev.address.country,
         },
       }));
     }
@@ -242,6 +244,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
           city: "",
           state: "",
           zipCode: "",
+          country: "",
         },
         clinicRegistrationNumber: "",
         notes: "",
