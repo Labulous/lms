@@ -170,13 +170,13 @@ const ClientList: React.FC<ClientListProps> = ({
       },
     },
     {
-      accessorKey: "email",
+      accessorKey: "billingEmail",
       header: "Email",
       cell: ({ row }) => {
         return (
           <div className="flex items-center">
             <Mail className="mr-2 h-4 w-4 text-muted-foreground" />
-            {row.getValue("email")}
+            {row.getValue("billingEmail")}
           </div>
         );
       },
