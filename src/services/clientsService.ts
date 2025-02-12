@@ -36,7 +36,7 @@ export interface Client {
   taxRate?: number;
   salesRepName?: string;
   salesRepNote?: string;
-  additionalLeadTime?: string;
+  additionalLeadTime?: number;
   additionalPhone?: string;
   billingEmail?: string;
   otherEmail?: string;
@@ -49,7 +49,7 @@ export interface ClientType {
   tax_rate: number;
   sales_rep_name: string;
   sales_rep_note: string;
-  additional_lead_time: string;
+  additional_lead_time: number;
 }
 
 export interface ClientInput
@@ -65,7 +65,7 @@ export interface ClientInput
   additional_phone?: number;
   salesRepName?: string;
   salesRepNote?: string;
-  additionalLeadTime?: string;
+  additionalLeadTime?: number;
   additionalPhone?: string;
   billingEmail?: string;
   otherEmail?: string;
@@ -107,9 +107,9 @@ class ClientsService {
           zipCode: client.zip_code,
         },
         clinicRegistrationNumber: client.clinic_registration_number,
-        taxRate: client.tax_rate,
+        taxRate: client.tax_rate ? Number(client.tax_rate) : undefined,
         salesRepName: client.sales_rep_name,
-        additionalLeadTime: client.additional_lead_time,
+        additionalLeadTime: client.additional_lead_time ? Number(client.additional_lead_time) : undefined,
         salesRepNote: client.sales_rep_note,
         notes: client.notes,
         doctors: doctors.map((doctor) => ({
@@ -150,7 +150,7 @@ class ClientsService {
       clinic_registration_number: client.clinicRegistrationNumber,
       tax_rate: client.taxRate,
       sales_rep_name: client.salesRepName,
-      additional_lead_time: client.additionalLeadTime,
+      additional_lead_time: client.additionalLeadTime?.toString(),
       sales_rep_note: client.salesRepNote,
       notes: client.notes,
       lab_id: client.lab_id,
