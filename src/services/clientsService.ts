@@ -33,10 +33,15 @@ export interface Client {
   doctors: Doctor[];
   created_at?: string;
   updated_at?: string;
-  tax_rate?: number;
-  sales_rep_name?: string;
-  sales_rep_note?: string;
+  taxRate?: number;
+  salesRepName?: string;
+  salesRepNote?: string;
+  additionalLeadTime?: string;
+  additionalPhone?: string;
+  billingEmail?: string;
+  otherEmail?: string;
 }
+
 export interface ClientType {
   id?: string;
   client_name?: string;
@@ -56,15 +61,16 @@ export interface ClientInput
   account_number?: string;
   lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
-  tax_rate?: number;
+  taxRate?: number;
   additional_phone?: number;
-  sales_rep_name?: string;
-  sales_rep_note?: string;
-  additional_lead_time?: string;
+  salesRepName?: string;
+  salesRepNote?: string;
+  additionalLeadTime?: string;
   additionalPhone?: string;
   billingEmail?: string;
   otherEmail?: string;
 }
+
 class ClientsService {
   // private async generateAccountNumber(): Promise<string> {
   //   const { count } = await supabase
@@ -90,12 +96,8 @@ class ClientsService {
         clientName: client.client_name,
         contactName: client.contact_name,
         phone: client.phone,
-        email: client.email,
-        tax_rate: client.tax_rate,
-        sales_rep_name: client.sales_rep_name,
-        sales_rep_note: client.sales_rep_note,
-        additional_lead_time: client.additional_lead_time,
         additionalPhone: client.additional_phone,
+        email: client.email,
         billingEmail: client.billing_email,
         otherEmail: client.other_email,
         address: {
@@ -105,58 +107,53 @@ class ClientsService {
           zipCode: client.zip_code,
         },
         clinicRegistrationNumber: client.clinic_registration_number,
+        taxRate: client.tax_rate,
+        salesRepName: client.sales_rep_name,
+        additionalLeadTime: client.additional_lead_time,
+        salesRepNote: client.sales_rep_note,
         notes: client.notes,
-        doctors:
-          doctors?.map((doctor) => ({
-            id: doctor.id,
-            name: doctor.name,
-            phone: doctor.phone,
-            email: doctor.email,
-            notes: doctor.notes,
-          })) || [],
-        createdAt: client.created_at,
-        updatedAt: client.updated_at,
+        doctors: doctors.map((doctor) => ({
+          id: doctor.id,
+          name: doctor.name,
+          phone: doctor.phone,
+          email: doctor.email,
+          notes: doctor.notes,
+        })),
+        created_at: client.created_at,
+        updated_at: client.updated_at,
       };
-
-      logger.info("Client transformed successfully", {
-        clientId: transformedClient.id,
-        hasAddress: !!transformedClient.address,
-        doctorsCount: transformedClient.doctors.length,
-      });
 
       return transformedClient;
     } catch (error) {
       logger.error("Error transforming client from DB", {
         error,
         clientId: client?.id,
-        clientData: client,
-        doctorsData: doctors,
       });
-      throw new Error("Failed to transform client data");
+      throw error;
     }
   }
 
   private transformClientToDB(client: ClientInput) {
     return {
+      account_number: client.accountNumber,
       client_name: client.clientName,
       contact_name: client.contactName,
       phone: client.phone,
-      email: client.email,
-      street: client.address?.street,
-      city: client.address?.city,
-      state: client.address?.state,
-      zip_code: client.address?.zipCode,
-      clinic_registration_number: client.clinicRegistrationNumber,
-      notes: client.notes,
-      tax_rate: client.tax_rate,
-      sales_rep_name: client.sales_rep_name,
-      sales_rep_note: client.sales_rep_note,
-      additional_lead_time: client.additional_lead_time,
       additional_phone: client.additionalPhone,
+      email: client.email,
       billing_email: client.billingEmail,
       other_email: client.otherEmail,
-      account_number: client.account_number, // Keep the account number when updating
-      lab_id: client.lab_id, // Include lab_id in the transformation
+      street: client.address.street,
+      city: client.address.city,
+      state: client.address.state,
+      zip_code: client.address.zipCode,
+      clinic_registration_number: client.clinicRegistrationNumber,
+      tax_rate: client.taxRate,
+      sales_rep_name: client.salesRepName,
+      additional_lead_time: client.additionalLeadTime,
+      sales_rep_note: client.salesRepNote,
+      notes: client.notes,
+      lab_id: client.lab_id,
     };
   }
 

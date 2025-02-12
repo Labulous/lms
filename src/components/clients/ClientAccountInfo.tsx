@@ -56,7 +56,10 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
       clientName: client.clientName,
       contactName: client.contactName,
       phone: client.phone,
+      additionalPhone: client.additionalPhone,
       email: client.email,
+      billingEmail: client.billingEmail,
+      otherEmail: client.otherEmail,
       address: {
         street: client.address.street,
         city: client.address.city,
@@ -64,6 +67,10 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         zipCode: client.address.zipCode,
       },
       clinicRegistrationNumber: client.clinicRegistrationNumber,
+      taxRate: client.taxRate,
+      salesRepName: client.salesRepName,
+      additionalLeadTime: client.additionalLeadTime,
+      salesRepNote: client.salesRepNote,
       notes: client.notes ?? "",
       doctors: client.doctors.map((doctor) => ({
         name: doctor.name,
@@ -287,12 +294,51 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Email</Label>
+                  <Label className="text-sm font-medium">Additional Phone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="additionalPhone"
+                      value={isEditing ? editedData?.additionalPhone ?? "" : client.additionalPhone}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Primary Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       name="email"
                       value={isEditing ? editedData?.email ?? "" : client.email}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Billing Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="billingEmail"
+                      value={isEditing ? editedData?.billingEmail ?? "" : client.billingEmail}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Other Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="otherEmail"
+                      value={isEditing ? editedData?.otherEmail ?? "" : client.otherEmail}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                       className="pl-10"
@@ -385,6 +431,45 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                   }
                   onChange={handleInputChange}
                   disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tax Rate (%)</Label>
+                <Input
+                  name="taxRate"
+                  type="number"
+                  value={isEditing ? editedData?.taxRate ?? "" : client.taxRate}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sales Rep Name</Label>
+                <Input
+                  name="salesRepName"
+                  value={isEditing ? editedData?.salesRepName ?? "" : client.salesRepName}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Additional Lead Time (Days)</Label>
+                <Input
+                  name="additionalLeadTime"
+                  type="number"
+                  value={isEditing ? editedData?.additionalLeadTime ?? "" : client.additionalLeadTime}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Sales Rep Note</Label>
+                <Textarea
+                  name="salesRepNote"
+                  value={isEditing ? editedData?.salesRepNote ?? "" : client.salesRepNote}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className="min-h-[100px]"
                 />
               </div>
               <div className="space-y-2">

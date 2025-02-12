@@ -1448,33 +1448,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         clientSpecialProducts={clientSpecialProducts}
                       />
                     </TableCell>
+                    {/* Main Row - Additional Services */}
                     <TableCell className="py-1.5 pl-4 pr-0 border-b">
                       <Popover open={servicesPopoverOpen.get(index) || false}>
                         <PopoverTrigger asChild>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className={cn(
-                              "py-0",
-                              row.notes ? "text-blue-600" : "",
-                              "hover:text-blue-600 ml-5"
-                            )}
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-sm w-full justify-start text-left text-xs"
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
                           >
-                            <Button
-                              className="text-xs py-0 h-[30px] -ml-2"
-                              variant={"outline"}
-                            >
-                              {" "}
-                              {row?.services?.length === 0 || !row?.services ? (
-                                "Add Services (All)"
-                              ) : (
-                                <span className="text-blue-600 py-0">
-                                  {row?.services?.length} Added
-                                </span>
-                              )}
-                            </Button>
+                            {row?.services?.length === 0 || !row?.services ? (
+                              "Add Services"
+                            ) : (
+                              <span className="text-blue-600">
+                                {row?.services?.length} Services Added
+                              </span>
+                            )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent

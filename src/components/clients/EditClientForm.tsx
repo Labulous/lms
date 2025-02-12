@@ -32,15 +32,47 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
 }) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<ClientInput | null>(null);
-  console.log(client, "client here");
+
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
-      const { id, created_at, updated_at, ...clientData } = client;
-      setFormData(clientData);
+      const {
+        id,
+        created_at,
+        updated_at,
+        ...clientData
+      } = client;
+      setFormData({
+        accountNumber: clientData.accountNumber,
+        clientName: clientData.clientName,
+        contactName: clientData.contactName,
+        phone: clientData.phone,
+        additionalPhone: clientData.additionalPhone,
+        email: clientData.email,
+        billingEmail: clientData.billingEmail,
+        otherEmail: clientData.otherEmail,
+        address: {
+          street: clientData.address.street,
+          city: clientData.address.city,
+          state: clientData.address.state,
+          zipCode: clientData.address.zipCode,
+        },
+        clinicRegistrationNumber: clientData.clinicRegistrationNumber,
+        taxRate: clientData.taxRate,
+        salesRepName: clientData.salesRepName,
+        additionalLeadTime: clientData.additionalLeadTime,
+        salesRepNote: clientData.salesRepNote,
+        notes: clientData.notes ?? "",
+        doctors: clientData.doctors.map((doctor) => ({
+          name: doctor.name,
+          email: doctor.email,
+          phone: doctor.phone,
+          notes: doctor.notes ?? "",
+        })),
+      });
     }
   }, [client]);
-console.log(client,"client")
+
   if (!formData) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -48,12 +80,11 @@ console.log(client,"client")
       </div>
     );
   }
-  console.log(formData, "formData");
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    console.log(name, value);
     setFormData((prev) => {
       if (!prev) return null;
 
@@ -123,7 +154,6 @@ console.log(client,"client")
       await onSubmit(formData);
       toast.success("Client updated successfully");
       // Navigate to client details page
-      console.log(formData, "form");
       // navigate(`/clients/${client?.id}`);
     } catch (error) {
       toast.error("Failed to update client");
@@ -261,29 +291,29 @@ console.log(client,"client")
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="tax_rate">Tax Rate (%)</Label>
+                <Label htmlFor="taxRate">Tax Rate (%)</Label>
                 <Input
-                  id="tax_rate"
-                  name="tax_rate"
+                  id="taxRate"
+                  name="taxRate"
                   type="number"
                   step="0.01"
                   min="0"
                   max="100"
-                  value={formData.tax_rate}
+                  value={formData.taxRate}
                   onChange={handleInputChange}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="additional_lead_time">
+                <Label htmlFor="additionalLeadTime">
                   Additional Lead Time (Days)
                 </Label>
                 <Input
-                  id="additional_lead_time"
-                  name="additional_lead_time"
+                  id="additionalLeadTime"
+                  name="additionalLeadTime"
                   type="number"
                   min="0"
-                  value={formData.additional_lead_time}
+                  value={formData.additionalLeadTime}
                   onChange={handleInputChange}
                   className="mt-1"
                 />
@@ -292,8 +322,8 @@ console.log(client,"client")
                 <Label htmlFor="salesRepName">Sales Representative</Label>
                 <Input
                   id="salesRepName"
-                  name="sales_rep_name"
-                  value={formData.sales_rep_name}
+                  name="salesRepName"
+                  value={formData.salesRepName}
                   onChange={handleInputChange}
                   className="mt-1"
                 />
@@ -313,11 +343,11 @@ console.log(client,"client")
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="sales_rep_note">Sales Rep Notes</Label>
+                <Label htmlFor="salesRepNote">Sales Rep Notes</Label>
                 <Textarea
-                  id="sales_rep_note"
-                  name="sales_rep_note"
-                  value={formData.sales_rep_note}
+                  id="salesRepNote"
+                  name="salesRepNote"
+                  value={formData.salesRepNote}
                   onChange={handleInputChange}
                   className="mt-1 h-24"
                 />
