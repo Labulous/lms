@@ -9,7 +9,7 @@ export interface Address {
   street: string;
   city: string;
   state: string;
-  zipCode: string;
+  zipCode?: string;
 }
 
 export interface Doctor {
@@ -148,7 +148,7 @@ class ClientsService {
 
   private transformClientToDB(client: ClientInput) {
     return {
-      account_number: client.accountNumber,
+      account_number: client?.account_number || client?.accountNumber,
       client_name: client.clientName,
       contact_name: client.contactName,
       phone: client.phone,
