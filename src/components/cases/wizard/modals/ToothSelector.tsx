@@ -658,7 +658,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
     }
 
     // Shift-click for range selection
-    if (event.shiftKey && billingType === "perTooth") {
+    if (event.shiftKey ) {
       if (selectedTeeth.length === 0) {
         // If no teeth are selected, set the starting tooth
         setRangeStartTooth(toothNumber);
