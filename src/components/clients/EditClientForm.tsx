@@ -36,16 +36,11 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
-      const {
-        id,
-        created_at,
-        updated_at,
-        ...clientData
-      } = client;
+      const { id, created_at, updated_at, ...clientData } = client;
       setFormData(clientData);
     }
   }, [client]);
-
+console.log(client,"client")
   if (!formData) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -53,7 +48,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
       </div>
     );
   }
-console.log(formData,'formData')
+  console.log(formData, "formData");
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -128,7 +123,7 @@ console.log(formData,'formData')
       await onSubmit(formData);
       toast.success("Client updated successfully");
       // Navigate to client details page
-      console.log(formData,"form")
+      console.log(formData, "form");
       // navigate(`/clients/${client?.id}`);
     } catch (error) {
       toast.error("Failed to update client");
@@ -140,7 +135,7 @@ console.log(formData,'formData')
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Edit Client hi</CardTitle>
+          <CardTitle>Edit Client</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Account Number Display */}
@@ -175,49 +170,89 @@ console.log(formData,'formData')
           </div>
 
           {/* Client Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name *</Label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="clientName">Client/Practice Name*</Label>
               <Input
                 id="clientName"
                 name="clientName"
                 value={formData.clientName}
                 onChange={handleInputChange}
                 required
+                className="mt-1"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone *</Label>
+            <div>
+              <Label htmlFor="contactName">Contact Name</Label>
               <Input
-                id="phone"
-                type="tel"
-                name="phone"
-                value={formData.phone}
+                id="contactName"
+                name="contactName"
+                value={formData.contactName}
                 onChange={handleInputChange}
-                required
+                className="mt-1"
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-              />
+          </div>
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Contact Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="phone">Primary Phone*</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="additionalPhone">Additional Phone</Label>
+                <Input
+                  id="additionalPhone"
+                  name="additionalPhone"
+                  value={formData.additionalPhone}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Input
-                id="status"
-                name="status"
-                value={formData.status || ""}
-                onChange={handleInputChange}
-              />
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="email">Primary Email*</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="billingEmail">Billing Email*</Label>
+                <Input
+                  id="billingEmail"
+                  name="billingEmail"
+                  type="email"
+                  value={formData.billingEmail}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="otherEmail">Other Email</Label>
+                <Input
+                  id="otherEmail"
+                  name="otherEmail"
+                  type="email"
+                  value={formData.otherEmail}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
             </div>
           </div>
           <div className="space-y-4">
