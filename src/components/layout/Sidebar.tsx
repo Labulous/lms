@@ -249,7 +249,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               {labs[0]?.lab?.name}
             </h3>
             <p className="text-[11px] text-gray-500 mt-0.5">
-              {labs[0]?.lab?.office_address.address_1},
+              {labs[0]?.lab?.office_address?.address_1},
               {labs[0]?.lab?.office_address?.city}
             </p>
           </div>
