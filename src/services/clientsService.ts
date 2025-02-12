@@ -61,6 +61,9 @@ export interface ClientInput
   sales_rep_name?: string;
   sales_rep_note?: string;
   additional_lead_time?: string;
+  additionalPhone?: string;
+  billingEmail?: string;
+  otherEmail?: string;
 }
 class ClientsService {
   // private async generateAccountNumber(): Promise<string> {
@@ -92,6 +95,9 @@ class ClientsService {
         sales_rep_name: client.sales_rep_name,
         sales_rep_note: client.sales_rep_note,
         additional_lead_time: client.additional_lead_time,
+        additionalPhone: client.additional_phone,
+        billingEmail: client.billing_email,
+        otherEmail: client.other_email,
         address: {
           street: client.street,
           city: client.city,
@@ -146,7 +152,10 @@ class ClientsService {
       sales_rep_name: client.sales_rep_name,
       sales_rep_note: client.sales_rep_note,
       additional_lead_time: client.additional_lead_time,
-      account_number: client.accountNumber, // Keep the account number when updating
+      additional_phone: client.additionalPhone,
+      billing_email: client.billingEmail,
+      other_email: client.otherEmail,
+      account_number: client.account_number, // Keep the account number when updating
       lab_id: client.lab_id, // Include lab_id in the transformation
     };
   }
@@ -215,7 +224,8 @@ class ClientsService {
         .from("clients")
         .select("*")
         .eq("lab_id", labId)
-        .order("client_name", { ascending: true });
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("updated_at", { ascending: false });
 
       if (clientsError) {
         logger.error("Error fetching clients", {
@@ -352,17 +362,10 @@ class ClientsService {
 
   async addClient(clientData: ClientInput): Promise<Client> {
     try {
-      const { data: nextNumber, error: numberError } = await supabase.rpc(
-        "get_next_account_number"
-      );
-
-      if (numberError) throw numberError;
-
       const { data: client, error } = await supabase
         .from("clients")
         .insert({
           ...this.transformClientToDB(clientData),
-          account_number: nextNumber as number,
         } as any)
         .select()
         .single();
@@ -495,28 +498,31 @@ class ClientsService {
 
   async deleteClient(id: string): Promise<void> {
     try {
-      // Delete related records in cases first
-      const { error: deleteCasesError } = await supabase
+      // Archive related records in cases
+      const { error: archiveCasesError } = await supabase
         .from("cases")
-        .delete()
+        .update({ is_archive: true })
         .eq("client_id", id);
 
-      if (deleteCasesError) throw deleteCasesError;
+      if (archiveCasesError) throw archiveCasesError;
 
-      // Delete related records in special_service_prices
-      const { error: deletePricesError } = await supabase
+      // Archive related records in special_service_prices
+      const { error: archivePricesError } = await supabase
         .from("special_service_prices")
-        .delete()
+        .update({ is_archive: true })
         .eq("client_id", id);
 
-      if (deletePricesError) throw deletePricesError;
+      if (archivePricesError) throw archivePricesError;
 
-      // Now, delete the client
-      const { error } = await supabase.from("clients").delete().eq("id", id);
+      // Archive the client
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archive: true })
+        .eq("id", id);
 
       if (error) throw error;
     } catch (error) {
-      logger.error("Error deleting client", { id, error });
+      logger.error("Error archiving client", { id, error });
       throw error;
     }
   }

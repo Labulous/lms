@@ -105,7 +105,9 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
         );
         if (error) throw error;
         setNextAccountNumber(data);
-        setFormData((prev) => ({ ...prev, account_number: data }));
+        formData.account_number === ""
+          ? setFormData((prev) => ({ ...prev, account_number: data }))
+          : null;
       } catch (error) {
         console.error("Error fetching next account number:", error);
         toast.error("Failed to generate account number");
@@ -220,7 +222,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
         ...formData,
         lab_id: labData.labId,
       };
-
+      console.log(clientData, "clientData");
       await onSubmit(clientData);
 
       setFormData({
@@ -260,14 +262,12 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
       setIsSubmitting(false);
     }
   };
-
+  console.log(formData, "formData");
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl">
-            Add New Client
-          </CardTitle>
+          <CardTitle className="text-xl">Add New Client</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Basic Information Section */}
@@ -284,6 +284,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   value={formData.account_number}
                   onChange={handleInputChange}
                   className="mt-1"
+                  required
                 />
               </div>
             </div>
@@ -325,7 +326,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   name="phone"
                   value={formData.phone}
                   onChange={handleInputChange}
-                  required
                   className="mt-1"
                 />
               </div>
@@ -349,7 +349,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   type="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  required
                   className="mt-1"
                 />
               </div>
@@ -361,7 +360,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   type="email"
                   value={formData.billingEmail}
                   onChange={handleInputChange}
-                  required
                   className="mt-1"
                 />
               </div>
@@ -394,7 +392,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     name="address.street"
                     value={formData.address.street}
                     onChange={handleInputChange}
-                    required
                     className="mt-1"
                   />
                 </div>
@@ -406,7 +403,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                       name="address.city"
                       value={formData.address.city}
                       onChange={handleInputChange}
-                      required
                       className="mt-1"
                     />
                   </div>
@@ -417,7 +413,6 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                       name="address.state"
                       value={formData.address.state}
                       onChange={handleInputChange}
-                      required
                       className="mt-1"
                     />
                   </div>

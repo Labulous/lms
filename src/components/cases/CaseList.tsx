@@ -914,6 +914,7 @@ const CaseList: React.FC = () => {
     `
           )
           .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {

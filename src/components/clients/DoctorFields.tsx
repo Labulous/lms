@@ -50,7 +50,6 @@ const DoctorFields: React.FC<DoctorFieldsProps> = ({ doctor, onChange, onRemove,
               id="name"
               type="text"
               name="name"
-              required
               value={doctor.name}
               onChange={handleInputChange}
             />

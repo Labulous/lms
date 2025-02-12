@@ -33,8 +33,10 @@ type User = Database["public"]["Tables"]["users"]["Row"];
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(
+    JSON.parse(localStorage.getItem("user") || "null")
+  );
+  const [loading, setLoading] = useState(!user);
   const [error, setError] = useState<Error | null>(null);
   const mounted = useRef(true);
   const initializationComplete = useRef(false);
@@ -61,116 +63,74 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } = await supabase.auth.getUser();
 
       if (authError) throw authError;
-
       if (!authUser) {
-        logger.debug("No authenticated user found");
-        if (mounted.current) {
-          setUser(null);
-          setLoading(false);
-        }
+        setUser(null);
+        localStorage.removeItem("user");
+        setLoading(false);
         return;
       }
 
-      logger.debug("Auth user found, getting user data", {
-        userId: authUser.id,
-      });
       const userData = await getCurrentUser();
-
-     
       if (!mounted.current) return;
 
       if (userData) {
-        logger.info("User data retrieved successfully", {
-          userId: userData.id,
-          role: userData.role,
-        });
         setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
       } else {
-        logger.warn("No user data found after getCurrentUser");
         setUser(null);
+        localStorage.removeItem("user");
       }
     } catch (error) {
-      if (mounted.current) {
-        handleError(error, "Failed to fetch user data");
-      }
+      handleError(error, "Failed to fetch user data");
     } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
+      if (mounted.current) setLoading(false);
       fetchingUserData.current = false;
     }
   }, [handleError]);
 
+  useEffect(() => {
+    if (!user) fetchUserData();
+  }, [fetchUserData, user]);
+
   const handleAuthChange = useCallback(
     async (event: string, session: any) => {
-      if (
-        !mounted.current ||
-        (initializationComplete.current && event === "INITIAL_SESSION")
-      ) {
-        logger.debug("Skipping auth change", {
-          event,
-          isInitialized: initializationComplete.current,
-          isMounted: mounted.current,
-        });
-        return;
-      }
-
-      logger.debug("Processing auth change", {
-        event,
-        userId: session?.user?.id,
-        hasUser: !!user,
-        isInitialized: initializationComplete.current,
-      });
-
+      if (!mounted.current || initializationComplete.current) return;
       switch (event) {
         case "SIGNED_IN":
         case "INITIAL_SESSION":
           if (session) {
             setLoading(true);
             await fetchUserData();
-          } else if (event === "INITIAL_SESSION") {
+          } else {
             setLoading(false);
           }
           break;
-
         case "SIGNED_OUT":
         case "USER_DELETED":
           setUser(null);
+          localStorage.removeItem("user");
           setLoading(false);
           break;
-
         case "TOKEN_REFRESHED":
-          if (session) {
-            await fetchUserData();
-          }
+          if (session) await fetchUserData();
           break;
-
-        default:
-          logger.debug(`Unhandled auth event: ${event}`);
       }
     },
-    [fetchUserData, user]
+    [fetchUserData]
   );
 
   useEffect(() => {
-    logger.debug("Initializing AuthContext");
     mounted.current = true;
     let authListener: any;
 
     const initialize = async () => {
-      if (initializationComplete.current) {
-        logger.debug("Already initialized");
-        return;
-      }
-
+      if (initializationComplete.current) return;
       try {
         const {
           data: { session },
           error,
         } = await supabase.auth.getSession();
-
         if (error) throw error;
-
         await handleAuthChange("INITIAL_SESSION", session);
       } catch (error) {
         handleError(error, "Failed to get initial session");
@@ -192,38 +152,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     authListener = subscription;
 
     return () => {
-      logger.debug("AuthProvider cleanup");
       mounted.current = false;
       authListener?.unsubscribe();
     };
   }, [handleAuthChange, handleError]);
 
   const signOut = async () => {
+    localStorage.removeItem("user");
     if (!mounted.current) return;
-
     try {
-      logger.info("Starting sign out");
       setLoading(true);
       await supabase.auth.signOut();
       setUser(null);
+      localStorage.removeItem("user");
       setError(null);
     } catch (error) {
       handleError(error, "Sign out failed");
     } finally {
-      if (mounted.current) {
-        setLoading(false);
-      }
+      localStorage.removeItem("user");
+
+      if (mounted.current) setLoading(false);
     }
   };
 
-  const contextValue = {
-    user,
-    loading,
-    error,
-    signOut,
-  };
-
   return (
-    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, error, signOut }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
