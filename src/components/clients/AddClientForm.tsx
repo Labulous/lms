@@ -30,6 +30,7 @@ interface ClientInput {
   salesRepNote?: string;
   additionalLeadTime?: number;
   lab_id?: string;
+  account_number?: string;
 }
 
 interface AddClientFormProps {
@@ -75,6 +76,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     salesRepName: "",
     salesRepNote: "",
     additionalLeadTime: 0,
+    account_number: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -101,27 +103,14 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             count: "exact",
           }
         );
-
-        console.log("Fetch response:", { data, error });
-
-        if (error) {
-          console.error("Error fetching next account number:", error);
-          return;
-        }
-
-        if (data) {
-          console.log("Setting account number to:", data);
-          setNextAccountNumber(data as string);
-        } else {
-          console.warn("No account number received");
-          setNextAccountNumber("1001"); // Default fallback
-        }
-      } catch (err) {
-        console.error("Error in fetchNextAccountNumber:", err);
-        setNextAccountNumber("1001"); // Default fallback
+        if (error) throw error;
+        setNextAccountNumber(data);
+        setFormData((prev) => ({ ...prev, account_number: data }));
+      } catch (error) {
+        console.error("Error fetching next account number:", error);
+        toast.error("Failed to generate account number");
       }
     };
-
     fetchNextAccountNumber();
   }, []);
 
@@ -261,6 +250,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
         salesRepName: "",
         salesRepNote: "",
         additionalLeadTime: 0,
+        account_number: "",
       });
       onSuccess?.();
     } catch (error) {
@@ -275,13 +265,8 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-xl flex items-center justify-between">
-            <span>Add New Client</span>
-            {nextAccountNumber && (
-              <span className="text-sm text-muted-foreground">
-                Account #{nextAccountNumber}
-              </span>
-            )}
+          <CardTitle className="text-xl">
+            Add New Client
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -290,6 +275,18 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             <h3 className="font-medium text-sm text-muted-foreground">
               Basic Information
             </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="account_number">Account Number</Label>
+                <Input
+                  id="account_number"
+                  name="account_number"
+                  value={formData.account_number}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="clientName">Client/Practice Name*</Label>
