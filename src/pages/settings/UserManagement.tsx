@@ -129,7 +129,7 @@ export const UserManagement: React.FC = () => {
             const { data, error } = await supabase
                 .from("users")
                 .select("*")
-                //.eq("lab_id", labData.labId)
+                .eq("lab_id", labData.labId)
                 .order("created_at", { ascending: false });
 
             if (error) throw error;
