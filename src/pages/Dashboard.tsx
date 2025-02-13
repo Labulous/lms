@@ -155,6 +155,7 @@ const Dashboard: React.FC = () => {
         )
         .eq("lab_id", labIdData.lab_id)
         .in("status", ["in_queue", "in_progress", "on_hold"]) // Filter for both statuses
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("created_at", { ascending: true })
       : null, // Fetching a single record based on `activeCaseId`
     {

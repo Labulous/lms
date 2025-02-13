@@ -313,6 +313,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     null
   );
   const [products, setProducts] = useState<ProductType[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [shadeData, setShadeData] = useState<ShadeData[]>([]);
   const [discount, setDiscount] = useState<number>(0);
@@ -377,6 +378,33 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
+  const fetchedMaterials = async () => {
+    try {
+      setLoading(true);
+      const { data: fetchedProducts, error } = await supabase
+        .from("materials")
+        .select(
+          `
+          *
+         
+        `
+        )
+        .eq("lab_id", lab?.labId);
+
+      if (error) {
+        toast.error("Error fetching products from Supabase");
+        throw error;
+      }
+
+      setMaterials(
+        fetchedProducts.map((item) => ({ id: item.id, name: item.name }))
+      );
+    } catch (error) {
+      toast.error("Failed to load products");
+    } finally {
+      setLoading(false);
+    }
+  };
   const fetchProductTypes = async () => {
     const labData = await getLabIdByUserId(user?.id as string);
     if (!labData) {
@@ -406,8 +434,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
   useEffect(() => {
     fetchProductTypes();
+    fetchedMaterials();
   }, []);
-
+  console.log(materials, "materials", MATERIALS);
   const fetchedProducts = async (selectedType: string) => {
     const selectedId = productTypes.find((item) => item.name === selectedType);
     try {
@@ -1430,7 +1459,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       className="py-1.5 pl-4 pr-0 border-b"
                     >
                       <MultiColumnProductSelector
-                        materials={MATERIALS}
+                        materials={materials}
                         products={products}
                         selectedProduct={{
                           id: selectedProducts[index].id ?? "",
@@ -2816,7 +2845,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           </TableCell>
                           <TableCell className="py-1.5 pl-4 pr-0 border-b">
                             <MultiColumnProductSelector
-                              materials={MATERIALS}
+                              materials={materials}
                               products={products}
                               selectedProduct={{
                                 id: row_sub.id ?? "",

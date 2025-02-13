@@ -398,6 +398,7 @@ const ClientProductPricing = ({
             .eq("id", item.id);
 
           if (updateError) {
+            setIsLoading(false);
             throw new Error(
               `Error updating service ID ${item.id}: ${updateError.message}`
             );
@@ -406,6 +407,7 @@ const ClientProductPricing = ({
 
         toast.success("Default prices updated successfully!");
         console.log("Updated products successfully:", updates);
+        setIsLoading(false);
         fetchEditableProducts();
         setIsDrawerOpen(false);
       } else {
@@ -495,6 +497,7 @@ const ClientProductPricing = ({
       setClientPrices([]);
     } finally {
       handleFetchSpecialPrices();
+      setIsLoading(false);
     }
   };
 
