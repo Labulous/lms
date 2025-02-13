@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import React, { useEffect, useState, useMemo } from "react";
+import { MoreVertical, ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -38,6 +38,11 @@ import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useAuth } from "@/contexts/AuthContext";
 import { SpecialProductPrices } from "@/types/supabase";
 import toast from "react-hot-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 // Mock data types
 interface Product {
@@ -103,6 +108,23 @@ const ClientProductPricing = ({
     key: "",
     direction: null,
   });
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const uniqueMaterials = useMemo(() => {
+    if (!editableProducts) return [];
+    const materials = editableProducts
+      .map((product) => product.material?.name)
+      .filter(Boolean);
+    return Array.from(new Set(materials));
+  }, [editableProducts]);
+
+  const filteredProducts = useMemo(() => {
+    if (!selectedMaterial) return editableProducts;
+    return editableProducts?.filter(
+      (product) => product.material?.name === selectedMaterial
+    );
+  }, [editableProducts, selectedMaterial]);
 
   const handleSort = (key: string) => {
     setSortConfig((current) => {
@@ -132,7 +154,7 @@ const ClientProductPricing = ({
   };
 
   const sortData = (data: any[]) => {
-    if (!sortConfig.key || !sortConfig.direction) return data;
+    if (!sortConfig.key || !sortConfig.direction || !data) return data;
 
     return [...data].sort((a, b) => {
       if (sortConfig.key === "name") {
@@ -157,7 +179,7 @@ const ClientProductPricing = ({
       }
       if (sortConfig.key === "price") {
         const aPrice = a.price || (a.default && a.default.price) || 0;
-        const bPrice = b.price || (b.default && b.default.price) || 0;
+        const bPrice = b.price || (a.default && a.default.price) || 0;
         return sortConfig.direction === "asc"
           ? aPrice - bPrice
           : bPrice - aPrice;
@@ -367,18 +389,6 @@ const ClientProductPricing = ({
     setClientPrices(updatedPrices);
     setSelectedProducts([]);
   };
-
-  const filteredProducts =
-    selectedClient !== "default"
-      ? editableProducts?.filter((product) =>
-          clientPrices.some(
-            (cp) =>
-              cp.productId === product.id && cp.clientId === selectedClient
-          )
-        )
-      : editableProducts;
-
-  console.log(clientPrices, "client, prices");
 
   const handleSubmit = async () => {
     if (clientPrices.length === 0 && defaultClientPrices.length === 0) {
@@ -595,15 +605,77 @@ const ClientProductPricing = ({
                             {getSortIcon("name")}
                           </Button>
                         </TableHead>
-                        <TableHead>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleSort("material")}
-                            className="h-8 p-0 font-medium"
-                          >
-                            Material
-                            {getSortIcon("material")}
-                          </Button>
+                        <TableHead className="relative">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              onClick={() => handleSort("material")}
+                              className="h-8 p-0 font-medium"
+                            >
+                              Material
+                              {getSortIcon("material")}
+                            </Button>
+                            <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsFilterOpen(true);
+                                  }}
+                                >
+                                  <Filter className="h-4 w-4" />
+                                  {selectedMaterial && (
+                                    <span className="ml-2 text-primary text-xs">
+                                      (Filtered)
+                                    </span>
+                                  )}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-48 z-[100]"
+                                align="start"
+                                side="bottom"
+                                sideOffset={5}
+                                style={{ position: 'fixed' }}
+                              >
+                                <div className="space-y-2">
+                                  <div className="font-medium">Filter by Material</div>
+                                  <div className="flex flex-col gap-2">
+                                    <Button
+                                      variant={!selectedMaterial ? "default" : "outline"}
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMaterial(null);
+                                        setIsFilterOpen(false);
+                                      }}
+                                      className="justify-start"
+                                    >
+                                      All Materials
+                                    </Button>
+                                    {uniqueMaterials.map((material) => (
+                                      <Button
+                                        key={material}
+                                        variant={selectedMaterial === material ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedMaterial(material);
+                                          setIsFilterOpen(false);
+                                        }}
+                                        className="justify-start"
+                                      >
+                                        {material}
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         </TableHead>
                         <TableHead>
                           <Button
@@ -619,113 +691,97 @@ const ClientProductPricing = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody className="overflow-y-scroll">
-                      {sortData(editableProducts)
-                        ?.sort((a, b) => {
-                          const aHasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(a.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.productId === a.id
-                                );
-                          const bHasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(b.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.productId === b.id
-                                );
-                          return Number(bHasNewPrice) - Number(aHasNewPrice); // Convert booleans to numbers for subtraction
-                        })
-                        .map((product) => {
-                          const hasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(product.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.productId === product.id
-                                );
+                      {(sortConfig.key ? sortData(filteredProducts) : filteredProducts)?.map((product) => {
+                        const hasNewPrice =
+                          selectedClient !== "default"
+                            ? !!getClientPrice(product.id, selectedClient)
+                            : !!defaultClientPrices.find(
+                                (item) => item.productId === product.id
+                              );
 
-                          return (
-                            <TableRow
-                              key={product.id}
-                              className={cn(
-                                "hover:bg-muted/50",
-                                selectedClient !== "default" &&
-                                  hasNewPrice &&
-                                  "bg-blue-50"
-                              )}
-                            >
-                              <TableCell className="font-medium">
-                                {product.name}
-                              </TableCell>
-                              <TableCell>{product.material.name}</TableCell>
-                              <TableCell>${product.price.toFixed(2)}</TableCell>
-                              <TableCell>
-                                {selectedClient !== "default" ? (
-                                  <Input
-                                    type="number"
-                                    value={
-                                      selectedClient !== "default"
-                                        ? getClientPrice(
-                                            product.id,
-                                            selectedClient
-                                          ) ?? product.price
-                                        : product.price
-                                    }
-                                    onChange={(e) =>
-                                      handlePriceChange(
-                                        product.id,
-                                        e.target.value
-                                      )
-                                    }
-                                    step="0.01"
-                                    min="0"
-                                    className="w-24"
-                                  />
-                                ) : (
-                                  <Input
-                                    type="number"
-                                    placeholder="Ener new"
-                                    value={
-                                      defaultClientPrices.find(
-                                        (item) => item.productId === product.id
-                                      )?.price || 0
-                                    }
-                                    onChange={(e) => {
-                                      const newPrice =
-                                        parseFloat(e.target.value) || 0;
-                                      setDefaultClientPrices((prevPrices) => {
-                                        const index = prevPrices.findIndex(
-                                          (item) =>
-                                            item.productId === product.id
-                                        );
-                                        if (index !== -1) {
-                                          // Update existing item
-                                          const updatedPrices = [...prevPrices];
-                                          updatedPrices[index] = {
-                                            ...updatedPrices[index],
+                        return (
+                          <TableRow
+                            key={product.id}
+                            className={cn(
+                              "hover:bg-muted/50",
+                              selectedClient !== "default" &&
+                                hasNewPrice &&
+                                "bg-blue-50"
+                            )}
+                          >
+                            <TableCell className="font-medium">
+                              {product.name}
+                            </TableCell>
+                            <TableCell>{product.material.name}</TableCell>
+                            <TableCell>${product.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              {selectedClient !== "default" ? (
+                                <Input
+                                  type="number"
+                                  value={
+                                    selectedClient !== "default"
+                                      ? getClientPrice(
+                                          product.id,
+                                          selectedClient
+                                        ) ?? product.price
+                                      : product.price
+                                  }
+                                  onChange={(e) =>
+                                    handlePriceChange(
+                                      product.id,
+                                      e.target.value
+                                    )
+                                  }
+                                  step="0.01"
+                                  min="0"
+                                  className="w-24"
+                                />
+                              ) : (
+                                <Input
+                                  type="number"
+                                  placeholder="Ener new"
+                                  value={
+                                    defaultClientPrices.find(
+                                      (item) => item.productId === product.id
+                                    )?.price || 0
+                                  }
+                                  onChange={(e) => {
+                                    const newPrice =
+                                      parseFloat(e.target.value) || 0;
+                                    setDefaultClientPrices((prevPrices) => {
+                                      const index = prevPrices.findIndex(
+                                        (item) =>
+                                          item.productId === product.id
+                                      );
+                                      if (index !== -1) {
+                                        // Update existing item
+                                        const updatedPrices = [...prevPrices];
+                                        updatedPrices[index] = {
+                                          ...updatedPrices[index],
+                                          price: newPrice,
+                                        };
+                                        return updatedPrices;
+                                      } else {
+                                        // Add new item
+                                        return [
+                                          ...prevPrices,
+                                          {
+                                            productId: product.id,
                                             price: newPrice,
-                                          };
-                                          return updatedPrices;
-                                        } else {
-                                          // Add new item
-                                          return [
-                                            ...prevPrices,
-                                            {
-                                              productId: product.id,
-                                              price: newPrice,
-                                            },
-                                          ];
-                                        }
-                                      });
-                                    }}
-                                    step="0.01"
-                                    min="0"
-                                    className="w-24"
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                                          },
+                                        ];
+                                      }
+                                    });
+                                  }}
+                                  step="0.01"
+                                  min="0"
+                                  className="w-24"
+                                />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
