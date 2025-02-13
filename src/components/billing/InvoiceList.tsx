@@ -2116,7 +2116,7 @@ const InvoiceList: React.FC = () => {
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                               </DropdownMenuItem>
-                              {["draft", "overdue"].includes(
+                              {/* {["draft", "overdue"].includes(
                                 invoice.status as
                                 | "draft"
                                 | "unpaid"
@@ -2136,8 +2136,8 @@ const InvoiceList: React.FC = () => {
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit Invoice
                                   </DropdownMenuItem>
-                                )}
-                              {["unpaid", "partially_paid", "paid"].includes(
+                                )} */}
+                              {/* {["unpaid", "partially_paid", "paid"].includes(
                                 invoice.invoice?.[0]?.status as
                                 | "draft"
                                 | "unpaid"
@@ -2157,7 +2157,7 @@ const InvoiceList: React.FC = () => {
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit Invoice
                                   </DropdownMenuItem>
-                                )}
+                                )} */}
                               {["unpaid", "partially_paid"].includes(
                                 invoice.invoice?.[0]?.status as
                                 | "draft"

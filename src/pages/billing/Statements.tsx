@@ -230,13 +230,13 @@ const Statements = () => {
       toast.error("Failed to process statements");
     } finally {
 
-      navigate('/', { replace: true });
-      setTimeout(() => {
-        navigate("/billing/statements", { replace: true });
-      }, 100);
+      // navigate('/', { replace: true });
+      // setTimeout(() => {
+      //   navigate("/billing/statements", { replace: true });
+      // }, 100);
 
       setIsLoading(false);
-      setIsCreateModalOpen(false);
+      // setIsCreateModalOpen(false);
       setRefresh(true);
     }
   };

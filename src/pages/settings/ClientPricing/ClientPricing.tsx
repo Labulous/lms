@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const ClientPricing = () => {
   const [activeTab, setActiveTab] = useState("products");
+  const [selectedClient, setSelectedClient] = useState<string>("default");
 
   const { user } = useAuth();
 
@@ -89,6 +90,8 @@ const ClientPricing = () => {
               clients={clients}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              selectedClient={selectedClient}
+              setSelectedClient={setSelectedClient}
             />
           </div>
         ) : (
@@ -98,6 +101,8 @@ const ClientPricing = () => {
               clients={clients}
               activeTab={activeTab}
               setActiveTab={setActiveTab}
+              selectedClient={selectedClient}
+              setSelectedClient={setSelectedClient}
             />
           </div>
         )}
