@@ -73,6 +73,7 @@ const DailyCountsCard = ({
           .select("id, status, due_date")
           .eq("lab_id", labData.labId)
           .in("status", ["in_progress", "in_queue"])
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .lte("due_date", tomorrow.toISOString());
 
         // Get completed cases today
@@ -82,6 +83,7 @@ const DailyCountsCard = ({
           .eq("lab_id", labData.labId)
           .eq("status", "completed")
           .gte("updated_at", today.toISOString())
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .lt("updated_at", tomorrow.toISOString());
 
         // Get received cases today
@@ -90,6 +92,7 @@ const DailyCountsCard = ({
           .select("id, created_at")
           .eq("lab_id", labData.labId)
           .gte("created_at", today.toISOString())
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .lt("created_at", tomorrow.toISOString());
 
         // Get shipped cases today
@@ -99,6 +102,7 @@ const DailyCountsCard = ({
           .eq("lab_id", labData.labId)
           .eq("status", "shipped")
           .gte("updated_at", today.toISOString())
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
           .lt("updated_at", tomorrow.toISOString());
 
         if (dueCases) {
