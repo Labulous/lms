@@ -475,6 +475,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const fetchServices = async () => {
+    if (!lab?.labId) {
+      return;
+    }
     try {
       setLoading(true);
       const { data: fetchedServices, error } = await supabase
