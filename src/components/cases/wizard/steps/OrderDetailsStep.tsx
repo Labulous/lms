@@ -73,6 +73,7 @@ const colors = [
 interface Client {
   id: string;
   client_name: string;
+  account_number: string;
   doctors: {
     id: string;
     name: string;
@@ -366,6 +367,18 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     );
   };
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredClients = useMemo(() => {
+    if (!searchTerm) return clients;
+    const searchLower = searchTerm.toLowerCase();
+    return clients.filter(
+      (client) =>
+        client.account_number.toLowerCase().includes(searchLower) ||
+        client.client_name.toLowerCase().includes(searchLower)
+    );
+  }, [clients, searchTerm]);
+
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -401,24 +414,35 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       >
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {clients && clients.length > 0 ? (
-                          clients.map((client) => (
+                      <SelectContent className="max-h-[300px] overflow-y-auto">
+                        <div className="sticky top-0 bg-white p-2 border-b">
+                          <input
+                            type="text"
+                            placeholder="Search by account # or name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full px-3 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        {filteredClients.length > 0 ? (
+                          filteredClients.map((client) => (
                             <SelectItem key={client.id} value={client.id}>
-                              {client.client_name || "Unnamed Client"}
+                              <div className="flex items-center w-full">
+                                <span className="text-gray-600 w-24">{client.account_number}</span>
+                                <span className="ml-8">{client.client_name || "Unnamed Client"}</span>
+                              </div>
                             </SelectItem>
                           ))
                         ) : (
                           <SelectItem value="_no_clients" disabled>
-                            No clients available
+                            {searchTerm ? "No matching clients" : "No clients available"}
                           </SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                     {errors.clientId && (
-                      <p className="mt-1 text-sm text-red-600">
-                        {errors.clientId}
-                      </p>
+                      <p className="mt-1 text-sm text-red-600">{errors.clientId}</p>
                     )}
                   </>
                 )}
@@ -915,12 +939,12 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     mode="create"
                     selectedColor="#000000"
                     tags={[]}
+                    type={"tag"}
                     setTags={setTags}
                     setPans={setPans}
                     pans={[]}
                     onClose={() => setIsAddingTag(false)}
                     initiallyOpen={isAddingTag}
-                    type={"tag"}
                     trigger={
                       <button
                         type="button"

@@ -214,35 +214,32 @@ export const QRCodeTemplate: React.FC<PrintTemplateProps> = ({
 export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
   caseDetails,
 }) => {
-  return (
-    <div>
-      {caseDetails?.map((invoice, index) => {
-        const formatTeethRange = (teeth: number[]): string => {
-          if (!teeth.length) return "";
+  const formatTeethRange = (teeth: number[]): string => {
+    if (!teeth.length) return "";
 
-          // Define the sequence for upper and lower teeth based on the provided data
-          const teethArray = [
-            // Upper right to upper left
-            18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
-            // Lower left to lower right
-            38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
-          ];
+    // Define the sequence for upper and lower teeth based on the provided data
+    const teethArray = [
+      // Upper right to upper left
+      18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+      // Lower left to lower right
+      38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+    ];
 
-          // Function to group consecutive teeth based on the sequence
-          const getConsecutiveGroups = (teeth: number[]): string[] => {
-            if (teeth.length === 0) return [];
+    // Function to group consecutive teeth based on the sequence
+    const getConsecutiveGroups = (teeth: number[]): string[] => {
+      if (teeth.length === 0) return [];
 
-            // Sort the teeth based on the order in teethArray
-            const sortedTeeth = [...teeth].sort(
-              (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
-            );
+      // Sort the teeth based on the order in teethArray
+      const sortedTeeth = [...teeth].sort(
+        (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
+      );
 
-            let groups: string[] = [];
-            let groupStart = sortedTeeth[0];
-            let prev = sortedTeeth[0];
+      let groups: string[] = [];
+      let groupStart = sortedTeeth[0];
+      let prev = sortedTeeth[0];
 
-            for (let i = 1; i <= sortedTeeth.length; i++) {
-              const current = sortedTeeth[i];
+      for (let i = 1; i <= sortedTeeth.length; i++) {
+        const current = sortedTeeth[i];
 
               // Check if the current tooth is consecutive to the previous one in the sequence
               if (
@@ -260,73 +257,92 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
               prev = current;
             }
 
-            return groups;
-          };
+      return groups;
+    };
 
-          // Get consecutive groups of teeth
-          const groupedTeeth = getConsecutiveGroups(teeth);
+    // Get consecutive groups of teeth
+    const groupedTeeth = getConsecutiveGroups(teeth);
 
-          // If there's only one group, return it
-          return groupedTeeth.join(", ");
-        };
-        console.log(invoice.products, "invoiceproducts");
+    // If there's only one group, return it
+    return groupedTeeth.join(", ");
+  };
 
-        function mergeProducts(products: any) {
-          const mergedMap = new Map();
+  const formatToothNumbers = (teeth: number[], type: string): string => {
+    if (!teeth.length) return "";
 
-          // Iterate through the products array
-          products.forEach((product: any) => {
-            // Create a key for identifying the product by its properties
-            const key = JSON.stringify({
-              id: product.id,
-              shades: {
-                occlusal: product.teethProduct.occlusal_shade,
-                body: product.teethProduct.body_shade,
-                gingival: product.teethProduct.gingival_shade,
-                stump: product.teethProduct.stump_shade,
-              },
-              service: product.service?.id,
-            });
+    // For Bridge type, use the existing formatTeethRange function
+    if (type === "Bridge") {
+      return formatTeethRange(teeth);
+    }
 
-            // Check if this product has already been merged
-            if (mergedMap.has(key)) {
-              const existingProduct = mergedMap.get(key);
+    // For single tooth
+    if (teeth.length === 1) {
+      return `#${teeth[0]}`;
+    }
 
-              // Merge the tooth_number array, ensuring no duplicates
-              const mergedToothNumbers = [
-                ...new Set([
-                  ...existingProduct.teethProduct.tooth_number,
-                  ...product.teethProduct.tooth_number,
-                ]),
-              ];
-              existingProduct.teethProduct.tooth_number = mergedToothNumbers;
+    // For multiple individual teeth
+    return `#${teeth[0]}${teeth.slice(1).map(t => `,${t}`).join('')}`;
+  };
 
-              // Sum up price, final_price, and total for merged products
-              if (
-                existingProduct.discounted_price &&
-                product.discounted_price
-              ) {
-                existingProduct.discounted_price.price +=
-                  product.discounted_price.price;
-                existingProduct.discounted_price.final_price +=
-                  product.discounted_price.final_price;
-                existingProduct.discounted_price.total +=
-                  product.discounted_price.total;
-              }
-            } else {
-              // For the first occurrence, create a shallow copy to prevent modifying the original data
-              mergedMap.set(key, {
-                ...product,
-                discounted_price: { ...product.discounted_price },
-                teethProduct: { ...product.teethProduct },
-              });
-            }
-          });
+  function mergeProducts(products: any) {
+    const mergedMap = new Map();
 
-          // Return the merged products as a new array (does not affect the original `products` array)
-          return Array.from(mergedMap.values());
+    // Iterate through the products array
+    products.forEach((product: any) => {
+      // Create a key for identifying the product by its properties
+      const key = JSON.stringify({
+        id: product.id,
+        shades: {
+          occlusal: product.teethProduct.occlusal_shade,
+          body: product.teethProduct.body_shade,
+          gingival: product.teethProduct.gingival_shade,
+          stump: product.teethProduct.stump_shade,
+        },
+        service: product.service?.id,
+      });
+
+      // Check if this product has already been merged
+      if (mergedMap.has(key)) {
+        const existingProduct = mergedMap.get(key);
+
+        // Merge the tooth_number array, ensuring no duplicates
+        const mergedToothNumbers = [
+          ...new Set([
+            ...existingProduct.teethProduct.tooth_number,
+            ...product.teethProduct.tooth_number,
+          ]),
+        ];
+        existingProduct.teethProduct.tooth_number = mergedToothNumbers;
+
+        // Sum up price, final_price, and total for merged products
+        if (
+          existingProduct.discounted_price &&
+          product.discounted_price
+        ) {
+          existingProduct.discounted_price.price +=
+            product.discounted_price.price;
+          existingProduct.discounted_price.final_price +=
+            product.discounted_price.final_price;
+          existingProduct.discounted_price.total +=
+            product.discounted_price.total;
         }
+      } else {
+        // For the first occurrence, create a shallow copy to prevent modifying the original data
+        mergedMap.set(key, {
+          ...product,
+          discounted_price: { ...product.discounted_price },
+          teethProduct: { ...product.teethProduct },
+        });
+      }
+    });
 
+    // Return the merged products as a new array (does not affect the original `products` array)
+    return Array.from(mergedMap.values());
+  }
+
+  return (
+    <div>
+      {caseDetails?.map((invoice, index) => {
         const products = mergeProducts(invoice.products);
         console.log(products, "products");
         return (
@@ -597,8 +613,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                             ?.name ||
                                             item?.teethProduct?.gingival_shade
                                               ?.name ||
-                                            item?.teethProduct
-                                              ?.stump_shade_id ||
+                                            item?.teethProduct?.stump_shade ||
                                             item?.teethProduct
                                               ?.custom_body_shade ||
                                             item?.teethProduct
@@ -657,8 +672,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                           </span>
                                           {(item?.teethProduct?.gingival_shade
                                             ?.name ||
-                                            item?.teethProduct
-                                              ?.stump_shade_id ||
+                                            item?.teethProduct?.stump_shade ||
                                             item?.teethProduct
                                               ?.custom_gingival_shade ||
                                             item?.teethProduct
@@ -1113,6 +1127,23 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
 
       // If there's only one group, return it
       return groupedTeeth.join(", ").split("#").join("");
+    };
+
+    const formatToothNumbers = (teeth: number[], type: string): string => {
+      if (!teeth.length) return "";
+
+      // For Bridge type, use the existing formatTeethRange function
+      if (type === "Bridge") {
+        return formatTeethRange(teeth);
+      }
+
+      // For single tooth
+      if (teeth.length === 1) {
+        return `#${teeth[0]}`;
+      }
+
+      // For multiple individual teeth
+      return `#${teeth[0]}${teeth.slice(1).map(t => `,${t}`).join('')}`;
     };
 
     const services = Object.values(

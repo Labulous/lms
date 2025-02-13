@@ -26,6 +26,7 @@ export interface LoadingState {
 interface Client {
   id: string;
   client_name: string;
+  account_number: string;
   doctors: {
     id: string;
     name: string;
@@ -187,6 +188,7 @@ const NewCase: React.FC = () => {
             `
              id,
              client_name,
+             account_number,
              doctors:doctors!id (
              id,
              name
