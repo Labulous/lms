@@ -75,13 +75,16 @@ const ClientProductPricing = ({
   clients,
   activeTab,
   setActiveTab,
+  selectedClient,
+  setSelectedClient,
 }: {
   labIdData: { lab_id: string } | null | undefined;
   clients: Client[] | null | undefined;
   activeTab: string;
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  selectedClient: string;
+  setSelectedClient: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [selectedClient, setSelectedClient] = useState<string>("default");
   const [editableProducts, setEditableProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [specialProducts, setSpecialProducts] = useState<

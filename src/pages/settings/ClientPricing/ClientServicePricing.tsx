@@ -75,13 +75,16 @@ const ClientServicePricing = ({
   clients,
   activeTab,
   setActiveTab,
+  selectedClient,
+  setSelectedClient,
 }: {
   labIdData: { lab_id: string } | null | undefined;
   clients: Client[] | null | undefined;
   activeTab: string;
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
+  selectedClient: string;
+  setSelectedClient: React.Dispatch<React.SetStateAction<string>>;
 }) => {
-  const [selectedClient, setSelectedClient] = useState<string>("default");
   const [editableServices, setEditableServices] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [specialProducts, setSpecialProducts] = useState<
@@ -480,7 +483,7 @@ const ClientServicePricing = ({
       return 0;
     });
   };
-console.log(isLoading,"loading")
+  console.log(isLoading, "loading");
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
