@@ -466,7 +466,7 @@ export const getLabIdByUserId = async (
     // Check each lab for a matching userId
 
     // If no match is found, return null
-    console.log(labData, LabData, "labData here");
+    console.log(labData, "labData here");
     const data: any = labData;
     return { labId: data?.[0]?.lab.id, name: data?.[0]?.lab.name };
   } catch (error) {

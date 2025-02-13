@@ -379,6 +379,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const fetchedMaterials = async () => {
+    if (!lab?.labId) {
+      return;
+    }
     try {
       setLoading(true);
       const { data: fetchedProducts, error } = await supabase
@@ -411,6 +414,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       toast.error("Unable to get Lab Id");
       return null;
     }
+    console.log(labData, "labData");
     setLab(labData);
     try {
       setLoading(true);
@@ -441,6 +445,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const selectedId = productTypes.find((item) => item.name === selectedType);
     try {
       setLoading(true);
+      if (!lab?.labId) {
+        return;
+      }
       const { data: fetchedProducts, error } = await supabase
         .from("products")
         .select(
