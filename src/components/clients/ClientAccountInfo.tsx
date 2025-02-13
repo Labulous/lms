@@ -436,7 +436,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                         onClick={addOtherEmail}
                         className="mt-6 bg-blue-500 text-white px-2 py-2 rounded"
                       >
-                        Add
+                        Add Other Email 
                       </button>
                     </div>
                   )}
@@ -446,154 +446,223 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Billing Address</CardTitle>
+                <CardTitle className="text-lg">Addresses</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Street</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      name="billingAddress.street"
-                      value={
-                        isEditing
-                          ? editedData?.billingAddress?.street ?? ""
-                          : client.billingAddress.street
-                      }
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">City</Label>
-                  <Input
-                    name="billingAddress.city"
-                    value={
-                      isEditing
-                        ? editedData?.billingAddress?.city ?? ""
-                        : client.billingAddress.city
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">State</Label>
-                  <Input
-                    name="billingAddress.state"
-                    value={
-                      isEditing
-                        ? editedData?.billingAddress?.state ?? ""
-                        : client.billingAddress.state
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Zip Code</Label>
-                  <Input
-                    name="billingAddress.zipCode"
-                    value={
-                      isEditing
-                        ? editedData?.billingAddress?.zipCode ?? ""
-                        : client.billingAddress.zipCode
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Country</Label>
-                  <Input
-                    name="billingAddress.country"
-                    value={
-                      isEditing
-                        ? editedData?.billingAddress?.country ?? ""
-                        : client.billingAddress.country
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-              </CardContent>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Delivery Address</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Street</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          name="address.street"
+                          value={
+                            isEditing
+                              ? editedData?.address?.street ?? ""
+                              : client.address.street
+                          }
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">City</Label>
+                      <Input
+                        name="address.city"
+                        value={
+                          isEditing
+                            ? editedData?.address?.city ?? ""
+                            : client.address.city
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">State</Label>
+                      <Input
+                        name="address.state"
+                        value={
+                          isEditing
+                            ? editedData?.address?.state ?? ""
+                            : client.address.state
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Zip Code</Label>
+                      <Input
+                        name="address.zipCode"
+                        value={
+                          isEditing
+                            ? editedData?.address?.zipCode ?? ""
+                            : client.address.zipCode
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Country</Label>
+                      <Input
+                        name="address.country"
+                        value={
+                          isEditing
+                            ? editedData?.address?.country ?? ""
+                            : client.address.country
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {/*  */}
-              <CardHeader>
-                <CardTitle className="text-lg">Address</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Street</Label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      name="address.street"
-                      value={
-                        isEditing
-                          ? editedData?.address?.street ?? ""
-                          : client.address.street
-                      }
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">City</Label>
-                  <Input
-                    name="address.city"
-                    value={
-                      isEditing
-                        ? editedData?.address?.city ?? ""
-                        : client.address.city
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">State</Label>
-                  <Input
-                    name="address.state"
-                    value={
-                      isEditing
-                        ? editedData?.address?.state ?? ""
-                        : client.address.state
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Zip Code</Label>
-                  <Input
-                    name="address.zipCode"
-                    value={
-                      isEditing
-                        ? editedData?.address?.zipCode ?? ""
-                        : client.address.zipCode
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Country</Label>
-                  <Input
-                    name="address.country"
-                    value={
-                      isEditing
-                        ? editedData?.address?.country ?? ""
-                        : client.address.zipCode
-                    }
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                  />
-                </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-lg">Billing Address</CardTitle>
+                    {isEditing ? (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="sameAsDelivery"
+                          checked={
+                            JSON.stringify({
+                              street: editedData?.billingAddress?.street,
+                              city: editedData?.billingAddress?.city,
+                              state: editedData?.billingAddress?.state,
+                              zipCode: editedData?.billingAddress?.zipCode,
+                              country: editedData?.billingAddress?.country,
+                            }) ===
+                            JSON.stringify({
+                              street: editedData?.address?.street,
+                              city: editedData?.address?.city,
+                              state: editedData?.address?.state,
+                              zipCode: editedData?.address?.zipCode,
+                              country: editedData?.address?.country,
+                            })
+                          }
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditedData((prev) => ({
+                                ...prev!,
+                                billingAddress: {
+                                  street: prev?.address?.street || "",
+                                  city: prev?.address?.city || "",
+                                  state: prev?.address?.state || "",
+                                  zipCode: prev?.address?.zipCode || "",
+                                  country: prev?.address?.country || "",
+                                },
+                              }));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <Label htmlFor="sameAsDelivery" className="text-sm font-normal text-muted-foreground">
+                          Same as Delivery Address
+                        </Label>
+                      </div>
+                    ) : (
+                      JSON.stringify({
+                        street: client.billingAddress.street,
+                        city: client.billingAddress.city,
+                        state: client.billingAddress.state,
+                        zipCode: client.billingAddress.zipCode,
+                        country: client.billingAddress.country,
+                      }) ===
+                      JSON.stringify({
+                        street: client.address.street,
+                        city: client.address.city,
+                        state: client.address.state,
+                        zipCode: client.address.zipCode,
+                        country: client.address.country,
+                      }) && (
+                        <span className="text-sm text-muted-foreground">
+                          (Same as Delivery Address)
+                        </span>
+                      )
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Street</Label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          name="billingAddress.street"
+                          value={
+                            isEditing
+                              ? editedData?.billingAddress?.street ?? ""
+                              : client.billingAddress.street
+                          }
+                          onChange={handleInputChange}
+                          disabled={!isEditing}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">City</Label>
+                      <Input
+                        name="billingAddress.city"
+                        value={
+                          isEditing
+                            ? editedData?.billingAddress?.city ?? ""
+                            : client.billingAddress.city
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">State</Label>
+                      <Input
+                        name="billingAddress.state"
+                        value={
+                          isEditing
+                            ? editedData?.billingAddress?.state ?? ""
+                            : client.billingAddress.state
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Zip Code</Label>
+                      <Input
+                        name="billingAddress.zipCode"
+                        value={
+                          isEditing
+                            ? editedData?.billingAddress?.zipCode ?? ""
+                            : client.billingAddress.zipCode
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Country</Label>
+                      <Input
+                        name="billingAddress.country"
+                        value={
+                          isEditing
+                            ? editedData?.billingAddress?.country ?? ""
+                            : client.billingAddress.country
+                        }
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </div>

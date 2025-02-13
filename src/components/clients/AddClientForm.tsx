@@ -305,7 +305,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="account_number">Account Number</Label>
+                <Label htmlFor="account_number">Account Number*</Label>
                 <Input
                   id="account_number"
                   name="account_number"
@@ -348,7 +348,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone">Primary Phone*</Label>
+                <Label htmlFor="phone">Primary Phone</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -382,41 +382,39 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                 />
               </div>
               {otherEmailInputs.map((_, index) => (
-                <div
-                  key={index}
-                  className="mt-2 flex flex-col items-center gap-2"
-                >
-                  <Label htmlFor={`otherEmail-${index}`}>
-                    Other Email {index + 1}
-                  </Label>
-                  <div className="flex justify-center gap-1 items-center">
+                <div key={index} className="space-y-2">
+                  <Label htmlFor={`otherEmail-${index}`}>Other Email {index + 1}</Label>
+                  <div className="flex gap-2">
                     <Input
                       id={`otherEmail-${index}`}
                       name={`otherEmail-${index}`}
                       type="email"
                       value={formData?.otherEmail?.[index] || ""}
                       onChange={(e) => handleOtherEmail(index, e)}
-                      className="mt-1"
+                      className="flex-1"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={() => removeOtherEmail(index)}
-                      className="border  px-2 py-1  rounded"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
                     >
-                      X
-                    </button>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </Button>
                   </div>
                 </div>
               ))}
-              <div className="flex flex-col mt-2">
-                <Label htmlFor={`otherEmail-`}>Other Email</Label>
-                <button
+              <div className="space-y-2">
+                <Label>&nbsp;</Label>
+                <Button
                   type="button"
                   onClick={addOtherEmail}
-                  className="mt-2 bg-blue-500 text-white px-2 py-2 rounded"
+                  variant="outline"
+                  className="w-full mt-1"
                 >
                   Add Other Email
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -430,7 +428,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
               </h3>
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="address.street">Street*</Label>
+                  <Label htmlFor="address.street">Street</Label>
                   <Input
                     id="address.street"
                     name="address.street"
@@ -441,7 +439,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="address.city">City*</Label>
+                    <Label htmlFor="address.city">City</Label>
                     <Input
                       id="address.city"
                       name="address.city"
@@ -451,7 +449,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     />
                   </div>
                   <div>
-                    <Label htmlFor="address.state">State*</Label>
+                    <Label htmlFor="address.state">State</Label>
                     <Input
                       id="address.state"
                       name="address.state"
@@ -461,7 +459,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="address.zipCode">Zip Code</Label>
                     <Input
@@ -497,9 +495,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     type="checkbox"
                     id="sameAsDelivery"
                     checked={sameAsDelivery}
-                    onChange={(e) =>
-                      handleSameAsDeliveryChange(e.target.checked)
-                    }
+                    onChange={(e) => handleSameAsDeliveryChange(e.target.checked)}
                     className="h-4 w-4"
                   />
                   <Label htmlFor="sameAsDelivery" className="text-sm">
@@ -513,11 +509,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                   <Input
                     id="billingAddress.street"
                     name="billingAddress.street"
-                    value={
-                      sameAsDelivery
-                        ? formData.address.street
-                        : formData.billingAddress?.street
-                    }
+                    value={sameAsDelivery ? formData.address.street : formData.billingAddress?.street}
                     onChange={handleInputChange}
                     disabled={sameAsDelivery}
                     className="mt-1"
@@ -529,11 +521,7 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     <Input
                       id="billingAddress.city"
                       name="billingAddress.city"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.city
-                          : formData.billingAddress?.city
-                      }
+                      value={sameAsDelivery ? formData.address.city : formData.billingAddress?.city}
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
@@ -544,43 +532,31 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
                     <Input
                       id="billingAddress.state"
                       name="billingAddress.state"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.state
-                          : formData.billingAddress?.state
-                      }
+                      value={sameAsDelivery ? formData.address.state : formData.billingAddress?.state}
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
                     />
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
                     <Input
                       id="billingAddress.zipCode"
                       name="billingAddress.zipCode"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.zipCode
-                          : formData.billingAddress?.zipCode
-                      }
+                      value={sameAsDelivery ? formData.address.zipCode : formData.billingAddress?.zipCode}
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
                     />
-                  </div>{" "}
+                  </div>
                   <div>
-                    <Label htmlFor="billingAddress.zipCode">Country</Label>
+                    <Label htmlFor="billingAddress.country">Country</Label>
                     <Input
                       id="billingAddress.country"
                       name="billingAddress.country"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.country
-                          : formData.billingAddress?.country
-                      }
+                      value={sameAsDelivery ? formData.address.country : formData.billingAddress?.country}
                       onChange={handleInputChange}
                       disabled={sameAsDelivery}
                       className="mt-1"
@@ -677,33 +653,45 @@ const AddClientForm: React.FC<AddClientFormProps> = ({
             <h3 className="font-medium text-sm text-muted-foreground">
               Doctor Information
             </h3>
-            {formData.doctors.map((doctor, index) => (
-              <DoctorFields
-                key={index}
-                doctor={doctor}
-                onChange={(field, value) => {
-                  const updatedDoctors = [...formData.doctors];
-                  updatedDoctors[index] = {
-                    ...updatedDoctors[index],
-                    [field]: value,
-                  };
-                  setFormData((prev) => ({
-                    ...prev,
-                    doctors: updatedDoctors,
-                  }));
-                }}
-                onRemove={() => {
-                  const updatedDoctors = formData.doctors.filter(
-                    (_, i) => i !== index
-                  );
-                  setFormData((prev) => ({
-                    ...prev,
-                    doctors: updatedDoctors,
-                  }));
-                }}
-                showRemove={formData.doctors.length > 1}
-              />
-            ))}
+            <div className="space-y-6">
+              {formData.doctors.map((doctor, index) => (
+                <div
+                  key={index}
+                  className="relative bg-white rounded-md border border-slate-200 overflow-hidden"
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
+                  <div className="p-4">
+                    <div className="absolute top-2 right-3 text-sm font-medium text-slate-400">
+                      Doctor #{index + 1}
+                    </div>
+                    <DoctorFields
+                      doctor={doctor}
+                      onChange={(field, value) => {
+                        const updatedDoctors = [...formData.doctors];
+                        updatedDoctors[index] = {
+                          ...updatedDoctors[index],
+                          [field]: value,
+                        };
+                        setFormData((prev) => ({
+                          ...prev,
+                          doctors: updatedDoctors,
+                        }));
+                      }}
+                      onRemove={() => {
+                        const updatedDoctors = formData.doctors.filter(
+                          (_, i) => i !== index
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          doctors: updatedDoctors,
+                        }));
+                      }}
+                      showRemove={formData.doctors.length > 1}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
             <Button
               type="button"
               variant="outline"

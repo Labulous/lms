@@ -26,10 +26,13 @@ export interface Client {
   clientName: string;
   contactName: string;
   phone: string;
+  additionalPhone?: string;
   email: string;
+  billingEmail?: string;
+  otherEmail?: string[];
   address: Address;
   billingAddress: Address;
-  status?: string | undefined | any;
+  status?: string;
   clinicRegistrationNumber: string;
   notes: string;
   doctors: Doctor[];
@@ -39,9 +42,6 @@ export interface Client {
   salesRepName?: string;
   salesRepNote?: string;
   additionalLeadTime?: number;
-  additionalPhone?: string;
-  billingEmail?: string;
-  otherEmail?: string[];
 }
 
 export interface ClientType {
@@ -63,15 +63,6 @@ export interface ClientInput
   account_number?: string;
   lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
-  taxRate?: number;
-  additional_phone?: number;
-  salesRepName?: string;
-  salesRepNote?: string;
-  additionalLeadTime?: number;
-  additionalPhone?: string;
-  billingEmail?: string;
-  otherEmail?: string[];
-  billingAddress: Address;
 }
 
 class ClientsService {
@@ -102,7 +93,7 @@ class ClientsService {
         additionalPhone: client.additional_phone,
         email: client.email,
         billingEmail: client.billing_email,
-        otherEmail: client.other_email,
+        otherEmail: client.other_email || [],
         address: {
           street: client.street,
           city: client.city,
@@ -124,16 +115,17 @@ class ClientsService {
           ? Number(client.additional_lead_time)
           : undefined,
         salesRepNote: client.sales_rep_note,
-        notes: client.notes,
+        notes: client.notes || "",
         doctors: doctors.map((doctor) => ({
           id: doctor.id,
           name: doctor.name,
           phone: doctor.phone,
           email: doctor.email,
-          notes: doctor.notes,
+          notes: doctor.notes || "",
         })),
         created_at: client.created_at,
         updated_at: client.updated_at,
+        status: client.status,
       };
 
       return transformedClient;
@@ -155,7 +147,7 @@ class ClientsService {
       additional_phone: client.additionalPhone,
       email: client.email,
       billing_email: client.billingEmail,
-      other_email: client.otherEmail,
+      other_email: client.otherEmail || [],
       street: client.address.street,
       city: client.address.city,
       state: client.address.state,
@@ -171,8 +163,9 @@ class ClientsService {
       sales_rep_name: client.salesRepName,
       additional_lead_time: client.additionalLeadTime?.toString(),
       sales_rep_note: client.salesRepNote,
-      notes: client.notes,
+      notes: client.notes || "",
       lab_id: client.lab_id,
+      status: client.status,
     };
   }
 

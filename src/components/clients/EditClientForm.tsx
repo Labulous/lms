@@ -220,74 +220,63 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   console.log(sameAsDelivery, "sameAsDelivery");
   console.log(formData, "Formdata");
   return (
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Edit Client</CardTitle>
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl">Edit Client</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Account Number Display */}
-          <div className="space-y-2">
-            <Label>Account Number</Label>
-            <div className="relative">
-              <Input
-                value={formData?.accountNumber || ""}
-                type="tel"
-                name="accountNumber"
-                className=""
-                onChange={handleInputChange}
-              />
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <svg
-                  className="h-5 w-5 text-muted-foreground"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+          {/* Basic Information Section */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Basic Information
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="accountNumber">Account Number*</Label>
+                <Input
+                  id="accountNumber"
+                  name="accountNumber"
+                  value={formData.accountNumber}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                  required
+                />
               </div>
             </div>
-            {/* <p className="text-sm text-muted-foreground">
-              Account number cannot be modified
-            </p> */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="clientName">Client/Practice Name*</Label>
+                <Input
+                  id="clientName"
+                  name="clientName"
+                  value={formData.clientName}
+                  onChange={handleInputChange}
+                  required
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="contactName">Contact Name</Label>
+                <Input
+                  id="contactName"
+                  name="contactName"
+                  value={formData.contactName}
+                  onChange={handleInputChange}
+                  className="mt-1"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Client Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="clientName">Client/Practice Name*</Label>
-              <Input
-                id="clientName"
-                name="clientName"
-                value={formData.clientName}
-                onChange={handleInputChange}
-                required
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="contactName">Contact Name</Label>
-              <Input
-                id="contactName"
-                name="contactName"
-                value={formData.contactName}
-                onChange={handleInputChange}
-                className="mt-1"
-              />
-            </div>
-          </div>
+          {/* Contact Information Section */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm text-muted-foreground">
               Contact Information
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="phone">Primary Phone*</Label>
+                <Label htmlFor="phone">Primary Phone</Label>
                 <Input
                   id="phone"
                   name="phone"
@@ -314,102 +303,199 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                   id="billingEmail"
                   name="billingEmail"
                   type="email"
+                  required
                   value={formData.billingEmail}
                   onChange={handleInputChange}
                   className="mt-1"
                 />
               </div>
-              <div>
-                <Label htmlFor="otherEmail">Other Email</Label>
-                <Input
-                  id="otherEmail"
-                  name="otherEmail"
-                  type="email"
-                  value={formData.otherEmail}
-                  onChange={handleInputChange}
-                  className="mt-1"
-                />
+              {otherEmailInputs.map((_, index) => (
+                <div key={index} className="space-y-2">
+                  <Label htmlFor={`otherEmail-${index}`}>Other Email {index + 1}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id={`otherEmail-${index}`}
+                      name={`otherEmail-${index}`}
+                      type="email"
+                      value={formData?.otherEmail?.[index] || ""}
+                      onChange={(e) => handleOtherEmail(index, e)}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => removeOtherEmail(index)}
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <div className="space-y-2">
+                <Label>&nbsp;</Label>
+                <Button
+                  type="button"
+                  onClick={addOtherEmail}
+                  variant="outline"
+                  className="w-full mt-1"
+                >
+                  Add Other Email
+                </Button>
               </div>
             </div>
+          </div>
+
+          {/* Address Information */}
+          <div className="grid grid-cols-2 gap-6">
+            {/* Primary Address */}
             <div className="space-y-4">
               <h3 className="font-medium text-sm text-muted-foreground">
-                Contact Information
+                Primary Address
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-3">
                 <div>
-                  <Label htmlFor="phone">Primary Phone*</Label>
+                  <Label htmlFor="address.street">Street</Label>
                   <Input
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
+                    id="address.street"
+                    name="address.street"
+                    value={formData.address?.street || ""}
                     onChange={handleInputChange}
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="additionalPhone">Additional Phone</Label>
-                  <Input
-                    id="additionalPhone"
-                    name="additionalPhone"
-                    value={formData.additionalPhone}
-                    onChange={handleInputChange}
-                    className="mt-1"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="address.city">City</Label>
+                    <Input
+                      id="address.city"
+                      name="address.city"
+                      value={formData.address?.city || ""}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address.state">State</Label>
+                    <Input
+                      id="address.state"
+                      name="address.state"
+                      value={formData.address?.state || ""}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="address.zipCode">Zip Code</Label>
+                    <Input
+                      id="address.zipCode"
+                      name="address.zipCode"
+                      value={formData.address?.zipCode || ""}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address.country">Country</Label>
+                    <Input
+                      id="address.country"
+                      name="address.country"
+                      value={formData.address?.country || ""}
+                      onChange={handleInputChange}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+            </div>
+
+            {/* Billing Address */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Billing Address
+                </h3>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="sameAsDelivery"
+                    checked={sameAsDelivery}
+                    onChange={(e) => handleSameAsDeliveryChange(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="sameAsDelivery" className="text-sm">
+                    Same as Primary
+                  </Label>
+                </div>
+              </div>
+              <div className="space-y-3">
                 <div>
-                  <Label htmlFor="billingEmail">Billing Email*</Label>
+                  <Label htmlFor="billingAddress.street">Street</Label>
                   <Input
-                    id="billingEmail"
-                    name="billingEmail"
-                    type="email"
-                    required
-                    value={formData.billingEmail}
+                    id="billingAddress.street"
+                    name="billingAddress.street"
+                    value={sameAsDelivery ? formData.address?.street : formData.billingAddress?.street}
                     onChange={handleInputChange}
+                    disabled={sameAsDelivery}
                     className="mt-1"
                   />
                 </div>
-                {otherEmailInputs.map((_, index) => (
-                  <div
-                    key={index}
-                    className="mt-2 flex flex-col items-center gap-2"
-                  >
-                    <Label htmlFor={`otherEmail-${index}`}>
-                      Other Email {index + 1}
-                    </Label>
-                    <div className="flex justify-center gap-1 items-center">
-                      <Input
-                        id={`otherEmail-${index}`}
-                        name={`otherEmail-${index}`}
-                        type="email"
-                        value={formData?.otherEmail?.[index] || ""}
-                        onChange={(e) => handleOtherEmail(index, e)}
-                        className="mt-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeOtherEmail(index)}
-                        className="border  px-2 py-1  rounded"
-                      >
-                        X
-                      </button>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="billingAddress.city">City</Label>
+                    <Input
+                      id="billingAddress.city"
+                      name="billingAddress.city"
+                      value={sameAsDelivery ? formData.address?.city : formData.billingAddress?.city}
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
                   </div>
-                ))}
-                <div className="flex flex-col mt-2">
-                  <Label htmlFor={`otherEmail-`}>Other Email</Label>
-                  <button
-                    type="button"
-                    onClick={addOtherEmail}
-                    className="mt-2 bg-blue-500 text-white px-2 py-2 rounded"
-                  >
-                    Add Other Email
-                  </button>
+                  <div>
+                    <Label htmlFor="billingAddress.state">State</Label>
+                    <Input
+                      id="billingAddress.state"
+                      name="billingAddress.state"
+                      value={sameAsDelivery ? formData.address?.state : formData.billingAddress?.state}
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
+                    <Input
+                      id="billingAddress.zipCode"
+                      name="billingAddress.zipCode"
+                      value={sameAsDelivery ? formData.address?.zipCode : formData.billingAddress?.zipCode}
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="billingAddress.country">Country</Label>
+                    <Input
+                      id="billingAddress.country"
+                      name="billingAddress.country"
+                      value={sameAsDelivery ? formData.address?.country : formData.billingAddress?.country}
+                      onChange={handleInputChange}
+                      disabled={sameAsDelivery}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Additional Information */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm text-muted-foreground">
               Additional Information
@@ -430,9 +516,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="additionalLeadTime">
-                  Additional Lead Time (Days)
-                </Label>
+                <Label htmlFor="additionalLeadTime">Additional Lead Time (Days)</Label>
                 <Input
                   id="additionalLeadTime"
                   name="additionalLeadTime"
@@ -454,9 +538,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="clinicRegistrationNumber">
-                  Clinic Registration Number
-                </Label>
+                <Label htmlFor="clinicRegistrationNumber">Clinic Registration Number</Label>
                 <Input
                   id="clinicRegistrationNumber"
                   name="clinicRegistrationNumber"
@@ -489,195 +571,65 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               </div>
             </div>
           </div>
-          {/* Address Information */}
-          <div className="flex gap-5">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Address</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="street">Street</Label>
-                  <Input
-                    id="street"
-                    name="address.street"
-                    value={formData.address?.street || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    name="address.city"
-                    value={formData.address?.city || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    name="address.state"
-                    value={formData.address?.state || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="zipCode">ZIP Code</Label>
-                  <Input
-                    id="zipCode"
-                    name="address.zipCode"
-                    value={formData.address?.zipCode || ""}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium text-sm text-muted-foreground">
-                  Billing Address
-                </h3>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="sameAsDelivery"
-                    checked={sameAsDelivery}
-                    onChange={(e) =>
-                      handleSameAsDeliveryChange(e.target.checked)
-                    }
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="sameAsDelivery" className="text-sm">
-                    Same as Primary
-                  </Label>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="billingAddress.street">Street</Label>
-                  <Input
-                    id="billingAddress.street"
-                    name="billingAddress.street"
-                    value={
-                      sameAsDelivery
-                        ? formData.address.street
-                        : formData.billingAddress?.street
-                    }
-                    onChange={handleInputChange}
-                    disabled={sameAsDelivery}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="billingAddress.city">City</Label>
-                    <Input
-                      id="billingAddress.city"
-                      name="billingAddress.city"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.city
-                          : formData.billingAddress?.city
-                      }
-                      onChange={handleInputChange}
-                      disabled={sameAsDelivery}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="billingAddress.state">State</Label>
-                    <Input
-                      id="billingAddress.state"
-                      name="billingAddress.state"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.state
-                          : formData.billingAddress?.state
-                      }
-                      onChange={handleInputChange}
-                      disabled={sameAsDelivery}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <div>
-                    <Label htmlFor="billingAddress.zipCode">Zip Code</Label>
-                    <Input
-                      id="billingAddress.zipCode"
-                      name="billingAddress.zipCode"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.zipCode
-                          : formData.billingAddress?.zipCode
-                      }
-                      onChange={handleInputChange}
-                      disabled={sameAsDelivery}
-                      className="mt-1"
-                    />
-                  </div>{" "}
-                  <div>
-                    <Label htmlFor="billingAddress.zipCode">Country</Label>
-                    <Input
-                      id="billingAddress.country"
-                      name="billingAddress.country"
-                      value={
-                        sameAsDelivery
-                          ? formData.address.country
-                          : formData.billingAddress?.country
-                      }
-                      onChange={handleInputChange}
-                      disabled={sameAsDelivery}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          {/* Doctors Section */}
+          {/* Doctor Information */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium">Doctors</h3>
-            {(formData?.doctors ?? []).map((doctor, index) => (
-              <DoctorFields
-                key={index}
-                doctor={doctor}
-                onChange={(field, value) =>
-                  handleDoctorChange(index, field as keyof Doctor, value)
-                }
-                onRemove={() => removeDoctor(index)}
-                showRemove={
-                  formData?.doctors ? formData?.doctors?.length > 1 : false
-                }
-              />
-            ))}
-
-            <Button type="button" onClick={addDoctor} variant="secondary">
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Doctor Information
+            </h3>
+            <div className="space-y-6">
+              {(formData?.doctors ?? []).map((doctor, index) => (
+                <div
+                  key={index}
+                  className="relative bg-white rounded-md border border-slate-200 overflow-hidden"
+                >
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
+                  <div className="p-4">
+                    <div className="absolute top-2 right-3 text-sm font-medium text-slate-400">
+                      Doctor #{index + 1}
+                    </div>
+                    <DoctorFields
+                      doctor={doctor}
+                      onChange={(field, value) => handleDoctorChange(index, field as keyof Doctor, value)}
+                      onRemove={() => removeDoctor(index)}
+                      showRemove={formData?.doctors ? formData?.doctors?.length > 1 : false}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addDoctor}
+              className="mt-2"
+            >
               Add Another Doctor
-            </Button>
-          </div>
-
-          {/* Form Actions */}
-          <div className="flex justify-end space-x-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating Client...
-                </>
-              ) : (
-                "Update Client"
-              )}
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Form Actions */}
+      <div className="mt-6 flex justify-end gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating Client...
+            </>
+          ) : (
+            "Update Client"
+          )}
+        </Button>
+      </div>
     </form>
   );
 };
