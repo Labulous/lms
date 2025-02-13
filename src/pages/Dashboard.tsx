@@ -750,7 +750,7 @@ const Dashboard: React.FC = () => {
             {/* Metrics Row */}
             <div className="grid grid-cols-12 gap-4 mt-4">
               {/* Workstation Status */}
-              <Card className="col-span-12 lg:col-span-12 bg-white h-full p-6">
+              <Card className="col-span-12 lg:col-span-6 bg-white h-full p-6">
                 <CardHeader className="px-0 pt-0 pb-4">
                   <CardTitle className="text-lg font-medium">
                     Workstation Status
@@ -820,9 +820,9 @@ const Dashboard: React.FC = () => {
               </Card>
 
               {/* Performance Metrics */}
-              {/* <div className="col-span-12 lg:col-span-6">
+              <div className="col-span-12 lg:col-span-6">
                 <PerformanceMetricsCard />
-              </div> */}
+              </div>
             </div>
           </div>
         </TabsContent>
