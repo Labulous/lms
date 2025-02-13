@@ -349,7 +349,7 @@ export function CreateStatementModal({
       });
 
     
-      toast.success("Statement generated successfully");
+      // toast.success("Statement generated successfully");
       // onClose();
     } catch (error) {
       console.error("Error generating statement:", error);

@@ -170,7 +170,7 @@ const StatementList = ({ statement }: StatementList) => {
 
       try {
         const { data, error } = await supabase
-          .from("labs")
+          .from("users")
           .select(
             `
             lab:labs!lab_id (

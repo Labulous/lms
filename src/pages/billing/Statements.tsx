@@ -95,8 +95,8 @@ const Statements = () => {
           "due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
         )
         .in("status", ["unpaid", "partially_paid"])
-        .gte("due_date", startDate)
-        .lt("due_date", endDate)
+        // .gte("due_date", startDate)
+        // .lt("due_date", endDate)
         .not("amount", "is", null)
         .eq("lab_id", lab.labId);
 
