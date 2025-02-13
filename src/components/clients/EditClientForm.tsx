@@ -495,6 +495,19 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             </div>
           </div>
 
+          {/* Additional Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Additional Notes</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              className="mt-1 h-24 w-full"
+              placeholder="Enter any additional notes about the client..."
+            />
+          </div>
+
           {/* Additional Information */}
           <div className="space-y-4">
             <h3 className="font-medium text-sm text-muted-foreground">
@@ -549,22 +562,12 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="salesRepNote">Sales Rep Notes</Label>
+              <div className="col-span-2">
+                <Label htmlFor="salesRepNote">Additional Notes</Label>
                 <Textarea
                   id="salesRepNote"
                   name="salesRepNote"
                   value={formData.salesRepNote}
-                  onChange={handleInputChange}
-                  className="mt-1 h-24"
-                />
-              </div>
-              <div>
-                <Label htmlFor="notes">Additional Notes</Label>
-                <Textarea
-                  id="notes"
-                  name="notes"
-                  value={formData.notes}
                   onChange={handleInputChange}
                   className="mt-1 h-24"
                 />
