@@ -445,6 +445,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     const selectedId = productTypes.find((item) => item.name === selectedType);
     try {
       setLoading(true);
+      if (!lab?.labId) {
+        return;
+      }
       const { data: fetchedProducts, error } = await supabase
         .from("products")
         .select(
