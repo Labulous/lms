@@ -25,14 +25,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import BalanceList from "./BalanceList";
 import { isValid, parseISO, format } from "date-fns";
 import { formatDate } from "@/lib/formatedDate";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Address, clientsService, Doctor } from "@/services/clientsService";
-import {
-  Client as ClientItem
-} from "@/services/clientsService";
+import { Client as ClientItem } from "@/services/clientsService";
 import StatementReceiptPreviewModal from "./print/StatementReceiptPreviewModal";
 import moment from "moment";
 
@@ -100,8 +103,6 @@ export interface StatementDetails {
   invoiceData: InvoiceItem[];
 }
 
-
-
 const StatementList = ({ statement }: StatementList) => {
   const [selectedStatements, setSelectedStatements] = useState<string[]>([]);
   const [clientFilter, setClientFilter] = useState("");
@@ -115,9 +116,12 @@ const StatementList = ({ statement }: StatementList) => {
 
   const currentDate = new Date();
 
-  const [selectmonth, setSelectMonth] = useState((currentDate.getMonth() + 1).toString());
-  const [selectyear, setSelectYear] = useState((currentDate.getFullYear()).toString());
-
+  const [selectmonth, setSelectMonth] = useState(
+    (currentDate.getMonth() + 1).toString()
+  );
+  const [selectyear, setSelectYear] = useState(
+    currentDate.getFullYear().toString()
+  );
 
   const [selectedClient, setSelectedClient] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("All Clients");
@@ -129,19 +133,19 @@ const StatementList = ({ statement }: StatementList) => {
   const [isEditing, setIsEditing] = useState(false);
   const [labs, setLabs] = useState<labDetail[]>([]);
 
-  const [statementDetails, setStatementDetails] = useState<StatementDetails[]>([]);
+  const [statementDetails, setStatementDetails] = useState<StatementDetails[]>(
+    []
+  );
 
-
-
-
-  console.log('statement data1.1.......................', statement);
-
+  console.log("statement data1.1.......................", statement);
 
   const { user } = useAuth();
   const handleSelectAll = (checked: boolean) => {
     // debugger;
     if (checked) {
-      setSelectedStatements(filteredStatements.map((statement: any) => statement.id));
+      setSelectedStatements(
+        filteredStatements.map((statement: any) => statement.id)
+      );
     } else {
       setSelectedStatements([]);
     }
@@ -210,12 +214,11 @@ const StatementList = ({ statement }: StatementList) => {
     }
   }, [user?.id]);
 
-
   const handlePrintReceipts = async () => {
     // TODO: Implement print receipts functionality
     toast.success("Print receipts functionality coming soon!");
   };
-
+  console.log(statement, "statement");
   // Fetch clients on mount
   useEffect(() => {
     const fetchClients = async () => {
@@ -244,39 +247,41 @@ const StatementList = ({ statement }: StatementList) => {
   }, []);
 
   const handleMonthChange = (e: any) => {
-    setSelectMonth(e)
+    setSelectMonth(e);
     const selMonth = e;
 
-    setFilteredStatements(statement.filter((item) => {
-      const itemDate = new Date(item.created_at);
-      const itemMonth = itemDate.getMonth() + 1;
-      const itemYear = itemDate.getFullYear();
-      return (
-        selectedClient === "" || selectedClient === "All Clients" ? itemMonth === Number(selMonth) && itemYear === Number(selectyear)
-          :
-          itemMonth === Number(selMonth) && itemYear === Number(selectyear)
-          && item.client.client_name.toLowerCase() === selectedClient.toLocaleLowerCase()
-      )
-    }));
-  }
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return selectedClient === "" || selectedClient === "All Clients"
+          ? itemMonth === Number(selMonth) && itemYear === Number(selectyear)
+          : itemMonth === Number(selMonth) &&
+              itemYear === Number(selectyear) &&
+              item.client.client_name.toLowerCase() ===
+                selectedClient.toLocaleLowerCase();
+      })
+    );
+  };
 
   const handleYearChange = (e: any) => {
-    setSelectYear(e)
+    setSelectYear(e);
     const selYear = e;
-    setFilteredStatements(statement.filter((item) => {
-      const itemDate = new Date(item.created_at);
-      const itemMonth = itemDate.getMonth() + 1;
-      const itemYear = itemDate.getFullYear();
-      return (
-        selectedClient === "" || selectedClient === "All Clients" ? itemMonth === Number(selectmonth) && itemYear === Number(selYear)
-          :
-          itemMonth === Number(selectmonth) && itemYear === Number(selYear)
-          && item.client.client_name.toLowerCase() === selectedClient.toLocaleLowerCase()
-      )
-    }));
-  }
-
-
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return selectedClient === "" || selectedClient === "All Clients"
+          ? itemMonth === Number(selectmonth) && itemYear === Number(selYear)
+          : itemMonth === Number(selectmonth) &&
+              itemYear === Number(selYear) &&
+              item.client.client_name.toLowerCase() ===
+                selectedClient.toLocaleLowerCase();
+      })
+    );
+  };
 
   const months = [
     { key: 1, value: "January" },
@@ -294,21 +299,18 @@ const StatementList = ({ statement }: StatementList) => {
   ];
   const years = Array.from({ length: 10 }, (_, i) => 2020 + i);
 
-
-
-
-
-
   const filteredClients = useMemo(() => {
     if (searchTerm === "All Clients" || searchTerm.trim() === "") {
-      setFilteredStatements(statement.filter((item) => {
-        const itemDate = new Date(item.created_at);
-        const itemMonth = itemDate.getMonth() + 1;
-        const itemYear = itemDate.getFullYear();
-        return (
-          itemMonth === Number(selectmonth) && itemYear === Number(selectyear)
-        )
-      }));
+      setFilteredStatements(
+        statement.filter((item) => {
+          const itemDate = new Date(item.created_at);
+          const itemMonth = itemDate.getMonth() + 1;
+          const itemYear = itemDate.getFullYear();
+          return (
+            itemMonth === Number(selectmonth) && itemYear === Number(selectyear)
+          );
+        })
+      );
 
       return clients;
     }
@@ -317,38 +319,46 @@ const StatementList = ({ statement }: StatementList) => {
       client.clientName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    setFilteredStatements(statement.filter((item) => {
-      const itemDate = new Date(item.created_at);
-      const itemMonth = itemDate.getMonth() + 1;
-      const itemYear = itemDate.getFullYear();
-      return (
-        itemMonth === Number(selectmonth) && itemYear === Number(selectyear)
-        && item.client.client_name.toLowerCase() === selectedClient.toLocaleLowerCase()
-      )
-    }));
+    setFilteredStatements(
+      statement.filter((item) => {
+        const itemDate = new Date(item.created_at);
+        const itemMonth = itemDate.getMonth() + 1;
+        const itemYear = itemDate.getFullYear();
+        return (
+          itemMonth === Number(selectmonth) &&
+          itemYear === Number(selectyear) &&
+          item.client.client_name.toLowerCase() ===
+            selectedClient.toLocaleLowerCase()
+        );
+      })
+    );
 
     return filter.length > 0 ? filter : [];
-
   }, [searchTerm, clients]);
 
   const handleViewDetails = async (statementId: string) => {
-    const statementData = filteredStatements.filter((l: any) => l.id === statementId);
+    const statementData = filteredStatements.filter(
+      (l: any) => l.id === statementId
+    );
     const { data: clientData, error } = await supabase
       .from("clients")
       .select("*")
       .eq("client_name", statementData[0]?.client.client_name)
       .single();
 
-
-    const startOfMonth = moment(`${selectyear}-${selectmonth}-01`).format("YYYY-MM-DD");
+    const startOfMonth = moment(`${selectyear}-${selectmonth}-01`).format(
+      "YYYY-MM-DD"
+    );
     const nextMonth = moment(startOfMonth).add(1, "month").format("YYYY-MM-DD");
 
     const { data: invoicesData, error: errro1 } = await supabase
       .from("invoices")
-      .select(`
+      .select(
+        `
           *,
           case:cases(case_number, patient_name)
-        `)
+        `
+      )
       .eq("client_id", clientData?.id)
       .gte("created_at", startOfMonth)
       .lt("created_at", nextMonth)
@@ -380,17 +390,20 @@ const StatementList = ({ statement }: StatementList) => {
 
     let combinedData: InvoiceItem[] = [];
 
-    invoicesData?.forEach(invoice => {
+    invoicesData?.forEach((invoice) => {
       combinedData.push({
         date: invoice.created_at,
-        activity: `Invoice  ${invoice.case?.case_number?.replace("TES", "INV")} : ${invoice.case?.patient_name}`,
+        activity: `Invoice  ${invoice.case?.case_number?.replace(
+          "TES",
+          "INV"
+        )} : ${invoice.case?.patient_name}`,
         amount: invoice.amount || 0,
         balance: invoice.balance || 0,
         type: "I",
       });
     });
 
-    paymentsData?.forEach(payment => {
+    paymentsData?.forEach((payment) => {
       combinedData.push({
         date: payment.created_at,
         activity: `Payment: ${payment?.payment_method}`,
@@ -419,16 +432,21 @@ const StatementList = ({ statement }: StatementList) => {
       console.error("Error fetching balance list:", balanceListError);
     } else {
       runningBalance = balanceList.reduce((sum, item) => {
-        return sum + (item.last_month || 0) + (item.days_30_plus || 0) + (item.days_60_plus || 0) + (item.days_90_plus || 0);
+        return (
+          sum +
+          (item.last_month || 0) +
+          (item.days_30_plus || 0) +
+          (item.days_60_plus || 0) +
+          (item.days_90_plus || 0)
+        );
       }, 0);
 
       console.log("Total Outstanding Balance:", runningBalance);
     }
 
-
-    combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-
+    combinedData.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
 
     if (runningBalance >= 0) {
       combinedData.unshift({
@@ -440,7 +458,7 @@ const StatementList = ({ statement }: StatementList) => {
       });
     }
 
-    combinedData = combinedData.map(transaction => {
+    combinedData = combinedData.map((transaction) => {
       if (transaction.type === "I") {
         runningBalance += transaction.amount;
       } else if (transaction.type === "P") {
@@ -453,8 +471,6 @@ const StatementList = ({ statement }: StatementList) => {
       };
     });
 
-
-
     const statementDetailsObject: StatementDetails = {
       statement: statementData[0],
       client: clientData,
@@ -465,10 +481,8 @@ const StatementList = ({ statement }: StatementList) => {
     setIsPreviewModalOpen(true);
   };
 
-
   return (
     <div className="space-y-4">
-
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center  gap-1">
           <div className="relative w-[200px]">
@@ -603,7 +617,6 @@ const StatementList = ({ statement }: StatementList) => {
         </div>
       </div>
 
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -617,8 +630,6 @@ const StatementList = ({ statement }: StatementList) => {
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
-
-
 
               <TableHead>Date</TableHead>
               <TableHead>Statement #</TableHead>
@@ -670,11 +681,7 @@ const StatementList = ({ statement }: StatementList) => {
                         <span className="sr-only">Open menu</span>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="w-[160px]"
-                    >
-
+                    <DropdownMenuContent align="end" className="w-[160px]">
                       {/* <DropdownMenuItem
                         onClick={() => {
                           setSelectedStatements([statement?.id as string]);
@@ -688,20 +695,18 @@ const StatementList = ({ statement }: StatementList) => {
                       </DropdownMenuItem> */}
 
                       <DropdownMenuItem
-                        onClick={() => handleViewDetails(statement?.id as string)}
+                        onClick={() =>
+                          handleViewDetails(statement?.id as string)
+                        }
                         className="cursor-pointer"
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-
                     </DropdownMenuContent>
                   </DropdownMenu>
-
                 </TableCell>
-
               </TableRow>
-
             ))}
           </TableBody>
         </Table>
@@ -734,10 +739,7 @@ const StatementList = ({ statement }: StatementList) => {
           labData={labs}
         />
       )}
-
     </div>
-
-
   );
 };
 

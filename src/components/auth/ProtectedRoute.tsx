@@ -13,7 +13,10 @@ interface ProtectedRouteProps {
   requiredRole?: Role | Role[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole,
+}) => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
 
@@ -21,7 +24,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (error) {
           logger.error("Session check failed:", error);
@@ -44,9 +50,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
 
     checkSession();
   }, []);
-console.log(location.pathname,"location.pathname")
+  console.log(location.pathname, "location.pathname");
   // 🔹 Show a loading indicator until authentication is determined
-  if (authLoading ) {
+  if (authLoading && location.pathname === "/dashboard") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
