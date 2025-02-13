@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction } from "react";
+import React, { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { Client, ClientInput, Doctor } from "../../services/clientsService";
 import { toast } from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +49,9 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   onDelete,
   setIsEditing,
 }) => {
-  const handleEditClick = () => {
+  const [otherEmailInputs, setOtherEmailInputs] = useState([1]);
+
+  const handleEditClick = (isFirst?: boolean) => {
     // Initialize editedData with all current client data
     setEditedData({
       accountNumber: client.accountNumber,
@@ -87,14 +89,19 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         notes: doctor.notes ?? "",
       })),
     });
-    setIsEditing(true);
+    isFirst ? null : setIsEditing(true);
+    setOtherEmailInputs(
+      client?.otherEmail?.map((_item, idex) => idex + 1) || [1]
+    );
   };
 
+  useEffect(() => {
+    handleEditClick(true);
+  }, []);
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-
     setEditedData((prev: ClientInput | null) => {
       if (!prev) return null; // If prev is null, return null
 
@@ -105,6 +112,16 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           ...prev,
           address: {
             ...prev.address,
+            [addressField]: value, // Dynamically update the address field
+          },
+        };
+      }
+      if (name.startsWith("billingAddress.")) {
+        const addressField = name.split(".")[1]; // Extract the specific address field
+        return {
+          ...prev,
+          billingAddress: {
+            ...prev.billingAddress,
             [addressField]: value, // Dynamically update the address field
           },
         };
@@ -167,6 +184,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
 
     try {
       await onEdit(editedData);
+
       setIsEditing(false);
       toast.success("Client details updated successfully");
     } catch (error) {
@@ -178,7 +196,28 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     setIsEditing(false);
     setEditedData(null);
   };
+  console.log(editedData, "Form");
 
+  const handleOtherEmail = (
+    index: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!Array.isArray(editedData?.otherEmail)) return;
+    const newOtherEmails = [...editedData?.otherEmail];
+    newOtherEmails[index] = event.target.value;
+    setEditedData({ ...editedData, otherEmail: newOtherEmails });
+  };
+
+  const addOtherEmail = () => {
+    setOtherEmailInputs([...otherEmailInputs, otherEmailInputs.length + 1]);
+  };
+
+  const removeOtherEmail = (index: number) => {
+    if (!Array.isArray(editedData?.otherEmail)) return;
+    const newOtherEmails = editedData?.otherEmail.filter((_, i) => i !== index);
+    setEditedData({ ...editedData, otherEmail: newOtherEmails });
+    setOtherEmailInputs(otherEmailInputs.slice(0, -1));
+  };
   return (
     <div className="space-y-6">
       <Card>
@@ -211,7 +250,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           <div className="space-x-2">
             {!isEditing ? (
               <>
-                <Button variant="outline" size="sm" onClick={handleEditClick}>
+                <Button variant="outline" size="sm" onClick={()=> handleEditClick()}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
@@ -320,19 +359,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Primary Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      name="email"
-                      value={isEditing ? editedData?.email ?? "" : client.email}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Billing Email</Label>
                   <div className="relative">
@@ -350,7 +377,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label className="text-sm font-medium">Other Email</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -366,11 +393,134 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                       className="pl-10"
                     />
                   </div>
+                </div> */}
+                <div className="grid grid-cols-2 w-full justify-center items-center gap-2">
+                  {otherEmailInputs.map((_, index) => (
+                    <div
+                      key={index}
+                      className="mt-2 flex flex-col items-center gap-2 w-full"
+                    >
+                      <Label htmlFor={`otherEmail-${index}`}>
+                        Other Email {index + 1}
+                      </Label>
+                      <div className="flex  gap-1 items-center w-full">
+                        <div className="relative w-full">
+                          <Mail className="absolute left-3 top-4 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id={`otherEmail-${index}`}
+                            name={`otherEmail-${index}`}
+                            type="email"
+                            value={
+                              isEditing
+                                ? editedData?.otherEmail?.[index]
+                                : client.otherEmail?.[index] || ""
+                            }
+                            onChange={(e) => handleOtherEmail(index, e)}
+                            className="mt-0.5 w-full pl-8"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeOtherEmail(index)}
+                          className="border  px-2 py-1  rounded"
+                        >
+                          X
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {isEditing && (
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={addOtherEmail}
+                        className="mt-6 bg-blue-500 text-white px-2 py-2 rounded"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Billing Address</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Street</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      name="billingAddress.street"
+                      value={
+                        isEditing
+                          ? editedData?.billingAddress?.street ?? ""
+                          : client.billingAddress.street
+                      }
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">City</Label>
+                  <Input
+                    name="billingAddress.city"
+                    value={
+                      isEditing
+                        ? editedData?.billingAddress?.city ?? ""
+                        : client.billingAddress.city
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">State</Label>
+                  <Input
+                    name="billingAddress.state"
+                    value={
+                      isEditing
+                        ? editedData?.billingAddress?.state ?? ""
+                        : client.billingAddress.state
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Zip Code</Label>
+                  <Input
+                    name="billingAddress.zipCode"
+                    value={
+                      isEditing
+                        ? editedData?.billingAddress?.zipCode ?? ""
+                        : client.billingAddress.zipCode
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Country</Label>
+                  <Input
+                    name="billingAddress.country"
+                    value={
+                      isEditing
+                        ? editedData?.billingAddress?.country ?? ""
+                        : client.billingAddress.country
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+              </CardContent>
+
+              {/*  */}
               <CardHeader>
                 <CardTitle className="text-lg">Address</CardTitle>
               </CardHeader>
@@ -425,6 +575,19 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     value={
                       isEditing
                         ? editedData?.address?.zipCode ?? ""
+                        : client.address.zipCode
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Country</Label>
+                  <Input
+                    name="address.country"
+                    value={
+                      isEditing
+                        ? editedData?.address?.country ?? ""
                         : client.address.zipCode
                     }
                     onChange={handleInputChange}

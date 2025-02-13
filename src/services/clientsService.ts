@@ -318,7 +318,7 @@ class ClientsService {
         .eq("id", id)
         .single();
 
-      console.log("DEBUG: Raw client query result:", { client, error });
+      console.log("DEBUG: Raw client query result:", { client, error, id });
 
       if (error) {
         logger.error("Error fetching client from database", { id, error });
