@@ -119,7 +119,10 @@ export function NewPaymentModal({
     // Allow only valid numbers
     if (!isNaN(Number(value)) && Number(value) >= 0) {
       setError(false);
-      if (paymentMethod == "credit form" && (Number(value) > Number(balanceSummary?.credit))) {
+      if (
+        paymentMethod == "credit form" &&
+        Number(value) > Number(balanceSummary?.credit)
+      ) {
         setError(true);
         return;
       }
@@ -186,15 +189,15 @@ export function NewPaymentModal({
               ...updatedInvoices[existingInvoiceIndex],
               invoicesData: updatedInvoices[existingInvoiceIndex]?.invoicesData
                 ? [
-                  {
-                    ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
-                    due_amount: Math.max(
-                      0,
-                      updatedInvoices[existingInvoiceIndex].invoicesData[0]
-                        .due_amount - allocated
-                    ),
-                  },
-                ]
+                    {
+                      ...updatedInvoices[existingInvoiceIndex].invoicesData[0],
+                      due_amount: Math.max(
+                        0,
+                        updatedInvoices[existingInvoiceIndex].invoicesData[0]
+                          .due_amount - allocated
+                      ),
+                    },
+                  ]
                 : [],
             };
           } else {
@@ -202,11 +205,11 @@ export function NewPaymentModal({
               ...invoice,
               invoicesData: invoice?.invoicesData
                 ? [
-                  {
-                    ...invoice.invoicesData[0],
-                    due_amount: Math.max(0, due_amount - allocated),
-                  },
-                ]
+                    {
+                      ...invoice.invoicesData[0],
+                      due_amount: Math.max(0, due_amount - allocated),
+                    },
+                  ]
                 : [],
             });
           }
@@ -320,7 +323,6 @@ export function NewPaymentModal({
             `
           )
           .eq("lab_id", lab?.labId)
-          .eq("status", "completed")
           .eq("client_id", selectedClient)
           .order("created_at", { ascending: true });
 
@@ -406,11 +408,13 @@ export function NewPaymentModal({
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map((client) => (
-                      <SelectItem key={client.id} value={client.id}>
-                        {client.clientName}
-                      </SelectItem>
-                    ))}{" "}
+                    <div className="h-full max-h-80 overflow-y-scroll">
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.clientName}
+                        </SelectItem>
+                      ))}{" "}
+                    </div>
                   </SelectContent>
                 </Select>
               </div>
@@ -529,7 +533,6 @@ export function NewPaymentModal({
                   Payment amount cannot exceed the available credit.
                 </div>
               )}
-
             </div>
           </div>
         </div>
