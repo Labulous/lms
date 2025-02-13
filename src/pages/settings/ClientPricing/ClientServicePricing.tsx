@@ -598,24 +598,8 @@ const ClientServicePricing = ({
                         <TableHead>New Price</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody className="overflow-y-scroll">
-                      {sortData(editableServices)
-                        ?.sort((a, b) => {
-                          const aHasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(a.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.serviceId === a.id
-                                );
-                          const bHasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(b.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.serviceId === b.id
-                                );
-                          return Number(bHasNewPrice) - Number(aHasNewPrice); // Convert booleans to numbers for subtraction
-                        })
-                        .map((product) => {
+                    <TableBody>
+                      {(sortConfig.key ? sortData(editableServices) : editableServices)?.map((product) => {
                           const hasNewPrice =
                             selectedClient !== "default"
                               ? !!getClientPrice(product.id, selectedClient)
