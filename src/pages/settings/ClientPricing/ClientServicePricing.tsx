@@ -1,5 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { MoreVertical, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  MoreVertical,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -38,7 +44,11 @@ import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useAuth } from "@/contexts/AuthContext";
 import { SpecialServicesPrices } from "@/types/supabase";
 import toast from "react-hot-toast";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 // Mock data types
 interface Product {
   id: string;
@@ -104,8 +114,24 @@ const ClientServicePricing = ({
     direction: null,
   });
 
-  const { user } = useAuth();
+  const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  const uniqueMaterials = useMemo(() => {
+    if (!editableServices) return [];
+    const materials = editableServices
+      .map((product) => product.material?.name)
+      .filter(Boolean);
+    return Array.from(new Set(materials));
+  }, [editableServices]);
+
+  const filteredProducts = useMemo(() => {
+    if (!selectedMaterial) return editableServices;
+    return editableServices?.filter(
+      (product) => product.material?.name === selectedMaterial
+    );
+  }, [editableServices, selectedMaterial]);
+  console.log(filteredProducts, "filteredProducts");
   const { data: specialServicePrices, error: pricesError } = useQuery(
     labIdData?.lab_id
       ? supabase
@@ -302,16 +328,6 @@ const ClientServicePricing = ({
     setClientPrices(updatedPrices);
     setSelectedProducts([]);
   };
-
-  const filteredProducts =
-    selectedClient !== "default"
-      ? editableServices?.filter((product) =>
-          clientPrices.some(
-            (cp) =>
-              cp.serviceId === product.id && cp.clientId === selectedClient
-          )
-        )
-      : editableServices;
 
   console.log(clientPrices, "client, prices");
 
@@ -584,6 +600,78 @@ const ClientServicePricing = ({
                             Material
                             {getSortIcon("description")}
                           </Button>
+
+                          <Popover
+                            open={isFilterOpen}
+                            onOpenChange={setIsFilterOpen}
+                          >
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-2"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setIsFilterOpen(true);
+                                }}
+                              >
+                                <Filter className="h-4 w-4 z-50" />
+                                {selectedMaterial && (
+                                  <span className="ml-2 text-primary text-xs">
+                                    (Filtered)
+                                  </span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-48 z-50 pointer-events-auto"
+                              align="start"
+                              side="bottom"
+                              sideOffset={5}
+                              style={{ position: "fixed" }}
+                            >
+                              <div className="space-y-2">
+                                <div className="font-medium">
+                                  Filter by Material
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <Button
+                                    variant={
+                                      !selectedMaterial ? "default" : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedMaterial(null);
+                                      setIsFilterOpen(false);
+                                    }}
+                                    className="justify-start"
+                                  >
+                                    All Materials
+                                  </Button>
+                                  {uniqueMaterials.map((material) => (
+                                    <Button
+                                      key={material}
+                                      variant={
+                                        selectedMaterial === material
+                                          ? "default"
+                                          : "outline"
+                                      }
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedMaterial(material);
+                                        setIsFilterOpen(false);
+                                      }}
+                                      className="justify-start"
+                                    >
+                                      {material}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </TableHead>
                         <TableHead>
                           <Button
@@ -599,97 +687,99 @@ const ClientServicePricing = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(sortConfig.key ? sortData(editableServices) : editableServices)?.map((product) => {
-                          const hasNewPrice =
-                            selectedClient !== "default"
-                              ? !!getClientPrice(product.id, selectedClient)
-                              : !!defaultClientPrices.find(
-                                  (item) => item.serviceId === product.id
-                                );
+                      {(sortConfig.key
+                        ? sortData(filteredProducts)
+                        : filteredProducts
+                      )?.map((product) => {
+                        const hasNewPrice =
+                          selectedClient !== "default"
+                            ? !!getClientPrice(product.id, selectedClient)
+                            : !!defaultClientPrices.find(
+                                (item) => item.serviceId === product.id
+                              );
 
-                          return (
-                            <TableRow
-                              key={product.id}
-                              className={cn(
-                                "hover:bg-muted/50",
-                                selectedClient !== "default" &&
-                                  hasNewPrice &&
-                                  "bg-blue-50"
-                              )}
-                            >
-                              <TableCell className="font-medium">
-                                {product.name}
-                              </TableCell>
-                              <TableCell>{product.material.name}</TableCell>
-                              <TableCell>${product.price.toFixed(2)}</TableCell>
-                              <TableCell>
-                                {selectedClient !== "default" ? (
-                                  <Input
-                                    type="number"
-                                    value={
-                                      selectedClient !== "default"
-                                        ? getClientPrice(
-                                            product.id,
-                                            selectedClient
-                                          ) ?? product.price
-                                        : product.price
-                                    }
-                                    onChange={(e) =>
-                                      handlePriceChange(
-                                        product.id,
-                                        e.target.value
-                                      )
-                                    }
-                                    step="0.01"
-                                    min="0"
-                                    className="w-24"
-                                  />
-                                ) : (
-                                  <Input
-                                    type="number"
-                                    placeholder="Ener new"
-                                    value={
-                                      defaultClientPrices.find(
+                        return (
+                          <TableRow
+                            key={product.id}
+                            className={cn(
+                              "hover:bg-muted/50",
+                              selectedClient !== "default" &&
+                                hasNewPrice &&
+                                "bg-blue-50"
+                            )}
+                          >
+                            <TableCell className="font-medium">
+                              {product.name}
+                            </TableCell>
+                            <TableCell>{product.material.name}</TableCell>
+                            <TableCell>${product.price.toFixed(2)}</TableCell>
+                            <TableCell>
+                              {selectedClient !== "default" ? (
+                                <Input
+                                  type="number"
+                                  value={
+                                    selectedClient !== "default"
+                                      ? getClientPrice(
+                                          product.id,
+                                          selectedClient
+                                        ) ?? product.price
+                                      : product.price
+                                  }
+                                  onChange={(e) =>
+                                    handlePriceChange(
+                                      product.id,
+                                      e.target.value
+                                    )
+                                  }
+                                  step="0.01"
+                                  min="0"
+                                  className="w-24"
+                                />
+                              ) : (
+                                <Input
+                                  type="number"
+                                  placeholder="Ener new"
+                                  value={
+                                    defaultClientPrices.find(
+                                      (item) => item.serviceId === product.id
+                                    )?.price || 0
+                                  }
+                                  onChange={(e) => {
+                                    const newPrice =
+                                      parseFloat(e.target.value) || 0;
+                                    setDefaultClientPrices((prevPrices) => {
+                                      const index = prevPrices.findIndex(
                                         (item) => item.serviceId === product.id
-                                      )?.price || 0
-                                    }
-                                    onChange={(e) => {
-                                      const newPrice =
-                                        parseFloat(e.target.value) || 0;
-                                      setDefaultClientPrices((prevPrices) => {
-                                        const index = prevPrices.findIndex(
-                                          (item) =>
-                                            item.serviceId === product.id
-                                        );
-                                        if (index !== -1) {
-                                          // Update existing item
-                                          const updatedPrices = [...prevPrices];
-                                          updatedPrices[index] = {
-                                            ...updatedPrices[index],
+                                      );
+                                      if (index !== -1) {
+                                        // Update existing item
+                                        const updatedPrices = [...prevPrices];
+                                        updatedPrices[index] = {
+                                          ...updatedPrices[index],
+                                          price: newPrice,
+                                        };
+                                        return updatedPrices;
+                                      } else {
+                                        // Add new item
+                                        return [
+                                          ...prevPrices,
+                                          {
+                                            serviceId: product.id,
                                             price: newPrice,
-                                          };
-                                          return updatedPrices;
-                                        } else {
-                                          // Add new item
-                                          return [
-                                            ...prevPrices,
-                                            {
-                                              serviceId: product.id,
-                                              price: newPrice,
-                                            },
-                                          ];
-                                        }
-                                      });
-                                    }}
-                                    step="0.01"
-                                    min="0"
-                                    className="w-24"
-                                  />
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                                          },
+                                        ];
+                                      }
+                                    });
+                                  }}
+                                  step="0.01"
+                                  min="0"
+                                  className="w-24"
+                                />
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

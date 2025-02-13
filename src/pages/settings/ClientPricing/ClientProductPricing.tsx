@@ -626,7 +626,7 @@ const ClientProductPricing = ({
                                     setIsFilterOpen(true);
                                   }}
                                 >
-                                  <Filter className="h-4 w-4" />
+                                  <Filter className="h-4 w-4 z-50" />
                                   {selectedMaterial && (
                                     <span className="ml-2 text-primary text-xs">
                                       (Filtered)
@@ -635,7 +635,7 @@ const ClientProductPricing = ({
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
-                                className="w-48 z-[100]"
+                                className="w-48 z-50 pointer-events-auto"
                                 align="start"
                                 side="bottom"
                                 sideOffset={5}

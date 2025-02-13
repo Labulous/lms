@@ -650,7 +650,7 @@ const UpdateCase: React.FC = () => {
         setSelectedProducts(() => {
           const groupedProducts: any = {};
           caseDataApi.products.forEach((item: any, index: number) => {
-            console.log(item,"itemitem")
+            console.log(item, "itemitem");
             const productId = item?.id || "";
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
@@ -692,7 +692,7 @@ const UpdateCase: React.FC = () => {
 
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
-              console.log(item , "itemitem");
+              console.log(item, "itemitem");
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
@@ -712,27 +712,21 @@ const UpdateCase: React.FC = () => {
                 notes: item?.teethProduct?.notes || "",
                 shades: {
                   body_shade: item.teethProduct?.body_shade?.id || "",
-                  gingival_shade:
-                    item?.teethProduct?.gingival_shade?.id || "",
-                  occlusal_shade:
-                    item?.teethProduct?.occlusal_shade?.id || "",
+                  gingival_shade: item?.teethProduct?.gingival_shade?.id || "",
+                  occlusal_shade: item?.teethProduct?.occlusal_shade?.id || "",
                   stump_shade: item.teethProduct?.stump_shade?.id || "",
-                  custom_body:
-                    item.teethProduct?.custom_body_shade || null,
+                  custom_body: item.teethProduct?.custom_body_shade || null,
                   custom_occlusal:
                     item.teethProduct?.custom_occlusal_shade || null,
                   custom_gingival:
                     item.teethProduct?.custom_gingival_shade || null,
-                  custom_stump:
-                    item.teethProduct?.custom_stump_shade || null,
-                  manual_body:
-                    item.teethProduct?.manual_body_shade || null,
+                  custom_stump: item.teethProduct?.custom_stump_shade || null,
+                  manual_body: item.teethProduct?.manual_body_shade || null,
                   manual_occlusal:
                     item.teethProduct?.manual_occlusal_shade || null,
                   manual_gingival:
                     item.teethProduct?.manual_gingival_shade || null,
-                  manual_stump:
-                    item.teethProduct?.manual_stump_shade || null,
+                  manual_stump: item.teethProduct?.manual_stump_shade || null,
                 },
               });
             });
@@ -896,6 +890,7 @@ const UpdateCase: React.FC = () => {
               clients={clients.map((item) => ({
                 id: item.id,
                 client_name: item.clientName,
+                account_number: item.accountNumber,
                 doctors: item.doctors.map((item) => ({
                   id: item.id as string,
                   name: item.name,

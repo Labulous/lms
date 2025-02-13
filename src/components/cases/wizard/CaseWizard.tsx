@@ -261,6 +261,7 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
             clients={clients.map((item) => ({
               id: item.id,
               client_name: item.clientName,
+              account_number: item.accountNumber,
               doctors: item.doctors.map((item) => ({
                 id: item.id as string,
                 name: item.name,
