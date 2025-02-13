@@ -438,7 +438,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
   useEffect(() => {
     fetchProductTypes();
-    fetchedMaterials();
   }, []);
   console.log(materials, "materials", MATERIALS);
   const fetchedProducts = async (selectedType: string) => {
@@ -516,6 +515,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     if (lab) {
       getShadeOptions(lab.labId);
+      fetchedMaterials();
     }
   }, [lab]);
 
