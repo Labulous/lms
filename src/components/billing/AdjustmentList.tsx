@@ -19,7 +19,12 @@ import {
 import { Eye, MoreVertical, PrinterIcon, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 import { Checkbox } from "../ui/checkbox";
 import AdjustmentReceiptPreviewModal from "./print/AdjustmentReceiptPreviewModal";
 import { labDetail } from "@/types/supabase";
@@ -63,11 +68,12 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   };
 
   const handleSelectsAdjustment = (adjustmentId: string, checked: boolean) => {
-
     if (checked) {
       setSelectedAdjustments([...selectedAdjustments, adjustmentId]);
     } else {
-      setSelectedAdjustments(selectedAdjustments.filter((id) => id !== adjustmentId));
+      setSelectedAdjustments(
+        selectedAdjustments.filter((id) => id !== adjustmentId)
+      );
     }
   };
 
@@ -78,7 +84,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
       setSelectedAdjustments([]);
     }
   };
-
 
   const handleSelectAllAdjustment = (checked: boolean) => {
     if (checked) {
@@ -95,9 +100,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
 
       try {
         const { data, error } = await supabase
-          .from("labs")
+          .from("users")
           .select(
             `
+             lab:labs!lab_id (
               id,
               name,
               attachements,
@@ -112,11 +118,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                 zip_postal,
                 country
               )
+             )
             `
           )
-          .or(
-            `super_admin_id.eq.${user?.id},admin_ids.cs.{${user?.id}},technician_ids.cs.{${user?.id}},client_ids.cs.{${user?.id}}`
-          );
+          .eq("id", user?.id);
 
         if (error) {
           throw new Error(error.message);
@@ -124,7 +129,8 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
 
         // Assuming you want the first lab's details
         if (data && data.length > 0) {
-          setLabs(data[0] as any);
+          const labData = data[0].lab;
+          setLabs(labData as any);
         }
       } catch (err: any) {
         console.error("Error fetching labs data:", err.message);
@@ -139,13 +145,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
     }
   }, [user?.id]);
 
-
-
   console.log(adjustments, "adjustmentsadjustments");
 
   return (
     <div className="space-y-4">
-
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center">
           {selectedAdjustments && selectedAdjustments.length > 0 && (
@@ -228,9 +231,14 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
               <TableRow key={adjustment.id}>
                 <TableCell>
                   <Checkbox
-                    checked={selectedAdjustments.includes(adjustment?.id.toString())}
+                    checked={selectedAdjustments.includes(
+                      adjustment?.id.toString()
+                    )}
                     onCheckedChange={(checked) =>
-                      handleSelectsAdjustment(adjustment?.id.toString(), checked as boolean)
+                      handleSelectsAdjustment(
+                        adjustment?.id.toString(),
+                        checked as boolean
+                      )
                     }
                     aria-label={`Select adjustment ${adjustment?.id.toString()}`}
                   />
@@ -240,7 +248,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                 <TableCell>{adjustment.description}</TableCell>
                 <TableCell className="text-right">
                   {adjustment?.credit_amount != null &&
-                    adjustment.credit_amount > 0
+                  adjustment.credit_amount > 0
                     ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
                     : "-"}
                 </TableCell>
@@ -253,8 +261,12 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                        <div className="" >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 p-0"
+                      >
+                        <div className="">
                           <MoreVertical className="h-4 w-4" />
                           <span className="sr-only">Open menu</span>
                         </div>
@@ -266,7 +278,10 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                     >
                       <DropdownMenuItem
                         onClick={() => {
-                          handleSelectAdjustment(adjustment.id.toString(), true as boolean)
+                          handleSelectAdjustment(
+                            adjustment.id.toString(),
+                            true as boolean
+                          );
                           setIsPreviewModalOpen(true);
                         }}
                         className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
@@ -275,7 +290,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -298,7 +312,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
         </Select>
         <div className="text-sm text-muted-foreground">1-2 of 2</div>
       </div>
-
 
       {isPreviewModalOpen && (
         <AdjustmentReceiptPreviewModal

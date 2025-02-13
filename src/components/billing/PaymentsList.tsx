@@ -12,7 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Search, ArrowUpDown, PrinterIcon, MoreVertical, Eye } from "lucide-react";
+import {
+  Plus,
+  Search,
+  ArrowUpDown,
+  PrinterIcon,
+  MoreVertical,
+  Eye,
+} from "lucide-react";
 import { InvoiceItem } from "@/data/mockInvoicesData";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
@@ -22,9 +29,17 @@ import { labDetail, PaymentListItem } from "@/types/supabase";
 import { isValid, parseISO, format } from "date-fns";
 import { Logger } from "html2canvas/dist/types/core/logger";
 import { formatDate } from "@/lib/formatedDate";
-import { updateBalanceTracking, updateBalanceTracking_new } from "@/lib/updateBalanceTracking";
+import {
+  updateBalanceTracking,
+  updateBalanceTracking_new,
+} from "@/lib/updateBalanceTracking";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@radix-ui/react-dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@radix-ui/react-dropdown-menu";
 import PaymentReceiptPreviewModal from "./print/PaymentReceiptPreviewModal";
 import Payments from "@/pages/billing/Payments";
 
@@ -44,8 +59,6 @@ export function PaymentsList() {
     []
   );
 
-
-
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
@@ -54,7 +67,6 @@ export function PaymentsList() {
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [labs, setLabs] = useState<labDetail[]>([]);
-
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "payment_date",
@@ -231,7 +243,9 @@ export function PaymentsList() {
         return;
       }
 
-      const caseNumbers = updatedInvoices.map((inv: Invoice) => inv.case_number).join(",");
+      const caseNumbers = updatedInvoices
+        .map((inv: Invoice) => inv.case_number)
+        .join(",");
       // Step 1: Update invoices
       for (const invoice of updatedInvoices) {
         const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
@@ -280,7 +294,6 @@ export function PaymentsList() {
         throw new Error(`Failed to insert payment: ${paymentError.message}`);
       }
 
-
       // Insert a new credit adjustment
       if (paymentMethod == "credit form") {
         const { error: insertError } = await supabase
@@ -293,7 +306,6 @@ export function PaymentsList() {
             payment_date: date,
           });
       }
-
 
       console.log("Payment inserted successfully.", insertedPayment);
       //await updateBalanceTracking();
@@ -364,11 +376,21 @@ export function PaymentsList() {
         );
       }
 
-
       const balanceUpdate = {
         ...balances,
         outstanding_balance: outstandingBalance,
-        credit: overpaymentAmount > 0 ? Math.max((existingBalanceTracking?.credit ?? 0) + overpaymentAmount, 0) : paymentMethod == "credit form" ? Math.max((existingBalanceTracking?.credit ?? 0) - paymentAmount, 0) : Math.max(existingBalanceTracking?.credit ?? 0),
+        credit:
+          overpaymentAmount > 0
+            ? Math.max(
+                (existingBalanceTracking?.credit ?? 0) + overpaymentAmount,
+                0
+              )
+            : paymentMethod == "credit form"
+            ? Math.max(
+                (existingBalanceTracking?.credit ?? 0) - paymentAmount,
+                0
+              )
+            : Math.max(existingBalanceTracking?.credit ?? 0),
         updated_at: new Date().toISOString(),
         client_id: client,
       };
@@ -401,7 +423,6 @@ export function PaymentsList() {
 
         console.log("Balance tracking created successfully.");
       }
-
     } catch (err) {
       console.error("Error handling new payment:", err);
       toast.error("Failed to add payment or update balance tracking.");
@@ -411,7 +432,6 @@ export function PaymentsList() {
     }
   };
 
-
   useEffect(() => {
     const fetchLabs = async () => {
       setLoading(true);
@@ -419,9 +439,11 @@ export function PaymentsList() {
 
       try {
         const { data, error } = await supabase
-          .from("labs")
+          .from("users")
           .select(
             `
+            lab:labs!lab_id (
+            
             id,
             name,
             attachements,
@@ -436,11 +458,10 @@ export function PaymentsList() {
               zip_postal,
               country
             )
+            )
           `
           )
-          .or(
-            `super_admin_id.eq.${user?.id},admin_ids.cs.{${user?.id}},technician_ids.cs.{${user?.id}},client_ids.cs.{${user?.id}}`
-          );
+          .eq("id", user?.id);
 
         if (error) {
           throw new Error(error.message);
@@ -448,7 +469,8 @@ export function PaymentsList() {
 
         // Assuming you want the first lab's details
         if (data && data.length > 0) {
-          setLabs(data[0] as any);
+          const formData = data[0].lab;
+          setLabs(formData as any);
         }
       } catch (err: any) {
         console.error("Error fetching labs data:", err.message);
@@ -462,8 +484,6 @@ export function PaymentsList() {
       fetchLabs();
     }
   }, [user?.id]);
-
-
 
   return (
     <div className="space-y-4">
@@ -563,96 +583,99 @@ export function PaymentsList() {
             <TableBody>
               {loading
                 ? Array.from({ length: 5 }).map((_, index) => (
-                  <TableRow key={`loading-${index}`}>
-                    <TableCell>
-                      <div className="h-4 w-4 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                    </TableCell>
-                  </TableRow>
-                ))
+                    <TableRow key={`loading-${index}`}>
+                      <TableCell>
+                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 : getSortedData().map((payment) => (
-                  <TableRow
-                    key={payment.id}
-                    className="hover:bg-muted/50 transition-colors"
-                  >
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedPayments.includes(payment.id)}
-                        onCheckedChange={(checked) =>
-                          handleSelectPayments(payment.id, checked as boolean)
-                        }
-                        aria-label={`Select payment ${payment.id}`}
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {formatDate(payment.payment_date)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {payment.clients?.client_name}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      ${payment.amount.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {payment.payment_method}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${payment.over_payment.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${payment.remaining_payment.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                            <div className="" >
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">Open menu</span>
-                            </div>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="flex space-x-4 bg-gray-50 p-2 rounded-md"
-                        >
-                          <DropdownMenuItem
-                            onClick={() => {
-                              handleSelectPayment(payment.id, true as boolean)
-                              setIsPreviewModalOpen(true);
-                            }}
-                            className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
-                            style={{ display: "flex", flexDirection: "row" }}
+                    <TableRow
+                      key={payment.id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedPayments.includes(payment.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectPayments(payment.id, checked as boolean)
+                          }
+                          aria-label={`Select payment ${payment.id}`}
+                        />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {formatDate(payment.payment_date)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {payment.clients?.client_name}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        ${payment.amount.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {payment.payment_method}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${payment.over_payment.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ${payment.remaining_payment.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 p-0"
+                            >
+                              <div className="">
+                                <MoreVertical className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                              </div>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="flex space-x-4 bg-gray-50 p-2 rounded-md"
                           >
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-
-
-
-                  </TableRow>
-                ))}
+                            <DropdownMenuItem
+                              onClick={() => {
+                                handleSelectPayment(
+                                  payment.id,
+                                  true as boolean
+                                );
+                                setIsPreviewModalOpen(true);
+                              }}
+                              className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
+                              style={{ display: "flex", flexDirection: "row" }}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
             </TableBody>
           </Table>
         </div>
@@ -664,7 +687,6 @@ export function PaymentsList() {
           onSubmit={handleNewPayment}
         />
       )}
-      
 
       {isPreviewModalOpen && (
         <PaymentReceiptPreviewModal

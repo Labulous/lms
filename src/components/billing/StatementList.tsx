@@ -173,6 +173,7 @@ const StatementList = ({ statement }: StatementList) => {
           .from("labs")
           .select(
             `
+            lab:labs!lab_id (
             id,
             name,
             attachements,
@@ -187,11 +188,10 @@ const StatementList = ({ statement }: StatementList) => {
               zip_postal,
               country
             )
+            )
           `
           )
-          .or(
-            `super_admin_id.eq.${user?.id},admin_ids.cs.{${user?.id}},technician_ids.cs.{${user?.id}},client_ids.cs.{${user?.id}}`
-          );
+          .eq("id", user?.id);
 
         if (error) {
           throw new Error(error.message);
@@ -199,7 +199,7 @@ const StatementList = ({ statement }: StatementList) => {
 
         // Assuming you want the first lab's details
         if (data && data.length > 0) {
-          setLabs(data[0] as any);
+          setLabs(data[0].lab as any);
         }
       } catch (err: any) {
         console.error("Error fetching labs data:", err.message);
