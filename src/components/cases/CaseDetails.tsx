@@ -1409,18 +1409,18 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     console.log("isWorkstationCompleted:", isWorkstationCompleted);
 
-    if (stepsData && stepsData.length === 1) {
-      console.log("System step count is 1, returning false");
-      return toast.error("Workstation steps have not been created yet.");
-    }
+    // if (stepsData && stepsData.length === 1) {
+    //   console.log("System step count is 1, returning false");
+    //   return toast.error("Workstation steps have not been created yet.");
+    // }
 
-    if (isWorkstationCompleted) {
-      console.log("Workstation is completed. Proceeding with status update.");
+    handleUpdateCaseStatus("completed");
+    // if (isWorkstationCompleted) {
+    //   console.log("Workstation is completed. Proceeding with status update.");
 
-      handleUpdateCaseStatus("completed");
-    } else {
-      toast.error("Please Complete the Workstations First.");
-    }
+    // } else {
+    //   toast.error("Please Complete the Workstations First.");
+    // }
   };
 
   const handleBackClick = () => {
