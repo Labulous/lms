@@ -44,24 +44,22 @@ const Statements = () => {
       //   .split(",")
       //   .map((item: string) => parseInt(item.trim(), 10));
 
-      const [month, year, client_id] = data.month.split(",").map((item: string, index: number) => {
-        return index < 2 ? parseInt(item.trim(), 10) : item.trim();
-      });
+      const [month, year, client_id] = data.month
+        .split(",")
+        .map((item: string, index: number) => {
+          return index < 2 ? parseInt(item.trim(), 10) : item.trim();
+        });
 
       const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
       const nextMonth = month === 12 ? 1 : month + 1;
       const nextYear = month === 12 ? year + 1 : year;
       const endDate = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
-
+      console.log(startDate, endDate, "start end");
       // // Generate statement number based on current date
       // const today = new Date();
       // const statementNumber = `${today.getFullYear()}${String(
       //   today.getMonth() + 1
       // ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
-
-
-
-
 
       // Get lab ID for the current user
       const lab = await getLabIdByUserId(user?.id as string);
@@ -90,7 +88,6 @@ const Statements = () => {
       //   );
       // }
 
-
       // Fetch invoices for the specified month
       let query = supabase
         .from("invoices")
@@ -106,8 +103,8 @@ const Statements = () => {
       if (client_id) {
         query = query.eq("client_id", client_id);
       }
-
       const { data: categorizedInvoices, error: fetchError } = await query;
+      console.log(categorizedInvoices, "query");
 
       if (fetchError) {
         throw new Error(
@@ -115,13 +112,12 @@ const Statements = () => {
         );
       }
 
-
       // Generate client statements
       const statementSummary = categorizedInvoices.reduce(
         (acc: any[], invoice: any) => {
           const { client, amount, due_amount, updated_at } = invoice;
           const clientId = client.id;
-
+console.log(invoice,"invoice")
           // Find existing client entry
           const existingClient = acc.find(
             (item) => item.client_id === clientId
@@ -157,11 +153,15 @@ const Statements = () => {
         const { client_id, amount, outstanding, last_sent } = statement;
 
         const clientData = await clientsService.getClientById(client_id);
+        console.log(clientData, "clientData");
         if (clientData) {
           // Generate statement number based on current date
           const today = new Date();
-          const statementNumber = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}${clientData?.accountNumber}`;
-
+          const statementNumber = `${today.getFullYear()}${String(
+            today.getMonth() + 1
+          ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}${
+            clientData?.accountNumber
+          }`;
 
           // Check if a statement exists for the current client, lab, and month
           const { data: existingStatement, error: checkError } = await supabase
@@ -182,7 +182,7 @@ const Statements = () => {
               `Failed to check existing statement: ${checkError.message}`
             );
           }
-
+          console.log(existingStatement, "existingStatement");
           if (existingStatement) {
             // Update the existing statement
             const { error: updateError } = await supabase
@@ -229,14 +229,13 @@ const Statements = () => {
       console.error("Error processing statements:", error);
       toast.error("Failed to process statements");
     } finally {
-
-      // navigate('/', { replace: true });
-      // setTimeout(() => {
-      //   navigate("/billing/statements", { replace: true });
-      // }, 100);
+      navigate('/', { replace: true });
+      setTimeout(() => {
+        navigate("/billing/statements", { replace: true });
+      }, 100);
 
       setIsLoading(false);
-      // setIsCreateModalOpen(false);
+      setIsCreateModalOpen(false);
       setRefresh(true);
     }
   };
