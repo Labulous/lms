@@ -1676,78 +1676,80 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   };
   console.log(caseDetail);
 
-  const consolidatedProducts = Object.values(
-    caseDetail?.products.reduce((acc: any, product: any) => {
-      const productId = product.id;
+  const consolidatedProducts = caseDetail?.products
+    ? Object?.values(
+        caseDetail?.products?.reduce((acc: any, product: any) => {
+          const productId = product.id;
 
-      // Check if the product has a valid id and teethProduct with tooth_number
-      if (!productId || !product.teethProduct?.tooth_number) {
-        return acc;
-      }
+          // Check if the product has a valid id and teethProduct with tooth_number
+          if (!productId || !product.teethProduct?.tooth_number) {
+            return acc;
+          }
 
-      // If the product already exists in the accumulator, merge the tooth numbers and sum prices
-      if (acc[productId]) {
-        acc[productId].teethProduct.tooth_number = [
-          ...new Set([
-            ...acc[productId].teethProduct.tooth_number,
-            ...product.teethProduct.tooth_number,
-          ]),
-        ];
-
-        // Sum the discounted prices
-        if (acc[productId].discounted_price && product.discounted_price) {
-          acc[productId].discounted_price.price +=
-            product.discounted_price.price;
-          acc[productId].discounted_price.final_price +=
-            product.discounted_price.final_price;
-          acc[productId].discounted_price.total +=
-            product.discounted_price.total;
-        }
-
-        // Check for service differences and associate teeth numbers with each service
-        if (product.service) {
-          const existingService = acc[productId].service.find(
-            (serviceObj: any) => serviceObj.service === product.service
-          );
-
-          if (existingService) {
-            // If the service already exists, merge the teeth numbers
-            existingService.teeth_number = [
+          // If the product already exists in the accumulator, merge the tooth numbers and sum prices
+          if (acc[productId]) {
+            acc[productId].teethProduct.tooth_number = [
               ...new Set([
-                ...existingService.teeth_number,
+                ...acc[productId].teethProduct.tooth_number,
                 ...product.teethProduct.tooth_number,
               ]),
             ];
-          } else {
-            // If the service doesn't exist, add it with the corresponding teeth numbers
-            acc[productId].service.push({
-              service: product.service,
-              teeth_number: [...product.teethProduct.tooth_number],
-            });
-          }
-        }
-      } else {
-        // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
-        acc[productId] = {
-          ...product,
-          teethProduct: {
-            ...product.teethProduct,
-            tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
-          },
-          service: product.service
-            ? [
-                {
-                  service: product.service,
-                  teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
-                },
-              ]
-            : [], // Initialize with current service in an array
-        };
-      }
 
-      return acc;
-    }, {})
-  );
+            // Sum the discounted prices
+            if (acc[productId].discounted_price && product.discounted_price) {
+              acc[productId].discounted_price.price +=
+                product.discounted_price.price;
+              acc[productId].discounted_price.final_price +=
+                product.discounted_price.final_price;
+              acc[productId].discounted_price.total +=
+                product.discounted_price.total;
+            }
+
+            // Check for service differences and associate teeth numbers with each service
+            if (product.service) {
+              const existingService = acc[productId].service.find(
+                (serviceObj: any) => serviceObj.service === product.service
+              );
+
+              if (existingService) {
+                // If the service already exists, merge the teeth numbers
+                existingService.teeth_number = [
+                  ...new Set([
+                    ...existingService.teeth_number,
+                    ...product.teethProduct.tooth_number,
+                  ]),
+                ];
+              } else {
+                // If the service doesn't exist, add it with the corresponding teeth numbers
+                acc[productId].service.push({
+                  service: product.service,
+                  teeth_number: [...product.teethProduct.tooth_number],
+                });
+              }
+            }
+          } else {
+            // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
+            acc[productId] = {
+              ...product,
+              teethProduct: {
+                ...product.teethProduct,
+                tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
+              },
+              service: product.service
+                ? [
+                    {
+                      service: product.service,
+                      teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
+                    },
+                  ]
+                : [], // Initialize with current service in an array
+            };
+          }
+
+          return acc;
+        }, {})
+      )
+    : [];
   console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>

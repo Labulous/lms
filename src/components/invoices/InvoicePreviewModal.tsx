@@ -206,7 +206,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
           </div>
 
           {/* Content */}
-          <div ref={invoiceRef}>
+          <div>
             <InvoiceTemplate
               paperSize={selectedPaperSize}
               caseDetails={caseDetails}
