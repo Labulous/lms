@@ -46,7 +46,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
   }, []);
 console.log(location.pathname,"location.pathname")
   // 🔹 Show a loading indicator until authentication is determined
-  if (authLoading && location.pathname !=="/cases/new" && !location.pathname.includes("/cases/update")) {
+  if (authLoading ) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900" />
