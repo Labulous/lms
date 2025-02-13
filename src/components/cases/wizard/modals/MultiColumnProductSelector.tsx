@@ -13,7 +13,7 @@ import { Product } from "../../../../services/productsService";
 import { cn } from "@/lib/utils";
 
 interface MultiColumnProductSelectorProps {
-  materials: MaterialType[];
+  materials: { id: string; name: string }[];
   products: Product[];
   selectedProduct: { id: string; name: string } | null;
   onProductSelect: (product: Product | any) => void;
@@ -35,22 +35,14 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [open, setOpen] = useState(false);
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialType | null>(
-    null
-  );
+  const [selectedMaterial, setSelectedMaterial] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   // Filter products based on search query and selected material
   const filteredProducts = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    const sortable_material_ids = [
-      "b006eee6-d923-4e97-8b86-2e162e93df9b",
-      "48440949-51c9-4495-af13-8ce7076ea2ad",
-      "93852615-0d83-4933-b086-1cd89c80237a",
-      "75212f1d-7098-475f-8bc3-a35a4626a8be",
-      "66b17b2d-cbbc-4f4b-ae25-2bb6a11e821b",
-      "b87016e5-5b52-46c6-aeca-4f5895307eab",
-      "61e95140-9f3e-453b-9639-171f84abea7a",
-      "504def23-c786-4a43-b52f-debae9310fac",
-    ];
+    const sortable_material_ids = materials.map((item) => item.id);
 
     return products
       .filter((product) => {
@@ -60,7 +52,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
           product.material?.name?.toLowerCase().includes(query);
 
         const matchesMaterial =
-          !selectedMaterial || product.material?.name === selectedMaterial;
+          !selectedMaterial || product.material?.name === selectedMaterial.name;
 
         return matchesSearch && matchesMaterial;
       })
@@ -76,14 +68,13 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
   }, [products, searchQuery, selectedMaterial]);
 
   // Group products by material for the count
-
   const productCountByMaterial = useMemo(() => {
     return materials.reduce((acc, material) => {
-      acc[material] = products.filter(
-        (p) => p.material?.name === material
+      acc[material.name] = products.filter(
+        (p) => p.material?.name === material.name // compare the 'name' property, not the whole object
       ).length;
       return acc;
-    }, {} as Record<MaterialType, number>);
+    }, {} as Record<string, number>); // assuming `MaterialType` is a string or can be replaced with `string`
   }, [materials, products]);
 
   return (
@@ -142,7 +133,7 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                 </Button>
                 {materials.map((material) => (
                   <Button
-                    key={material}
+                    key={material.id}
                     variant="ghost"
                     className={cn(
                       "w-full justify-between text-left h-auto py-2 px-3",
@@ -151,9 +142,9 @@ const MultiColumnProductSelector: React.FC<MultiColumnProductSelectorProps> = ({
                     )}
                     onClick={() => setSelectedMaterial(material)}
                   >
-                    <span>{material}</span>
+                    <span>{material.name}</span>
                     <span className="text-xs text-muted-foreground">
-                      ({productCountByMaterial[material]})
+                      ({productCountByMaterial[material.name]})
                     </span>
                   </Button>
                 ))}

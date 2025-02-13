@@ -95,10 +95,10 @@ const ClientServicePricing = ({
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
-    direction: 'asc' | 'desc' | null;
+    direction: "asc" | "desc" | null;
   }>({
-    key: '',
-    direction: null
+    key: "",
+    direction: null,
   });
 
   const { user } = useAuth();
@@ -144,6 +144,7 @@ const ClientServicePricing = ({
       console.log(data, error, "datadatadata");
       const products: any = data;
       setEditableServices(products);
+      setIsLoading(false);
     } catch (error) {
       console.log(error, "error");
     }
@@ -328,20 +329,23 @@ const ClientServicePricing = ({
         }));
 
         for (const item of updates) {
-          const { error: updateError } = await supabase
+          const { data, error: updateError } = await supabase
             .from("services")
             .update({ price: item.price })
-            .eq("id", item.id);
+            .eq("id", item.id)
+            .select("*");
 
           if (updateError) {
+            setIsLoading(false);
             throw new Error(
               `Error updating service ID ${item.id}: ${updateError.message}`
             );
           }
+          console.log(data, "data updated pricing");
         }
-
-        toast.success("Default prices updated successfully!");
+        toast.success("Default prices updated successfully! hi");
         console.log("Updated services successfully:", updates);
+        setIsLoading(false);
         fetchEditableServices();
       } else {
         // Existing logic for updating special_service_prices
@@ -390,6 +394,7 @@ const ClientServicePricing = ({
           if (updateError)
             throw new Error(`Error updating records: ${updateError.message}`);
           console.log("Updated successfully:", updates);
+          setIsLoading(false);
         }
 
         if (inserts.length > 0) {
@@ -400,6 +405,7 @@ const ClientServicePricing = ({
             throw new Error(`Error inserting records: ${insertError.message}`);
           console.log("Inserted successfully:", inserts);
         }
+        setIsLoading(false);
 
         toast.success("Records Updated successfully!");
       }
@@ -418,16 +424,16 @@ const ClientServicePricing = ({
   };
 
   const handleSort = (key: string) => {
-    setSortConfig(current => {
+    setSortConfig((current) => {
       if (current.key === key) {
-        if (current.direction === 'asc') {
-          return { key, direction: 'desc' };
+        if (current.direction === "asc") {
+          return { key, direction: "desc" };
         }
-        if (current.direction === 'desc') {
-          return { key: '', direction: null };
+        if (current.direction === "desc") {
+          return { key: "", direction: null };
         }
       }
-      return { key, direction: 'asc' };
+      return { key, direction: "asc" };
     });
   };
 
@@ -435,10 +441,10 @@ const ClientServicePricing = ({
     if (sortConfig.key !== columnKey) {
       return <ArrowUpDown className="ml-2 h-4 w-4" />;
     }
-    if (sortConfig.direction === 'asc') {
+    if (sortConfig.direction === "asc") {
       return <ArrowUp className="ml-2 h-4 w-4" />;
     }
-    if (sortConfig.direction === 'desc') {
+    if (sortConfig.direction === "desc") {
       return <ArrowDown className="ml-2 h-4 w-4" />;
     }
     return null;
@@ -448,31 +454,33 @@ const ClientServicePricing = ({
     if (!sortConfig.key || !sortConfig.direction) return data;
 
     return [...data].sort((a, b) => {
-      if (sortConfig.key === 'name') {
-        const aName = a.name || (a.default && a.default.name) || '';
-        const bName = b.name || (b.default && b.default.name) || '';
-        return sortConfig.direction === 'asc' 
+      if (sortConfig.key === "name") {
+        const aName = a.name || (a.default && a.default.name) || "";
+        const bName = b.name || (b.default && b.default.name) || "";
+        return sortConfig.direction === "asc"
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-      if (sortConfig.key === 'description') {
-        const aDesc = a.description || (a.default && a.default.description) || '';
-        const bDesc = b.description || (b.default && b.default.description) || '';
-        return sortConfig.direction === 'asc'
+      if (sortConfig.key === "description") {
+        const aDesc =
+          a.description || (a.default && a.default.description) || "";
+        const bDesc =
+          b.description || (b.default && b.default.description) || "";
+        return sortConfig.direction === "asc"
           ? aDesc.localeCompare(bDesc)
           : bDesc.localeCompare(aDesc);
       }
-      if (sortConfig.key === 'price') {
+      if (sortConfig.key === "price") {
         const aPrice = a.price || (a.default && a.default.price) || 0;
         const bPrice = b.price || (b.default && b.default.price) || 0;
-        return sortConfig.direction === 'asc'
+        return sortConfig.direction === "asc"
           ? aPrice - bPrice
           : bPrice - aPrice;
       }
       return 0;
     });
   };
-
+console.log(isLoading,"loading")
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -557,31 +565,31 @@ const ClientServicePricing = ({
                         <TableHead>
                           <Button
                             variant="ghost"
-                            onClick={() => handleSort('name')}
+                            onClick={() => handleSort("name")}
                             className="h-8 p-0 font-medium"
                           >
                             Name
-                            {getSortIcon('name')}
+                            {getSortIcon("name")}
                           </Button>
                         </TableHead>
                         <TableHead>
                           <Button
                             variant="ghost"
-                            onClick={() => handleSort('description')}
+                            onClick={() => handleSort("description")}
                             className="h-8 p-0 font-medium"
                           >
                             Material
-                            {getSortIcon('description')}
+                            {getSortIcon("description")}
                           </Button>
                         </TableHead>
                         <TableHead>
                           <Button
                             variant="ghost"
-                            onClick={() => handleSort('price')}
+                            onClick={() => handleSort("price")}
                             className="h-8 p-0 font-medium"
                           >
                             Default Price
-                            {getSortIcon('price')}
+                            {getSortIcon("price")}
                           </Button>
                         </TableHead>
                         <TableHead>New Price</TableHead>
@@ -590,25 +598,36 @@ const ClientServicePricing = ({
                     <TableBody className="overflow-y-scroll">
                       {sortData(editableServices)
                         ?.sort((a, b) => {
-                          const aHasNewPrice = selectedClient !== "default" 
-                            ? !!getClientPrice(a.id, selectedClient)
-                            : !!defaultClientPrices.find((item) => item.serviceId === a.id);
-                          const bHasNewPrice = selectedClient !== "default"
-                            ? !!getClientPrice(b.id, selectedClient)
-                            : !!defaultClientPrices.find((item) => item.serviceId === b.id);
+                          const aHasNewPrice =
+                            selectedClient !== "default"
+                              ? !!getClientPrice(a.id, selectedClient)
+                              : !!defaultClientPrices.find(
+                                  (item) => item.serviceId === a.id
+                                );
+                          const bHasNewPrice =
+                            selectedClient !== "default"
+                              ? !!getClientPrice(b.id, selectedClient)
+                              : !!defaultClientPrices.find(
+                                  (item) => item.serviceId === b.id
+                                );
                           return Number(bHasNewPrice) - Number(aHasNewPrice); // Convert booleans to numbers for subtraction
                         })
                         .map((product) => {
-                          const hasNewPrice = selectedClient !== "default"
-                            ? !!getClientPrice(product.id, selectedClient)
-                            : !!defaultClientPrices.find((item) => item.serviceId === product.id);
-                          
+                          const hasNewPrice =
+                            selectedClient !== "default"
+                              ? !!getClientPrice(product.id, selectedClient)
+                              : !!defaultClientPrices.find(
+                                  (item) => item.serviceId === product.id
+                                );
+
                           return (
                             <TableRow
                               key={product.id}
                               className={cn(
                                 "hover:bg-muted/50",
-                                selectedClient !== "default" && hasNewPrice && "bg-blue-50"
+                                selectedClient !== "default" &&
+                                  hasNewPrice &&
+                                  "bg-blue-50"
                               )}
                             >
                               <TableCell className="font-medium">
@@ -629,7 +648,10 @@ const ClientServicePricing = ({
                                         : product.price
                                     }
                                     onChange={(e) =>
-                                      handlePriceChange(product.id, e.target.value)
+                                      handlePriceChange(
+                                        product.id,
+                                        e.target.value
+                                      )
                                     }
                                     step="0.01"
                                     min="0"
@@ -649,7 +671,8 @@ const ClientServicePricing = ({
                                         parseFloat(e.target.value) || 0;
                                       setDefaultClientPrices((prevPrices) => {
                                         const index = prevPrices.findIndex(
-                                          (item) => item.serviceId === product.id
+                                          (item) =>
+                                            item.serviceId === product.id
                                         );
                                         if (index !== -1) {
                                           // Update existing item
@@ -740,43 +763,43 @@ const ClientServicePricing = ({
                 <TableHead>
                   <Button
                     variant="ghost"
-                    onClick={() => handleSort('name')}
+                    onClick={() => handleSort("name")}
                     className="h-8 p-0 font-medium"
                   >
                     Name
-                    {getSortIcon('name')}
+                    {getSortIcon("name")}
                   </Button>
                 </TableHead>
                 <TableHead>
                   <Button
                     variant="ghost"
-                    onClick={() => handleSort('description')}
+                    onClick={() => handleSort("description")}
                     className="h-8 p-0 font-medium"
                   >
                     Description
-                    {getSortIcon('description')}
+                    {getSortIcon("description")}
                   </Button>
                 </TableHead>
                 {selectedClient !== "default" && (
                   <TableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort('price')}
+                      onClick={() => handleSort("price")}
                       className="h-8 p-0 font-medium"
                     >
                       Client Price
-                      {getSortIcon('price')}
+                      {getSortIcon("price")}
                     </Button>
                   </TableHead>
                 )}
                 <TableHead>
                   <Button
                     variant="ghost"
-                    onClick={() => handleSort('price')}
+                    onClick={() => handleSort("price")}
                     className="h-8 p-0 font-medium"
                   >
                     Default Price
-                    {getSortIcon('price')}
+                    {getSortIcon("price")}
                   </Button>
                 </TableHead>
                 <TableHead className="w-[50px]"></TableHead>
