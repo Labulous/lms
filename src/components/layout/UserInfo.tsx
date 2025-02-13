@@ -61,8 +61,8 @@ const UserInfo: React.FC<UserInfoProps> = ({ data }) => {
   };
 
   const menuItems = [
-    { icon: "", label: "Profile", action: handleProfile },
-    { icon: "", label: "Logout", action: handleLogout },
+    { icon: "", label: "Profile", action: () => handleProfile() },
+    { icon: "", label: "Logout", action: () => handleLogout() },
   ];
 
   return (

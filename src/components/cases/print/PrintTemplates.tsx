@@ -251,9 +251,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
               ) {
                 // End of a group
                 if (groupStart === prev) {
-                  groups.push(`#${groupStart}`);
+                  groups.push(`${groupStart}`);
                 } else {
-                  groups.push(`#${groupStart}-#${prev}`);
+                  groups.push(`${groupStart}-${prev}`);
                 }
                 groupStart = current; // Start a new group
               }
@@ -540,9 +540,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       <span className="font-normal">
                                         Teeth:{" "}
                                       </span>
-                                      {item.teethProduct.type !== "Bridge"
+                                      #{item.teethProduct.type !== "Bridge"
                                         ? item.teethProduct?.tooth_number
-                                            .map((item: number) => `#${item}`)
+                                            .map((item: number) => `${item}`)
                                             .join(",")
                                         : formatTeethRange(
                                             item.teethProduct?.tooth_number
@@ -911,6 +911,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
   const Header: React.FC<{
     caseDetail: ExtendedCase;
   }> = ({ caseDetail }) => {
+
     return (
       <div className="space-y-4">
         {/* First Row - Logo, Pan#, QR */}
@@ -919,7 +920,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div>
               <img src={staticLabLogo} alt="Lab Logo" className="h-12 mb-1" />
               <div className="text-sm font-bold">
-                {caseDetail?.labDetail?.name || "Solaris Dental Design"}
+                {caseDetail?.labDetail?.name   || "Solaris Dental Design"}
               </div>
             </div>
             <div className="text-2xl" style={{ lineHeight: "1.1" }}>
@@ -1095,9 +1096,9 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
           if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
             // End of a group
             if (groupStart === prev) {
-              groups.push(`#${groupStart}`);
+              groups.push(`${groupStart}`);
             } else {
-              groups.push(`#${groupStart}-#${prev}`);
+              groups.push(`${groupStart}-#${prev}`);
             }
             groupStart = current; // Start a new group
           }
@@ -1111,7 +1112,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       const groupedTeeth = getConsecutiveGroups(teeth);
 
       // If there's only one group, return it
-      return groupedTeeth.join(", ");
+      return groupedTeeth.join(", ").split("#").join("");
     };
 
     const services = Object.values(
@@ -1198,7 +1199,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
 
     console.log(groupShades, "groupShades");
 
-    console.log(teeth, "teeths");
+    console.log(teeth?.teethProduct.tooth_number, "teeths 1");
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1211,7 +1212,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
               <div className="font-bold">
                 {teeth.teethProduct.type === "Bridge" ? (
                   <span>
-                    {formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
+                    #{formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
                     <span className="text-xs text-primary">(Bridge)</span>
                   </span>
                 ) : (
@@ -1219,7 +1220,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                     #
                     {teeth?.teethProduct.tooth_number
                       .map((item: number) => item)
-                      .join(",#")}
+                      .join(",")}
                   </span>
                 )}
               </div>
@@ -1229,7 +1230,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div className="flex ml-2">
               <span className="w-20 text-xs">Pontic Teeth #: </span>
               <div className="font-bold text-xs">
-                {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
+                #{formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
           )}
@@ -1257,14 +1258,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                           <div className="font-bold">
                             {teeth.teethProduct.type === "Bridge" ? (
                               <span>
-                                {formatTeethRange(teethItem.tooth_numbers)}{" "}
+                                #{formatTeethRange(teethItem.tooth_numbers)}{" "}
                                 <span className="text-primary">(Bridge)</span>
                               </span>
                             ) : (
                               <span>
                                 #{teethItem.tooth_numbers
                                   .map((item: number) => item)
-                                  .join(",#")}
+                                  .join(",")}
                               </span>
                             )}
                           </div>
@@ -1388,7 +1389,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                 (#
                                 {item.teeth
                                   .map((item: number) => item)
-                                  .join(",#")}
+                                  .join(",")}
                                 )
                               </>
                             ) : (

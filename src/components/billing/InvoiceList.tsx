@@ -673,7 +673,6 @@ const InvoiceList: React.FC = () => {
     getLabData();
   }, []);
   const [caseFilter, setCaseFilter] = useState<string>("");
-
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editMode, setEditMode] = useState<"edit" | "payment">("edit");
 
@@ -2333,7 +2332,7 @@ const InvoiceList: React.FC = () => {
             .filter((invoice: any) => selectedInvoices.includes(invoice.id)) // Filter based on selected invoices
             .map((invoice: any) => ({
               ...invoice, // Spread the invoice data
-              lab, // Add the `lab` data to each invoice
+              labDetail: lab, // Add the `lab` data to each invoice
             }))}
         />
 

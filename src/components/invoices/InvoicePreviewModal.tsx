@@ -35,7 +35,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     useState<keyof typeof PAPER_SIZES>("LETTER");
 
   const invoiceRef = useRef<HTMLDivElement>(null);
-
+  console.log(caseDetails, "caseDetailscaseDetails");
   useEffect(() => {
     if (isOpen) {
       generatePreview();
