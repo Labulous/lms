@@ -38,7 +38,7 @@ class SearchService {
         type: 'case',
         id: caseItem.id,
         title: `${caseItem.patient_name} (Case #${caseItem.case_number})`,
-        subtitle: `Client: ${caseItem.clients?.client_name || 'Unknown'}`,
+        subtitle: `Client: ${caseItem.clients[0]?.client_name || 'Unknown'}`,
         url: `/cases/${caseItem.id}`
       }));
     } catch (error) {
