@@ -48,6 +48,14 @@ interface SimpleTimeFilter {
   days: number;
 }
 
+interface CaseMetrics {
+  newCases: number;
+  activeCases: number;
+  completedCases: number;
+  averageCompletionDays: number;
+  totalCases: number;
+}
+
 const SalesDashboard: React.FC = () => {
   // Individual time filters for each card
   const [revenueFilter, setRevenueFilter] = useState(timeFilterOptions.find(filter => filter.value === 'this_month') || timeFilterOptions[0]);
@@ -87,14 +95,22 @@ const SalesDashboard: React.FC = () => {
     growth: 0,
     monthlyData: []
   });
+  const [caseMetrics, setCaseMetrics] = useState<CaseMetrics>({
+    newCases: 0,
+    activeCases: 0,
+    completedCases: 0,
+    averageCompletionDays: 0,
+    totalCases: 0
+  });
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
       fetchTopClients();
       fetchRevenueData();
+      fetchCaseMetrics();
     }
-  }, [topClientsFilter, revenueFilter, user]);
+  }, [patientsFilter, revenueFilter, topClientsFilter, user]);
 
   const fetchTopClients = async () => {
     try {
@@ -286,6 +302,73 @@ const SalesDashboard: React.FC = () => {
 
     } catch (error) {
       console.error('Error in fetchRevenueData:', error);
+    }
+  };
+
+  const calculateAverageCompletionDays = (cases: any[]) => {
+    const completedCases = cases.filter(c => c.status === 'completed' && c.completed_at);
+    if (completedCases.length === 0) return 0;
+
+    const totalDays = completedCases.reduce((sum, c) => {
+      const start = new Date(c.created_at);
+      const end = new Date(c.completed_at);
+      return sum + (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    }, 0);
+
+    return Math.round(totalDays / completedCases.length);
+  };
+
+  const fetchCaseMetrics = async () => {
+    try {
+      if (!user?.id) {
+        console.error("User not found");
+        return;
+      }
+
+      const labData = await getLabIdByUserId(user.id);
+      if (!labData?.labId) {
+        console.error("Lab ID not found");
+        return;
+      }
+
+      const today = new Date();
+      const startDate = new Date(today);
+      startDate.setDate(today.getDate() - (patientsFilter.days || 30));
+
+      const { data: casesData, error } = await supabase
+        .from('cases')
+        .select(`
+          id,
+          status,
+          created_at,
+          completed_at
+        `)
+        .eq('lab_id', labData.labId)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', today.toISOString());
+
+      if (error) {
+        console.error('Error fetching case metrics:', error);
+        return;
+      }
+
+      const metrics: CaseMetrics = {
+        newCases: casesData.filter(c => 
+          new Date(c.created_at) >= startDate
+        ).length,
+        activeCases: casesData.filter(c => 
+          c.status !== 'completed' && c.status !== 'cancelled'
+        ).length,
+        completedCases: casesData.filter(c => 
+          c.status === 'completed' && c.completed_at
+        ).length,
+        averageCompletionDays: calculateAverageCompletionDays(casesData),
+        totalCases: casesData.length
+      };
+
+      setCaseMetrics(metrics);
+    } catch (error) {
+      console.error('Error in fetchCaseMetrics:', error);
     }
   };
 
@@ -622,32 +705,39 @@ const SalesDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Patients Section */}
+      {/* Case Analytics Section */}
       <Card className="col-span-3">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Patients</CardTitle>
+          <CardTitle className="text-sm font-medium">Case Analytics</CardTitle>
           <TimeFilter selectedFilter={patientsFilter} onFilterChange={setPatientsFilter} />
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold">Patients</h3>
+            <h3 className="font-semibold">Cases Overview</h3>
           </div>
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>New patients</span>
-                <span>{patients.newPercentage}%</span>
+                <span>New Cases</span>
+                <span>{caseMetrics.totalCases > 0 ? ((caseMetrics.newCases / caseMetrics.totalCases) * 100).toFixed(1) : 0}%</span>
               </div>
-              <Progress value={patients.newPercentage} className="h-2" />
-              <div className="text-2xl font-semibold">{patients.new}</div>
+              <Progress value={caseMetrics.totalCases > 0 ? (caseMetrics.newCases / caseMetrics.totalCases) * 100 : 0} className="h-2" />
+              <div className="text-2xl font-semibold">{caseMetrics.newCases}</div>
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Returning patients</span>
-                <span>{patients.returningPercentage}%</span>
+                <span>Active Cases</span>
+                <span>{caseMetrics.totalCases > 0 ? ((caseMetrics.activeCases / caseMetrics.totalCases) * 100).toFixed(1) : 0}%</span>
               </div>
-              <Progress value={patients.returningPercentage} className="h-2" />
-              <div className="text-2xl font-semibold">{patients.returning}</div>
+              <Progress value={caseMetrics.totalCases > 0 ? (caseMetrics.activeCases / caseMetrics.totalCases) * 100 : 0} className="h-2" />
+              <div className="text-2xl font-semibold">{caseMetrics.activeCases}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Avg. Completion Time</span>
+                <span>{caseMetrics.averageCompletionDays} days</span>
+              </div>
+              <div className="text-2xl font-semibold">{caseMetrics.completedCases} completed</div>
             </div>
           </div>
         </CardContent>
