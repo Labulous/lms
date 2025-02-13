@@ -377,23 +377,6 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     />
                   </div>
                 </div>
-                {/* <div className="space-y-2">
-                  <Label className="text-sm font-medium">Other Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      name="otherEmail"
-                      value={
-                        isEditing
-                          ? editedData?.otherEmail ?? ""
-                          : client.otherEmail
-                      }
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div> */}
                 <div className="grid grid-cols-2 w-full justify-center items-center gap-2">
                   {otherEmailInputs.map((_, index) => (
                     <div
@@ -440,6 +423,18 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                       </button>
                     </div>
                   )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Additional Notes</Label>
+                  <Textarea
+                    name="notes"
+                    value={
+                      isEditing ? editedData?.notes ?? "" : client.notes ?? ""
+                    }
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className="min-h-[100px]"
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -727,25 +722,13 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Sales Rep Note</Label>
+                <Label className="text-sm font-medium">Additional Notes</Label>
                 <Textarea
                   name="salesRepNote"
                   value={
                     isEditing
                       ? editedData?.salesRepNote ?? ""
                       : client.salesRepNote
-                  }
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="min-h-[100px]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">Notes</Label>
-                <Textarea
-                  name="notes"
-                  value={
-                    isEditing ? editedData?.notes ?? "" : client.notes ?? ""
                   }
                   onChange={handleInputChange}
                   disabled={!isEditing}
