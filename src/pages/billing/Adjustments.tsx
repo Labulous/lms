@@ -156,7 +156,7 @@ const Adjustments = () => {
         console.log("Payment inserted successfully.");
 
         // Call function for balance tracking
-        //updateBalanceTracking(data.client, overpaymentAmount);
+        updateBalanceTracking(data.client, overpaymentAmount);
 
         // Step 3: Fetch and categorize invoices for balance tracking
         const { data: categorizedInvoices, error: fetchError } = await supabase
