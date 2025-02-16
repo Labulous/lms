@@ -1313,6 +1313,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         getWorkStationDetails(caseDetail.created_at);
         fetchCaseData(true);
         setWorkstationLoading(false);
+        updateBalanceTracking();
       }
     } catch (error) {
       toast.error("An unexpected error occurred.");

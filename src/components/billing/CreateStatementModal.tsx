@@ -435,7 +435,6 @@ export function CreateStatementModal({
       return matchesSearch;
     }
   );
-
   // Calculate totals
   const balanceSummary = filteredBalances.reduce(
     (acc, balance) => ({

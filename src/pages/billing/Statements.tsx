@@ -16,6 +16,8 @@ import { getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { clientsService } from "@/services/clientsService";
 import { useNavigate } from "react-router-dom";
+import moment from "moment";
+import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 
 export interface BalanceSummary {
   creditBalance: number;
@@ -35,131 +37,155 @@ const Statements = () => {
   const [refresh, setRefresh] = useState<boolean>(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const fetchStatements = async () => {
+    setIsLoading(true);
+    setRefresh(false);
+
+    console.log("use effect running!!!");
+    try {
+      // Get the lab ID associated with the current user
+      const lab = await getLabIdByUserId(user?.id as string);
+
+      if (!lab?.labId) {
+        console.error("Lab ID not found.");
+        return;
+      }
+
+      // Fetch statements filtered by lab_id and client_id
+      const { data: statementsData, error: statementsError } = await supabase
+        .from("statements")
+        .select(
+          `
+            id,
+            created_at,
+            updated_at,
+            client:clients!client_id (client_name),
+            statement_number,
+            amount,
+            outstanding,
+            last_sent
+          `
+        )
+        .eq("lab_id", lab.labId)
+        .order("updated_at", { ascending: true });
+
+      if (statementsError) {
+        console.error("Error fetching statements:", statementsError);
+        return;
+      }
+      console.log(statementsData, "statementsData", statementsError);
+      setMonthStatement(statementsData || []);
+    } catch (error) {
+      console.error("Error fetching statements:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   const handleCreateStatement = async (data: any) => {
     try {
       setIsLoading(true);
 
-      // Extract month and year from input
-      // const [month, year, client_id] = data.month
-      //   .split(",")
-      //   .map((item: string) => parseInt(item.trim(), 10));
-
+      // Extract month, year, and client_id from input
       const [month, year, client_id] = data.month
         .split(",")
-        .map((item: string, index: number) => {
-          return index < 2 ? parseInt(item.trim(), 10) : item.trim();
-        });
+        .map((item: string, index: number) =>
+          index < 2 ? parseInt(item.trim(), 10) : item.trim()
+        );
 
-      const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
-      const nextMonth = month === 12 ? 1 : month + 1;
-      const nextYear = month === 12 ? year + 1 : year;
-      const endDate = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
-      console.log(startDate, endDate, "start end");
-      // // Generate statement number based on current date
-      // const today = new Date();
-      // const statementNumber = `${today.getFullYear()}${String(
-      //   today.getMonth() + 1
-      // ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      // Ensure UTC format for date filtering
+      const startDate = moment
+        .utc(`${year}-${String(month).padStart(2, "0")}-01`)
+        .format("YYYY-MM-DDTHH:mm:ss[Z]");
+      const endDate = moment
+        .utc(startDate)
+        .add(1, "month")
+        .format("YYYY-MM-DDTHH:mm:ss[Z]");
+
+      console.log("Start Date (UTC):", startDate);
+      console.log("End Date (UTC):", endDate);
 
       // Get lab ID for the current user
       const lab = await getLabIdByUserId(user?.id as string);
-
       if (!lab?.labId) {
         console.error("Lab ID not found.");
         throw new Error("Lab ID is required to create statements.");
       }
 
-      // // Fetch invoices for the specified month
-      // const { data: categorizedInvoices, error: fetchError } = await supabase
-      //   .from("invoices")
-      //   .select(
-      //     "due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
-      //   )
-      //   .in("status", ["unpaid", "partially_paid"])
-      //   .gte("due_date", startDate)
-      //   .lt("due_date", endDate)
-      //   .not("amount", "is", null)
-      //   .eq("lab_id", lab.labId) // Filter by lab_id
-      //   .or(client_id ? `client_id.eq.${client_id}` : "client_id.is.not.null");
-
-      // if (fetchError) {
-      //   throw new Error(
-      //     `Failed to fetch categorized invoices: ${fetchError.message}`
-      //   );
-      // }
-
       // Fetch invoices for the specified month
       let query = supabase
         .from("invoices")
         .select(
-          "due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
+          "id, due_amount, due_date, amount, status, updated_at, client:clients!client_id (client_name, id)"
         )
         .in("status", ["unpaid", "partially_paid"])
-        // .gte("due_date", startDate)
-        // .lt("due_date", endDate)
         .not("amount", "is", null)
-        .eq("lab_id", lab.labId);
+        .eq("lab_id", lab.labId)
+        .gte("created_at", startDate) // Start of the selected month
+        .lt("created_at", endDate); // Start of the next month
 
       if (client_id) {
         query = query.eq("client_id", client_id);
       }
+      console.log(startDate, endDate, "date");
       const { data: categorizedInvoices, error: fetchError } = await query;
-      console.log(categorizedInvoices, "query");
-
+      console.log(categorizedInvoices, "categorizedInvoices");
       if (fetchError) {
-        throw new Error(
-          `Failed to fetch categorized invoices: ${fetchError.message}`
-        );
+        throw new Error(`Failed to fetch invoices: ${fetchError.message}`);
+      }
+      if (!categorizedInvoices || categorizedInvoices.length === 0) {
+        toast.error("No invoices found for the selected month.");
+        return;
       }
 
       // Generate client statements
       const statementSummary = categorizedInvoices.reduce(
         (acc: any[], invoice: any) => {
-          const { client, amount, due_amount, updated_at } = invoice;
+          const { client, amount, due_amount, updated_at, id } = invoice;
           const clientId = client.id;
-console.log(invoice,"invoice")
-          // Find existing client entry
-          const existingClient = acc.find(
-            (item) => item.client_id === clientId
-          );
+
+          let existingClient = acc.find((item) => item.client_id === clientId);
 
           if (existingClient) {
-            // Update totals and last_sent
-            existingClient.total_amount += amount;
-            existingClient.total_due += due_amount;
-            // Set last_sent to the latest updated_at for the client
-            existingClient.last_sent =
-              new Date(existingClient.last_sent) > new Date(updated_at)
-                ? existingClient.last_sent
-                : updated_at;
+            existingClient.total_amount =
+              (existingClient.total_amount || 0) + (amount || 0);
+            existingClient.total_due =
+              (existingClient.total_due || 0) + (due_amount || 0);
+
+            const prevLastSent = existingClient.last_sent
+              ? new Date(existingClient.last_sent)
+              : new Date(0);
+            const newLastSent = updated_at ? new Date(updated_at) : new Date(0);
+
+            if (newLastSent > prevLastSent) {
+              existingClient.last_sent = updated_at;
+            }
           } else {
-            // Add new client entry
             acc.push({
               client_id: clientId,
-              amount: amount,
-              outstanding: due_amount,
-              last_sent: updated_at, // Use the updated_at field for the first entry
+              total_amount: amount || 0,
+              total_due: due_amount || 0,
+              id: id,
+              last_sent: updated_at || null,
             });
           }
+
           return acc;
         },
         []
       );
 
-      console.log("Statement Summary:", statementSummary);
+      let updateCount = 0;
+      let insertCount = 0;
 
       // Insert or Update statements in the database
       for (const statement of statementSummary) {
-        const { client_id, amount, outstanding, last_sent } = statement;
+        const { client_id, total_amount, total_due, last_sent } = statement;
 
         const clientData = await clientsService.getClientById(client_id);
-        console.log(clientData, "clientData");
         if (clientData) {
-          // Generate statement number based on current date
-          const today = new Date();
-          const statementNumber = `${today.getFullYear()}${String(
-            today.getMonth() + 1
-          ).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}${
+          const today = moment.utc();
+          const statementNumber = `${today.format("YYYYMMDD")}${
             clientData?.accountNumber
           }`;
 
@@ -168,31 +194,26 @@ console.log(invoice,"invoice")
             .from("statements")
             .select("id")
             .eq("client_id", client_id)
-            .eq("lab_id", lab.labId) // Filter by lab_id
-            .gte("updated_at", `${year}-${String(month).padStart(2, "0")}-01`)
-            .lt(
-              "updated_at",
-              `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
-            )
+            .eq("lab_id", lab.labId)
+            .gte("updated_at", startDate)
+            .lt("updated_at", endDate)
             .single();
 
           if (checkError && checkError.code !== "PGRST116") {
-            // Ignore "no rows found" error (PGRST116), but handle others
             throw new Error(
               `Failed to check existing statement: ${checkError.message}`
             );
           }
-          console.log(existingStatement, "existingStatement");
+
           if (existingStatement) {
-            // Update the existing statement
             const { error: updateError } = await supabase
               .from("statements")
               .update({
-                amount,
-                outstanding,
-                last_sent,
+                amount: total_amount,
+                outstanding: total_due,
+                last_sent: moment.utc().format("YYYY-MM-DDTHH:mm:ss[Z]"),
                 statement_number: statementNumber,
-                updated_at: new Date().toISOString(),
+                updated_at: moment.utc().format("YYYY-MM-DDTHH:mm:ss[Z]"),
               })
               .eq("id", existingStatement.id);
 
@@ -201,18 +222,19 @@ console.log(invoice,"invoice")
                 `Failed to update statement: ${updateError.message}`
               );
             }
+
+            updateCount++;
           } else {
-            // Insert a new statement
             const { error: insertError } = await supabase
               .from("statements")
               .insert({
-                lab_id: lab.labId, // Include lab_id
+                lab_id: lab.labId,
                 client_id,
-                amount,
-                outstanding,
-                last_sent,
+                amount: total_amount,
+                outstanding: total_due,
+                last_sent: moment.utc().format("YYYY-MM-DDTHH:mm:ss[Z]"),
                 statement_number: statementNumber,
-                updated_at: new Date().toISOString(),
+                updated_at: moment.utc().format("YYYY-MM-DDTHH:mm:ss[Z]"),
               });
 
             if (insertError) {
@@ -220,72 +242,40 @@ console.log(invoice,"invoice")
                 `Failed to insert statement: ${insertError.message}`
               );
             }
+
+            insertCount++;
           }
         }
       }
 
-      toast.success("Statements processed successfully");
-    } catch (error) {
+      if (updateCount > 0 && insertCount > 0) {
+        toast.success(
+          `${updateCount} statements updated, ${insertCount} new statements created.`
+        );
+      } else if (updateCount > 0) {
+        toast.success(`${updateCount} statements updated successfully.`);
+        setIsCreateModalOpen(false);
+        setIsLoading(true);
+        setRefresh(true);
+        fetchStatements();
+      } else if (insertCount > 0) {
+        toast.success(`${insertCount} new statements created successfully.`);
+        setIsCreateModalOpen(false);
+        setIsLoading(true);
+        setRefresh(true);
+        fetchStatements();
+      } else {
+        toast.success("Statements processed successfully.");
+      }
+    } catch (error: any) {
       console.error("Error processing statements:", error);
-      toast.error("Failed to process statements");
+      toast.error(error.message || "Failed to process statements");
     } finally {
-      navigate('/', { replace: true });
-      setTimeout(() => {
-        navigate("/billing/statements", { replace: true });
-      }, 100);
-
       setIsLoading(false);
-      setIsCreateModalOpen(false);
-      setRefresh(true);
     }
   };
 
   useEffect(() => {
-    const fetchStatements = async () => {
-      setIsLoading(true);
-      setRefresh(false);
-
-      console.log("use effect running!!!");
-      try {
-        // Get the lab ID associated with the current user
-        const lab = await getLabIdByUserId(user?.id as string);
-
-        if (!lab?.labId) {
-          console.error("Lab ID not found.");
-          return;
-        }
-
-        // Fetch statements filtered by lab_id and client_id
-        const { data: statementsData, error: statementsError } = await supabase
-          .from("statements")
-          .select(
-            `
-              id,
-              created_at,
-              updated_at,
-              client:clients!client_id (client_name),
-              statement_number,
-              amount,
-              outstanding,
-              last_sent
-            `
-          )
-          .eq("lab_id", lab.labId)
-          .order("updated_at", { ascending: true });
-
-        if (statementsError) {
-          console.error("Error fetching statements:", statementsError);
-          return;
-        }
-        console.log(statementsData, "statementsData", statementsError);
-        setMonthStatement(statementsData || []);
-      } catch (error) {
-        console.error("Error fetching statements:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchStatements();
   }, [refresh, user]);
 
@@ -298,6 +288,9 @@ console.log(invoice,"invoice")
           <p className="text-sm text-muted-foreground">
             Manage and track client statements
           </p>
+          <button onClick={() => updateBalanceTracking()}>
+            update balance tracking
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {/* <Select>

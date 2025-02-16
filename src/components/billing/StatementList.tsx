@@ -346,10 +346,13 @@ const StatementList = ({ statement }: StatementList) => {
       .eq("client_name", statementData[0]?.client.client_name)
       .single();
 
-    const startOfMonth = moment(`${selectyear}-${selectmonth}-01`).format(
-      "YYYY-MM-DD"
-    );
-    const nextMonth = moment(startOfMonth).add(1, "month").format("YYYY-MM-DD");
+    const startOfMonth = moment
+      .utc(`${selectyear}-${selectmonth}-01`)
+      .format("YYYY-MM-DD");
+    const nextMonth = moment
+      .utc(startOfMonth)
+      .add(1, "month")
+      .format("YYYY-MM-DD");
 
     const { data: invoicesData, error: errro1 } = await supabase
       .from("invoices")
