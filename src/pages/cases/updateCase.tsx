@@ -711,10 +711,12 @@ const UpdateCase: React.FC = () => {
                   : [],
                 notes: item?.teethProduct?.notes || "",
                 shades: {
-                  body_shade: item.teethProduct?.body_shade?.id || "",
-                  gingival_shade: item?.teethProduct?.gingival_shade?.id || "",
-                  occlusal_shade: item?.teethProduct?.occlusal_shade?.id || "",
-                  stump_shade: item.teethProduct?.stump_shade?.id || "",
+                  body_shade: item.teethProduct?.body_shade?.id || null,
+                  gingival_shade:
+                    item?.teethProduct?.gingival_shade?.id || null,
+                  occlusal_shade:
+                    item?.teethProduct?.occlusal_shade?.id || null,
+                  stump_shade: item.teethProduct?.stump_shade?.id || null,
                   custom_body: item.teethProduct?.custom_body_shade || null,
                   custom_occlusal:
                     item.teethProduct?.custom_occlusal_shade || null,
@@ -760,7 +762,6 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, clients, servicesData]);
-  console.log(selectedProducts, "selected products");
   useEffect(() => {
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
@@ -797,7 +798,7 @@ const UpdateCase: React.FC = () => {
             })),
           };
 
-          return updatedProduct;
+          return updatedProduct as any;
         });
       });
     }

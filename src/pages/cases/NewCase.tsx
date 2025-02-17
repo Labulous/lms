@@ -51,6 +51,7 @@ export interface ServiceType {
       price: number;
       is_taxable: boolean;
       material?: Material;
+      discount?: number;
     }[];
   }[];
 }
