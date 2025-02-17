@@ -2317,13 +2317,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     </div>
                   </div>
                   <div>
-                    {/* <Button
+                    <Button
                       variant={"default"}
                       size="sm"
                       onClick={() => handleOpenEditModal(caseDetail, "edit")}
                     >
                       Edit Invoice
-                    </Button> */}
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
