@@ -47,6 +47,7 @@ const localizer = dateFnsLocalizer({
 
 interface DueDatesCalendarProps {
   events?: CalendarEvents[];
+  today_cell?: CalendarEvents[];
   height?: number;
   filterType: string;
   setFilterType: React.Dispatch<SetStateAction<string>>;
@@ -65,7 +66,7 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
   onNavigate,
   label,
   filterType = "due_date",
-  onFilterChange = () => { },
+  onFilterChange = () => {},
 }) => (
   <div className="rbc-toolbar">
     <div className="flex items-center gap-2">
@@ -101,8 +102,8 @@ const CustomToolbar: React.FC<CustomToolbarProps> = ({
             {filterType === "due_date"
               ? "Due Date"
               : filterType === "on_hold"
-                ? "On Hold"
-                : filterType}
+              ? "On Hold"
+              : filterType}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-40 p-1">
@@ -160,6 +161,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   height = 500,
   filterType,
   setFilterType,
+  today_cell = [],
 }) => {
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
@@ -180,10 +182,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       return event.isActive;
     } else if (filterType === "on_hold") {
       return event.onHold;
-    } else if (filterType === "today_cell") {
-
-      // Return events where either isAllOnHold OR isTommorow is true
-      return !event.isActive && !event.onHold;
     }
 
     return true;
@@ -284,16 +282,19 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           <div
             onMouseEnter={() => handleEventHover(event)}
             title=""
-            className="w--full grid"
+            className="w--full grid relative"
           >
             {filterType !== "today_cell" && (
               <>
-                {event.onHold && event.title && event.title !== "0" && (
-                  <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                    {event.title}
-                  </div>
-                )}
-                {!event.onHold && event.title !== "0" && (
+                {event.onHold &&
+                  !event.isActive &&
+                  event.title &&
+                  event.title !== "0" && (
+                    <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.title}
+                    </div>
+                  )}
+                {event.isActive && !event.onHold && event.title !== "0" && (
                   <div
                     className={` ${"bg-blue-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
                   >
@@ -305,33 +306,32 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
             <div>
               {filterType === "today_cell" && (
-                <div>
-                  {/* {event.isTommorow && (
-                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                <div className=" flex justify-between items-center ">
+                  {event.isPastDue && (
+                    <div className="bg-red-500   col-span-4 w text-sm left-4 bottom-0 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
                       {event.title}
                     </div>
-                  )} */}
-                  <div
-                    className={` ${"bg-yellow-500"}  rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
-                  >
-                    {/* {event.title !=="" && event.title} */}
-                    {event.id === 2 && event.title}
-                  </div>
-                  {
-                    <div className="bg-red-500 col-span-4 w text-sm absolute bottom-[5px] left-1 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {!event.isTommorow && event.title}
+                  )}
+                  {event.isActive && event.title !== "0" && (
+                    <div
+                      className={` ${"bg-blue-500"}  absolute -top-9 left-2 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                    >
+                      {event.title}
                     </div>
-                  }
-                  {
-                    <div className="bg-blue-500 col-span-4 w text-sm absolute bottom-[5px] left-8 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.isPastDue && event.title}
+                  )}
+                  {event.isTommorow && event.title !== "0" && (
+                    <div
+                      className={` ${"bg-green-500"}  absolute -top-16 left-8 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                    >
+                      {event.title}
                     </div>
-                  }
-                  {
-                    <div className="bg-green-500 col-span-4 w text-sm absolute bottom-[5px] right-9 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
-                      {event.id === 1 && event.title}
+                  )}
+
+                  {event.isAllOnHold && event.title && event.title !== "0" && (
+                    <div className="bg-yellow-500  mb-6 z-50  absolute  col-span-4 w text-sm left-16 bottom-6 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                      {event.title}
                     </div>
-                  }
+                  )}
                 </div>
               )}
             </div>
@@ -352,7 +352,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                 </p>
               </div>
               <Button
-                onClick={() => handleEventClick(event.formattedCases[0].due_date)}
+                onClick={() =>
+                  handleEventClick(event.formattedCases[0].due_date)
+                }
                 size="sm"
                 className="whitespace-nowrap"
               >
@@ -373,14 +375,16 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                     {/* Header Section */}
                     <div className="mb-3 flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">#{event.case_number}</span>
+                        <span className="font-semibold">
+                          #{event.case_number}
+                        </span>
                         <Badge
                           variant={
                             event.status === "in_progress"
                               ? "default"
                               : event.status === "on_hold"
-                                ? "secondary"
-                                : "outline"
+                              ? "secondary"
+                              : "outline"
                           }
                           className="text-[10px] px-2 py-0"
                         >
@@ -396,14 +400,22 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">Client</span>
-                          <span className="font-medium truncate max-w-[180px]" title={event.client_name}>
+                          <span
+                            className="font-medium truncate max-w-[180px]"
+                            title={event.client_name}
+                          >
                             {event.client_name}
                           </span>
                         </div>
                         {event.doctor?.name && (
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Doctor</span>
-                            <span className="font-medium truncate max-w-[180px]" title={event.doctor.name}>
+                            <span className="text-muted-foreground">
+                              Doctor
+                            </span>
+                            <span
+                              className="font-medium truncate max-w-[180px]"
+                              title={event.doctor.name}
+                            >
                               {event.doctor.name}
                             </span>
                           </div>
@@ -414,8 +426,13 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                       {event.case_products?.[0]?.name && (
                         <div className="pt-1">
                           <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">Product</span>
-                            <span className="font-medium truncate max-w-[180px]" title={event.case_products[0].name}>
+                            <span className="text-muted-foreground">
+                              Product
+                            </span>
+                            <span
+                              className="font-medium truncate max-w-[180px]"
+                              title={event.case_products[0].name}
+                            >
                               {event.case_products[0].name}
                               {event.case_products.length > 1 && (
                                 <span className="ml-1 text-xs text-muted-foreground">
@@ -435,7 +452,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                           </div>
                           {event.invoicesData?.[0]?.status && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Status</span>
+                              <span className="text-muted-foreground">
+                                Status
+                              </span>
                               <span className="font-medium">
                                 {event.invoicesData[0].status}
                               </span>
@@ -443,7 +462,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                           )}
                           {event.invoicesData?.[0]?.amount && (
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">Total</span>
+                              <span className="text-muted-foreground">
+                                Total
+                              </span>
                               <span className="font-medium">
                                 ${event.invoicesData[0].amount}
                               </span>
@@ -472,16 +493,19 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const eventStyleGetter = (event: any) => {
     const isPastDue = event.resource?.isPastDue;
+
     return {
       style: {
         backgroundColor: isPastDue ? "#ef4444" : "#2563eb", // red-500 for past due, blue-600 for normal
         color: "white",
         border: "0px",
         padding: "2px",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        display: "block",
+        whiteSpace: "normal", // Allow text wrapping
+        overflow: "visible", // Prevent hidden text
+        display: "flex", // Use flex to align multiple events properly
+        justifyContent: "start",
+        alignItems: "start",
+        fontSize: "12px",
       },
     };
   };
@@ -497,17 +521,95 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
-
+  console.log(events, "event hover");
+  const staticEvents: CalendarEvents[] = [
+    {
+      id: 1,
+      title: "1",
+      start: new Date(2025, 1, 16, 10, 0),
+      end: new Date(2025, 1, 16, 11, 30),
+      isPastDue: true,
+      formattedCases: [
+        {
+          case_id: "1",
+          client_name: "zahid",
+          doctor: {
+            name: "hussain",
+          },
+          due_date: "caseItem.due_date",
+          case_products: [1, 2].map((product) => ({
+            name: "product.name",
+            product_type: { name: "name" },
+          })),
+          invoicesData: [],
+        },
+      ],
+    },
+    {
+      id: 2,
+      title: "2",
+      start: new Date(2025, 1, 16, 10, 0),
+      end: new Date(2025, 1, 16, 11, 30),
+      isAllOnHold: true,
+      formattedCases: [
+        {
+          case_id: "2",
+          client_name: "zahid",
+          doctor: {
+            name: "hussain",
+          },
+          due_date: "caseItem.due_date",
+          case_products: [1, 2].map((product) => ({
+            name: "product.name",
+            product_type: { name: "name" },
+          })),
+          invoicesData: [],
+        },
+      ],
+    },
+    {
+      id: 3,
+      title: "3",
+      start: new Date(2025, 1, 16, 10, 0),
+      end: new Date(2025, 1, 16, 11, 30),
+      isTommorow: true,
+      formattedCases: [
+        {
+          case_id: "3",
+          client_name: "zahid",
+          doctor: {
+            name: "hussain",
+          },
+          due_date: "caseItem.due_date",
+          case_products: [1, 2].map((product) => ({
+            name: "product.name",
+            product_type: { name: "name" },
+          })),
+          invoicesData: [],
+        },
+      ],
+    },
+    {
+      id: 3,
+      title: "4",
+      start: new Date(2025, 1, 16, 10, 0),
+      end: new Date(2025, 1, 16, 11, 30),
+      isActive: true,
+      formattedCases: [],
+    },
+  ];
+  console.log(filteredEvents, "filteredEvents");
   return (
     <>
       <div className="calendar-wrapper" style={{ height }}>
         <div
-          className={`calendar-container ${animationDirection ? `slide-${animationDirection}` : ""
-            }`}
+          className={`calendar-container ${
+            animationDirection ? `slide-${animationDirection}` : ""
+          }`}
         >
           <Calendar
             localizer={localizer}
-            events={events}
+            events={filterType === "today_cell" ? today_cell : filteredEvents}
             startAccessor="start"
             endAccessor="end"
             style={{ height }}
@@ -516,9 +618,10 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             onNavigate={calendarNavigate}
             date={currentDate}
             toolbar={true}
-            defaultDate={new Date()}
+            defaultDate={currentDate}
             dayPropGetter={dayPropGetter}
             eventPropGetter={eventStyleGetter}
+            showAllEvents={filterType === "today_cell"}
             className="calendar-container"
           />
         </div>

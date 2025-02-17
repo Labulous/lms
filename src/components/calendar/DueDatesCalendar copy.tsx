@@ -189,8 +189,9 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             onMouseEnter={() => handleEventHover(event)}
             title=""
             className="w--full grid"
-          >hi
-            {event.onHold && event.title && event.title === "0" &&  (
+          >
+            hi
+            {event.onHold && event.title && event.title === "0" && (
               <div className="bg-yellow-500 col-span-4 w text-sm absolute bottom-[8px] left-2 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
                 {event.title}
               </div>
@@ -402,6 +403,49 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
+  const staticEvents: CalendarEvents[] = [
+    {
+      id: 1,
+      title: "Client Meeting",
+      start: new Date(2024, 7, 20, 10, 0), // August 20, 2024, 10:00 AM
+      end: new Date(2024, 7, 20, 11, 30), // August 20, 2024, 11:30 AM
+      onHold: false,
+      formattedCases: [],
+    },
+    {
+      id: 2,
+      title: "Project Deadline",
+      start: new Date(2024, 7, 22, 23, 59), // August 22, 2024, 11:59 PM
+      end: new Date(2024, 7, 22, 23, 59),
+      onHold: false,
+      formattedCases: [],
+    },
+    {
+      id: 3,
+      title: "Team Standup",
+      start: new Date(2024, 7, 25, 9, 30), // August 25, 2024, 9:30 AM
+      end: new Date(2024, 7, 25, 10, 0),
+      onHold: true,
+      formattedCases: [],
+    },
+    {
+      id: 4,
+      title: "Doctor Appointment",
+      start: new Date(2024, 7, 28, 15, 0), // August 28, 2024, 3:00 PM
+      end: new Date(2024, 7, 28, 16, 0),
+      onHold: false,
+      formattedCases: [],
+    },
+    {
+      id: 5,
+      title: "Invoice Due",
+      start: new Date(2024, 7, 30, 12, 0), // August 30, 2024, 12:00 PM
+      end: new Date(2024, 7, 30, 13, 0),
+      onHold: false,
+      formattedCases: [],
+    },
+  ];
+
   return (
     <div className="calendar-wrapper" style={{ height }}>
       <div
@@ -411,7 +455,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
       >
         <Calendar
           localizer={localizer}
-          events={events}
+          events={staticEvents}
           startAccessor="start"
           endAccessor="end"
           components={components}
