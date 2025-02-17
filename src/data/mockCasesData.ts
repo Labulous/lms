@@ -155,9 +155,8 @@ const saveCaseProduct = async (
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
             type: product.type || "",
-            additional_services_id: product?.services?.map(
-              (item: { id: string }) => item.id
-            ) || [],
+            additional_services_id:
+              product?.services?.map((item: { id: string }) => item.id) || [],
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -200,29 +199,39 @@ const saveCaseProduct = async (
     // Calculate discounted prices for products
     const discountedPrice = cases.products.flatMap((main: any) => {
       return main.subRows.map((product: any) => {
-        // Calculate the final discount
+        // Ensure discount is valid
+        const productDiscount = product.discount || 0;
+        const serviceDiscount = product?.services?.[0]?.discount || 0;
 
-        // Calculate the price after final discount
+        // Calculate price after discount, ensuring it remains original if discount is 0
         const priceAfterDiscount =
-          product.price - (product.price * product.discount) / 100;
+          productDiscount > 0
+            ? product.price - (product.price * productDiscount) / 100
+            : product.price;
 
-        // Calculate the total quantity based on main.quantity and product.quantity
+        const servicePrice = product?.services?.[0]?.price || 0;
+        const priceAfterDiscountService =
+          serviceDiscount > 0
+            ? servicePrice - (servicePrice * serviceDiscount) / 100
+            : servicePrice;
 
-        // Calculate final price (after discount) for the given quantity
+        // Calculate final price per unit (product + service)
         const final_price = priceAfterDiscount * product.quantity;
 
-        // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
-        const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
+        // Calculate total amount
+        const amount = final_price * (product.teeth?.length || 1);
 
         return {
           product_id: product.id,
           price: product.price,
-          discount: product.discount, // use the final discount
-          quantity: product.quantity, // final quantity after adding main.quantity
-          final_price: final_price, // price after final discount
-          total: amount, // final price * total quantity * teeth length
+          discount: productDiscount,
+          quantity: product.quantity,
+          final_price: final_price,
+          total: amount,
           case_id: savedCaseId as string,
           user_id: cases.overview.created_by,
+          service_price: priceAfterDiscountService,
+          service_discount: serviceDiscount,
         };
       });
     });
@@ -361,67 +370,75 @@ const saveCases = async (
       }
 
       // Step 4: Create invoice for the case
+      const totalSubRowAmount = cases.products.reduce(
+        (sum: number, product: any) => {
+          if (!product.subRows || product.subRows.length === 0) return sum;
 
-      const totalAmount = cases.products.reduce((sum: number, main: any) => {
-        return (
-          sum +
-          main.subRows.reduce((subSum: number, product: any) => {
-            // Calculate the final discount for each product
-            const finalDiscount = product.discount; // Otherwise, add both main and product discounts
+          const subRowsTotal = product.subRows.reduce(
+            (subSum: number, subRow: any) => {
+              const finalDiscount = subRow.discount || 0;
 
-            // Calculate price after the final discount
-            const priceAfterDiscount =
-              product.price - (product.price * finalDiscount) / 100;
+              // Price after discount
+              const priceAfterDiscount =
+                subRow.price - (subRow.price * finalDiscount) / 100;
 
-            // Calculate total quantity for the product (main.quantity + product.quantity)
-            // const totalQuantity =
-            //   main.quantity > 1
-            //     ? main.quantity + product.quantity
-            //     : product.quantity;
+              // Calculate total amount (price * quantity * teeth length)
+              const totalQuantity = subRow.quantity || 0;
 
-            const totalQuantity = product.quantity;
+              const amount = priceAfterDiscount * totalQuantity;
+              return subSum + amount;
+            },
+            0
+          );
 
-            // Calculate the final price (after discount) for the given quantity
-            const final_price = priceAfterDiscount * totalQuantity;
-
-            // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
-            let amount = final_price * (product.teeth?.length || 1);
-
-            // If the product is taxable, add tax percentage
-            if (product.is_taxable && amount) {
-              amount += (amount * totalTaxPercent) / 100;
-            }
-
-            // Add the amount to the overall sum
-            return subSum + amount;
-          }, 0)
-        );
-      }, 0);
-
-      const serviceTotalAmount = cases.services.reduce(
-        (sum: number, service: any) => {
-          let serviceAmount = service.price || 0;
-
-          // If the service is taxable, apply tax
-          if (service.is_taxable && serviceAmount) {
-            serviceAmount += (serviceAmount * totalTaxPercent) / 100;
-          }
-
-          return sum + serviceAmount;
+          return sum + subRowsTotal;
         },
         0
       );
+
+      const totalServiceAmount = cases.products.reduce(
+        (sum: number, product: any) => {
+          if (!product.subRows || product.subRows.length === 0) return sum;
+
+          const subRowsTotal = product.subRows.reduce(
+            (subSum: number, subRow: any) => {
+              if (!subRow?.services || subRow.services.length === 0)
+                return subSum;
+
+              // Assuming you want to apply the discount to the service price
+              const finalDiscount = subRow?.services?.[0]?.discount || 0;
+
+              // Price after discount for the service
+              const priceAfterDiscount =
+                subRow?.services?.[0]?.price -
+                (subRow?.services?.[0]?.price * finalDiscount) / 100;
+
+              // Total amount for the service (no need for quantity, assuming a flat service price)
+              const amount = priceAfterDiscount;
+              return subSum + amount;
+            },
+            0
+          );
+
+          return sum + subRowsTotal;
+        },
+        0
+      );
+
+      // Final Invoice Calculation
+      const totalAmount = totalSubRowAmount + totalServiceAmount;
+      console.log(totalAmount); // This will output the correct totalAmount
 
       const newInvoice = {
         case_id: savedCaseId,
         client_id: cases.overview.client_id,
         lab_id: cases.overview.lab_id,
-        amount: Number(totalAmount) + Number(serviceTotalAmount), // Total amount for the invoice after discount
-        due_amount: Number(totalAmount) + Number(serviceTotalAmount), // Same as amount since it's unpaid
+        amount: Number(totalAmount),
+        due_amount: Number(totalAmount),
         status: "unpaid",
         due_date: null,
       };
-
+      console.log(totalAmount, "totalAmount");
       const { data: invoiceData, error: invoiceError } = await supabase
         .from("invoices")
         .insert(newInvoice)
@@ -558,160 +575,210 @@ const updateCases = async (
       console.log("Case products updated successfully:", caseProductData);
     }
 
+    const { error: deleteCaseProductTeethError } = await supabase
+      .from("case_product_teeth")
+      .delete()
+      .eq("case_id", caseId);
+
+    if (deleteCaseProductTeethError) {
+      toast.error("Faild to remove existing case products");
+    }
+    const { data: discountedPrices, error: discountedPricesError } =
+      await supabase.from("discounted_prices").delete().eq("case_id", caseId);
+
+    if (discountedPrices) {
+      const { error: dicountedPriceError } = await supabase
+        .from("discounted_prices")
+        .delete()
+        .eq("case_id", caseId);
+
+      if (dicountedPriceError) {
+        toast.error("Faild to remove existing prices");
+      }
+    }
+
     // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
-    // Step 4: Update or create case_product_teeth (mapping products and creating new rows if not exist)
-    console.log(cases.products, "cases.products");
-    const caseProductTeethRows = cases.products.flatMap((main: any) =>
-      main.subRows.map((product: any) => {
-        const data = {
-          is_range: cases.products.length > 0,
-          product_id: product.id,
-          case_product_id: caseProductData?.[0].id,
-          type: product.type || "",
-          lab_id: cases.overview.lab_id || "",
-          additional_services_id: product.services.map(
-            (item: { id: string }) => item.id
-          ),
-          quantity: (product.quantity ?? 1) + (main.quantity ?? 0), // Ensure quantity calculation is safe
-          notes: product.notes || "",
-          tooth_number: product.teeth || [],
-          pontic_teeth: product.pontic_teeth || [],
-          occlusal_shade_id:
-            product?.shades?.occlusal_shade === "manual" ||
-            product?.shades?.occlusal_shade === ""
-              ? null
-              : product?.shades?.occlusal_shade || null,
-          body_shade_id:
-            product?.shades?.body_shade === "manual" ||
-            product?.shades?.body_shade === ""
-              ? null
-              : product?.shades?.body_shade || null,
-          gingival_shade_id:
-            product?.shades?.gingival_shade === "manual" ||
-            product?.shades?.gingival_shade === ""
-              ? null
-              : product?.shades?.gingival_shade || null,
-          stump_shade_id:
-            product?.shades?.stump_shade === "manual" ||
-            product?.shades?.stump_shade === ""
-              ? null
-              : product?.shades?.stump_shade || null,
-          manual_body_shade: product?.shades?.manual_body || null,
-          manual_occlusal_shade: product?.shades?.manual_occlusal || null,
-          manual_gingival_shade: product?.shades?.manual_gingival || null,
-          manual_stump_shade: product?.shades?.manual_stump || null,
-          custom_body_shade: product?.shades?.custom_body || null,
-          custom_occlusal_shade: product?.shades?.custom_occlusal || null,
-          custom_gingival_shade: product?.shades?.custom_gingival || null,
-          custom_stump_shade: product?.shades?.custom_stump || null,
-          case_id: caseId,
-        };
-
-        const update = async () => {
-          if (!product.case_product_id) {
-            // No case_product_id means it's a new item, directly insert
-            const { error: insertError } = await supabase
-              .from("case_product_teeth")
-              .insert([data]);
-
-            if (insertError) {
-              console.error(
-                "Error inserting new case_product_teeth row:",
-                insertError,
-                data
-              );
-              return;
-            }
-
-            console.log(
-              `New case_product_teeth row created for product_id: ${product.product_id}`
-            );
-            toast.success("Case updated successfully");
-            setLoadingState &&
-              setLoadingState({ isLoading: false, action: "save" });
-          } else {
-            // Existing item, update it
-            const { error: updateError } = await supabase
-              .from("case_product_teeth")
-              .update(data)
-              .eq("id", product.case_product_id);
-
-            if (updateError) {
-              console.error(
-                "Error updating existing case_product_teeth row:",
-                updateError
-              );
-              return;
-            }
-
-            console.log(
-              `Existing case_product_teeth row updated for product_id: ${product.product_id}`
-            );
-            toast.success("Case updated successfully");
-          }
-
-          // Navigate after processing the row
-        };
-        update();
-      })
+    const caseProductTeethRows = cases.products.flatMap(
+      (main: any, index: number) => {
+        return main.subRows.map((product: any) => {
+          return {
+            case_product_id: caseProductData?.[0]?.id, // Replace with the actual dynamic ID
+            is_range: cases.products.length > 0,
+            tooth_number: product.teeth || "",
+            pontic_teeth: product.pontic_teeth || [],
+            product_id: product.id,
+            type: product.type || "",
+            additional_services_id:
+              product?.services?.map((item: { id: string }) => item.id) || [],
+            lab_id: cases.overview.lab_id || "",
+            quantity: product.quantity || 1, // Ensure at least 1
+            occlusal_shade_id:
+              product.shades.occlusal_shade !== "manual" &&
+              product.shades.custom_occlusal_shade !== ""
+                ? product.shades.occlusal_shade
+                : null,
+            body_shade_id:
+              product.shades.body_shade !== "manual" &&
+              product.shades.custom_body_shade !== ""
+                ? product.shades.body_shade
+                : null,
+            gingival_shade_id:
+              product.shades.gingival_shade !== "manual" &&
+              product.shades.custom_gingival_shade !== ""
+                ? product.shades.gingival_shade
+                : null,
+            stump_shade_id:
+              product.shades.stump_shade !== "manual" &&
+              product.shades.custom_stump_shade !== ""
+                ? product.shades.stump_shade
+                : null,
+            manual_body_shade: product?.shades.manual_body || null,
+            manual_occlusal_shade: product?.shades.manual_occlusal || null,
+            manual_gingival_shade: product?.shades.manual_gingival || null,
+            manual_stump_shade: product?.shades.manual_stump || null,
+            custom_body_shade: product?.shades.custom_body || null,
+            custom_occlusal_shade: product?.shades.custom_occlusal || null,
+            custom_gingival_shade: product?.shades.custom_gingival || null,
+            custom_stump_shade: product?.shades.custom_stump || null,
+            notes: product.notes || "",
+            case_id: caseId,
+          };
+        });
+      }
     );
+
+    console.log("api calling");
     console.log(caseProductTeethRows, "caseProductTeethRows");
-    // Step to check if rows exist for product_id before inserting
-    for (const row of caseProductTeethRows) {
-    }
+    // Calculate discounted prices for products
+    const discountedPrice = cases.products.flatMap((main: any) => {
+      return main.subRows.map((product: any) => {
+        // Ensure discount is valid
+        const productDiscount = product.discount || 0;
+        const serviceDiscount = product?.services?.[0]?.discount || 0;
 
-    // Step 4: Create invoice for the case
+        // Calculate price after discount, ensuring it remains original if discount is 0
+        const priceAfterDiscount =
+          productDiscount > 0
+            ? product.price - (product.price * productDiscount) / 100
+            : product.price;
 
-    function updateInvoice(
-      old_amount: number,
-      new_amount: number,
-      due_amount: number
-    ) {
-      let paid_amount = old_amount - due_amount;
-      let new_due_amount = Math.max(0, new_amount - paid_amount);
+        const servicePrice = product?.services?.[0]?.price || 0;
+        const priceAfterDiscountService =
+          serviceDiscount > 0
+            ? servicePrice - (servicePrice * serviceDiscount) / 100
+            : servicePrice;
 
-      return {
-        amount: new_amount,
-        due_amount: new_due_amount,
-      };
-    }
+        // Calculate final price per unit (product + service)
+        const final_price = priceAfterDiscount * product.quantity;
 
-    const totalAmount = cases.products.reduce((sum: number, main: any) => {
-      return (
-        sum +
-        main.subRows.reduce((subSum: number, product: any) => {
-          // Calculate the final discount for each product
-          const finalDiscount = product.discount; // Otherwise, add both main and product discounts
+        // Calculate total amount
+        const amount = final_price * (product.teeth?.length || 1);
 
-          // Calculate price after the final discount
-          const priceAfterDiscount =
-            product.price - (product.price * finalDiscount) / 100;
+        return {
+          product_id: product.id,
+          price: product.price,
+          discount: productDiscount,
+          quantity: product.quantity,
+          final_price: final_price,
+          total: amount,
+          case_id: caseId as string,
+          user_id: cases.overview.created_by,
+          service_price: priceAfterDiscountService,
+          service_discount: serviceDiscount,
+        };
+      });
+    });
 
-          // Calculate total quantity for the product (main.quantity + product.quantity)
-          const totalQuantity = product.quantity;
+    // Insert case_product_teeth rows
+    const { error: caseProductTeethError } = await supabase
+      .from("case_product_teeth")
+      .insert(caseProductTeethRows)
+      .select("");
 
-          // Calculate the final price (after discount) for the given quantity
-          const final_price = priceAfterDiscount * totalQuantity;
-
-          // Calculate the amount for this product by multiplying by teeth length (default to 1 if empty)
-          const amount = final_price * (product.teeth?.length || 1);
-
-          // Add the amount to the overall sum
-          return subSum + amount;
-        }, 0)
+    if (caseProductTeethError) {
+      console.error(
+        "Error creating case_product_teeth rows:",
+        caseProductTeethError
       );
-    }, 0);
+      return; // Exit if there is an error
+    }
+
+    // Step 4: Insert discount price rows
+    const { error: discountPriceError } = await supabase
+      .from("discounted_price")
+      .insert(discountedPrice)
+      .select("*");
+
+    if (discountPriceError) {
+      console.error("Error inserting discount prices:", discountPriceError);
+      return; // Exit if there is an error
+    } else {
+      console.log("Discount prices inserted successfully!");
+    }
+    const totalSubRowAmount = cases.products.reduce(
+      (sum: number, product: any) => {
+        if (!product.subRows || product.subRows.length === 0) return sum;
+
+        const subRowsTotal = product.subRows.reduce(
+          (subSum: number, subRow: any) => {
+            const finalDiscount = subRow.discount || 0;
+
+            // Price after discount
+            const priceAfterDiscount =
+              subRow.price - (subRow.price * finalDiscount) / 100;
+
+            // Calculate total amount (price * quantity * teeth length)
+            const totalQuantity = subRow.quantity || 0;
+
+            const amount = priceAfterDiscount * totalQuantity;
+            return subSum + amount;
+          },
+          0
+        );
+
+        return sum + subRowsTotal;
+      },
+      0
+    );
+
+    const totalServiceAmount = cases.products.reduce(
+      (sum: number, product: any) => {
+        if (!product.subRows || product.subRows.length === 0) return sum;
+
+        const subRowsTotal = product.subRows.reduce(
+          (subSum: number, subRow: any) => {
+            if (!subRow?.services || subRow.services.length === 0)
+              return subSum;
+
+            // Assuming you want to apply the discount to the service price
+            const finalDiscount = subRow?.services?.[0]?.discount || 0;
+
+            // Price after discount for the service
+            const priceAfterDiscount =
+              subRow?.services?.[0]?.price -
+              (subRow?.services?.[0]?.price * finalDiscount) / 100;
+
+            // Total amount for the service (no need for quantity, assuming a flat service price)
+            const amount = priceAfterDiscount;
+            return subSum + amount;
+          },
+          0
+        );
+
+        return sum + subRowsTotal;
+      },
+      0
+    );
+
+    // Final Invoice Calculation
+    const totalAmount = totalSubRowAmount + totalServiceAmount;
 
     const newInvoice = {
       case_id: caseId,
       client_id: cases.overview.client_id,
       lab_id: cases.overview.lab_id,
-      amount: Number(totalAmount), // Total amount for the invoice after discount
-      due_amount: updateInvoice(
-        Number(oldAmount),
-        Number(totalAmount),
-        Number(oldDueAmount)
-      ).due_amount, // Same as amount since it's unpaid
+      amount: Number(totalAmount), // Total amount (subRows + services)
+      due_amount: Number(totalAmount),
       status: "unpaid",
       due_date: null,
     };

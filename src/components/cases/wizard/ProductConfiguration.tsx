@@ -115,6 +115,7 @@ interface ServiceType {
   price: number;
   is_taxable: boolean;
   material?: Material;
+  discount?: number;
   subRows?: {
     services: {
       id: string | null;
@@ -122,6 +123,7 @@ interface ServiceType {
       price: number;
       is_taxable: boolean;
       material?: Material;
+      discount?: number;
     }[];
   }[];
 }
@@ -132,6 +134,7 @@ interface SelectedServiceType {
     price: number;
     is_taxable: boolean;
     material?: Material;
+    discount?: number;
     subRows?: {
       services: {
         id: string | null;
@@ -139,6 +142,7 @@ interface SelectedServiceType {
         price: number;
         is_taxable: boolean;
         material?: Material;
+        discount?: number;
       }[];
     }[];
   }[];
@@ -640,6 +644,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 (item) => item.service_id === service.id
               )?.[0]?.price || service.price,
             is_taxable: service.is_taxable,
+            discount: service.discount || (0 as number),
           },
         ],
         subRows: updatedProducts?.[index]?.subRows?.map((item) => ({
@@ -654,6 +659,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   (item) => item.service_id === service.id
                 )?.[0]?.price || service.price,
               is_taxable: service.is_taxable,
+              discount: service.discount || (0 as number),
             },
           ],
         })),
@@ -693,6 +699,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 (item) => item.service_id === service.id
               )?.[0]?.price || service.price,
             is_taxable: service.is_taxable,
+            discount: service.discount || (0 as number),
           });
         }
 
@@ -715,6 +722,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   (item) => item.service_id === service.id
                 )?.[0]?.price || service.price,
               is_taxable: service.is_taxable,
+              discount: service.discount || (0 as number),
             });
           }
 
@@ -735,6 +743,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                     (item) => item.service_id === service.id
                   )?.[0]?.price || service.price,
                 is_taxable: service.is_taxable,
+                discount: service.discount || (0 as number),
               },
             ],
           };
@@ -2622,87 +2631,174 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               </Button>
                             </div>
 
-                            {row.price && (
-                              <>
-                                <Separator className="mt-2" />
-                                <div className="mt-4 flex justify-between space-x-4">
-                                  <div>
-                                    <Label className="text-xs text-gray-500">
-                                      Price
-                                    </Label>
-                                    <p className="text-sm font-medium">
-                                      ${row.price.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  <Separator
-                                    orientation="vertical"
-                                    className="h-8 mx-2"
-                                  />
-                                  <div>
-                                    <Label className="text-xs text-gray-500">
-                                      Discount (%)
-                                    </Label>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={row.discount}
-                                      onChange={(e) => {
-                                        const updatedDiscount = Number(
-                                          e.target.value
-                                        );
-
-                                        setDiscount(updatedDiscount);
-
-                                        setselectedProducts(
-                                          (
-                                            prevSelectedProducts: SavedProduct[]
-                                          ) => {
-                                            const updatedProducts = [
-                                              ...prevSelectedProducts,
-                                            ];
-
-                                            // Update the discount for the main row
-                                            updatedProducts[index] = {
-                                              ...updatedProducts[index],
-                                              discount: updatedDiscount,
-
-                                              // Also update the discount for all subRows
-                                              subRows:
-                                                updatedProducts[
-                                                  index
-                                                ]?.subRows?.map((subRow) => ({
-                                                  ...subRow,
-                                                  discount: updatedDiscount, // Apply the same discount to each subRow
-                                                })) ?? [], // Default to an empty array if subRows is undefined or null
-                                            };
-
-                                            return updatedProducts;
-                                          }
-                                        );
-                                      }}
-                                      className="w-20 h-7 text-sm bg-white"
-                                    />
-                                  </div>
-                                  <Separator
-                                    orientation="vertical"
-                                    className="h-8 mx-2"
-                                  />
-                                  <div>
-                                    <Label className="text-xs text-gray-500">
-                                      Total
-                                    </Label>
-                                    <p className="text-sm font-extrabold text-blue-500">
-                                      $
-                                      {(
-                                        row.price *
-                                        (1 - discount / 100)
-                                      ).toFixed(2)}
-                                    </p>
-                                  </div>
+                            <div>
+                              <h2 className="text-sm font-bold">
+                                Product Prices
+                              </h2>
+                              <Separator className="mt-2" />
+                              <div className="mt-4 flex justify-between space-x-4">
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Price
+                                  </Label>
+                                  <p className="text-sm font-medium">
+                                    ${row.price.toFixed(2)}
+                                  </p>
                                 </div>
-                              </>
-                            )}
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Discount (%)
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={row?.discount}
+                                    onChange={(e) => {
+                                      const updatedDiscount = Number(
+                                        e.target.value
+                                      );
+
+                                      setDiscount(updatedDiscount);
+
+                                      setselectedProducts(
+                                        (
+                                          prevSelectedProducts: SavedProduct[]
+                                        ) => {
+                                          const updatedProducts = [
+                                            ...prevSelectedProducts,
+                                          ];
+
+                                          // Update the discount for the main row
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            discount: updatedDiscount,
+
+                                            // Also update the discount for all subRows
+                                            subRows:
+                                              updatedProducts[
+                                                index
+                                              ]?.subRows?.map((subRow) => ({
+                                                ...subRow,
+                                                discount: updatedDiscount, // Apply the same discount to each subRow
+                                              })) ?? [], // Default to an empty array if subRows is undefined or null
+                                          };
+
+                                          return updatedProducts;
+                                        }
+                                      );
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Total
+                                  </Label>
+                                  <p className="text-sm font-extrabold text-blue-500">
+                                    $
+                                    {(row.price * (1 - discount / 100)).toFixed(
+                                      2
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                              <h2 className="text-sm font-bold mt-5">
+                                Service Prices
+                              </h2>
+                              <Separator className="mt-2" />
+                              <div className="mt-4 flex justify-between space-x-4">
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Price
+                                  </Label>
+                                  <p className="text-sm font-medium">
+                                    ${row.price.toFixed(2)}
+                                  </p>
+                                </div>
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Discount (%)
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={row?.services?.[0]?.discount}
+                                    onChange={(e) => {
+                                      const updatedDiscount = Number(
+                                        e.target.value
+                                      );
+
+                                      setDiscount(updatedDiscount);
+
+                                      setselectedProducts(
+                                        (
+                                          prevSelectedProducts: SavedProduct[]
+                                        ) => {
+                                          const updatedProducts = [
+                                            ...prevSelectedProducts,
+                                          ];
+
+                                          // Update the discount for the main row
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            services: updatedProducts[
+                                              index
+                                            ]?.services?.map((item) => ({
+                                              ...item,
+                                              discount: updatedDiscount,
+                                            })), // Also update the discount for all subRows
+                                            subRows:
+                                              updatedProducts[
+                                                index
+                                              ]?.subRows?.map((subRow) => ({
+                                                ...subRow, // Keep the properties of subRow intact
+                                                services: subRow?.services?.map(
+                                                  (item) => ({
+                                                    ...item,
+                                                    discount: updatedDiscount,
+                                                  })
+                                                ),
+                                              })) ?? [], // Default to an empty array if subRows is undefined or null
+                                          };
+
+                                          return updatedProducts;
+                                        }
+                                      );
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+                                </div>
+                                <Separator
+                                  orientation="vertical"
+                                  className="h-8 mx-2"
+                                />
+                                <div>
+                                  <Label className="text-xs text-gray-500">
+                                    Total
+                                  </Label>
+                                  <p className="text-sm font-extrabold text-blue-500">
+                                    $
+                                    {(row.price * (1 - discount / 100)).toFixed(
+                                      2
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </PopoverContent>
                       </Popover>
@@ -3030,10 +3126,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     variant="outline"
                                     size="sm"
                                     className={`h-7 text-sm ${
-                                      shadeData[index]?.body_shade ||
-                                      shadeData[index]?.gingival_shade ||
-                                      shadeData[index]?.occlusal_shade ||
-                                      shadeData[index]?.stump_shade
+                                      row_sub.shades?.body_shade ||
+                                      row_sub.shades?.gingival_shade ||
+                                      row_sub.shades?.occlusal_shade ||
+                                      row_sub.shades?.stump_shade
                                         ? "text-blue-600"
                                         : ""
                                     }`}
@@ -3042,110 +3138,85 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       toggleShadePopover(subIndex + index + 100)
                                     }
                                   >
-                                    {shadeData[index]?.body_shade ||
-                                    shadeData[index]?.gingival_shade ||
-                                    shadeData[index]?.occlusal_shade ||
-                                    shadeData[index]?.custom_body ||
-                                    shadeData[index]?.custom_gingival ||
-                                    shadeData[index]?.custom_occlusal ||
-                                    shadeData[index]?.manual_occlusal ||
-                                    shadeData[index]?.manual_gingival ||
-                                    shadeData[index]?.manual_body ||
-                                    shadeData[index]?.manual_stump ||
-                                    shadeData[index]?.custom_stump ||
+                                    {row_sub.shades?.body_shade ||
+                                    row_sub.shades?.gingival_shade ||
+                                    row_sub.shades?.occlusal_shade ||
+                                    row_sub.shades?.custom_body ||
+                                    row_sub.shades?.custom_gingival ||
+                                    row_sub.shades?.custom_occlusal ||
+                                    row_sub.shades?.manual_occlusal ||
+                                    row_sub.shades?.manual_gingival ||
+                                    row_sub.shades?.manual_body ||
+                                    row_sub.shades?.manual_stump ||
+                                    row_sub.shades?.custom_stump ||
                                     (row?.subRows &&
                                       row?.subRows?.length > 0) ||
-                                    shadeData[index]?.stump_shade ? (
+                                    row_sub.shades?.stump_shade ? (
                                       <div>
-                                        {shadeData[index]?.subRow?.[
-                                          originalIndex
-                                        ]?.occlusal_shade === "manual"
-                                          ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_occlusal
+                                        {row_sub.shades?.occlusal_shade ===
+                                        "manual"
+                                          ? row_sub.shades?.manual_occlusal
                                           : shadesItems.filter(
                                               (item) =>
                                                 item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.occlusal_shade
+                                                row_sub.shades?.occlusal_shade
                                             )[0]?.name || (
                                               <span
                                                 className="text-red-600"
                                                 title="custom"
                                               >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_occlusal || "--"}
+                                                {row_sub.shades
+                                                  ?.custom_occlusal || "--"}
                                               </span>
                                             )}
                                         /
-                                        {shadeData[index]?.subRow?.[
-                                          originalIndex
-                                        ]?.body_shade === "manual"
-                                          ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_body
+                                        {row_sub.shades?.body_shade === "manual"
+                                          ? row_sub.shades?.manual_body
                                           : shadesItems.filter(
                                               (item) =>
                                                 item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.body_shade
+                                                row_sub.shades?.body_shade
                                             )[0]?.name || (
                                               <span
                                                 className="text-red-600"
                                                 title="custom"
                                               >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_body || "--"}
+                                                {row_sub.shades?.custom_body ||
+                                                  "--"}
                                               </span>
                                             )}
                                         /
-                                        {shadeData[index]?.subRow?.[
-                                          originalIndex
-                                        ]?.gingival_shade === "manual"
-                                          ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_gingival
+                                        {row_sub.shades?.gingival_shade ===
+                                        "manual"
+                                          ? row_sub.shades?.manual_gingival
                                           : shadesItems.filter(
                                               (item) =>
                                                 item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.gingival_shade
+                                                row_sub.shades?.gingival_shade
                                             )[0]?.name || (
                                               <span
                                                 className="text-red-600"
                                                 title="custom"
                                               >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_gingival || "--"}
+                                                {row_sub.shades
+                                                  ?.custom_gingival || "--"}
                                               </span>
                                             )}
                                         /
-                                        {shadeData[index]?.subRow?.[
-                                          originalIndex
-                                        ]?.stump_shade === "manual"
-                                          ? shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_stump
+                                        {row_sub.shades?.stump_shade ===
+                                        "manual"
+                                          ? row_sub.shades?.manual_stump
                                           : shadesItems.filter(
                                               (item) =>
                                                 item.id ===
-                                                shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.stump_shade
+                                                row_sub.shades?.stump_shade
                                             )[0]?.name || (
                                               <span
                                                 className="text-red-600"
                                                 title="custom"
                                               >
-                                                {shadeData[index]?.subRow?.[
-                                                  originalIndex
-                                                ]?.custom_stump || "--"}
+                                                {row_sub.shades?.custom_stump ||
+                                                  "--"}
                                               </span>
                                             )}
                                       </div>
@@ -3202,43 +3273,52 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.occlusal_shade || ""
+                                            row_sub.shades?.occlusal_shade || ""
                                           }
                                           onValueChange={(value) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        occlusal_shade: value,
-                                                        manual_occlusal: "",
-                                                        custom_occlusal: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Clone the subRow before modifying to avoid mutation
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          occlusal_shade: value,
+                                                          manual_occlusal: "",
+                                                          custom_occlusal: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    occlusal_shade: value,
-                                                    manual_occlusal: "",
-                                                    custom_occlusal: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                         >
                                           <SelectTrigger className="w-full">
@@ -3258,58 +3338,61 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_occlusal || ""
+                                            row_sub.shades?.manual_occlusal ||
+                                            ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      // Only update the specific subRow at originalIndex
-                                                      return {
-                                                        ...subRowItem, // Keep existing subRow data
-                                                        manual_occlusal:
-                                                          e.target.value,
-                                                        occlusal_shade: e.target
-                                                          .value
-                                                          ? "manual"
-                                                          : "",
-                                                        custom_occlusal: e
-                                                          .target.value
-                                                          ? ""
-                                                          : "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          manual_occlusal:
+                                                            e.target.value,
+                                                          occlusal_shade: e
+                                                            .target.value
+                                                            ? "manual"
+                                                            : "",
+                                                          custom_occlusal: e
+                                                            .target.value
+                                                            ? ""
+                                                            : "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem; // Keep other subRow items unchanged
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    manual_occlusal:
-                                                      e.target.value,
-                                                    occlusal_shade: e.target
-                                                      .value
-                                                      ? "manual"
-                                                      : "",
-                                                    custom_occlusal: e.target
-                                                      .value
-                                                      ? ""
-                                                      : "",
-                                                  },
-                                                ], // Default to an empty array if subRow is undefined or null
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
@@ -3317,40 +3400,55 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.custom_occlusal || ""
+                                            row_sub.shades?.custom_occlusal ||
+                                            ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow:
-                                                  updatedShadeData[
-                                                    index
-                                                  ]?.subRow?.map(
-                                                    (subRowItem, i) => {
-                                                      if (i === originalIndex) {
-                                                        // Only update the specific subRow at originalIndex
-                                                        return {
-                                                          ...subRowItem, // Keep existing subRow data
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
                                                           custom_occlusal:
                                                             e.target.value.toUpperCase(),
-                                                          occlusal_shade: null, // Optional: You can decide whether to clear or keep it
-                                                          manual_occlusal: "", // Optional: You can decide whether to clear or keep it
-                                                        };
-                                                      }
-                                                      return subRowItem; // Keep other subRow items unchanged
+                                                          occlusal_shade: null, // Clear occlusal_shade if needed
+                                                          manual_occlusal: "", // Clear manual_occlusal
+                                                        },
+                                                      };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                  ) ?? [], // Default to an empty array if subRow is undefined or null
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
@@ -3361,43 +3459,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="body">Body</Label>
                                         <Select
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.body_shade || ""
+                                            row_sub.shades?.body_shade || ""
                                           }
                                           onValueChange={(value) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        body_shade: value,
-                                                        manual_body: "",
-                                                        custom_body: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          body_shade: value,
+                                                          manual_body: "",
+                                                          custom_body: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    body_shade: value,
-                                                    manual_body: "",
-                                                    custom_body: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                         >
                                           <SelectTrigger className="w-full">
@@ -3418,98 +3526,114 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_body
+                                            row_sub.shades?.manual_body || ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem, // Keep existing subRow data
-                                                        manual_body:
-                                                          e.target.value,
-                                                        id: row_sub.id,
-                                                        body_shade: e.target
-                                                          .value
-                                                          ? "manual"
-                                                          : "",
-                                                        custom_body: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          manual_body:
+                                                            e.target.value,
+                                                          id: row_sub.id,
+                                                          body_shade: e.target
+                                                            .value
+                                                            ? "manual"
+                                                            : "",
+                                                          custom_body: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem; // Keep other subRow items unchanged
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    manual_body: e.target.value,
-                                                    id: row_sub.id,
-                                                    body_shade: e.target.value
-                                                      ? "manual"
-                                                      : "",
-                                                    custom_body: "",
-                                                  },
-                                                ], // Default to an empty array if subRow is undefined or null
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
+
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.custom_body
+                                            row_sub.shades?.custom_body || ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        custom_body:
-                                                          e.target.value.toUpperCase(),
-                                                        id: row_sub.id,
-                                                        body_shade: null,
-                                                        manual_body: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          custom_body:
+                                                            e.target.value.toUpperCase(),
+                                                          id: row_sub.id,
+                                                          body_shade: null, // Reset body_shade
+                                                          manual_body: "", // Clear manual_body
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    custom_body:
-                                                      e.target.value.toUpperCase(),
-                                                    id: row_sub.id,
-                                                    body_shade: null,
-                                                    manual_body: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
@@ -3522,43 +3646,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.gingival_shade || ""
+                                            row_sub.shades?.gingival_shade || ""
                                           }
                                           onValueChange={(value) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        gingival_shade: value,
-                                                        manual_gingival: "",
-                                                        custom_gingival: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          gingival_shade: value,
+                                                          manual_gingival: "",
+                                                          custom_gingival: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    gingival_shade: value,
-                                                    manual_gingival: "",
-                                                    custom_gingival: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                         >
                                           <SelectTrigger className="w-full">
@@ -3579,93 +3713,114 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_gingival
+                                            row_sub.shades?.manual_gingival ||
+                                            ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_gingival:
-                                                          e.target.value,
-                                                        gingival_shade:
-                                                          "manual",
-                                                        custom_gingival: "",
-                                                        id: row_sub.id,
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          manual_gingival:
+                                                            e.target.value,
+                                                          gingival_shade: e
+                                                            .target.value
+                                                            ? "manual"
+                                                            : "",
+                                                          custom_gingival: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    manual_gingival:
-                                                      e.target.value,
-                                                    gingival_shade: "manual",
-                                                    custom_gingival: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
+
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.custom_gingival
+                                            row_sub.shades?.custom_gingival ||
+                                            ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        custom_gingival:
-                                                          e.target.value.toUpperCase(),
-                                                        gingival_shade: null,
-                                                        manual_gingival: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          custom_gingival:
+                                                            e.target.value.toUpperCase(),
+                                                          gingival_shade: null,
+                                                          manual_gingival: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    custom_gingival:
-                                                      e.target.value.toUpperCase(),
-                                                    gingival_shade: null,
-                                                    manual_gingival: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
@@ -3676,43 +3831,53 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="stump">Stump</Label>
                                         <Select
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.stump_shade || ""
+                                            row_sub.shades?.stump_shade || ""
                                           }
                                           onValueChange={(value) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    // Clone existing subRows or initialize an empty array
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        stump_shade: value,
-                                                        manual_stump: "",
-                                                        custom_stump: "",
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      // Update existing subRow
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          stump_shade: value,
+                                                          manual_stump: "",
+                                                          custom_stump: "",
+                                                        },
                                                       };
+                                                    } else {
+                                                      // Add a new subRow if it doesn't exist
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    stump_shade: value,
-                                                    manual_stump: "",
-                                                    custom_stump: "",
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                         >
                                           <SelectTrigger className="w-full">
@@ -3733,99 +3898,108 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.manual_stump
+                                            row_sub.shades?.manual_stump || ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        manual_stump:
-                                                          e.target.value,
-                                                        stump_shade: e.target
-                                                          .value
-                                                          ? "manual"
-                                                          : null,
-                                                        custom_stump: "",
-                                                        id: row_sub.id,
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          manual_stump:
+                                                            e.target.value,
+                                                          stump_shade: e.target
+                                                            .value
+                                                            ? "manual"
+                                                            : null,
+                                                          custom_stump: "",
+                                                          id: row_sub.id,
+                                                        },
                                                       };
+                                                    } else {
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    manual_stump:
-                                                      e.target.value,
-                                                    stump_shade: e.target.value
-                                                      ? "manual"
-                                                      : null,
-                                                    custom_stump: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
+
                                         <Input
                                           type="text"
                                           value={
-                                            shadeData[index]?.subRow?.[
-                                              originalIndex
-                                            ]?.custom_stump
+                                            row_sub.shades?.custom_stump || ""
                                           }
                                           onChange={(e) => {
-                                            setShadeData((prev) => {
-                                              const updatedShadeData = [
-                                                ...prev,
-                                              ];
+                                            setselectedProducts(
+                                              (prev: SavedProduct[]) =>
+                                                prev.map((product, idx) => {
+                                                  if (idx === index) {
+                                                    const updatedSubRows =
+                                                      product.subRows
+                                                        ? [...product.subRows]
+                                                        : [];
 
-                                              updatedShadeData[index] = {
-                                                ...updatedShadeData[index],
-                                                subRow: updatedShadeData[
-                                                  index
-                                                ]?.subRow?.map(
-                                                  (subRowItem, i) => {
-                                                    if (i === originalIndex) {
-                                                      return {
-                                                        ...subRowItem,
-                                                        custom_stump:
-                                                          e.target.value.toUpperCase(),
-                                                        stump_shade: null,
-                                                        manual_stump: "",
-                                                        id: row_sub.id,
+                                                    if (
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ]
+                                                    ) {
+                                                      updatedSubRows[
+                                                        originalIndex
+                                                      ] = {
+                                                        ...updatedSubRows[
+                                                          originalIndex
+                                                        ],
+                                                        shades: {
+                                                          ...updatedSubRows[
+                                                            originalIndex
+                                                          ].shades,
+                                                          custom_stump:
+                                                            e.target.value.toUpperCase(),
+                                                          stump_shade: null,
+                                                          manual_stump: "",
+                                                          id: row_sub.id,
+                                                        },
                                                       };
+                                                    } else {
+                                                      [];
                                                     }
-                                                    return subRowItem;
-                                                  }
-                                                ) ?? [
-                                                  {
-                                                    custom_stump:
-                                                      e.target.value.toUpperCase(),
-                                                    stump_shade: null,
-                                                    manual_stump: "",
-                                                    id: row_sub.id,
-                                                  },
-                                                ],
-                                              };
 
-                                              return updatedShadeData;
-                                            });
+                                                    return {
+                                                      ...product,
+                                                      subRows: updatedSubRows,
+                                                    };
+                                                  }
+                                                  return product;
+                                                })
+                                            );
                                           }}
                                           className="w-20 h-7 text-sm bg-white"
                                         />
@@ -4040,93 +4214,185 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     </Button>
                                   </div>
 
-                                  {row_sub.price && (
-                                    <>
-                                      <Separator className="mt-2" />
-                                      <div className="mt-4 flex justify-between space-x-4">
-                                        <div>
-                                          <Label className="text-xs text-gray-500">
-                                            Price
-                                          </Label>
-                                          <p className="text-sm font-medium">
-                                            ${row_sub.price.toFixed(2)}
-                                          </p>
-                                        </div>
-                                        <Separator
-                                          orientation="vertical"
-                                          className="h-8 mx-2"
-                                        />
-                                        <div>
-                                          <Label className="text-xs text-gray-500">
-                                            Discount (%)
-                                          </Label>
-                                          <Input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            value={row_sub.discount}
-                                            onChange={(e) => {
-                                              const updatedDiscount = Number(
-                                                e.target.value
-                                              );
-
-                                              setselectedProducts(
-                                                (
-                                                  prevSelectedProducts: SavedProduct[]
-                                                ) => {
-                                                  const updatedProducts = [
-                                                    ...prevSelectedProducts,
-                                                  ];
-
-                                                  updatedProducts[index] = {
-                                                    ...updatedProducts[index],
-                                                    subRows:
-                                                      updatedProducts[
-                                                        index
-                                                      ]?.subRows?.map(
-                                                        (subRowItem, i) => {
-                                                          if (
-                                                            i === originalIndex
-                                                          ) {
-                                                            // Only update subRow discount based on the main discount and the input discount
-
-                                                            return {
-                                                              ...subRowItem,
-                                                              discount:
-                                                                updatedDiscount, // Update discount for the specific subRow
-                                                            };
-                                                          }
-                                                          return subRowItem; // Keep other subRows unchanged
-                                                        }
-                                                      ) ?? [], // Ensure it's an empty array if subRows is undefined or null
-                                                  };
-
-                                                  return updatedProducts;
-                                                }
-                                              );
-                                            }}
-                                            className="w-20 h-7 text-sm bg-white"
-                                          />
-                                        </div>
-                                        <Separator
-                                          orientation="vertical"
-                                          className="h-8 mx-2"
-                                        />
-                                        <div>
-                                          <Label className="text-xs text-gray-500">
-                                            Total
-                                          </Label>
-                                          <p className="text-sm font-extrabold text-blue-500">
-                                            $
-                                            {(
-                                              row_sub.price *
-                                              (1 - discount / 100)
-                                            ).toFixed(2)}
-                                          </p>
-                                        </div>
+                                  <div>
+                                    <h2 className="text-sm font-bold">
+                                      Product Prices sub
+                                    </h2>
+                                    <Separator className="mt-2" />
+                                    <div className="mt-4 flex justify-between space-x-4">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Price
+                                        </Label>
+                                        <p className="text-sm font-medium">
+                                          ${row.price.toFixed(2)}
+                                        </p>
                                       </div>
-                                    </>
-                                  )}
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-8 mx-2"
+                                      />
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Discount (%)
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="100"
+                                          value={row.discount}
+                                          onChange={(e) => {
+                                            const updatedDiscount = Number(
+                                              e.target.value
+                                            );
+
+                                            setDiscount(updatedDiscount);
+
+                                            setselectedProducts(
+                                              (
+                                                prevSelectedProducts: SavedProduct[]
+                                              ) => {
+                                                const updatedProducts = [
+                                                  ...prevSelectedProducts,
+                                                ];
+
+                                                // Update the discount for the main row
+                                                updatedProducts[index] = {
+                                                  ...updatedProducts[index],
+                                                  discount: updatedDiscount,
+
+                                                  // Also update the discount for all subRows
+                                                  subRows:
+                                                    updatedProducts[
+                                                      index
+                                                    ]?.subRows?.map(
+                                                      (subRow) => ({
+                                                        ...subRow,
+                                                        discount:
+                                                          updatedDiscount, // Apply the same discount to each subRow
+                                                      })
+                                                    ) ?? [], // Default to an empty array if subRows is undefined or null
+                                                };
+
+                                                return updatedProducts;
+                                              }
+                                            );
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-8 mx-2"
+                                      />
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Total
+                                        </Label>
+                                        <p className="text-sm font-extrabold text-blue-500">
+                                          $
+                                          {(
+                                            row.price *
+                                            (1 - discount / 100)
+                                          ).toFixed(2)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <h2 className="text-sm font-bold mt-5">
+                                      Service Prices
+                                    </h2>
+                                    <Separator className="mt-2" />
+                                    <div className="mt-4 flex justify-between space-x-4">
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Price
+                                        </Label>
+                                        <p className="text-sm font-medium">
+                                          ${row.price.toFixed(2)}
+                                        </p>
+                                      </div>
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-8 mx-2"
+                                      />
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Discount (%)
+                                        </Label>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          max="100"
+                                          value={
+                                            row_sub?.services?.[0]?.discount ||
+                                            0
+                                          }
+                                          onChange={(e) => {
+                                            const updatedDiscount = Number(
+                                              e.target.value
+                                            );
+
+                                            setselectedProducts(
+                                              (
+                                                prevSelectedProducts: SavedProduct[]
+                                              ) => {
+                                                return prevSelectedProducts.map(
+                                                  (product, i) => {
+                                                    if (i === index) {
+                                                      return {
+                                                        ...product,
+                                                        subRows:
+                                                          product.subRows?.map(
+                                                            (
+                                                              subRow,
+                                                              subIndex
+                                                            ) =>
+                                                              subIndex ===
+                                                              originalIndex
+                                                                ? {
+                                                                    ...subRow,
+                                                                    services:
+                                                                      subRow.services?.map(
+                                                                        (
+                                                                          service
+                                                                        ) => ({
+                                                                          ...service,
+                                                                          discount:
+                                                                            updatedDiscount,
+                                                                        })
+                                                                      ),
+                                                                  }
+                                                                : subRow
+                                                          ),
+                                                      };
+                                                    }
+                                                    return product;
+                                                  }
+                                                );
+                                              }
+                                            );
+                                          }}
+                                          className="w-20 h-7 text-sm bg-white"
+                                        />
+                                      </div>
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-8 mx-2"
+                                      />
+                                      <div>
+                                        <Label className="text-xs text-gray-500">
+                                          Total
+                                        </Label>
+                                        <p className="text-sm font-extrabold text-blue-500">
+                                          $
+                                          {(
+                                            row.price *
+                                            (1 - discount / 100)
+                                          ).toFixed(2)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </PopoverContent>
                             </Popover>
@@ -4202,6 +4468,20 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     });
                                   }
                                 );
+                                setShadeData((prevShadeData: ShadeData[]) => {
+                                  return prevShadeData.map((shade, idx) => {
+                                    if (idx === index) {
+                                      return {
+                                        ...shade,
+                                        subRow:
+                                          shade.subRow?.filter(
+                                            (_, i) => i !== originalIndex
+                                          ) || [],
+                                      };
+                                    }
+                                    return shade;
+                                  });
+                                });
                               }}
                             >
                               <X className="h-4 w-4" />

@@ -16,7 +16,6 @@ import {
   TableHead,
 } from "@/components/ui/table";
 import { Invoice, InvoiceItem } from "@/data/mockInvoicesData";
-import { toast } from "react-hot-toast";
 import { ChevronDown, X } from "lucide-react";
 import {
   DropdownMenuContent,
@@ -37,7 +36,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-
+import { Label } from "@/components/ui/label";
+import { DatePicker } from "@/components/ui/date-picker";
+import toast from "react-hot-toast";
 interface EditInvoiceModalProps {
   invoice: Invoice | null;
   mode?: "edit" | "payment";
@@ -63,6 +64,9 @@ export function EditInvoiceModal({
   } | null>();
   const [discount, setDiscount] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    due_date: "",
+  });
   const [products, setProducts] = useState<ProductType[]>([]);
   const { user } = useAuth();
   console.log(invoice, "invoice ere");
@@ -88,6 +92,7 @@ export function EditInvoiceModal({
       });
       setDiscount(invoice.discount?.value || 0);
     }
+    setFormData({ due_date: invoice?.invoice?.[0].due_date || "" });
   }, [invoice]);
   useEffect(() => {
     const fetchProducts = async () => {
@@ -270,6 +275,25 @@ export function EditInvoiceModal({
       due_amount: new_due_amount,
     };
   }
+
+  const handleInvoiceDueDateUpdate = async () => {
+    if (!formData.due_date) {
+      toast.error("Due Date is Missing!!");
+      return;
+    }
+
+    const { data, error: updateError } = await supabase
+      .from("invoices")
+      .update({ due_date: formData.due_date })
+      .eq("case_id", invoice?.id)
+      .select("*");
+    console.log(data, "data updated", updateError);
+    if (updateError) {
+      toast.error(`Failed to update invoice with ID`);
+    }
+
+    // onClose();
+  };
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -290,13 +314,32 @@ export function EditInvoiceModal({
           </DialogTitle>
           <div id="dialog-description" className="text-sm text-gray-500">
             {mode === "edit"
-              ? "Edit invoice details including items, prices, and discounts."
+              ? "Edit invoice Due Date."
               : "Record payment details for this invoice."}
           </div>
         </DialogHeader>
 
-        <div className="space-y-6" id="dialog-onhold">
-          {/* Client Info */}
+        <div>
+          <div className="space-y-0 h-[24rem]">
+            <Label htmlFor="due_date" className="text-xs">
+              Received Date *
+            </Label>
+            <DatePicker
+              date={formData.due_date ? new Date(formData.due_date) : undefined}
+              onSelect={(date) =>
+                setFormData({ due_date: date?.toISOString() as string })
+              }
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date()}
+              dateFormat="MM/dd/yyyy"
+              placeholder="Select order date"
+              updatedDate={
+                formData.due_date ? new Date(formData.due_date) : new Date()
+              }
+            />
+          </div>
+        </div>
+        {/* <div className="space-y-6" id="dialog-onhold">
           <div className="flex justify-between items-start">
             <div>
               <h3 className="text-lg font-medium">{invoice?.clientName}</h3>
@@ -315,7 +358,6 @@ export function EditInvoiceModal({
             </div>
           </div>
 
-          {/* Invoice Items */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Invoice Items</h3>
@@ -382,18 +424,6 @@ export function EditInvoiceModal({
                         }
                       </TableCell>
                       <TableCell className="">
-                        {/* change this to dropdown */}
-                        {/* <Input
-                          value={item.description}
-                          onChange={(e) => {
-                            const updatedItems = [...items];
-                            updatedItems[index] = {
-                              ...item,
-                              description: e.target.value,
-                            };
-                            setItems(updatedItems);
-                          }}
-                        /> */}
                         <div className="">
                           <DropdownMenu>
                             <DropdownMenuTrigger
@@ -437,37 +467,6 @@ export function EditInvoiceModal({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
-
-                        {/* <Select
-                          name="clientId"
-                          value={item.id}
-                          onValueChange={(value) => {
-                            handleSelectedProduct(
-                              products.filter((item) => item.id === value)[0]
-                            );
-                          }}
-                        >
-                          <SelectTrigger className={cn("bg-white")}>
-                            <SelectValue placeholder="Select a client" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products && products.length > 0 ? (
-                              products.map((product) => (
-                                <SelectItem
-                                  key={product.id}
-                                  value={product.id}
-                                  className="hover:bg-gray-200 cursor-pointer"
-                                >
-                                  {product.name || ""}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="_no_clients" disabled>
-                                No clients available
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select> */}
                       </TableCell>
                       <TableCell>
                         <Input
@@ -549,7 +548,6 @@ export function EditInvoiceModal({
             </div>
           </div>
 
-          {/* Totals and Notes */}
           <div className="flex gap-5 flex-col md:flex-row justify-between items-start">
             <div className="w-1/2">
               <h3 className="text-lg font-medium mb-2">Invoice Notes</h3>
@@ -571,32 +569,13 @@ export function EditInvoiceModal({
                 className="w-full h-32 p-2 border rounded-md"
               />
             </div>
-            {/* <div className="w-1/2">
-              <h3 className="text-lg font-medium mb-2">Lab Notes</h3>
-              <textarea
-                value={notes?.labNotes}
-                disabled={invoice?.invoice?.[0]?.status === "paid"}
-                onChange={(e) =>
-                  setNotes(
-                    (prevNotes) =>
-                      ({
-                        ...prevNotes,
-                        labNotes: e.target.value,
-                      } as {
-                        labNotes: string;
-                        invoiceNotes: string;
-                      })
-                  )
-                }
-                className="w-full h-32 p-2 border rounded-md"
-              />
-            </div> */}
 
             <div className="w-1/2 space-y-4 h-[150px] flex justify-end items-end gap-5">
               <div className="flex border-t-2 border-b-2 py-5 font-bold">
                 <span>Paid Amount:</span>
                 <span>
-                  ${Number(invoice?.invoice?.[0]?.amount) -
+                  $
+                  {Number(invoice?.invoice?.[0]?.amount) -
                     Number(invoice?.invoice?.[0].due_amount)}
                 </span>
               </div>
@@ -623,7 +602,7 @@ export function EditInvoiceModal({
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex justify-end gap-2 mt-6">
           <Button type="button" variant="outline" onClick={onClose}>
@@ -633,7 +612,7 @@ export function EditInvoiceModal({
             type="button"
             variant="default"
             disabled={isSubmitting || invoice?.invoice?.[0]?.status === "paid"}
-            onClick={handleSave}
+            onClick={() => handleInvoiceDueDateUpdate()}
           >
             {isSubmitting ? "Saving..." : "Complete"}
           </Button>

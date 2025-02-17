@@ -387,6 +387,7 @@
 }
 /* Add this to your CSS file */
 .calendar-container .rbc-now {
+
   position: relative; /* Make sure the day cell is positioned relative */
 }
 .calendar-container .rbc-event {
@@ -401,6 +402,7 @@
   font: bold;
   position: relative;
   height: 60px !important;
+
 }
 .calendar-container .rbc-now {
   background-color: #e1ecff !important; /* Circle color */

@@ -29,12 +29,14 @@ export interface SavedProduct {
     id: string | null;
     name: string;
     price: number;
+    discount: number;
     is_taxable: boolean;
     subRows?: {
       id: string | null;
       name: string;
       price: number;
       is_taxable: boolean;
+      discount: number;
     }[];
   }[];
 }
