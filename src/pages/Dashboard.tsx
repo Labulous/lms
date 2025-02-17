@@ -335,7 +335,6 @@ const Dashboard: React.FC = () => {
         const onHold = casesList.filter(
           (caseItem) => caseItem.status === "on_hold"
         );
-        console.log(pastDue, "pastDue");
 
         setTodaysCellEvent([
           {
@@ -501,7 +500,6 @@ const Dashboard: React.FC = () => {
             const onHoldCases = cases.filter(
               (caseItem) => caseItem.status === "on_hold"
             );
-            console.log(onHoldCases,"onHoldCases")
             const activeCases = cases.filter(
               (caseItem) => caseItem.status !== "on_hold"
             );
@@ -638,7 +636,6 @@ const Dashboard: React.FC = () => {
   const handleCardClick = (filterType: string) => {
     navigate(`/cases?filter=${filterType}`);
   };
-  console.log(todayCellEvents, "todays");
   return (
     <div className="container mx-auto p-6">
       <div className="flex items-center justify-between mb-4">

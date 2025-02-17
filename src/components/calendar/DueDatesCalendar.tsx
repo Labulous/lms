@@ -314,21 +314,21 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
                   )}
                   {event.isActive && event.title !== "0" && (
                     <div
-                      className={` ${"bg-blue-500"}  absolute -top-9 left-2 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                      className={` ${"bg-blue-500"}  absolute -top-8 -left-14 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
                     >
                       {event.title}
                     </div>
                   )}
                   {event.isTommorow && event.title !== "0" && (
                     <div
-                      className={` ${"bg-green-500"}  absolute -top-16 left-8 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
+                      className={` ${"bg-green-500"}  absolute -top-16 left-16 rounded-full h-[22px] text-center pt-0.5 w-[22px] text-sm col-span-8`}
                     >
                       {event.title}
                     </div>
                   )}
 
                   {event.isAllOnHold && event.title && event.title !== "0" && (
-                    <div className="bg-yellow-500  mb-6 z-50  absolute  col-span-4 w text-sm left-16 bottom-6 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
+                    <div className="bg-yellow-500  mb-6 z-50  absolute  col-span-4 w text-sm left-24 bottom-6 w-[22px] pt-0.5 h-[22px]  rounded-full text-center">
                       {event.title}
                     </div>
                   )}
@@ -341,7 +341,7 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           align="end"
           onMouseLeave={() => handleEventHover(null)}
         >
-          <div className="space-y-4">
+          <div className="space-y-4 z-50">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">
@@ -521,84 +521,6 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   const handleEventHover = (event: CalendarEvents | null) => {
     setHoveredEvent(event);
   };
-  console.log(events, "event hover");
-  const staticEvents: CalendarEvents[] = [
-    {
-      id: 1,
-      title: "1",
-      start: new Date(2025, 1, 16, 10, 0),
-      end: new Date(2025, 1, 16, 11, 30),
-      isPastDue: true,
-      formattedCases: [
-        {
-          case_id: "1",
-          client_name: "zahid",
-          doctor: {
-            name: "hussain",
-          },
-          due_date: "caseItem.due_date",
-          case_products: [1, 2].map((product) => ({
-            name: "product.name",
-            product_type: { name: "name" },
-          })),
-          invoicesData: [],
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "2",
-      start: new Date(2025, 1, 16, 10, 0),
-      end: new Date(2025, 1, 16, 11, 30),
-      isAllOnHold: true,
-      formattedCases: [
-        {
-          case_id: "2",
-          client_name: "zahid",
-          doctor: {
-            name: "hussain",
-          },
-          due_date: "caseItem.due_date",
-          case_products: [1, 2].map((product) => ({
-            name: "product.name",
-            product_type: { name: "name" },
-          })),
-          invoicesData: [],
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "3",
-      start: new Date(2025, 1, 16, 10, 0),
-      end: new Date(2025, 1, 16, 11, 30),
-      isTommorow: true,
-      formattedCases: [
-        {
-          case_id: "3",
-          client_name: "zahid",
-          doctor: {
-            name: "hussain",
-          },
-          due_date: "caseItem.due_date",
-          case_products: [1, 2].map((product) => ({
-            name: "product.name",
-            product_type: { name: "name" },
-          })),
-          invoicesData: [],
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "4",
-      start: new Date(2025, 1, 16, 10, 0),
-      end: new Date(2025, 1, 16, 11, 30),
-      isActive: true,
-      formattedCases: [],
-    },
-  ];
-  console.log(filteredEvents, "filteredEvents");
   return (
     <>
       <div className="calendar-wrapper" style={{ height }}>
