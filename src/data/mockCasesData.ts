@@ -151,7 +151,7 @@ const saveCaseProduct = async (
           const serviceIds =
             product?.services?.map((item: { id: string }) => item.id) || [];
           const uniqueServiceId =
-            [...new Set(serviceIds)].length === 1 ? serviceIds[0] : serviceIds;
+            [...new Set(serviceIds)].length === 1 ? [serviceIds[0]] : serviceIds;
           return {
             case_product_id: caseProductId, // Replace with the actual dynamic ID
             is_range: cases.products.length > 0,
@@ -220,7 +220,7 @@ const saveCaseProduct = async (
         // Determine if all service IDs are the same
         const uniqueServiceIds = new Set(serviceIds);
         const countServices =
-          uniqueServiceIds.size === 1 ? 1 : serviceIds.length;
+          uniqueServiceIds.size === 1 ? 1 : serviceIds?.length;
 
         // Calculate service price after discount
         const servicePrice = product?.services?.[0]?.price || 0;
@@ -421,7 +421,7 @@ const saveCases = async (
           const uniqueServiceIds = new Set(serviceIds);
 
           const countServices =
-            uniqueServiceIds.size === 1 ? 1 : serviceIds.length; // If all IDs are the same, count 1; otherwise, count all
+            uniqueServiceIds.size === 1 ? 1 : serviceIds?.length; // If all IDs are the same, count 1; otherwise, count all
 
           const totalAmount = product.subRows.reduce(
             (subSum: number, subRow: any) => {

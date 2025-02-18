@@ -292,7 +292,7 @@ export function EditInvoiceModal({
       toast.error(`Failed to update invoice with ID`);
     }
 
-    // onClose();
+    onClose();
   };
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
