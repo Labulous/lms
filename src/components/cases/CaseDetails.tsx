@@ -1621,6 +1621,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     //   fetchCaseData(true);
     // }
     fetchCaseData(true);
+    toast.success("Invoice Updated SucessFully!!")
   };
   const handleOpenEditModal = (
     invoice: ExtendedCase,
