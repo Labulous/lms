@@ -221,6 +221,7 @@ export interface ExtendedCase {
   }[];
   teethProduct?: {
     tooth_number: number[];
+    pontic_teeth: number[];
     body_shade?: { name: string };
     gingival_shade?: { name: string };
     occlusal_shade?: { name: string };
@@ -625,6 +626,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           is_range,
           type,
           tooth_number,
+          pontic_teeth,
           product_id,
           additional_services_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -757,6 +759,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             id: tp.id,
             is_range: tp.is_range,
             tooth_number: tp.tooth_number,
+            pontic_teeth: tp.pontic_teeth,
             product_id: tp.product_id,
             occlusal_shade: tp.occlusal_shade,
             body_shade: tp.body_shade,
@@ -1441,182 +1444,184 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
 
-    const { data: casesData, error: CaseDataerror } = await supabase
-      .from("cases")
-      .select(
-        `
-      client_id
-    `
-      )
-      .eq("id", updatedInvoice.id)
-      .order("created_at", { ascending: false });
+    // const { data: casesData, error: CaseDataerror } = await supabase;
+    //   .from("cases")
+    //   .select(
+    //     `
+    //   client_id
+    // `
+    //   )
+    //   .eq("id", updatedInvoice.id)
+    //   .order("created_at", { ascending: false });
 
-    if (CaseDataerror) {
-      throw new Error(CaseDataerror.message);
-    }
+    // if (CaseDataerror) {
+    //   throw new Error(CaseDataerror.message);
+    // }
 
-    try {
-      setLoadingState({ isLoading: true, action: "save" });
+    // try {
+    //   setLoadingState({ isLoading: true, action: "save" });
 
-      const { data: updatedCaseProducts, error: updateCaseProductsError } =
-        await supabase
-          .from("case_products")
-          .update({ products_id: updatedProductIds })
-          .eq("case_id", updatedInvoice.id)
-          .select();
+    //   const { data: updatedCaseProducts, error: updateCaseProductsError } =
+    //     await supabase
+    //       .from("case_products")
+    //       .update({ products_id: updatedProductIds })
+    //       .eq("case_id", updatedInvoice.id)
+    //       .select();
 
-      if (updateCaseProductsError) {
-        throw new Error(updateCaseProductsError.message);
-      }
-      console.log(updatedCaseProducts, "updatedCaseProducts");
-      for (const item of updatedInvoice?.items || []) {
-        try {
-          // Calculate the final price based on the quantity, unit price, and discount
-          const finalPrice =
-            item.quantity *
-            Number(item.unitPrice) *
-            (1 - (item.discount || 0) / 100);
+    //   if (updateCaseProductsError) {
+    //     throw new Error(updateCaseProductsError.message);
+    //   }
+    //   console.log(updatedCaseProducts, "updatedCaseProducts");
+    //   for (const item of updatedInvoice?.items || []) {
+    //     try {
+    //       // Calculate the final price based on the quantity, unit price, and discount
+    //       const finalPrice =
+    //         item.quantity *
+    //         Number(item.unitPrice) *
+    //         (1 - (item.discount || 0) / 100);
 
-          if (item.discountId && item.caseProductTeethId) {
-            // Update the discounted_price table
-            const { data: updatedDiscount, error: updateDiscountError } =
-              await supabase
-                .from("discounted_price")
-                .update({
-                  discount: item.discount,
-                  quantity: item.quantity || 1,
-                  price: Number(item.unitPrice),
-                  final_price: Number(finalPrice),
-                })
-                .eq("id", item.discountId)
-                .select();
+    //       if (item.discountId && item.caseProductTeethId) {
+    //         // Update the discounted_price table
+    //         const { data: updatedDiscount, error: updateDiscountError } =
+    //           await supabase
+    //             .from("discounted_price")
+    //             .update({
+    //               discount: item.discount,
+    //               quantity: item.quantity || 1,
+    //               price: Number(item.unitPrice),
+    //               final_price: Number(finalPrice),
+    //             })
+    //             .eq("id", item.discountId)
+    //             .select();
 
-            if (updateDiscountError) {
-              throw new Error(updateDiscountError.message);
-            }
+    //         if (updateDiscountError) {
+    //           throw new Error(updateDiscountError.message);
+    //         }
 
-            // Update the case_product_teeth table
-            const { data: updateTeeth, error: updateTeethError } =
-              await supabase
-                .from("case_product_teeth")
-                .update({
-                  tooth_number: item.toothNumber
-                    .split(",")
-                    .map((num) => num.trim()), // Split string into an array and trim whitespace
-                })
-                .eq("id", item.caseProductTeethId)
-                .select("*");
+    //         // Update the case_product_teeth table
+    //         const { data: updateTeeth, error: updateTeethError } =
+    //           await supabase
+    //             .from("case_product_teeth")
+    //             .update({
+    //               tooth_number: item.toothNumber
+    //                 .split(",")
+    //                 .map((num) => num.trim()), // Split string into an array and trim whitespace
+    //             })
+    //             .eq("id", item.caseProductTeethId)
+    //             .select("*");
 
-            console.log("Updated discount row:", updatedDiscount);
-            console.log("Updated teeth row:", updateTeeth);
-          } else {
-            // Create a new discounted_price row
-            const { data: newDiscount, error: newDiscountError } =
-              await supabase
-                .from("discounted_price")
-                .insert([
-                  {
-                    discount: item.discount,
-                    quantity: item.quantity,
-                    price: item.unitPrice,
-                    final_price: finalPrice,
-                    product_id: item.id,
-                    case_id: updatedInvoice.id,
-                    user_id: user?.id,
-                  },
-                ])
-                .select();
+    //         console.log("Updated discount row:", updatedDiscount);
+    //         console.log("Updated teeth row:", updateTeeth);
+    //       } else {
+    //         // Create a new discounted_price row
+    //         const { data: newDiscount, error: newDiscountError } =
+    //           await supabase
+    //             .from("discounted_price")
+    //             .insert([
+    //               {
+    //                 discount: item.discount,
+    //                 quantity: item.quantity,
+    //                 price: item.unitPrice,
+    //                 final_price: finalPrice,
+    //                 product_id: item.id,
+    //                 case_id: updatedInvoice.id,
+    //                 user_id: user?.id,
+    //               },
+    //             ])
+    //             .select();
 
-            if (newDiscountError) {
-              throw new Error(newDiscountError.message);
-            }
+    //         if (newDiscountError) {
+    //           throw new Error(newDiscountError.message);
+    //         }
 
-            console.log("Created new discount row:", newDiscount);
+    //         console.log("Created new discount row:", newDiscount);
 
-            // Create a new case_product_teeth row
-            const { data: newTeeth, error: newTeethError } = await supabase
-              .from("case_product_teeth")
-              .insert([
-                {
-                  tooth_number: item.toothNumber
-                    .split(",")
-                    .map((num) => num.trim()),
-                  product_id: item.id, // Ensure to include the product_id
-                  case_id: updatedInvoice.id,
-                  lab_id: lab?.id,
-                  case_product_id: updatedCaseProducts[0].id,
-                },
-              ])
-              .select("*");
+    //         // Create a new case_product_teeth row
+    //         const { data: newTeeth, error: newTeethError } = await supabase
+    //           .from("case_product_teeth")
+    //           .insert([
+    //             {
+    //               tooth_number: item.toothNumber
+    //                 .split(",")
+    //                 .map((num) => num.trim()),
+    //               product_id: item.id, // Ensure to include the product_id
+    //               case_id: updatedInvoice.id,
+    //               lab_id: lab?.id,
+    //               case_product_id: updatedCaseProducts[0].id,
+    //             },
+    //           ])
+    //           .select("*");
 
-            if (newTeethError) {
-              throw new Error(newTeethError.message);
-            }
+    //         if (newTeethError) {
+    //           throw new Error(newTeethError.message);
+    //         }
 
-            console.log("Created new teeth row:", newTeeth);
-          }
-          if (casesData && casesData.length > 0 && casesData[0]?.client_id) {
-            await updateBalanceTracking(casesData[0]?.client_id);
-          }
-        } catch (error) {
-          console.error(
-            `Error processing item with productId ${item.id}:`,
-            error
-          );
-          // Optionally, continue with the next item instead of throwing
-        }
-      }
+    //         console.log("Created new teeth row:", newTeeth);
+    //       }
+    //       if (casesData && casesData.length > 0 && casesData[0]?.client_id) {
+    //         await updateBalanceTracking(casesData[0]?.client_id);
+    //       }
+    //     } catch (error) {
+    //       console.error(
+    //         `Error processing item with productId ${item.id}:`,
+    //         error
+    //       );
+    //       // Optionally, continue with the next item instead of throwing
+    //     }
+    //   }
 
-      const { error: updateCasesError } = await supabase
-        .from("cases")
-        .update({
-          invoice_notes: updatedInvoice?.notes?.invoiceNotes,
-        })
-        .eq("id", updatedInvoice.id);
+    //   const { error: updateCasesError } = await supabase
+    //     .from("cases")
+    //     .update({
+    //       invoice_notes: updatedInvoice?.notes?.invoiceNotes,
+    //     })
+    //     .eq("id", updatedInvoice.id);
 
-      if (updateCasesError) {
-        throw new Error(updateCasesError.message);
-      }
-      function updateInvoice(
-        old_amount: number,
-        new_amount: number,
-        due_amount: number
-      ) {
-        let paid_amount = old_amount - due_amount;
-        let new_due_amount = Math.max(0, new_amount - paid_amount);
+    //   if (updateCasesError) {
+    //     throw new Error(updateCasesError.message);
+    //   }
+    //   function updateInvoice(
+    //     old_amount: number,
+    //     new_amount: number,
+    //     due_amount: number
+    //   ) {
+    //     let paid_amount = old_amount - due_amount;
+    //     let new_due_amount = Math.max(0, new_amount - paid_amount);
 
-        return {
-          amount: new_amount,
-          due_amount: new_due_amount,
-        };
-      }
+    //     return {
+    //       amount: new_amount,
+    //       due_amount: new_due_amount,
+    //     };
+    //   }
 
-      const { error: updateInvoicesError } = await supabase
-        .from("invoices")
-        .update(
-          updateInvoice(
-            Number(updatedInvoice.oldTotalAmount),
-            Number(updatedInvoice.totalAmount),
-            Number(updatedInvoice.totalDue)
-          )
-        )
-        .eq("case_id", updatedInvoice.id);
+    //   const { error: updateInvoicesError } = await supabase
+    //     .from("invoices")
+    //     .update(
+    //       updateInvoice(
+    //         Number(updatedInvoice.oldTotalAmount),
+    //         Number(updatedInvoice.totalAmount),
+    //         Number(updatedInvoice.totalDue)
+    //       )
+    //     )
+    //     .eq("case_id", updatedInvoice.id);
 
-      if (updateInvoicesError) {
-        throw new Error(updateInvoicesError.message);
-      }
+    //   if (updateInvoicesError) {
+    //     throw new Error(updateInvoicesError.message);
+    //   }
 
-      toast.success("Invoice and related data updated successfully");
+    //   toast.success("Invoice and related data updated successfully");
 
-      handleCloseEditModal();
-      setCaseRefresh(true);
-    } catch (error) {
-      console.error("Error saving invoice:", error);
-      toast.error("Failed to update invoice");
-    } finally {
-      setLoadingState({ isLoading: false, action: null });
-      fetchCaseData(true);
-    }
+    //   handleCloseEditModal();
+    //   setCaseRefresh(true);
+    // } catch (error) {
+    //   console.error("Error saving invoice:", error);
+    //   toast.error("Failed to update invoice");
+    // } finally {
+    //   setLoadingState({ isLoading: false, action: null });
+    //   fetchCaseData(true);
+    // }
+    fetchCaseData(true);
+    toast.success("Invoice Updated SucessFully!!")
   };
   const handleOpenEditModal = (
     invoice: ExtendedCase,
@@ -1677,82 +1682,114 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     return groupedTeeth.join(", ");
   };
   console.log(caseDetail);
+  let productsConsolidate = caseDetail?.products;
+  const upperTeeth = new Set([
+    18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  ]);
+  const lowerTeeth = new Set([
+    38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+  ]);
 
-  // const consolidatedProducts = caseDetail?.products
-  //   ? Object?.values(
-  //       caseDetail?.products?.reduce((acc: any, product: any) => {
-  //         const productId = product.id;
+  const consolidatedProducts: any = productsConsolidate
+    ? Object.values(
+        caseDetail?.products?.reduce((acc: any, product: any) => {
+          const productId = product.id;
 
-  //         // Check if the product has a valid id and teethProduct with tooth_number
-  //         if (!productId || !product.teethProduct?.tooth_number) {
-  //           return acc;
-  //         }
+          if (!productId || !product.teethProduct?.tooth_number) {
+            return acc;
+          }
 
-  //         // If the product already exists in the accumulator, merge the tooth numbers and sum prices
-  //         if (acc[productId]) {
-  //           acc[productId].teethProduct.tooth_number = [
-  //             ...new Set([
-  //               ...acc[productId].teethProduct.tooth_number,
-  //               ...product.teethProduct.tooth_number,
-  //             ]),
-  //           ];
+          const { tooth_number, type, pontic_teeth } = product.teethProduct;
 
-  //           // Sum the discounted prices
-  //           if (acc[productId].discounted_price && product.discounted_price) {
-  //             acc[productId].discounted_price.price +=
-  //               product.discounted_price.price;
-  //             acc[productId].discounted_price.final_price +=
-  //               product.discounted_price.final_price;
-  //             acc[productId].discounted_price.total +=
-  //               product.discounted_price.total;
-  //           }
+          if (type === "Bridge") {
+            // Determine if it's an upper, lower, or mixed bridge
+            const isUpper = tooth_number.every((tooth: number) =>
+              upperTeeth.has(tooth)
+            );
+            const isLower = tooth_number.every((tooth: number) =>
+              lowerTeeth.has(tooth)
+            );
+            const bridgeKey = `${productId}-${
+              isUpper ? "upper" : isLower ? "lower" : "mixed"
+            }`;
 
-  //           // Check for service differences and associate teeth numbers with each service
-  //           if (product.service) {
-  //             const existingService = acc[productId].service.find(
-  //               (serviceObj: any) => serviceObj.service === product.service
-  //             );
+            if (!acc[bridgeKey]) {
+              acc[bridgeKey] = {
+                ...product,
+                teethProduct: {
+                  ...product.teethProduct,
+                  tooth_number: [...tooth_number],
+                  pontic_teeth: [...pontic_teeth],
+                },
+                service: product.service
+                  ? [
+                      {
+                        service: product.service,
+                        teeth_number: [...tooth_number],
+                      },
+                    ]
+                  : [],
+              };
+            } else {
+              acc[bridgeKey].teethProduct.tooth_number = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.tooth_number,
+                  ...tooth_number,
+                ]),
+              ];
+              acc[bridgeKey].teethProduct.pontic_teeth = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.pontic_teeth,
+                  ...pontic_teeth,
+                ]),
+              ];
 
-  //             if (existingService) {
-  //               // If the service already exists, merge the teeth numbers
-  //               existingService.teeth_number = [
-  //                 ...new Set([
-  //                   ...existingService.teeth_number,
-  //                   ...product.teethProduct.tooth_number,
-  //                 ]),
-  //               ];
-  //             } else {
-  //               // If the service doesn't exist, add it with the corresponding teeth numbers
-  //               acc[productId].service.push({
-  //                 service: product.service,
-  //                 teeth_number: [...product.teethProduct.tooth_number],
-  //               });
-  //             }
-  //           }
-  //         } else {
-  //           // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
-  //           acc[productId] = {
-  //             ...product,
-  //             teethProduct: {
-  //               ...product.teethProduct,
-  //               tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
-  //             },
-  //             service: product.service
-  //               ? [
-  //                   {
-  //                     service: product.service,
-  //                     teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
-  //                   },
-  //                 ]
-  //               : [], // Initialize with current service in an array
-  //           };
-  //         }
+              if (product.service) {
+                const existingService = acc[bridgeKey].service.find(
+                  (serviceObj: any) => serviceObj.service === product.service
+                );
 
-  //         return acc;
-  //       }, {})
-  //     )
-  //   : [];
-  // console.log(consolidatedProducts, "consolidatedProducts");
+                if (existingService) {
+                  existingService.teeth_number = [
+                    ...new Set([
+                      ...existingService.teeth_number,
+                      ...tooth_number,
+                    ]),
+                  ];
+                } else {
+                  acc[bridgeKey].service.push({
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  });
+                }
+              }
+            }
+          } else {
+            // Non-Bridge products remain separate (no grouping)
+            acc[`${productId}-${tooth_number.join("-")}`] = {
+              ...product,
+              teethProduct: {
+                ...product.teethProduct,
+                tooth_number: [...tooth_number],
+                pontic_teeth: [...pontic_teeth],
+              },
+              service: product.service
+                ? [
+                    {
+                      service: product.service,
+                      teeth_number: [...tooth_number],
+                    },
+                  ]
+                : [],
+            };
+          }
+
+          return acc;
+        }, {} as any)
+      )
+    : [];
+
+  console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -2060,238 +2097,268 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {caseDetail.products?.map((product, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            <span
-                              className="px-2 py-1 rounded text-white"
-                              style={{
-                                backgroundColor:
-                                  TYPE_COLORS[
-                                    product.teethProduct
-                                      ?.type as keyof typeof TYPE_COLORS
-                                  ] || TYPE_COLORS.Other,
-                              }}
-                            >
-                              {product.teethProduct?.type ?? "Null"}
-                            </span>
-                          </TableCell>
-                          <TableCell className="w-[1px] p-0">
-                            <Separator
-                              orientation="vertical"
-                              className="h-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product?.teethProduct?.tooth_number.length >= 1
-                              ? formatTeethRange(
-                                  product.teethProduct.tooth_number
-                                )
-                              : null}
-                          </TableCell>
-                          <TableCell className="w-[1px] p-0">
-                            <Separator
-                              orientation="vertical"
-                              className="h-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.material?.name || "-"} - {product.name}
-                          </TableCell>
-                          <TableCell className="w-[1px] p-0">
-                            <Separator
-                              orientation="vertical"
-                              className="h-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            <div className="space-y-0">
-                              {product?.teethProduct?.occlusal_shade?.name ||
-                              product?.teethProduct?.custom_occlusal_shade ||
-                              product?.teethProduct?.manual_occlusal_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">
-                                      Incisal:
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_occlusal_shade ||
-                                          product?.teethProduct?.occlusal_shade
-                                            ?.name}
-                                      </p>{" "}
-                                      <p
-                                        className="font-semibold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {product?.teethProduct
-                                          ?.custom_occlusal_shade || ""}{" "}
-                                        {product?.teethProduct
-                                          ?.custom_occlusal_shade && "(custom)"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-                              {/* Body shade */}
-                              {product?.teethProduct?.body_shade?.name ||
-                              product?.teethProduct?.custom_body_shade ||
-                              product?.teethProduct?.manual_body_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">Body:</span>
-                                    <div className="flex gap-2">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_body_shade ||
-                                          product?.teethProduct?.body_shade
-                                            ?.name}
-                                      </p>{" "}
-                                      <p
-                                        className="font-semibold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {product?.teethProduct
-                                          ?.custom_body_shade || ""}{" "}
-                                        {product?.teethProduct
-                                          ?.custom_body_shade && "(custom)"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-
-                              {/* Gingival shade */}
-                              {product?.teethProduct?.gingival_shade?.name ||
-                              product?.teethProduct?.custom_gingival_shade ||
-                              product?.teethProduct?.manual_gingival_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">
-                                      Gingival:
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_gingival_shade ||
-                                          product?.teethProduct?.gingival_shade
-                                            ?.name}
-                                      </p>
-                                      <p
-                                        className="font-semibold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {product?.teethProduct
-                                          ?.custom_gingival_shade || ""}{" "}
-                                        {product?.teethProduct
-                                          ?.custom_gingival_shade && "(custom)"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-
-                              {/* Stump shade */}
-                              {product?.teethProduct?.custom_stump_shade ||
-                              product?.teethProduct?.stump_shade ||
-                              product?.teethProduct?.manual_stump_shade ? (
-                                <p>
-                                  <div className="flex gap-2">
-                                    <span className="text-gray-500">
-                                      Stump:
-                                    </span>
-                                    <div className="flex gap-2">
-                                      <p>
-                                        {product?.teethProduct
-                                          ?.manual_stump_shade ||
-                                          product?.teethProduct?.stump_shade
-                                            ?.name}
-                                      </p>{" "}
-                                      <p
-                                        className="font-semibold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {product?.teethProduct
-                                          ?.custom_stump_shade || ""}{" "}
-                                        {product?.teethProduct
-                                          ?.custom_stump_shade && "(custom)"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </p>
-                              ) : null}
-                            </div>
-                          </TableCell>
-                          <TableCell className="w-[1px] p-0">
-                            <Separator
-                              orientation="vertical"
-                              className="h-full"
-                            />
-                          </TableCell>
-                          <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                            {product.teethProduct?.notes ? (
-                              <div className="max-w-xs">
-                                <p className="text-gray-600 line-clamp-2">
-                                  {product.teethProduct?.notes}
-                                </p>
-                                {product.teethProduct?.notes.length > 100 && (
-                                  <HoverCard>
-                                    <HoverCardTrigger asChild>
-                                      <Button
-                                        variant="link"
-                                        className="h-auto p-0 text-xs text-blue-500 hover:text-blue-600"
-                                      >
-                                        Show more
-                                      </Button>
-                                    </HoverCardTrigger>
-                                    <HoverCardContent
-                                      className="w-80 p-4"
-                                      align="start"
-                                      side="left"
-                                    >
-                                      <div className="space-y-2">
-                                        <p className="font-medium text-sm">
-                                          Product Notes
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                          {product.notes}
-                                        </p>
-                                      </div>
-                                    </HoverCardContent>
-                                  </HoverCard>
+                      {consolidatedProducts?.map(
+                        (product: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              <span
+                                className="px-2 py-1 rounded text-white"
+                                style={{
+                                  backgroundColor:
+                                    TYPE_COLORS[
+                                      product?.teethProduct
+                                        ?.type as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                {product.teethProduct?.type ?? "Null"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              <div>
+                                {product?.teethProduct?.tooth_number.length >= 1
+                                  ? formatTeethRange(
+                                      product.teethProduct.tooth_number
+                                    )
+                                  : null}
+                                {product?.teethProduct?.pontic_teeth.length >
+                                  0 && (
+                                  <span
+                                    className="ml-2 text-xs"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
+                                          product?.teethProduct
+                                            ?.type as keyof typeof TYPE_COLORS
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    ({"pontic: "}
+                                    {product?.teethProduct?.pontic_teeth
+                                      .length >= 1
+                                      ? formatTeethRange(
+                                          product.teethProduct.pontic_teeth
+                                        )
+                                      : null}
+                                    )
+                                  </span>
                                 )}
                               </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.material?.name || "-"} - {product.name}
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              <div className="space-y-0">
+                                {product?.teethProduct?.occlusal_shade?.name ||
+                                product?.teethProduct?.custom_occlusal_shade ||
+                                product?.teethProduct?.manual_occlusal_shade ? (
+                                  <p>
+                                    <div className="flex gap-2">
+                                      <span className="text-gray-500">
+                                        Incisal:
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <p>
+                                          {product?.teethProduct
+                                            ?.manual_occlusal_shade ||
+                                            product?.teethProduct
+                                              ?.occlusal_shade?.name}
+                                        </p>{" "}
+                                        <p
+                                          className="font-semibold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {product?.teethProduct
+                                            ?.custom_occlusal_shade || ""}{" "}
+                                          {product?.teethProduct
+                                            ?.custom_occlusal_shade &&
+                                            "(custom)"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </p>
+                                ) : null}
+                                {/* Body shade */}
+                                {product?.teethProduct?.body_shade?.name ||
+                                product?.teethProduct?.custom_body_shade ||
+                                product?.teethProduct?.manual_body_shade ? (
+                                  <p>
+                                    <div className="flex gap-2">
+                                      <span className="text-gray-500">
+                                        Body:
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <p>
+                                          {product?.teethProduct
+                                            ?.manual_body_shade ||
+                                            product?.teethProduct?.body_shade
+                                              ?.name}
+                                        </p>{" "}
+                                        <p
+                                          className="font-semibold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {product?.teethProduct
+                                            ?.custom_body_shade || ""}{" "}
+                                          {product?.teethProduct
+                                            ?.custom_body_shade && "(custom)"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </p>
+                                ) : null}
+
+                                {/* Gingival shade */}
+                                {product?.teethProduct?.gingival_shade?.name ||
+                                product?.teethProduct?.custom_gingival_shade ||
+                                product?.teethProduct?.manual_gingival_shade ? (
+                                  <p>
+                                    <div className="flex gap-2">
+                                      <span className="text-gray-500">
+                                        Gingival:
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <p>
+                                          {product?.teethProduct
+                                            ?.manual_gingival_shade ||
+                                            product?.teethProduct
+                                              ?.gingival_shade?.name}
+                                        </p>
+                                        <p
+                                          className="font-semibold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {product?.teethProduct
+                                            ?.custom_gingival_shade || ""}{" "}
+                                          {product?.teethProduct
+                                            ?.custom_gingival_shade &&
+                                            "(custom)"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </p>
+                                ) : null}
+
+                                {/* Stump shade */}
+                                {product?.teethProduct?.custom_stump_shade ||
+                                product?.teethProduct?.stump_shade ||
+                                product?.teethProduct?.manual_stump_shade ? (
+                                  <p>
+                                    <div className="flex gap-2">
+                                      <span className="text-gray-500">
+                                        Stump:
+                                      </span>
+                                      <div className="flex gap-2">
+                                        <p>
+                                          {product?.teethProduct
+                                            ?.manual_stump_shade ||
+                                            product?.teethProduct?.stump_shade
+                                              ?.name}
+                                        </p>{" "}
+                                        <p
+                                          className="font-semibold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {product?.teethProduct
+                                            ?.custom_stump_shade || ""}{" "}
+                                          {product?.teethProduct
+                                            ?.custom_stump_shade && "(custom)"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </p>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[1px] p-0">
+                              <Separator
+                                orientation="vertical"
+                                className="h-full"
+                              />
+                            </TableCell>
+                            <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {product.teethProduct?.notes ? (
+                                <div className="max-w-xs">
+                                  <p className="text-gray-600 line-clamp-2">
+                                    {product.teethProduct?.notes}
+                                  </p>
+                                  {product.teethProduct?.notes.length > 100 && (
+                                    <HoverCard>
+                                      <HoverCardTrigger asChild>
+                                        <Button
+                                          variant="link"
+                                          className="h-auto p-0 text-xs text-blue-500 hover:text-blue-600"
+                                        >
+                                          Show more
+                                        </Button>
+                                      </HoverCardTrigger>
+                                      <HoverCardContent
+                                        className="w-80 p-4"
+                                        align="start"
+                                        side="left"
+                                      >
+                                        <div className="space-y-2">
+                                          <p className="font-medium text-sm">
+                                            Product Notes
+                                          </p>
+                                          <p className="text-sm text-gray-600">
+                                            {product.notes}
+                                          </p>
+                                        </div>
+                                      </HoverCardContent>
+                                    </HoverCard>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -2351,9 +2418,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             className="h-full"
                           />
                         </TableHead>
-                        <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
+                        {/* <TableHead className="w-24 text-xs py-0.5 pl-4 pr-0">
                           Quantity
-                        </TableHead>
+                        </TableHead> */}
                         <TableHead className="w-[1px] p-0">
                           <Separator
                             orientation="vertical"
@@ -2424,9 +2491,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   className="h-full"
                                 />
                               </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                              {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 1
-                              </TableCell>
+                              </TableCell> */}
                               <TableCell className="w-[1px] p-0">
                                 <Separator
                                   orientation="vertical"
@@ -2491,9 +2558,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                     className="h-full"
                                   />
                                 </TableCell>
-                                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                   {product?.discounted_price?.quantity || "-"}
-                                </TableCell>
+                                </TableCell> */}
                                 <TableCell className="w-[1px] p-0">
                                   <Separator
                                     orientation="vertical"

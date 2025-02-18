@@ -325,6 +325,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
+  const [isSingleService, setIsSingleService] = useState<boolean>(false);
   const [services, setServices] = useState<ServiceType[]>([]);
   const [SelectedSubServices, setSelectedSubServices] = useState<
     SelectedServiceType[]
@@ -1286,7 +1287,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-
+  console.log(isSingleService, "isSingle");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -1309,7 +1310,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <TableHead className="text-xs">Shades</TableHead>
                 <TableHead className="text-xs">Note</TableHead>
                 <TableHead className="w-[20px] text-xs">Discount</TableHead>
-                <TableHead className="text-xs">QTY</TableHead>
+                {/* <TableHead className="text-xs">QTY</TableHead> */}
                 <TableHead className="w-[40px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -1539,6 +1540,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <div className="space-y-2 w-full">
                             <div className="flex justify-between w-full">
                               <Label className="text-xs">Add Services</Label>
+                              {/* <input
+                                type="checkbox"
+                                onChange={() => (value) => {
+                                  setIsSingleService(value);
+                                }}
+                              /> */}
                               <Button
                                 size="sm"
                                 onClick={() =>
@@ -2803,7 +2810,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         </PopoverContent>
                       </Popover>
                     </TableCell>
-                    <TableCell className="border-b">
+                    {/* <TableCell className="border-b">
                       <Input
                         type="number"
                         value={selectedProducts[index].quantity || 1}
@@ -2833,7 +2840,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         placeholder="Quantity"
                         className="w-20"
                       />
-                    </TableCell>
+                    </TableCell> */}
 
                     <TableCell className="border-b">
                       <Button
@@ -4397,7 +4404,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               </PopoverContent>
                             </Popover>
                           </TableCell>
-                          <TableCell className="border-b relative">
+                          {/* <TableCell className="border-b relative">
                             <Input
                               type="number"
                               value={row_sub.quantity}
@@ -4434,7 +4441,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               placeholder="Quantity"
                               className="w-20"
                             />
-                          </TableCell>
+                          </TableCell> */}
                           <TableCell className="border-b">
                             <Button
                               variant="ghost"

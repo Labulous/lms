@@ -304,7 +304,7 @@ const NewCase: React.FC = () => {
             transformedData.patientLastName,
           rx_number: "",
           received_date: transformedData.orderDate,
-          status: transformedData.status || "in_queue",
+          status: transformedData.isDueDateTBD ? "on_hold" : "in_progress",
           due_date: transformedData.isDueDateTBD
             ? null
             : transformedData.dueDate,

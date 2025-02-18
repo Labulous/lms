@@ -1038,9 +1038,9 @@ id
                                               setIsFilePreview(true);
                                               setFiles([
                                                 item,
-                                                ...step?.files?.filter(
+                                                ...(step?.files?.filter(
                                                   (f) => f !== item
-                                                ) || [],
+                                                ) || []),
                                               ]);
                                             }}
                                           >
@@ -1069,7 +1069,11 @@ id
           );
         })}
         <div className="flex justify-end items-end">
-          <Button size="sm" onClick={() => handleNewWorkstation()}>
+          <Button
+            size="sm"
+            disabled={caseDetail.status === "on_hold"}
+            onClick={() => handleNewWorkstation()}
+          >
             Create New Workstation
           </Button>
         </div>
