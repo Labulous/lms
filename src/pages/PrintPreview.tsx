@@ -66,7 +66,8 @@ interface PrintPreviewState {
     | "patient-label"
     | "invoice_slip"
     | "payment_receipt"
-    | "adjustment_receipt" | "statement_receipt";
+    | "adjustment_receipt"
+    | "statement_receipt";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
     | {
@@ -148,13 +149,106 @@ const PrintPreview = () => {
     window.print();
   };
 
-    // If caseData is an array, we're doing batch printing
-    console.log("printing type bgfgfgfgfgffg", type);
-    console.log(caseDetails, "caseDetails");
-    console.log(caseData, "lab datatat");
+  // If caseData is an array, we're doing batch printing
+  console.log("printing type bgfgfgfgfgffg", type);
+  console.log(caseDetails, "caseDetails");
+  console.log(caseData, "lab datatat");
 
-    const renderTemplate = () => {
-      if (Array.isArray(caseData)) {
+  const renderTemplate = () => {
+    if (Array.isArray(caseData)) {
+      if (type === "lab-slip") {
+        const cases = caseDetails?.map((caseItem) => {
+          if (!caseItem.products || !Array.isArray(caseItem.products)) {
+            return caseItem; // If products are missing or not an array, return case as is
+          }
+
+          const consolidatedProducts = Object.values(
+            caseItem.products.reduce((acc: any, product: any) => {
+              const productId = product.id;
+
+              // Check if the product has a valid id and teethProduct with tooth_number
+              if (!productId || !product.teethProduct?.tooth_number) {
+                return acc;
+              }
+
+              // If the product already exists in the accumulator, merge the tooth numbers and sum prices
+              if (acc[productId]) {
+                acc[productId].teethProduct.tooth_number = [
+                  ...new Set([
+                    ...acc[productId].teethProduct.tooth_number,
+                    ...product.teethProduct.tooth_number,
+                  ]),
+                ];
+
+                // Sum the discounted prices
+                if (
+                  acc[productId].discounted_price &&
+                  product.discounted_price
+                ) {
+                  acc[productId].discounted_price.price +=
+                    product.discounted_price.price;
+                  acc[productId].discounted_price.final_price +=
+                    product.discounted_price.final_price;
+                  acc[productId].discounted_price.total +=
+                    product.discounted_price.total;
+                }
+
+                // Check for service differences and associate teeth numbers with each service
+                if (product.service) {
+                  const existingService = acc[productId].service.find(
+                    (serviceObj: any) => serviceObj.service === product.service
+                  );
+
+                  if (existingService) {
+                    // If the service already exists, merge the teeth numbers
+                    existingService.teeth_number = [
+                      ...new Set([
+                        ...existingService.teeth_number,
+                        ...product.teethProduct.tooth_number,
+                      ]),
+                    ];
+                  } else {
+                    // If the service doesn't exist, add it with the corresponding teeth numbers
+                    acc[productId].service.push({
+                      service: product.service,
+                      teeth_number: [...product.teethProduct.tooth_number],
+                    });
+                  }
+                }
+              } else {
+                // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
+                acc[productId] = {
+                  ...product,
+                  teethProduct: {
+                    ...product.teethProduct,
+                    tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
+                  },
+                  service: product.service
+                    ? [
+                        {
+                          service: product.service,
+                          teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
+                        },
+                      ]
+                    : [], // Initialize with current service in an array
+                };
+              }
+
+              return acc;
+            }, {})
+          );
+
+          return {
+            ...caseItem,
+            products: consolidatedProducts, // Replace products with the consolidated ones
+          };
+        });
+        return cases?.map((singleProps, index) => {
+          return (
+            <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={singleProps} />
+          );
+        });
+      } else {
         return caseData.map((singleCaseData, index) => {
           const singleProps = {
             caseData: singleCaseData,
@@ -164,14 +258,7 @@ const PrintPreview = () => {
           switch (type) {
             case "qr-code":
               return <QRCodeTemplate key={index} {...singleProps} />;
-            case "lab-slip":
-              return (
-                <LabSlipTemplate
-                  paperSize="LETTER"
-                  key={index}
-                  caseDetails={caseDetails}
-                />
-              );
+
             case "address-label":
               return <AddressLabelTemplate key={index} {...singleProps} />;
             case "patient-label":
@@ -183,94 +270,95 @@ const PrintPreview = () => {
           }
         });
       }
+    }
 
-      // Single case printing
-      const props = {
-        caseData,
-        paperSize,
-        caseDetails,
-      };
-
-      switch (type) {
-        case "qr-code":
-          return <QRCodeTemplate {...props} />;
-        case "lab-slip":
-          return <LabSlipTemplate {...props} />;
-        case "address-label":
-          return <AddressLabelTemplate {...props} />;
-        case "patient-label":
-          return <PatientLabelTemplate {...props} />;
-        case "invoice_slip":
-          return <InvoiceTemplate {...props} />;
-        case "statement_receipt":
-          return <StatementReceiptTemplate {...props} labData={caseData} />;
-        case "payment_receipt":
-          return (
-            <PaymentReceiptTemplate
-              paperSize={paperSize}
-              labData={caseData}
-              caseDetails={caseDetails}
-            />
-          );
-
-        case "adjustment_receipt":
-          return (
-            <AdjustmentReceiptTemplate
-              paperSize={paperSize}
-              labData={caseData}
-              caseDetails={caseDetails}
-            />
-          );
-
-        default:
-          return <div>Invalid template type</div>;
-      }
+    // Single case printing
+    const props = {
+      caseData,
+      paperSize,
+      caseDetails,
     };
 
-    const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
-    const containerStyle = {
-      width: `${dimensions.width / 72}in`,
-      height: `${dimensions.height / 72}in`,
-      margin: "0",
-      backgroundColor: "white",
-      position: "relative" as const,
-    };
+    switch (type) {
+      case "qr-code":
+        return <QRCodeTemplate {...props} />;
+      case "lab-slip":
+        return <LabSlipTemplate {...props} />;
+      case "address-label":
+        return <AddressLabelTemplate {...props} />;
+      case "patient-label":
+        return <PatientLabelTemplate {...props} />;
+      case "invoice_slip":
+        return <InvoiceTemplate {...props} />;
+      case "statement_receipt":
+        return <StatementReceiptTemplate {...props} labData={caseData} />;
+      case "payment_receipt":
+        return (
+          <PaymentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
 
-    return (
-      <div className="min-h-screen bg-gray-100 p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-6 flex justify-between items-center">
-            <h1 className="text-2xl font-bold">Print Preview</h1>
-            <Button onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
-          </div>
+      case "adjustment_receipt":
+        return (
+          <AdjustmentReceiptTemplate
+            paperSize={paperSize}
+            labData={caseData}
+            caseDetails={caseDetails}
+          />
+        );
 
-          <div className="bg-white shadow-lg rounded-lg overflow-auto">
-            <div className="print-content">
-              {Array.isArray(caseData) ? (
-                caseData.map((_, index) => (
-                  <div
-                    key={index}
-                    style={containerStyle}
-                    className="print-container mb-8"
-                  >
-                    {(renderTemplate() as React.ReactElement[])[index]}
-                  </div>
-                ))
-              ) : (
-                <div style={containerStyle} className="print-container">
-                  {renderTemplate()}
-                </div>
-              )}
-            </div>
-          </div>
+      default:
+        return <div>Invalid template type</div>;
+    }
+  };
+
+  const dimensions = PAPER_SIZES[paperSize] || PAPER_SIZES.LETTER;
+  const containerStyle = {
+    width: `${dimensions.width / 72}in`,
+    height: `${dimensions.height / 72}in`,
+    margin: "0",
+    backgroundColor: "white",
+    position: "relative" as const,
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6 flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Print Preview</h1>
+          <Button onClick={handlePrint} className="gap-2">
+            <Printer className="h-4 w-4" />
+            Print
+          </Button>
         </div>
 
-        {/* Print-specific styles */}
-        <style>
-          {`
+        <div className="bg-white shadow-lg rounded-lg overflow-auto">
+          <div className="print-content">
+            {Array.isArray(caseData) ? (
+              caseData.map((_, index) => (
+                <div
+                  key={index}
+                  style={containerStyle}
+                  className="print-container mb-8"
+                >
+                  {(renderTemplate() as React.ReactElement[])[index]}
+                </div>
+              ))
+            ) : (
+              <div style={containerStyle} className="print-container">
+                {renderTemplate()}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Print-specific styles */}
+      <style>
+        {`
           @media print {
             @page {
               size: ${paperSize.toLowerCase()};
@@ -333,14 +421,13 @@ const PrintPreview = () => {
             }
           }
         `}
-        </style>
+      </style>
 
-        {/* Footer for page numbering */}
-        <div className="page-footer">
-          <span className="page-number"></span>
-        </div>
+      {/* Footer for page numbering */}
+      <div className="page-footer">
+        <span className="page-number"></span>
       </div>
-    );
-
+    </div>
+  );
 };
 export default PrintPreview;

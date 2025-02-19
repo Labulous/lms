@@ -323,7 +323,6 @@ const ClientProductPricing = ({
       );
     }
   }, [isDrawerOpen]);
-  console.log(editableProducts, "editable products");
   const getClientPrice = (productId: string, clientId: string) => {
     return clientPrices.find(
       (cp) => cp.productId === productId && cp.clientId === clientId

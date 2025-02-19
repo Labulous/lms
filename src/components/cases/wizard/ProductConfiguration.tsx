@@ -325,7 +325,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [productTypes, setProductTypes] = useState<ProductTypeInfo[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
   const [shadesItems, setShadesItems] = useState<any[]>([]);
-  const [isSingleService, setIsSingleService] = useState<boolean>(false);
+  const [isSingleService, setIsSingleService] = useState<boolean>(true);
   const [services, setServices] = useState<ServiceType[]>([]);
   const [SelectedSubServices, setSelectedSubServices] = useState<
     SelectedServiceType[]
@@ -633,25 +633,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         updatedProducts[index].services = [];
       }
 
-      updatedProducts[index] = {
-        ...updatedProducts[index],
-        services: [
-          ...updatedProducts[index].services, // Add existing services
-          {
-            id: service.id as string,
-            name: service.name,
-            price:
-              clientSpecialServices?.filter(
-                (item) => item.service_id === service.id
-              )?.[0]?.price || service.price,
-            is_taxable: service.is_taxable,
-            discount: service.discount || (0 as number),
-          },
-        ],
-        subRows: updatedProducts?.[index]?.subRows?.map((item) => ({
-          ...item,
+      // If isServicesAll is true, keep the existing code to add services and subRow services
+      if (updatedProducts[index].isServicesAll === true) {
+        updatedProducts[index] = {
+          ...updatedProducts[index],
           services: [
-            ...(item?.services || []), // Add existing subRow services if available
+            ...updatedProducts[index].services, // Add existing services
             {
               id: service.id as string,
               name: service.name,
@@ -663,8 +650,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
               discount: service.discount || (0 as number),
             },
           ],
-        })),
-      };
+          subRows: updatedProducts?.[index]?.subRows?.map((item) => ({
+            ...item,
+            services: [
+              ...(item?.services || []), // Add existing subRow services if available
+              {
+                id: service.id as string,
+                name: service.name,
+                price:
+                  clientSpecialServices?.filter(
+                    (item) => item.service_id === service.id
+                  )?.[0]?.price || service.price,
+                is_taxable: service.is_taxable,
+                discount: service.discount || (0 as number),
+              },
+            ],
+          })),
+        };
+
+        // Clear the mainServices if isServicesAll is true
+        updatedProducts[index].mainServices = [];
+      } else {
+        // If isServicesAll is false, set mainServices and clear subRow services
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          mainServices: [
+            ...(updatedProducts[index].mainServices || []), // Keep existing mainServices
+            {
+              id: service.id as string,
+              name: service.name,
+              price:
+                clientSpecialServices?.filter(
+                  (item) => item.service_id === service.id
+                )?.[0]?.price || service.price,
+              is_taxable: service.is_taxable,
+              discount: service.discount || (0 as number),
+            },
+          ],
+          subRows: updatedProducts[index]?.subRows?.map((item) => ({
+            ...item,
+            services: [], // Clear subRow services
+          })),
+        };
+      }
 
       return updatedProducts;
     });
@@ -890,6 +918,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         updatedProducts[index] = {
           ...updatedProducts[index],
           type: type.name,
+          isServicesAll: false,
         };
 
         // If subRows exist, update them as well
@@ -1508,11 +1537,17 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
                           >
-                            {row?.services?.length === 0 || !row?.services ? (
+                            {row.isServicesAll ? (
+                              row?.services?.length === 0
+                            ) : row.mainServices?.length === 0 ||
+                              !row?.services ? (
                               "Add Services"
                             ) : (
                               <span className="text-blue-600">
-                                {row?.services?.length} Services Added
+                                {row.isServicesAll
+                                  ? row?.services?.length
+                                  : row?.mainServices?.length}{" "}
+                                Services Added
                               </span>
                             )}
                           </Button>
@@ -1540,24 +1575,79 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <div className="space-y-2 w-full">
                             <div className="flex justify-between w-full">
                               <Label className="text-xs">Add Services</Label>
-                              {/* <input
-                                type="checkbox"
-                                onChange={() => (value) => {
-                                  setIsSingleService(value);
-                                }}
-                              /> */}
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  setServicesPopoverOpen((prev) => {
-                                    const updated = new Map(prev);
-                                    updated.set(index, false);
-                                    return updated;
-                                  })
-                                }
-                              >
-                                Save
-                              </Button>
+
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant={
+                                    !row.isServicesAll ? "outline" : "default"
+                                  }
+                                  onClick={
+                                    () => {
+                                      setselectedProducts(
+                                        (products: SavedProduct[]) => {
+                                          // Directly toggle the value of isServicesAll for the product at the specified index
+                                          products[index].isServicesAll =
+                                            !products[index].isServicesAll;
+
+                                          return [...products]; // Return the updated array (even though it's the same array, react needs a new reference)
+                                        }
+                                      );
+                                      setselectedProducts(
+                                        (
+                                          prevSelectedProducts: SavedProduct[]
+                                        ) => {
+                                          let updatedProducts = [
+                                            ...prevSelectedProducts,
+                                          ];
+
+                                          // Initialize services array if it's undefined
+                                          if (
+                                            !updatedProducts[index].services
+                                          ) {
+                                            updatedProducts[index].services =
+                                              [];
+                                          }
+
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            services: [],
+                                            subRows: updatedProducts?.[
+                                              index
+                                            ]?.subRows?.map((item) => ({
+                                              ...item,
+                                              services: [],
+                                            })),
+                                          };
+
+                                          return updatedProducts;
+                                        }
+                                      );
+                                    }
+                                    // setServicesPopoverOpen((prev) => {
+                                    //   const updated = new Map(prev);
+                                    //   updated.set(index, false);
+                                    //   return updated;
+                                    // })
+                                  }
+                                >
+                                  {!row.isServicesAll
+                                    ? "Add to All"
+                                    : "Remove from All"}{" "}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() =>
+                                    setServicesPopoverOpen((prev) => {
+                                      const updated = new Map(prev);
+                                      updated.set(index, false);
+                                      return updated;
+                                    })
+                                  }
+                                >
+                                  Save
+                                </Button>
+                              </div>
                             </div>
                             <MultiColumnServiceSelector
                               materials={MATERIALS}
@@ -1582,24 +1672,43 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             />
                             <div className="w-full">
                               <div className="grid grid-cols-1 gap-2 w-full">
-                                {row?.services?.map((item) => {
-                                  return (
-                                    <div className="flex items-center justify-center">
-                                      <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
-                                        <p>{item.name}</p>
-                                        <p>{item.price}</p>
-                                      </div>
-                                      <X
-                                        onClick={() =>
-                                          handleRemoveServices(
-                                            item.id as string
-                                          )
-                                        }
-                                        className="w-4 h-4 text-red-500 cursor-pointer"
-                                      />
-                                    </div>
-                                  );
-                                })}
+                                {row.isServicesAll
+                                  ? row?.services?.map((item) => {
+                                      return (
+                                        <div className="flex items-center justify-center">
+                                          <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
+                                            <p>{item.name}</p>
+                                            <p>{item.price}</p>
+                                          </div>
+                                          <X
+                                            onClick={() =>
+                                              handleRemoveServices(
+                                                item.id as string
+                                              )
+                                            }
+                                            className="w-4 h-4 text-red-500 cursor-pointer"
+                                          />
+                                        </div>
+                                      );
+                                    })
+                                  : row?.mainServices?.map((item) => {
+                                      return (
+                                        <div className="flex items-center justify-center">
+                                          <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
+                                            <p>{item.name}</p>
+                                            <p>{item.price}</p>
+                                          </div>
+                                          <X
+                                            onClick={() =>
+                                              handleRemoveServices(
+                                                item.id as string
+                                              )
+                                            }
+                                            className="w-4 h-4 text-red-500 cursor-pointer"
+                                          />
+                                        </div>
+                                      );
+                                    })}
                               </div>
                             </div>
                           </div>
