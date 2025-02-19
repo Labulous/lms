@@ -96,6 +96,7 @@ const NewCase: React.FC = () => {
 
   const [selectedProducts, setSelectedProducts] = useState<SavedProduct[]>([]);
   const [selectedServices, setSelectedServices] = useState<ServiceType[]>([]);
+
   const [clientSpecialProducts, setClientSpecialProducts] = useState<
     { product_id: string; price: number }[] | null
   >([]);
@@ -304,7 +305,7 @@ const NewCase: React.FC = () => {
             transformedData.patientLastName,
           rx_number: "",
           received_date: transformedData.orderDate,
-          status: transformedData.isDueDateTBD ? "on_hold" : "in_progress",
+          status: transformedData.status || "in_progress",
           due_date: transformedData.isDueDateTBD
             ? null
             : transformedData.dueDate,

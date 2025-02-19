@@ -148,10 +148,6 @@ const saveCaseProduct = async (
     const caseProductTeethRows = cases.products.flatMap(
       (main: any, index: number) => {
         return main.subRows.map((product: any) => {
-          const serviceIds =
-            product?.services?.map((item: { id: string }) => item.id) || [];
-          const uniqueServiceId =
-            [...new Set(serviceIds)].length === 1 ? [serviceIds[0]] : serviceIds;
           return {
             case_product_id: caseProductId, // Replace with the actual dynamic ID
             is_range: cases.products.length > 0,
@@ -159,7 +155,11 @@ const saveCaseProduct = async (
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
             type: product.type || "",
-            additional_services_id: uniqueServiceId || [],
+            additional_services_id: main.isServicesAll
+              ? product?.services?.map((item: { id: string }) => item.id) || []
+              : main.mainServices.map((item: any) => {
+                  item.id;
+                }),
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -212,22 +212,24 @@ const saveCaseProduct = async (
             ? product.price - (product.price * productDiscount) / 100
             : product.price;
 
-        // Extract all `services[0].id` values
-        const serviceIds = product.subRows
-          ?.map((subRow: any) => subRow?.services?.[0]?.id)
-          .filter(Boolean);
+        // Select services based on isServicesAll
+        const services = product.isServicesAll
+          ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use subRow services if isServicesAll is true
+          : product.mainServices || []; // Use mainServices if isServicesAll is false
 
-        // Determine if all service IDs are the same
-        const uniqueServiceIds = new Set(serviceIds);
-        const countServices =
-          uniqueServiceIds.size === 1 ? 1 : serviceIds?.length;
+        // Calculate total service price after discount
+        const totalServicePrice = services.reduce(
+          (subSum: number, service: any) => {
+            const servicePrice = service.price || 0;
+            const priceAfterDiscountService =
+              serviceDiscount > 0
+                ? servicePrice - (servicePrice * serviceDiscount) / 100
+                : servicePrice;
 
-        // Calculate service price after discount
-        const servicePrice = product?.services?.[0]?.price || 0;
-        const priceAfterDiscountService =
-          serviceDiscount > 0
-            ? servicePrice - (servicePrice * serviceDiscount) / 100
-            : servicePrice;
+            return subSum + priceAfterDiscountService;
+          },
+          0
+        );
 
         // Calculate final product price per unit
         const final_price = priceAfterDiscount * product.quantity;
@@ -244,7 +246,7 @@ const saveCaseProduct = async (
           total: amount,
           case_id: savedCaseId as string,
           user_id: cases.overview.created_by,
-          service_price: priceAfterDiscountService * countServices, // Adjust service price if all services are the same
+          service_price: totalServicePrice, // Sum of service prices after discount
           service_discount: serviceDiscount,
         };
       });
@@ -412,23 +414,15 @@ const saveCases = async (
 
       const totalServiceAmount = cases.products.reduce(
         (sum: number, product: any) => {
-          if (!product.subRows || product.subRows.length === 0) return sum;
+          // Check if we need to use subRows or mainServices based on isServicesAll
+          const services = product.isServicesAll
+            ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use services from subRows if isServicesAll is true
+            : product.mainServices || []; // Use mainServices if isServicesAll is false
 
-          const serviceIds = product.subRows
-            .map((subRow: any) => subRow?.services?.[0]?.id)
-            .filter(Boolean); // Get all service[0].id values and remove undefined/null
+          if (!services || services.length === 0) return sum;
 
-          const uniqueServiceIds = new Set(serviceIds);
-
-          const countServices =
-            uniqueServiceIds.size === 1 ? 1 : serviceIds?.length; // If all IDs are the same, count 1; otherwise, count all
-
-          const totalAmount = product.subRows.reduce(
-            (subSum: number, subRow: any) => {
-              if (!subRow?.services || subRow.services.length === 0)
-                return subSum;
-
-              const service = subRow.services[0];
+          const totalAmount = services.reduce(
+            (subSum: number, service: any) => {
               const finalDiscount = service.discount || 0;
               const priceAfterDiscount =
                 service.price - (service.price * finalDiscount) / 100;
@@ -438,7 +432,7 @@ const saveCases = async (
             0
           );
 
-          return sum + (totalAmount / serviceIds.length) * countServices;
+          return sum + totalAmount;
         },
         0
       );
@@ -619,11 +613,6 @@ const updateCases = async (
     const caseProductTeethRows = cases.products.flatMap(
       (main: any, index: number) => {
         return main.subRows.map((product: any) => {
-          const serviceIds =
-            product?.services?.map((item: { id: string }) => item.id) || [];
-          const uniqueServiceId =
-            [...new Set(serviceIds)].length === 1 ? serviceIds[0] : serviceIds;
-
           return {
             case_product_id: caseProductData?.[0]?.id, // Replace with the actual dynamic ID
             is_range: cases.products.length > 0,
@@ -631,7 +620,11 @@ const updateCases = async (
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
             type: product.type || "",
-            additional_services_id: uniqueServiceId || [],
+            additional_services_id: main.isServicesAll
+              ? product?.services?.map((item: { id: string }) => item.id) || []
+              : main.mainServices.map((item: any) => {
+                  item.id;
+                }),
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -669,7 +662,6 @@ const updateCases = async (
       }
     );
 
-    console.log("api calling");
     console.log(caseProductTeethRows, "caseProductTeethRows");
     // Calculate discounted prices for products
     const discountedPrice = cases.products.flatMap((main: any) => {
@@ -684,22 +676,24 @@ const updateCases = async (
             ? product.price - (product.price * productDiscount) / 100
             : product.price;
 
-        // Extract all `services[0].id` values
-        const serviceIds = product.subRows
-          ?.map((subRow: any) => subRow?.services?.[0]?.id)
-          .filter(Boolean);
+        // Select services based on isServicesAll
+        const services = product.isServicesAll
+          ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use subRow services if isServicesAll is true
+          : product.mainServices || []; // Use mainServices if isServicesAll is false
 
-        // Determine if all service IDs are the same
-        const uniqueServiceIds = new Set(serviceIds);
-        const countServices =
-          uniqueServiceIds.size === 1 ? 1 : serviceIds.length;
+        // Calculate total service price after discount
+        const totalServicePrice = services.reduce(
+          (subSum: number, service: any) => {
+            const servicePrice = service.price || 0;
+            const priceAfterDiscountService =
+              serviceDiscount > 0
+                ? servicePrice - (servicePrice * serviceDiscount) / 100
+                : servicePrice;
 
-        // Calculate service price after discount
-        const servicePrice = product?.services?.[0]?.price || 0;
-        const priceAfterDiscountService =
-          serviceDiscount > 0
-            ? servicePrice - (servicePrice * serviceDiscount) / 100
-            : servicePrice;
+            return subSum + priceAfterDiscountService;
+          },
+          0
+        );
 
         // Calculate final product price per unit
         const final_price = priceAfterDiscount * product.quantity;
@@ -716,7 +710,7 @@ const updateCases = async (
           total: amount,
           case_id: caseId as string,
           user_id: cases.overview.created_by,
-          service_price: priceAfterDiscountService * countServices, // Adjust service price if all services are the same
+          service_price: totalServicePrice, // Sum of service prices after discount
           service_discount: serviceDiscount,
         };
       });
@@ -776,33 +770,22 @@ const updateCases = async (
 
     const totalServiceAmount = cases.products.reduce(
       (sum: number, product: any) => {
-        if (!product.subRows || product.subRows.length === 0) return sum;
+        // Check if we need to use subRows or mainServices based on isServicesAll
+        const services = product.isServicesAll
+          ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use services from subRows if isServicesAll is true
+          : product.mainServices || []; // Use mainServices if isServicesAll is false
 
-        const serviceIds = product.subRows
-          .map((subRow: any) => subRow?.services?.[0]?.id)
-          .filter(Boolean); // Get all service[0].id values and remove undefined/null
+        if (!services || services.length === 0) return sum;
 
-        const uniqueServiceIds = new Set(serviceIds);
+        const totalAmount = services.reduce((subSum: number, service: any) => {
+          const finalDiscount = service.discount || 0;
+          const priceAfterDiscount =
+            service.price - (service.price * finalDiscount) / 100;
 
-        const countServices =
-          uniqueServiceIds.size === 1 ? 1 : serviceIds.length; // If all IDs are the same, count 1; otherwise, count all
+          return subSum + priceAfterDiscount;
+        }, 0);
 
-        const totalAmount = product.subRows.reduce(
-          (subSum: number, subRow: any) => {
-            if (!subRow?.services || subRow.services.length === 0)
-              return subSum;
-
-            const service = subRow.services[0];
-            const finalDiscount = service.discount || 0;
-            const priceAfterDiscount =
-              service.price - (service.price * finalDiscount) / 100;
-
-            return subSum + priceAfterDiscount;
-          },
-          0
-        );
-
-        return sum + (totalAmount / serviceIds.length) * countServices;
+        return sum + totalAmount;
       },
       0
     );
@@ -810,12 +793,29 @@ const updateCases = async (
     // Final Invoice Calculation
     const totalAmount = totalSubRowAmount + totalServiceAmount;
 
+    function handleDueAmount(
+      old_amount: number,
+      new_amount: number,
+      due_amount: number
+    ) {
+      let paid_amount = old_amount - due_amount;
+      let new_due_amount = Math.max(0, new_amount - paid_amount);
+
+      return {
+        amount: new_amount,
+        due_amount: new_due_amount,
+      };
+    }
     const newInvoice = {
       case_id: caseId,
       client_id: cases.overview.client_id,
       lab_id: cases.overview.lab_id,
       amount: Number(totalAmount), // Total amount (subRows + services)
-      due_amount: Number(totalAmount),
+      due_amount: handleDueAmount(
+        Number(oldAmount),
+        Number(totalAmount),
+        Number(oldDueAmount)
+      ),
       status: "unpaid",
       due_date: cases?.overview?.due_date,
     };

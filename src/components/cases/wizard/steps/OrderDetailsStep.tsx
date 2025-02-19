@@ -429,20 +429,28 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                           filteredClients.map((client) => (
                             <SelectItem key={client.id} value={client.id}>
                               <div className="flex items-center w-full">
-                                <span className="text-gray-600 w-24">{client.account_number}</span>
-                                <span className="ml-8">{client.client_name || "Unnamed Client"}</span>
+                                <span className="text-gray-600 w-24">
+                                  {client.account_number}
+                                </span>
+                                <span className="ml-8">
+                                  {client.client_name || "Unnamed Client"}
+                                </span>
                               </div>
                             </SelectItem>
                           ))
                         ) : (
                           <SelectItem value="_no_clients" disabled>
-                            {searchTerm ? "No matching clients" : "No clients available"}
+                            {searchTerm
+                              ? "No matching clients"
+                              : "No clients available"}
                           </SelectItem>
                         )}
                       </SelectContent>
                     </Select>
                     {errors.clientId && (
-                      <p className="mt-1 text-sm text-red-600">{errors.clientId}</p>
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.clientId}
+                      </p>
                     )}
                   </>
                 )}
@@ -580,7 +588,11 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     onCheckedChange={(checked) => {
                       onChange("isDueDateTBD", checked);
                       if (checked) {
+                        onChange("status", "on_hold");
+
                         onChange("dueDate", undefined);
+                      } else {
+                        onChange("status", "in_progress");
                       }
                     }}
                   />

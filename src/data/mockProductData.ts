@@ -25,6 +25,14 @@ export interface SavedProduct {
   subRows?: SavedProduct[];
   pontic_teeth?: number[];
   is_taxable: boolean;
+  isServicesAll?: boolean;
+  mainServices?: {
+    id: string | null;
+    name: string;
+    price: number;
+    discount: number;
+    is_taxable: boolean;
+  }[];
   services?: {
     id: string | null;
     name: string;

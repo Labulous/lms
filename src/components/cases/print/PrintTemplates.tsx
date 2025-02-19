@@ -241,21 +241,18 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       for (let i = 1; i <= sortedTeeth.length; i++) {
         const current = sortedTeeth[i];
 
-              // Check if the current tooth is consecutive to the previous one in the sequence
-              if (
-                teethArray.indexOf(current) !==
-                teethArray.indexOf(prev) + 1
-              ) {
-                // End of a group
-                if (groupStart === prev) {
-                  groups.push(`${groupStart}`);
-                } else {
-                  groups.push(`${groupStart}-${prev}`);
-                }
-                groupStart = current; // Start a new group
-              }
-              prev = current;
-            }
+        // Check if the current tooth is consecutive to the previous one in the sequence
+        if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
+          // End of a group
+          if (groupStart === prev) {
+            groups.push(`${groupStart}`);
+          } else {
+            groups.push(`${groupStart}-${prev}`);
+          }
+          groupStart = current; // Start a new group
+        }
+        prev = current;
+      }
 
       return groups;
     };
@@ -281,7 +278,10 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
     }
 
     // For multiple individual teeth
-    return `#${teeth[0]}${teeth.slice(1).map(t => `,${t}`).join('')}`;
+    return `#${teeth[0]}${teeth
+      .slice(1)
+      .map((t) => `,${t}`)
+      .join("")}`;
   };
 
   function mergeProducts(products: any) {
@@ -315,10 +315,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
         existingProduct.teethProduct.tooth_number = mergedToothNumbers;
 
         // Sum up price, final_price, and total for merged products
-        if (
-          existingProduct.discounted_price &&
-          product.discounted_price
-        ) {
+        if (existingProduct.discounted_price && product.discounted_price) {
           existingProduct.discounted_price.price +=
             product.discounted_price.price;
           existingProduct.discounted_price.final_price +=
@@ -556,7 +553,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       <span className="font-normal">
                                         Teeth:{" "}
                                       </span>
-                                      #{item.teethProduct.type !== "Bridge"
+                                      #
+                                      {item.teethProduct.type !== "Bridge"
                                         ? item.teethProduct?.tooth_number
                                             .map((item: number) => `${item}`)
                                             .join(",")
@@ -916,16 +914,11 @@ export const PatientLabelTemplate: React.FC<PrintTemplateProps> = ({
   </div>
 );
 
-export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
-  caseData: caseDetail,
-  caseDetails,
-  paperSize,
-}) => {
+export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
   // Add ArchSelector components
   const Header: React.FC<{
     caseDetail: ExtendedCase;
   }> = ({ caseDetail }) => {
-
     return (
       <div className="space-y-4">
         {/* First Row - Logo, Pan#, QR */}
@@ -934,7 +927,7 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
             <div>
               <img src={staticLabLogo} alt="Lab Logo" className="h-12 mb-1" />
               <div className="text-sm font-bold">
-                {caseDetail?.labDetail?.name   || "Solaris Dental Design"}
+                {caseDetail?.labDetail?.name || "Solaris Dental Design"}
               </div>
             </div>
             <div className="text-2xl" style={{ lineHeight: "1.1" }}>
@@ -1143,11 +1136,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       }
 
       // For multiple individual teeth
-      return `#${teeth[0]}${teeth.slice(1).map(t => `,${t}`).join('')}`;
+      return `#${teeth[0]}${teeth
+        .slice(1)
+        .map((t) => `,${t}`)
+        .join("")}`;
     };
 
-    const services = Object.values(
-      teeth.service.reduce(
+    const services = Object?.values(
+      teeth?.service?.reduce(
         (
           acc: any,
           {
@@ -1294,7 +1290,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                               </span>
                             ) : (
                               <span>
-                                #{teethItem.tooth_numbers
+                                #
+                                {teethItem.tooth_numbers
                                   .map((item: number) => item)
                                   .join(",")}
                               </span>
@@ -1314,12 +1311,14 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
                                     {teethItem?.custom_occlusal_shade || "N/A"}{" "}
-                                    {teethItem?.custom_occlusal_shade && "(cus)"}
+                                    {teethItem?.custom_occlusal_shade &&
+                                      "(cus)"}
                                   </span>
                                 ) : (
                                   "N/A"
@@ -1337,7 +1336,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1360,7 +1360,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1382,7 +1383,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1490,7 +1492,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1518,7 +1521,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1546,7 +1550,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1573,7 +1578,8 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
                                     style={{
                                       color:
                                         TYPE_COLORS[
-                                          teeth?.product_type?.name as keyof typeof TYPE_COLORS
+                                          teeth?.product_type
+                                            ?.name as keyof typeof TYPE_COLORS
                                         ] || TYPE_COLORS.Other,
                                     }}
                                   >
@@ -1701,271 +1707,172 @@ export const LabSlipTemplate: React.FC<PrintTemplateProps> = ({
       </div>
     );
   };
-  const cases = caseDetails?.map((caseItem) => {
-    if (!caseItem.products || !Array.isArray(caseItem.products)) {
-      return caseItem; // If products are missing or not an array, return case as is
-    }
-
-    const consolidatedProducts = Object.values(
-      caseItem.products.reduce((acc: any, product: any) => {
-        const productId = product.id;
-
-        // Check if the product has a valid id and teethProduct with tooth_number
-        if (!productId || !product.teethProduct?.tooth_number) {
-          return acc;
-        }
-
-        // If the product already exists in the accumulator, merge the tooth numbers and sum prices
-        if (acc[productId]) {
-          acc[productId].teethProduct.tooth_number = [
-            ...new Set([
-              ...acc[productId].teethProduct.tooth_number,
-              ...product.teethProduct.tooth_number,
-            ]),
-          ];
-
-          // Sum the discounted prices
-          if (acc[productId].discounted_price && product.discounted_price) {
-            acc[productId].discounted_price.price +=
-              product.discounted_price.price;
-            acc[productId].discounted_price.final_price +=
-              product.discounted_price.final_price;
-            acc[productId].discounted_price.total +=
-              product.discounted_price.total;
-          }
-
-          // Check for service differences and associate teeth numbers with each service
-          if (product.service) {
-            const existingService = acc[productId].service.find(
-              (serviceObj: any) => serviceObj.service === product.service
-            );
-
-            if (existingService) {
-              // If the service already exists, merge the teeth numbers
-              existingService.teeth_number = [
-                ...new Set([
-                  ...existingService.teeth_number,
-                  ...product.teethProduct.tooth_number,
-                ]),
-              ];
-            } else {
-              // If the service doesn't exist, add it with the corresponding teeth numbers
-              acc[productId].service.push({
-                service: product.service,
-                teeth_number: [...product.teethProduct.tooth_number],
-              });
-            }
-          }
-        } else {
-          // If the product is not yet in the accumulator, add it as is (with its tooth numbers)
-          acc[productId] = {
-            ...product,
-            teethProduct: {
-              ...product.teethProduct,
-              tooth_number: [...product.teethProduct.tooth_number], // Initialize with current tooth_number
-            },
-            service: product.service
-              ? [
-                  {
-                    service: product.service,
-                    teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
-                  },
-                ]
-              : [], // Initialize with current service in an array
-          };
-        }
-
-        return acc;
-      }, {})
-    );
-
-    return {
-      ...caseItem,
-      products: consolidatedProducts, // Replace products with the consolidated ones
-    };
-  });
-
-  console.log(cases, "itemy");
+  console.log(item, "itemitemitem");
   return (
     <div>
-      {cases?.map((item, index) => {
-        return (
-          <div
-            key={index}
-            className="min-h-[277mm] w-[180mm] mx-auto bg-white"
-            style={{
-              height: "277mm", // Fixed height to match LETTER page size
-            }}
-          >
-            <div className="border border-gray-800">
-              <div className="p-5">
-                <Header caseDetail={item} />
+      <div
+        className="min-h-[277mm] w-[180mm] mx-auto bg-white"
+        style={{
+          height: "277mm", // Fixed height to match LETTER page size
+        }}
+      >
+        <div className="border border-gray-800">
+          <div className="p-5">
+            <Header caseDetail={item} />
 
-                <div className={`grid grid-cols-${item.products.length} gap-0`}>
-                  {item.products.map((teeth: any, index: number) => {
-                    return (
-                      <div key={index}>
-                        <div className="border border-gray-300">
-                          <div className="bg-gray-100 p-2">
-                            <h3
-                              className="font-bold text-xs"
-                              style={{ lineHeight: "1.15" }}
-                            >
-                              Item #{index + 1}
-                            </h3>
-                          </div>
-                          <div
-                            className="p-4"
-                            style={{ maxHeight: "400px", overflowY: "hidden" }}
-                          >
-                            <TeetDetail
-                              teeth={teeth}
-                              teethDetail={item}
-                              itemsLength={item.products.length}
-                              teethproducts={item.teethProduct}
-                            />
-                          </div>
-                        </div>
+            <div className={`grid grid-cols-${item.products.length} gap-0`}>
+              {item.products.map((teeth: any, index: number) => {
+                return (
+                  <div key={index}>
+                    <div className="border border-gray-300">
+                      <div className="bg-gray-100 p-2">
+                        <h3
+                          className="font-bold text-xs"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          Item #{index + 1}
+                        </h3>
                       </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-2 border border-gray-300">
-                  <div className="bg-gray-100 p-2">
-                    <h3
-                      className="font-bold text-xs"
-                      style={{ lineHeight: "1.15" }}
-                    >
-                      Case Details
-                    </h3>
-                  </div>
-                  <div className="p-2">
-                    <div className="grid grid-cols-6 gap-4">
-                      <div>
-                        <div className="text-xs text-gray-600">
-                          Occlusal Type
-                        </div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.occlusal_type !== "custom"
-                            ? item.occlusal_type
-                            : item.custom_occlusal_details || ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600">
-                          Contact Type
-                        </div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.contact_type === "not_applicable"
-                            ? ""
-                            : item.contact_type !== "custom"
-                            ? item.contact_type
-                            : item.custom_contact_details || ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600">Pontic Type</div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.pontic_type === "not_applicable"
-                            ? ""
-                            : item.pontic_type !== "custom"
-                            ? item.pontic_type
-                            : item.custom_pontic_details || ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600">
-                          Margin Design
-                        </div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.margin_design_type === "not_applicable"
-                            ? ""
-                            : item.margin_design_type !== "custom"
-                            ? item.margin_design_type
-                            : item.custom_margin_design_type || ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600">
-                          Occlusal Design
-                        </div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.occlusion_design_type === "not_applicable"
-                            ? ""
-                            : item.occlusion_design_type !== "custom"
-                            ? item.occlusion_design_type
-                            : item.custom_margin_design_type || ""}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-gray-600">Alloy</div>
-                        <div className="font-bold text-xs min-h-[14px]">
-                          {item.alloy_type === "not_applicable"
-                            ? ""
-                            : item.alloy_type !== "custom"
-                            ? item.alloy_type
-                            : item.custon_alloy_type || ""}
-                        </div>
+                      <div
+                        className="p-4"
+                        style={{ maxHeight: "400px", overflowY: "hidden" }}
+                      >
+                        <TeetDetail
+                          teeth={teeth}
+                          teethDetail={item}
+                          itemsLength={item.products.length}
+                          teethproducts={item.teethProduct}
+                        />
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-2 border border-gray-300">
-                  <div className="bg-gray-100 p-2">
-                    <h3
-                      className="font-bold text-xs"
-                      style={{ lineHeight: "1.15" }}
-                    >
-                      Instruction Notes
-                    </h3>
-                  </div>
-                  <div
-                    className="p-4 whitespace-pre-wrap break-words overflow-hidden"
-                    style={{ height: "80px" }}
-                  >
-                    <div className="font-bold text-sm">
-                      {item?.instruction_notes || ""}
+                );
+              })}
+            </div>
+            <div className="mt-2 border border-gray-300">
+              <div className="bg-gray-100 p-2">
+                <h3
+                  className="font-bold text-xs"
+                  style={{ lineHeight: "1.15" }}
+                >
+                  Case Details
+                </h3>
+              </div>
+              <div className="p-2">
+                <div className="grid grid-cols-6 gap-4">
+                  <div>
+                    <div className="text-xs text-gray-600">Occlusal Type</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.occlusal_type !== "custom"
+                        ? item.occlusal_type
+                        : item.custom_occlusal_details || ""}
                     </div>
                   </div>
-                </div>
-                <div className="flex mt-2">
-                  <span className="w-16 text-sm">Enclosed: </span>
-                  <div className="font-bold text-sm ml-2">
-                    {[
-                      { key: "impression", label: "Impression" },
-                      { key: "biteRegistration", label: "Bite Registration" },
-                      { key: "photos", label: "Photos" },
-                      { key: "jig", label: "Jig" },
-                      { key: "opposingModel", label: "Opposing Model" },
-                      { key: "articulator", label: "Articulator" },
-                      { key: "returnArticulator", label: "Return Articulator" },
-                      { key: "cadcamFiles", label: "CAD/CAM Files" },
-                      { key: "consultRequested", label: "Consult Requested" },
-                    ]
-                      .filter(
-                        (enclosed) =>
-                          item?.enclosed_items?.[
-                            enclosed.key as keyof typeof item.enclosed_items
-                          ]
-                      )
-                      .map((enclosed) => {
-                        const quantity =
-                          item?.enclosed_items?.[
-                            enclosed.key as keyof typeof item.enclosed_items
-                          ];
-                        return quantity
-                          ? `${quantity} x ${enclosed.label}`
-                          : "";
-                      })
-                      .filter(Boolean)
-                      .join(", ")}
+                  <div>
+                    <div className="text-xs text-gray-600">Contact Type</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.contact_type === "not_applicable"
+                        ? ""
+                        : item.contact_type !== "custom"
+                        ? item.contact_type
+                        : item.custom_contact_details || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600">Pontic Type</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.pontic_type === "not_applicable"
+                        ? ""
+                        : item.pontic_type !== "custom"
+                        ? item.pontic_type
+                        : item.custom_pontic_details || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600">Margin Design</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.margin_design_type === "not_applicable"
+                        ? ""
+                        : item.margin_design_type !== "custom"
+                        ? item.margin_design_type
+                        : item.custom_margin_design_type || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600">Occlusal Design</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.occlusion_design_type === "not_applicable"
+                        ? ""
+                        : item.occlusion_design_type !== "custom"
+                        ? item.occlusion_design_type
+                        : item.custom_margin_design_type || ""}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-600">Alloy</div>
+                    <div className="font-bold text-xs min-h-[14px]">
+                      {item.alloy_type === "not_applicable"
+                        ? ""
+                        : item.alloy_type !== "custom"
+                        ? item.alloy_type
+                        : item.custon_alloy_type || ""}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+            <div className="mt-2 border border-gray-300">
+              <div className="bg-gray-100 p-2">
+                <h3
+                  className="font-bold text-xs"
+                  style={{ lineHeight: "1.15" }}
+                >
+                  Instruction Notes
+                </h3>
+              </div>
+              <div
+                className="p-4 whitespace-pre-wrap break-words overflow-hidden"
+                style={{ height: "80px" }}
+              >
+                <div className="font-bold text-sm">
+                  {item?.instruction_notes || ""}
+                </div>
+              </div>
+            </div>
+            <div className="flex mt-2">
+              <span className="w-16 text-sm">Enclosed: </span>
+              <div className="font-bold text-sm ml-2">
+                {[
+                  { key: "impression", label: "Impression" },
+                  { key: "biteRegistration", label: "Bite Registration" },
+                  { key: "photos", label: "Photos" },
+                  { key: "jig", label: "Jig" },
+                  { key: "opposingModel", label: "Opposing Model" },
+                  { key: "articulator", label: "Articulator" },
+                  { key: "returnArticulator", label: "Return Articulator" },
+                  { key: "cadcamFiles", label: "CAD/CAM Files" },
+                  { key: "consultRequested", label: "Consult Requested" },
+                ]
+                  .filter(
+                    (enclosed) =>
+                      item?.enclosed_items?.[
+                        enclosed.key as keyof typeof item.enclosed_items
+                      ]
+                  )
+                  .map((enclosed) => {
+                    const quantity =
+                      item?.enclosed_items?.[
+                        enclosed.key as keyof typeof item.enclosed_items
+                      ];
+                    return quantity ? `${quantity} x ${enclosed.label}` : "";
+                  })
+                  .filter(Boolean)
+                  .join(", ")}
+              </div>
+            </div>
           </div>
-        );
-      })}
+        </div>
+      </div>
     </div>
   );
 };
