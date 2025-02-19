@@ -480,11 +480,11 @@ const ClientServicePricing = ({
           ? aName.localeCompare(bName)
           : bName.localeCompare(aName);
       }
-      if (sortConfig.key === "description") {
+      if (sortConfig.key === "material") {
         const aDesc =
-          a.description || (a.default && a.default.description) || "";
+          a.material?.name || (a.default && a.default.material?.name) || "";
         const bDesc =
-          b.description || (b.default && b.default.description) || "";
+          b.material?.name || (b.default && b.default.material?.name) || "";
         return sortConfig.direction === "asc"
           ? aDesc.localeCompare(bDesc)
           : bDesc.localeCompare(aDesc);
@@ -594,11 +594,11 @@ const ClientServicePricing = ({
                         <TableHead>
                           <Button
                             variant="ghost"
-                            onClick={() => handleSort("description")}
+                            onClick={() => handleSort("material")}
                             className="h-8 p-0 font-medium"
                           >
                             Material
-                            {getSortIcon("description")}
+                            {getSortIcon("material")}
                           </Button>
 
                           <Popover
@@ -850,11 +850,11 @@ const ClientServicePricing = ({
                 <TableHead>
                   <Button
                     variant="ghost"
-                    onClick={() => handleSort("description")}
+                    onClick={() => handleSort("material")}
                     className="h-8 p-0 font-medium"
                   >
-                    Description
-                    {getSortIcon("description")}
+                    Material
+                    {getSortIcon("material")}
                   </Button>
                 </TableHead>
                 {selectedClient !== "default" && (

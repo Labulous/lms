@@ -84,7 +84,12 @@ const ClientList: React.FC<ClientListProps> = ({
   onDeleteClient,
 }) => {
   const navigate = useNavigate();
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([
+    {
+      id: "clientName",
+      desc: false,
+    },
+  ]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
@@ -114,7 +119,7 @@ const ClientList: React.FC<ClientListProps> = ({
       ),
       filterFn: (row, id, value) => {
         const cellValue = row.getValue(id);
-        return cellValue != null 
+        return cellValue != null
           ? cellValue.toString().toLowerCase().includes(value.toLowerCase())
           : false;
       },

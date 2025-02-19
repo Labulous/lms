@@ -110,6 +110,10 @@ const ClientProductPricing = ({
   });
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [mainTableSelectedMaterial, setMainTableSelectedMaterial] = useState<
+    string | null
+  >(null);
+  const [mainTableIsFilterOpen, setMainTableIsFilterOpen] = useState(false);
 
   const uniqueMaterials = useMemo(() => {
     if (!editableProducts) return [];
@@ -125,6 +129,21 @@ const ClientProductPricing = ({
       (product) => product.material?.name === selectedMaterial
     );
   }, [editableProducts, selectedMaterial]);
+
+  const mainTableUniqueMaterials = useMemo(() => {
+    if (!editableProducts) return [];
+    const materials = editableProducts
+      .map((product) => product.material?.name)
+      .filter(Boolean);
+    return Array.from(new Set(materials));
+  }, [editableProducts]);
+
+  const mainTableFilteredProducts = useMemo(() => {
+    if (!mainTableSelectedMaterial) return editableProducts;
+    return editableProducts?.filter(
+      (product) => product.material?.name === mainTableSelectedMaterial
+    );
+  }, [editableProducts, mainTableSelectedMaterial]);
 
   const handleSort = (key: string) => {
     setSortConfig((current) => {
@@ -846,15 +865,77 @@ const ClientProductPricing = ({
                     {getSortIcon("name")}
                   </Button>
                 </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("material")}
-                    className="h-8 p-0 font-medium"
-                  >
-                    Material
-                    {getSortIcon("material")}
-                  </Button>
+                <TableHead className="relative">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("material")}
+                      className="h-8 p-0 font-medium"
+                    >
+                      Material
+                      {getSortIcon("material")}
+                    </Button>
+                    <Popover open={mainTableIsFilterOpen} onOpenChange={setMainTableIsFilterOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMainTableIsFilterOpen(true);
+                          }}
+                        >
+                          <Filter className="h-4 w-4" />
+                          {mainTableSelectedMaterial && (
+                            <span className="ml-2 text-primary text-xs">
+                              (Filtered)
+                            </span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-48 z-[100]"
+                        align="start"
+                        side="bottom"
+                        sideOffset={5}
+                        style={{ position: 'fixed' }}
+                      >
+                        <div className="space-y-2">
+                          <div className="font-medium">Filter by Material</div>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant={!mainTableSelectedMaterial ? "default" : "outline"}
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMainTableSelectedMaterial(null);
+                                setMainTableIsFilterOpen(false);
+                              }}
+                              className="justify-start"
+                            >
+                              All Materials
+                            </Button>
+                            {mainTableUniqueMaterials.map((material) => (
+                              <Button
+                                key={material}
+                                variant={mainTableSelectedMaterial === material ? "default" : "outline"}
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMainTableSelectedMaterial(material);
+                                  setMainTableIsFilterOpen(false);
+                                }}
+                                className="justify-start"
+                              >
+                                {material}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </TableHead>
                 {selectedClient !== "default" && (
                   <TableHead>
@@ -893,61 +974,7 @@ const ClientProductPricing = ({
                   </TableCell>
                 </TableRow>
               ) : selectedClient !== "default" ? (
-                sortData(specialProducts).map((product) => (
-                  <TableRow key={product.id} className="hover:bg-muted/50">
-                    {selectedClient !== "default" && (
-                      <TableCell>
-                        {getClientPrice(product.id, selectedClient) && (
-                          <Checkbox
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={(checked: boolean) =>
-                              handleSelectProduct(product.id, checked)
-                            }
-                          />
-                        )}
-                      </TableCell>
-                    )}
-                    <TableCell className="font-medium">
-                      {product.default.name}
-                    </TableCell>
-                    <TableCell>{product.default.material.name}</TableCell>
-                    {selectedClient !== "default" && (
-                      <TableCell
-                        className={cn(
-                          "font-medium",
-                          getClientPrice(product.id, selectedClient) &&
-                            "text-green-600 dark:text-green-400"
-                        )}
-                      >
-                        ${product.price.toFixed(2)}
-                      </TableCell>
-                    )}
-                    <TableCell>${product.default.price.toFixed(2)}</TableCell>
-                    <TableCell>
-                      {selectedClient !== "default" &&
-                        getClientPrice(product.id, selectedClient) && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() =>
-                                  handleRemoveClientPrice(product.id)
-                                }
-                              >
-                                Remove New Price
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                sortData(editableProducts).map((product) => (
+                (sortConfig.key ? sortData(mainTableFilteredProducts) : mainTableFilteredProducts)?.map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
@@ -973,7 +1000,7 @@ const ClientProductPricing = ({
                             "text-green-600 dark:text-green-400"
                         )}
                       >
-                        ${product.price.toFixed(2)}
+                        ${getClientPrice(product.id, selectedClient)?.toFixed(2)}
                       </TableCell>
                     )}
                     <TableCell>${product.price.toFixed(2)}</TableCell>
@@ -997,6 +1024,48 @@ const ClientProductPricing = ({
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                (sortConfig.key ? sortData(mainTableFilteredProducts) : mainTableFilteredProducts)?.map((product) => (
+                  <TableRow key={product.id} className="hover:bg-muted/50">
+                    {selectedClient !== "default" && (
+                      <TableCell>
+                        {getClientPrice(product.id, selectedClient) && (
+                          <Checkbox
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={(checked: boolean) =>
+                              handleSelectProduct(product.id, checked)
+                            }
+                          />
+                        )}
+                      </TableCell>
+                    )}
+                    <TableCell className="font-medium">
+                      {product.name}
+                    </TableCell>
+                    <TableCell>{product.material.name}</TableCell>
+                    {selectedClient !== "default" && (
+                      <TableCell
+                        className={cn(
+                          "font-medium",
+                          getClientPrice(product.id, selectedClient) &&
+                            "text-green-600 dark:text-green-400"
+                        )}
+                      >
+                        ${getClientPrice(product.id, selectedClient)?.toFixed(2)}
+                      </TableCell>
+                    )}
+                    <TableCell>${product.price.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </SheetTrigger>
+                      </Sheet>
                     </TableCell>
                   </TableRow>
                 ))
