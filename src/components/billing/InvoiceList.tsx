@@ -167,6 +167,7 @@ const InvoiceList: React.FC = () => {
   const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
   const [reFreshData, setRefreshData] = useState(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] =
@@ -321,10 +322,6 @@ const InvoiceList: React.FC = () => {
                   custom_occlusal_shade,
                   custom_gingival_shade,
                   custom_stump_shade,
-                  manual_body_shade,
-                  manual_occlusal_shade,
-                  manual_gingival_shade,
-                  manual_stump_shade,
                   type,
           product:products!product_id (
                     id,
@@ -922,6 +919,7 @@ const InvoiceList: React.FC = () => {
     dateFilter,
     dueDateFilter,
     statusFilter,
+    tagFilter,
     caseFilter,
     invoices,
   ]);
@@ -1248,6 +1246,12 @@ const InvoiceList: React.FC = () => {
       );
     }
 
+    if (tagFilter.length > 0) {
+      filtered = filtered.filter((invoice) =>
+        invoice?.tag && tagFilter.includes(invoice.tag.name)
+      );
+    }
+
     if (caseFilter) {
       filtered = filtered.filter((invoice) => invoice.case?.id === caseFilter);
     }
@@ -1266,8 +1270,16 @@ const InvoiceList: React.FC = () => {
         )
         : data;
 
+    // Apply tag filter if any
+    const tagFiltered =
+      tagFilter.length > 0
+        ? statusFiltered.filter((invoice: any) =>
+          invoice?.tag && tagFilter.includes(invoice.tag.name)
+        )
+        : statusFiltered;
+
     // Apply sorting
-    const sorted = sortData(statusFiltered);
+    const sorted = sortData(tagFiltered);
 
     // Get paginated data
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -1712,13 +1724,75 @@ const InvoiceList: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead
-                    onClick={() => handleSort("tag")}
                     className="cursor-pointer whitespace-nowrap"
                   >
-                    <div className="flex items-center">
-                      Tag
-                      {getSortIcon("tag")}
-                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" className="p-0 hover:bg-transparent">
+                          <div className="flex items-center">
+                            Tag
+                            <ChevronsUpDown className="ml-2 h-4 w-4" />
+                            {tagFilter.length > 0 && (
+                              <Badge variant="outline" className="ml-2 bg-background">
+                                {tagFilter.length}
+                              </Badge>
+                            )}
+                          </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <div className="p-2 grid gap-2">
+                          {Array.from<string>(
+                            new Set<string>(
+                              invoicesData
+                                .map((invoice: any) => invoice?.tag?.name as string | undefined)
+                                .filter((name: string | undefined): name is string => Boolean(name))
+                            )
+                          ).map((tagName: string) => {
+                            const tag = invoicesData.find(
+                              (invoice: any) => invoice?.tag?.name === tagName
+                            )?.tag;
+                            return (
+                              <div
+                                key={tagName}
+                                className="flex items-center space-x-2"
+                              >
+                                <Checkbox
+                                  id={`tag-${tagName}`}
+                                  checked={tagFilter.includes(tagName)}
+                                  onCheckedChange={(checked) => {
+                                    setTagFilter((current) =>
+                                      checked
+                                        ? [...current, tagName]
+                                        : current.filter((t) => t !== tagName)
+                                    );
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`tag-${tagName}`}
+                                  className="flex items-center text-sm font-medium cursor-pointer"
+                                >
+                                  <div
+                                    className="flex items-center gap-2"
+                                    style={{
+                                      color: tag?.color,
+                                    }}
+                                  >
+                                    <span
+                                      className="h-2 w-2 rounded-full"
+                                      style={{
+                                        backgroundColor: tag?.color,
+                                      }}
+                                    />
+                                    {tagName}
+                                  </div>
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </TableHead>
                   <TableHead
                     onClick={() => handleSort("invoiceNumber")}
@@ -1949,7 +2023,7 @@ const InvoiceList: React.FC = () => {
                             : "No Date"}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          {invoice?.tag ? (
+                          {invoice?.tag && (
                             <div
                               className="flex items-center justify-start gap-2 text-xs"
                               style={{
@@ -1964,8 +2038,6 @@ const InvoiceList: React.FC = () => {
                               />
                               {invoice.tag.name}
                             </div>
-                          ) : (
-                            "No Tag"
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
@@ -2036,7 +2108,8 @@ const InvoiceList: React.FC = () => {
                                   | "Removable"
                                   | "Implant"
                                   | "Coping"
-                                  | "Appliance")
+                                  | "Appliance"
+                                )
                                 : "Bridge"
                             }
                           >
