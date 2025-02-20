@@ -157,9 +157,7 @@ const saveCaseProduct = async (
             type: product.type || "",
             additional_services_id: main.isServicesAll
               ? product?.services?.map((item: { id: string }) => item.id) || []
-              : main.mainServices.map((item: any) => {
-                  item.id;
-                }),
+              : [],
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -306,6 +304,7 @@ const saveCases = async (
       setLoadingState && setLoadingState({ isLoading: false, action: "save" });
       return;
     }
+    console.log(cases, "Cases to be insert");
     setLoadingState && setLoadingState({ isLoading: true, action: "save" });
 
     const enclosedCaseRow = {
@@ -622,9 +621,7 @@ const updateCases = async (
             type: product.type || "",
             additional_services_id: main.isServicesAll
               ? product?.services?.map((item: { id: string }) => item.id) || []
-              : main.mainServices.map((item: any) => {
-                  item.id;
-                }),
+              : [],
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
