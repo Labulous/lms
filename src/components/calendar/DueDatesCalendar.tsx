@@ -163,7 +163,20 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   setFilterType,
   today_cell = [],
 }) => {
-  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(
+    () =>
+      new Date(
+        Date.UTC(
+          new Date().getUTCFullYear(),
+          new Date().getUTCMonth(),
+          new Date().getUTCDate(),
+          new Date().getUTCHours(),
+          new Date().getUTCMinutes(),
+          new Date().getUTCSeconds(),
+          new Date().getUTCMilliseconds()
+        )
+      )
+  );
   const [hoveredEvent, setHoveredEvent] = useState<CalendarEvents | null>(null);
   const [animationDirection, setAnimationDirection] = useState<
     "left" | "right" | null
@@ -189,7 +202,17 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
 
   const handleNavigate = useCallback(
     (action: "PREV" | "NEXT" | "TODAY") => {
-      let newDate = new Date(currentDate);
+      let newDate = new Date(
+        Date.UTC(
+          currentDate.getUTCFullYear(),
+          currentDate.getUTCMonth(),
+          currentDate.getUTCDate(),
+          currentDate.getUTCHours(),
+          currentDate.getUTCMinutes(),
+          currentDate.getUTCSeconds(),
+          currentDate.getUTCMilliseconds()
+        )
+      );
 
       switch (action) {
         case "PREV":
@@ -201,7 +224,17 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
           newDate = addMonths(newDate, 1);
           break;
         case "TODAY":
-          newDate = new Date();
+          newDate = new Date(
+            Date.UTC(
+              currentDate.getUTCFullYear(),
+              currentDate.getUTCMonth(),
+              currentDate.getUTCDate(),
+              currentDate.getUTCHours(),
+              currentDate.getUTCMinutes(),
+              currentDate.getUTCSeconds(),
+              currentDate.getUTCMilliseconds()
+            )
+          );
           setAnimationDirection(currentDate > newDate ? "right" : "left");
           break;
         default:
@@ -239,7 +272,17 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
   };
 
   const dayPropGetter = (date: Date) => {
-    const today = new Date();
+    const today = new Date(
+      Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth(),
+        currentDate.getUTCDate(),
+        currentDate.getUTCHours(),
+        currentDate.getUTCMinutes(),
+        currentDate.getUTCSeconds(),
+        currentDate.getUTCMilliseconds()
+      )
+    );
     if (
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&
@@ -538,9 +581,33 @@ const DueDatesCalendar: React.FC<DueDatesCalendarProps> = ({
             views={["month"]} // Make sure to include the right views
             components={components}
             onNavigate={calendarNavigate}
-            date={currentDate}
+            date={
+              new Date(
+                Date.UTC(
+                  currentDate.getUTCFullYear(),
+                  currentDate.getUTCMonth(),
+                  currentDate.getUTCDate(),
+                  currentDate.getUTCHours(),
+                  currentDate.getUTCMinutes(),
+                  currentDate.getUTCSeconds(),
+                  currentDate.getUTCMilliseconds()
+                )
+              )
+            }
             toolbar={true}
-            defaultDate={currentDate}
+            defaultDate={
+              new Date(
+                Date.UTC(
+                  currentDate.getUTCFullYear(),
+                  currentDate.getUTCMonth(),
+                  currentDate.getUTCDate(),
+                  currentDate.getUTCHours(),
+                  currentDate.getUTCMinutes(),
+                  currentDate.getUTCSeconds(),
+                  currentDate.getUTCMilliseconds()
+                )
+              )
+            }
             dayPropGetter={dayPropGetter}
             eventPropGetter={eventStyleGetter}
             showAllEvents={filterType === "today_cell"}
