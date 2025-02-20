@@ -176,6 +176,7 @@ export interface ExtendedCase {
   custom_occlusal_details: string;
   margin_design_type: string;
   occlusion_design_type: string;
+  common_services?:any[]
   is_appointment_TBD: string;
   alloy_type: string;
   custom_margin_design_type: string;
@@ -302,6 +303,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [activePrintType, setActivePrintType] = useState<string | null>(null);
   const [onHoldModal, setOnHoldModal] = useState<boolean>(false);
   const [onCancelModal, setOnCancelModal] = useState<boolean>(false);
+  const [services, setServices] = useState<any[]>([]);
   const [onHoldReason, setOnHoldReason] = useState<string | null>(null);
   const [invoicePreviewModalOpen, setInvoicePreviewModalOpen] =
     useState<boolean>(false);
@@ -356,6 +358,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     }
 
     console.log(data, "datadata");
+    setServices(data);
     if (data) {
       setCaseDetail((detail: any) => ({
         ...detail,
@@ -537,6 +540,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         due_date,
         attachements,
         case_number,
+        common_services,
         is_appointment_TBD,
         invoice:invoices!case_id (
           id,
@@ -751,6 +755,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           requires_shade: tp.product.requires_shade,
           material: tp.product.material,
           product_type: tp.product.product_type,
+          common_services: caseItem?.common_services,
           billing_type: tp.product.billing_type,
           additional_services_id:
             caseItem?.teethProduct?.[index].additional_services_id,
@@ -805,6 +810,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             due_date,
             attachements,
             case_number,
+            common_services,
             invoice:invoices!case_id (
               id,
               case_id,
@@ -1621,7 +1627,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     //   fetchCaseData(true);
     // }
     fetchCaseData(true);
-    toast.success("Invoice Updated SucessFully!!")
+    toast.success("Invoice Updated SucessFully!!");
   };
   const handleOpenEditModal = (
     invoice: ExtendedCase,
@@ -2606,6 +2612,129 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   {product?.discounted_price?.total.toLocaleString()}
                                 </TableCell>
                               </TableRow>
+                              {serviceRow}
+                            </React.Fragment>
+                          );
+                        })}
+                      {caseDetail?.common_services &&
+                        caseDetail?.common_services?.map((product, index) => {
+                          const price = product?.discounted_price?.price || 0;
+                          const discount =
+                            product?.discounted_price?.discount || 0;
+                          const finalPrice =
+                            product?.discounted_price?.final_price || price;
+                          const quantity =
+                            product?.discounted_price?.quantity || 1;
+                          const subtotal = finalPrice * quantity;
+                          const modifiedService =
+                            product.services && product.services.length > 0
+                              ? product.services.map((productService: any) =>
+                                  services
+                                    .filter((service) =>
+                                      productService.includes(service.id)
+                                    )
+                                    .map((service) => ({
+                                      id: service.id,
+                                      name: service.name,
+                                      price: service.price,
+                                    }))
+                                )
+                              : [];
+                          console.log(modifiedService, "modifiedService");
+                          const serviceRow = product.teeth
+                            ? modifiedService?.map((item: any) => {
+                                return (
+                                  <TableRow>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      Service{" "}
+                                      {product.teeth
+                                        .map((item: number) => item)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      {item
+                                        .map((item: any) => item.name)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                1
+                              </TableCell> */}
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      ${" "}
+                                      {item
+                                        .map((item: any) => item.price)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                                      {product.discount || 0}%
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      $
+                                      {item
+                                        .map(
+                                          (item: any) =>
+                                            item.price -
+                                            (item.price *
+                                              (product.discount || 0)) /
+                                              100
+                                        )
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      ${" "}
+                                      {item
+                                        .map(
+                                          (item: any) =>
+                                            item.price -
+                                            (item.price *
+                                              (product.discount || 0)) /
+                                              100
+                                        )
+                                        .join(",")}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            : null;
+
+                          return (
+                            <React.Fragment key={index}>
                               {serviceRow}
                             </React.Fragment>
                           );

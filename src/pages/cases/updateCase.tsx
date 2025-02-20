@@ -167,6 +167,7 @@ const UpdateCase: React.FC = () => {
         due_date,
         attachements,
         case_number,
+        common_services,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -355,6 +356,7 @@ const UpdateCase: React.FC = () => {
         ...caseItem,
         labDetail: lab,
         custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        common_services: caseDataa?.common_services,
         products: caseItem?.teethProduct.map((tp: any, index: number) => ({
           id: tp.product.id,
           name: tp.product.name,
@@ -681,11 +683,44 @@ const UpdateCase: React.FC = () => {
                 quantity: item?.teethProduct?.quantity,
               };
             }
-
-            // Add teeth & pontic_teeth while ensuring uniqueness
             item.teethProduct?.tooth_number?.forEach((tooth: number) =>
               groupedProducts[productId].teeth.add(tooth)
             );
+            groupedProducts[productId].isServicesAll =
+              caseDataApi?.common_services.filter(
+                (service: any) => service.teeth === item.teethProduct?.teeth
+              ).length > 0
+                ? true
+                : false;
+            groupedProducts[productId].mainServices =
+              caseDataApi.common_services
+                .filter(
+                  (service: { teeth: number[]; services: string[] }) =>
+                    // Check if service.teeth is an array or a single tooth value
+                    Array.isArray(service.teeth)
+                      ? service.teeth.some((tooth: number) =>
+                          Array.from(groupedProducts[productId].teeth).includes(
+                            tooth
+                          )
+                        ) // Convert Set to Array and check
+                      : Array.from(groupedProducts[productId].teeth).includes(
+                          service.teeth
+                        ) // Convert Set to Array for a single value
+                )
+                .map((service: { teeth: number[]; services: string[] }) => {
+                  // Map through the service.services array and find the corresponding service data from servicesData
+                  return service.services.map((serviceId: string) => {
+                    const serviceData = servicesData?.find(
+                      (item) => item.id === serviceId
+                    );
+                    return {
+                      id: serviceData?.id,
+                      name: serviceData?.name,
+                    };
+                  });
+                })
+                .flat() || []; // Flatten the array of arrays into a single array
+
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
@@ -696,7 +731,6 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
-
                 // Map to only return the service id
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
@@ -762,6 +796,7 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, clients, servicesData]);
+  console.log(selectedProducts, "selected products!!");
   useEffect(() => {
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {

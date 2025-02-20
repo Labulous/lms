@@ -64,7 +64,7 @@ const NewCase: React.FC = () => {
     patientFirstName: "",
     patientLastName: "",
     orderDate: format(new Date(), "yyyy-MM-dd"),
-    status: "in_queue" as CaseStatus,
+    status: "in_progress" as CaseStatus,
     deliveryMethod: "Pickup" as DeliveryMethod,
     deliveryMethodError: "",
     enclosedItems: {
@@ -322,6 +322,11 @@ const NewCase: React.FC = () => {
           custom_contact_details: transformedData.caseDetails?.customContact,
           custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
           custom_pontic_details: transformedData.caseDetails?.customPontic,
+          common_services:
+            selectedProducts.map((product) => ({
+              teeth: product.teeth,
+              services: product?.mainServices?.map((item) => item.id) || [],
+            })) || [],
           lab_id: labIdData?.lab_id,
           attachements: selectedFiles.map((item) => item.url),
           working_pan_name: transformedData.workingPanName,
