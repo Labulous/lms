@@ -687,14 +687,13 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].teeth.add(tooth)
             );
             groupedProducts[productId].isServicesAll =
-              caseDataApi?.common_services.filter(
+              caseDataApi?.common_services?.filter(
                 (service: any) => service.teeth === item.teethProduct?.teeth
               ).length > 0
                 ? true
                 : false;
             groupedProducts[productId].mainServices =
-              caseDataApi.common_services
-                .filter(
+              caseDataApi?.common_services?.filter(
                   (service: { teeth: number[]; services: string[] }) =>
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
