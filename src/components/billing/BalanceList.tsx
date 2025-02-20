@@ -50,7 +50,7 @@ const BalanceList = () => {
     {
       outstandingBalance: 0,
       creditBalance: 0,
-      thisMonth: 200,
+      thisMonth: 0,
       lastMonth: 0,
       days30Plus: 0,
       days60Plus: 0,
