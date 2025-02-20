@@ -1840,7 +1840,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <div className="grid gap-4">
                               <div className="space-y-2">
                                 <h4 className="font-medium leading-none">
-                                  Shades main row
+                                  Shades
                                 </h4>
                                 <p className="text-sm text-muted-foreground">
                                   Set the shades for different areas
@@ -4137,7 +4137,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       <Button
                                         size="sm"
                                         onClick={() =>
-                                          handleSaveShades(index, originalIndex)
+                                          // handleSaveShades(index, originalIndex)
+                                          setShadePopoverOpen((prev) => {
+                                            const updated = new Map(prev);
+                                            // Set all values in the Map to false
+                                            updated.forEach((_, key) => {
+                                              updated.set( subIndex + index + 100, false);
+                                            });
+
+                                            return updated;
+                                          })
                                         }
                                       >
                                         Save
