@@ -807,12 +807,16 @@ const updateCases = async (
       case_id: caseId,
       client_id: cases.overview.client_id,
       lab_id: cases.overview.lab_id,
-      amount: Number(totalAmount), // Total amount (subRows + services)
+      amount: handleDueAmount(
+        Number(oldAmount),
+        Number(totalAmount),
+        Number(oldDueAmount)
+      ).amount,
       due_amount: handleDueAmount(
         Number(oldAmount),
         Number(totalAmount),
         Number(oldDueAmount)
-      ),
+      ).due_amount,
       status: "unpaid",
       due_date: cases?.overview?.due_date,
     };

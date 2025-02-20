@@ -716,6 +716,9 @@ const UpdateCase: React.FC = () => {
                     return {
                       id: serviceData?.id,
                       name: serviceData?.name,
+                      is_taxable:serviceData?.is_taxable,
+                      price:serviceData?.price,
+
                     };
                   });
                 })
