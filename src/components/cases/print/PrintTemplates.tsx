@@ -411,9 +411,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     Date:
                                   </p>
                                   <p className="text-right min-w-[120px] text-sm">
-                                    {formatDate(
-                                      invoice?.received_date || "1/7/2025"
-                                    )}
+                                    {invoice?.due_date
+                                      ? formatDate(invoice.due_date)
+                                      : "TBD"}
                                   </p>
                                 </div>
                               </div>
@@ -1307,7 +1307,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                               ? teethItem.manual_occlusal_shade
                               : teethItem.occlusal_shade?.name ||
                                 (teethItem?.custom_occlusal_shade ? (
-                                  <span
+                                  <p
+                                    className="font-semibold ml-1"
                                     style={{
                                       color:
                                         TYPE_COLORS[
@@ -1319,7 +1320,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                                     {teethItem?.custom_occlusal_shade || "N/A"}{" "}
                                     {teethItem?.custom_occlusal_shade &&
                                       "(cus)"}
-                                  </span>
+                                  </p>
                                 ) : (
                                   "N/A"
                                 ))}
@@ -1332,7 +1333,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                               ? teethItem.manual_body_shade
                               : teethItem.body_shade?.name ||
                                 (teethItem?.custom_body_shade ? (
-                                  <span
+                                  <p
+                                    className="font-semibold ml-1"
                                     style={{
                                       color:
                                         TYPE_COLORS[
@@ -1343,7 +1345,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                                   >
                                     {teethItem?.custom_body_shade || "N/A"}{" "}
                                     {teethItem?.custom_body_shade && "(cus)"}
-                                  </span>
+                                  </p>
                                 ) : (
                                   "N/A"
                                 ))}
@@ -1356,7 +1358,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                               ? teethItem.manual_gingival_shade
                               : teethItem.gingival_shade?.name ||
                                 (teethItem?.custom_gingival_shade ? (
-                                  <span
+                                  <p
+                                    className="font-semibold ml-1"
                                     style={{
                                       color:
                                         TYPE_COLORS[
@@ -1366,7 +1369,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                                     }}
                                   >
                                     {teethItem?.custom_gingival_shade || "N/A"}
-                                  </span>
+                                  </p>
                                 ) : (
                                   "N/A"
                                 ))}
@@ -1379,7 +1382,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                               ? teethItem.manual_stump_shade
                               : teethItem.stump_shade?.name ||
                                 (teethItem?.custom_stump_shade ? (
-                                  <span
+                                  <p
+                                    className="font-semibold ml-1"
                                     style={{
                                       color:
                                         TYPE_COLORS[
@@ -1389,7 +1393,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                                     }}
                                   >
                                     {teethItem?.custom_stump_shade}
-                                  </span>
+                                  </p>
                                 ) : (
                                   "N/A"
                                 ))}
