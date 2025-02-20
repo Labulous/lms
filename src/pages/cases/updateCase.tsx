@@ -707,7 +707,7 @@ const UpdateCase: React.FC = () => {
                           service.teeth
                         ) // Convert Set to Array for a single value
                 )
-                .map((service:{ teeth: number[]; services: string[] }) => {
+                .map((service: { teeth: number[]; services: string[] }) => {
                   // Map through the service.services array and find the corresponding service data from servicesData
                   return service.services.map((serviceId: string) => {
                     const serviceData = servicesData?.find(
@@ -719,7 +719,7 @@ const UpdateCase: React.FC = () => {
                     };
                   });
                 })
-                .flat(); // Flatten the array of arrays into a single array
+                .flat() || []; // Flatten the array of arrays into a single array
 
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
