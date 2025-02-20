@@ -32,24 +32,6 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     notes
   );
 
-  const handleDownloadPDF = async () => {
-    const element = document.getElementById("invoice-preview");
-    if (!element) return;
-    try {
-      const canvas = await html2canvas(element);
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF();
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`invoice-${invoice.invoiceId}.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Error generating PDF. Please try again.");
-    }
-  };
-
   const handlePrint = () => {
     window.print();
   };
@@ -161,12 +143,6 @@ const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
           >
             Print
-          </button>
-          <button
-            onClick={handleDownloadPDF}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            Download PDF
           </button>
         </div>
       </div>

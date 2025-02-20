@@ -654,7 +654,11 @@ const StatementList = ({ statement }: StatementList) => {
                 </TableCell>
                 <TableCell>{formatDate(statement.created_at)}</TableCell>
                 <TableCell>
-                  <Button variant="link" className="p-0">
+                  <Button 
+                    variant="link" 
+                    className="p-0"
+                    onClick={() => handleViewDetails(statement.id)}
+                  >
                     {statement.statement_number}
                   </Button>
                 </TableCell>

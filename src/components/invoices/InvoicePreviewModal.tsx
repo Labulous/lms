@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { X, Download, Printer } from "lucide-react";
+import { X, Printer } from "lucide-react";
 import { generateInvoice } from "../../services/invoiceService";
 import { Invoice } from "../../data/mockInvoiceData";
 import { useReactToPrint, UseReactToPrintOptions } from "react-to-print";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import {
   InvoiceTemplate,
   LabSlipTemplate,
@@ -30,7 +28,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [selectedPaperSize, setSelectedPaperSize] =
     useState<keyof typeof PAPER_SIZES>("LETTER");
 
@@ -107,52 +104,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
     window.open(`${window.location.origin}/print-preview`, "_blank");
   };
 
-  const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) {
-      return;
-    }
-
-    setIsDownloading(true);
-    setError(null);
-
-    try {
-      // Capture the screenshot of the invoice as a canvas with higher resolution
-      const canvas = await html2canvas(invoiceRef.current, {
-        scale: 4, // Increase scale for better quality
-        logging: false,
-        useCORS: true,
-      });
-
-      // Calculate PDF dimensions
-      const imgData = canvas.toDataURL("image/png");
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 297; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      // Create a new PDF
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      // Calculate the number of pages
-      const pageCount = Math.ceil(imgHeight / pageHeight);
-
-      // Add image to the PDF, potentially across multiple pages
-      for (let i = 0; i < pageCount; i++) {
-        if (i > 0) {
-          pdf.addPage();
-        }
-
-        const position = -i * pageHeight; // Shift position for each page
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      }
-
-      // Save the PDF
-      pdf.save(`Invoice-${caseDetails[0]?.case_number || "unknown"}.pdf`);
-    } catch (err) {
-      setError("Failed to generate PDF");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
   if (!isOpen) return null;
 
   const formatCurrency = (amount: number) => {
@@ -179,14 +130,6 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
                 Invoice Preview
               </h3>
               <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleDownloadPDF()}
-                  disabled={isDownloading}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {isDownloading ? "Downloading..." : "Download PDF"}
-                </button>
                 <button
                   onClick={() => handlePrint("invoice_slip")}
                   disabled={isPrinting}

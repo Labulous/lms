@@ -928,8 +928,13 @@ const InvoiceList: React.FC = () => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
 
-    // Filter invoices based on search term
+    // Only search through invoices that belong to the current lab
     const filtered = invoicesData.filter((invoice: any) => {
+      // First check if this invoice belongs to the current lab
+      if (invoice.lab_id !== labIdData?.lab_id) {
+        return false;
+      }
+
       const searchableFields = [
         invoice.case_number,
         invoice?.doctor?.client?.client_name,
