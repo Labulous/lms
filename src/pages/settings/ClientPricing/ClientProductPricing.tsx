@@ -24,6 +24,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -343,9 +344,11 @@ const ClientProductPricing = ({
     }
   }, [isDrawerOpen]);
   const getClientPrice = (productId: string, clientId: string) => {
-    return clientPrices.find(
-      (cp) => cp.productId === productId && cp.clientId === clientId
-    )?.price;
+    if (clientId === "default") return null;
+    const specialPrice = specialProducts?.find(
+      (item) => item.product_id === productId && item.client_id === clientId
+    );
+    return specialPrice?.price;
   };
 
   const handlePriceChange = (productId: string, newPrice: string) => {
@@ -549,16 +552,18 @@ const ClientProductPricing = ({
             value={selectedClient}
             onValueChange={(value) => setSelectedClient(value)}
           >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Default" />
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a client" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
-              {clients?.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.client_name}
-                </SelectItem>
-              ))}
+              <ScrollArea className="h-[300px]">
+                <SelectItem value="default">Default</SelectItem>
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.client_name}
+                  </SelectItem>
+                ))}
+              </ScrollArea>
             </SelectContent>
           </Select>
 
@@ -967,31 +972,29 @@ const ClientProductPricing = ({
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="text-center text-muted-foreground py-8"
+                    className="h-24 text-center text-muted-foreground"
                   >
-                    {clients?.find((c) => c.id === selectedClient)?.client_name}{" "}
-                    has all of the default prices.
+                    No special prices found for this client
                   </TableCell>
                 </TableRow>
               ) : selectedClient !== "default" ? (
-                (sortConfig.key ? sortData(mainTableFilteredProducts) : mainTableFilteredProducts)?.map((product) => (
+                // Only show products that have special prices for the selected client
+                sortData(editableProducts).filter(product => getClientPrice(product.id, selectedClient)).map((product) => (
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
-                        {getClientPrice(product.id, selectedClient) && (
-                          <Checkbox
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={(checked: boolean) =>
-                              handleSelectProduct(product.id, checked)
-                            }
-                          />
-                        )}
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked: boolean) =>
+                            handleSelectProduct(product.id, checked)
+                          }
+                        />
                       </TableCell>
                     )}
                     <TableCell className="font-medium">
                       {product.name}
                     </TableCell>
-                    <TableCell>{product.material.name}</TableCell>
+                    <TableCell>{product.material?.name}</TableCell>
                     {selectedClient !== "default" && (
                       <TableCell
                         className={cn(
@@ -1032,20 +1035,18 @@ const ClientProductPricing = ({
                   <TableRow key={product.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
-                        {getClientPrice(product.id, selectedClient) && (
-                          <Checkbox
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={(checked: boolean) =>
-                              handleSelectProduct(product.id, checked)
-                            }
-                          />
-                        )}
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked: boolean) =>
+                            handleSelectProduct(product.id, checked)
+                          }
+                        />
                       </TableCell>
                     )}
                     <TableCell className="font-medium">
                       {product.name}
                     </TableCell>
-                    <TableCell>{product.material.name}</TableCell>
+                    <TableCell>{product.material?.name}</TableCell>
                     {selectedClient !== "default" && (
                       <TableCell
                         className={cn(

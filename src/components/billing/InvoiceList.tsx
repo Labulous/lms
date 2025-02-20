@@ -988,22 +988,22 @@ const InvoiceList: React.FC = () => {
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
 
-    return [...data].sort((a, b) => {
-      if (sortConfig.key === "date" || sortConfig.key === "dueDate") {
-        const aDate = a[sortConfig.key];
-        const bDate = b[sortConfig.key];
-        if (aDate && bDate) {
-          const dateA = new Date(aDate).getTime();
-          const dateB = new Date(bDate).getTime();
-          return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-        } else {
-          return 0;
-        }
+    return [...data].sort((a: any, b: any) => {
+      if (sortConfig.key === "date") {
+        const dateA = new Date(a.received_date || 0).getTime();
+        const dateB = new Date(b.received_date || 0).getTime();
+        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
-
+      if (sortConfig.key === "tag") {
+        const tagA = a.tag?.name || "";
+        const tagB = b.tag?.name || "";
+        return sortConfig.direction === "asc" 
+          ? tagA.localeCompare(tagB)
+          : tagB.localeCompare(tagA);
+      }
       if (sortConfig.key === "amount") {
-        const numA = Number(a[sortConfig.key]) || 0;
-        const numB = Number(b[sortConfig.key]) || 0;
+        const numA = Number(a.amount) || 0;
+        const numB = Number(b.amount) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
 
@@ -1267,14 +1267,7 @@ const InvoiceList: React.FC = () => {
         : data;
 
     // Apply sorting
-    const sorted = [...statusFiltered].sort((a: any, b: any) => {
-      if (sortConfig.key === "date") {
-        const dateA = new Date(a.received_date || 0).getTime();
-        const dateB = new Date(b.received_date || 0).getTime();
-        return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-      }
-      return 0;
-    });
+    const sorted = sortData(statusFiltered);
 
     // Get paginated data
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -1719,6 +1712,15 @@ const InvoiceList: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead
+                    onClick={() => handleSort("tag")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Tag
+                      {getSortIcon("tag")}
+                    </div>
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort("invoiceNumber")}
                     className="cursor-pointer whitespace-nowrap"
                   >
@@ -1945,6 +1947,26 @@ const InvoiceList: React.FC = () => {
                               "dd/MM/yy"
                             )
                             : "No Date"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {invoice?.tag ? (
+                            <div
+                              className="flex items-center justify-start gap-2 text-xs"
+                              style={{
+                                color: invoice.tag.color,
+                              }}
+                            >
+                              <span
+                                className="h-2 w-2 rounded-full"
+                                style={{
+                                  backgroundColor: invoice.tag.color,
+                                }}
+                              />
+                              {invoice.tag.name}
+                            </div>
+                          ) : (
+                            "No Tag"
+                          )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <HoverCard openDelay={200}>

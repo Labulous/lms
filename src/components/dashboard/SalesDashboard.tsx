@@ -568,69 +568,54 @@ const SalesDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Popular Products Section */}
+      {/* Top Clients Section */}
       <Card className="col-span-4">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Popular Products</CardTitle>
-          <TimeFilter selectedFilter={expensesFilter} onFilterChange={setExpensesFilter} />
+          <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  {topClientsFilter.label}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {topClientsTimeFilterOptions.map((filter) => (
+                  <DropdownMenuItem
+                    key={filter.days}
+                    onClick={() => setTopClientsFilter(filter)}
+                  >
+                    {filter.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold">Most Ordered Products</h3>
+            <h3 className="font-semibold">Top Dental Clinics</h3>
           </div>
-          <div className="flex justify-center items-center relative mb-6">
-            <div className="absolute inset-0 flex items-center justify-center flex-col">
-              <p className="text-sm text-gray-500">Total Orders</p>
-              <p className="text-xl font-bold">
-                {popularTreatments.reduce((sum, item) => sum + item.count, 0)}
-              </p>
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <div className="w-full h-full flex items-center justify-center">
-                <svg viewBox="0 0 200 200" className="w-full h-full">
-                  {popularTreatments.map((item, index) => {
-                    const totalCount = popularTreatments.reduce((sum, item) => sum + item.count, 0);
-                    const percentage = (item.count / totalCount) * 100;
-                    const startAngle = popularTreatments
-                      .slice(0, index)
-                      .reduce((sum, curr) => sum + ((curr.count / totalCount) * 100), 0);
-                    const endAngle = startAngle + percentage;
-                    const x1 = 100 + 80 * Math.cos((startAngle * Math.PI * 2) / 100);
-                    const y1 = 100 + 80 * Math.sin((startAngle * Math.PI * 2) / 100);
-                    const x2 = 100 + 80 * Math.cos((endAngle * Math.PI * 2) / 100);
-                    const y2 = 100 + 80 * Math.sin((endAngle * Math.PI * 2) / 100);
-                    const largeArcFlag = percentage > 50 ? 1 : 0;
-
-                    return (
-                      <path
-                        key={item.name}
-                        d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                        fill={getProductColor(index)}
-                        className="transition-all duration-300 hover:opacity-80"
-                      />
-                    );
-                  })}
-                </svg>
-              </div>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-2">
-            {popularTreatments.map((item) => {
-              const totalCount = popularTreatments.reduce((sum, item) => sum + item.count, 0);
-              const percentage = ((item.count / totalCount) * 100).toFixed(1);
-              return (
-                <div key={item.name} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: getProductColor(popularTreatments.indexOf(item)) }}
-                    />
-                    <span className="truncate max-w-[150px]" title={item.name}>{item.name}</span>
-                  </div>
-                  <span>{percentage}%</span>
+          <div className="space-y-4">
+            {topClients.map((client) => (
+              <div key={client.id} className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium truncate max-w-[200px]" title={client.client_name}>
+                    {client.client_name}
+                  </span>
+                  <span className="text-sm text-gray-500">{client.total_cases} cases</span>
                 </div>
-              );
-            })}
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">Outstanding</span>
+                  <span className="text-red-500">${client.total_outstanding.toLocaleString()}</span>
+                </div>
+                <Progress
+                  value={client.total_cases / Math.max(...topClients.map(c => c.total_cases)) * 100}
+                  className="h-2"
+                />
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -743,54 +728,69 @@ const SalesDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Top Clients Section */}
+      {/* Popular Products Section */}
       <Card className="col-span-3">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Top Clients</CardTitle>
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8">
-                  <CalendarDays className="mr-2 h-4 w-4" />
-                  {topClientsFilter.label}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {topClientsTimeFilterOptions.map((filter) => (
-                  <DropdownMenuItem
-                    key={filter.days}
-                    onClick={() => setTopClientsFilter(filter)}
-                  >
-                    {filter.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <CardTitle className="text-sm font-medium">Popular Products</CardTitle>
+          <TimeFilter selectedFilter={expensesFilter} onFilterChange={setExpensesFilter} />
         </CardHeader>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="font-semibold">Top Dental Clinics</h3>
+            <h3 className="font-semibold">Most Ordered Products</h3>
           </div>
-          <div className="space-y-4">
-            {topClients.map((client) => (
-              <div key={client.id} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium truncate max-w-[200px]" title={client.client_name}>
-                    {client.client_name}
-                  </span>
-                  <span className="text-sm text-gray-500">{client.total_cases} cases</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Outstanding</span>
-                  <span className="text-red-500">${client.total_outstanding.toLocaleString()}</span>
-                </div>
-                <Progress
-                  value={client.total_cases / Math.max(...topClients.map(c => c.total_cases)) * 100}
-                  className="h-2"
-                />
+          <div className="flex justify-center items-center relative mb-6">
+            <div className="absolute inset-0 flex items-center justify-center flex-col">
+              <p className="text-sm text-gray-500">Total Orders</p>
+              <p className="text-xl font-bold">
+                {popularTreatments.reduce((sum, item) => sum + item.count, 0)}
+              </p>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <div className="w-full h-full flex items-center justify-center">
+                <svg viewBox="0 0 200 200" className="w-full h-full">
+                  {popularTreatments.map((item, index) => {
+                    const totalCount = popularTreatments.reduce((sum, item) => sum + item.count, 0);
+                    const percentage = (item.count / totalCount) * 100;
+                    const startAngle = popularTreatments
+                      .slice(0, index)
+                      .reduce((sum, curr) => sum + ((curr.count / totalCount) * 100), 0);
+                    const endAngle = startAngle + percentage;
+                    const x1 = 100 + 80 * Math.cos((startAngle * Math.PI * 2) / 100);
+                    const y1 = 100 + 80 * Math.sin((startAngle * Math.PI * 2) / 100);
+                    const x2 = 100 + 80 * Math.cos((endAngle * Math.PI * 2) / 100);
+                    const y2 = 100 + 80 * Math.sin((endAngle * Math.PI * 2) / 100);
+                    const largeArcFlag = percentage > 50 ? 1 : 0;
+
+                    return (
+                      <path
+                        key={item.name}
+                        d={`M 100 100 L ${x1} ${y1} A 80 80 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                        fill={getProductColor(index)}
+                        className="transition-all duration-300 hover:opacity-80"
+                      />
+                    );
+                  })}
+                </svg>
               </div>
-            ))}
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-2">
+            {popularTreatments.map((item) => {
+              const totalCount = popularTreatments.reduce((sum, item) => sum + item.count, 0);
+              const percentage = ((item.count / totalCount) * 100).toFixed(1);
+              return (
+                <div key={item.name} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: getProductColor(popularTreatments.indexOf(item)) }}
+                    />
+                    <span className="truncate max-w-[150px]" title={item.name}>{item.name}</span>
+                  </div>
+                  <span>{percentage}%</span>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

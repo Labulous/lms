@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
@@ -263,10 +264,13 @@ const ClientServicePricing = ({
     }
   }, [isDrawerOpen]);
   console.log(editableServices, "editable products");
+  // Function to get client price
   const getClientPrice = (serviceId: string, clientId: string) => {
-    return clientPrices.find(
-      (cp) => cp.serviceId === serviceId && cp.clientId === clientId
-    )?.price;
+    if (clientId === "default") return null;
+    const specialPrice = specialProducts?.find(
+      (item) => item.service_id === serviceId && item.client_id === clientId
+    );
+    return specialPrice?.price;
   };
 
   const handlePriceChange = (serviceId: string, newPrice: string) => {
@@ -517,16 +521,18 @@ const ClientServicePricing = ({
             value={selectedClient}
             onValueChange={(value) => setSelectedClient(value)}
           >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Default" />
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select a client" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="default">Default</SelectItem>
-              {clients?.map((client) => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.client_name}
-                </SelectItem>
-              ))}
+              <ScrollArea className="h-[300px]">
+                <SelectItem value="default">Default</SelectItem>
+                {clients?.map((client) => (
+                  <SelectItem key={client.id} value={client.id}>
+                    {client.client_name}
+                  </SelectItem>
+                ))}
+              </ScrollArea>
             </SelectContent>
           </Select>
 
@@ -887,46 +893,46 @@ const ClientServicePricing = ({
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="text-center text-muted-foreground py-8"
+                    className="h-24 text-center text-muted-foreground"
                   >
-                    {clients?.find((c) => c.id === selectedClient)?.client_name}{" "}
-                    has all of the default prices.
+                    No special prices found for this client
                   </TableCell>
                 </TableRow>
               ) : selectedClient !== "default" ? (
-                sortData(specialProducts).map((product) => (
-                  <TableRow key={product.id} className="hover:bg-muted/50">
+                // Only show services that have special prices for the selected client
+                sortData(editableServices).filter((service) =>
+                  getClientPrice(service.id, selectedClient)
+                ).map((service) => (
+                  <TableRow key={service.id} className="hover:bg-muted/50">
                     {selectedClient !== "default" && (
                       <TableCell>
-                        {getClientPrice(product.id, selectedClient) && (
-                          <Checkbox
-                            checked={selectedProducts.includes(product.id)}
-                            onCheckedChange={(checked: boolean) =>
-                              handleSelectProduct(product.id, checked)
-                            }
-                          />
-                        )}
+                        <Checkbox
+                          checked={selectedProducts.includes(service.id)}
+                          onCheckedChange={(checked: boolean) =>
+                            handleSelectProduct(service.id, checked)
+                          }
+                        />
                       </TableCell>
                     )}
                     <TableCell className="font-medium">
-                      {product.default.name}
+                      {service.name}
                     </TableCell>
-                    <TableCell>{product.default.material.name}</TableCell>
+                    <TableCell>{service.material?.name}</TableCell>
                     {selectedClient !== "default" && (
                       <TableCell
                         className={cn(
                           "font-medium",
-                          getClientPrice(product.id, selectedClient) &&
+                          getClientPrice(service.id, selectedClient) &&
                             "text-green-600 dark:text-green-400"
                         )}
                       >
-                        ${product.price.toFixed(2)}
+                        ${getClientPrice(service.id, selectedClient)?.toFixed(2)}
                       </TableCell>
                     )}
-                    <TableCell>${product.default.price.toFixed(2)}</TableCell>
+                    <TableCell>${service.price.toFixed(2)}</TableCell>
                     <TableCell>
                       {selectedClient !== "default" &&
-                        getClientPrice(product.id, selectedClient) && (
+                        getClientPrice(service.id, selectedClient) && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -936,7 +942,7 @@ const ClientServicePricing = ({
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() =>
-                                  handleRemoveClientPrice(product.id)
+                                  handleRemoveClientPrice(service.id)
                                 }
                               >
                                 Remove New Price

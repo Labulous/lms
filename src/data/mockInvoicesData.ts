@@ -79,6 +79,10 @@ export interface Invoice {
     state: string;
     zipCode: string;
   };
+  tag?: {
+    name: string;
+    color: string;
+  };
   discounted_price?: any[];
   date?: string;
   dueDate?: string;
