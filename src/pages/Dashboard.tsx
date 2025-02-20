@@ -517,7 +517,7 @@ const Dashboard: React.FC = () => {
                 product_type: product.product_type,
               })),
               invoicesData: caseItem.invoicesData,
-              due_day: new Date(caseItem.due_date).getDate(),
+              // due_day: new Date(caseItem.due_date).getDate(),
             }));
 
             return {
