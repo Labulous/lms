@@ -2758,7 +2758,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           colSpan={2}
                           className="text-xs py-2 pl-4 pr-0 font-medium"
                         >
-                          ${caseDetail.invoice[0].due_amount}
+                          ${caseDetail.invoice[0]?.due_amount}
                         </TableCell>
 
                         <TableCell
@@ -2766,7 +2766,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           className="text-xs py-2 pl-4 pr-0 font-medium"
                         >
                           Total: $
-                          {caseDetail.invoice[0].amount?.toLocaleString()}
+                          {caseDetail?.invoice[0]?.amount?.toLocaleString()}
                         </TableCell>
                       </TableRow>
                     </TableBody>
