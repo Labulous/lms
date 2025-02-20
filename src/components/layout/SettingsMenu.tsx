@@ -21,7 +21,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ children }) => {
   const menuItems = [
     // { icon: Package, label: "Products & Services1", href: "/products-services" },
     { icon: Package, label: "Products & Services", href: "/material-selection" },
-    { icon: Users, label: "User Management", href: "/settings/users" },
+    { icon: Users, label: "User Management", href: "/settings/user-management" },
     { icon: CreditCard, label: "Billing Settings", href: "/settings/billing" },
     { icon: Database, label: "System Settings", href: "/settings/system" },
   ];
