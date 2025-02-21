@@ -490,16 +490,10 @@ const Dashboard: React.FC = () => {
             const month = eventDate.getMonth();
             const day = eventDate.getDate();
 
-            const start = new Date(Date.UTC(year, month, day, 0, 0, 0, 0)); // UTC start
-            const end = new Date(Date.UTC(year, month, day, 23, 59, 59, 999)); // UTC end
+            const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
+            const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
-            const today = new Date(
-              Date.UTC(
-                new Date().getUTCFullYear(),
-                new Date().getUTCMonth(),
-                new Date().getUTCDate()
-              )
-            );
+            const today = new Date();
             const isPastDue = eventDate < today;
 
             // Separate cases into "on_hold" and active cases
