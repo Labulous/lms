@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { DateRange } from "react-day-picker";
 import {
   Search,
   Eye,
@@ -67,10 +68,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/lib/supabase";
 import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EditInvoiceModal } from "./EditInvoiceModal";
 import { toast } from "react-hot-toast";
 import { DiscountedPrice, labDetail } from "@/types/supabase";
@@ -94,6 +95,7 @@ import {
 import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
 import { ExtendedCase } from "../cases/CaseDetails";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -164,7 +166,7 @@ const InvoiceList: React.FC = () => {
   });
   const [processingFeedback, setProcessingFeedback] = useState<string>("");
   const [dateFilter, setDateFilter] = useState<Date | undefined>();
-  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>();
+  const [dueDateRange, setDueDateRange] = useState<DateRange | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [statusFilter, setStatusFilter] = useState<Invoice["status"][]>([]);
   const [tagFilter, setTagFilter] = useState<string[]>([]);
@@ -917,7 +919,7 @@ const InvoiceList: React.FC = () => {
   }, [
     searchTerm,
     dateFilter,
-    dueDateFilter,
+    dueDateRange,
     statusFilter,
     tagFilter,
     caseFilter,
@@ -1202,20 +1204,49 @@ const InvoiceList: React.FC = () => {
     }
   };
 
-  const filterByDates = (invoices: Invoice[]) => {
-    return invoices.filter((invoice) => {
-      const matchesDate =
-        !dateFilter ||
-        (invoice.date &&
-          format(new Date(invoice.date), "yyyy-MM-dd") ===
-          format(dateFilter, "yyyy-MM-dd"));
-      const matchesDueDate =
-        !dueDateFilter ||
-        (invoice.dueDate &&
-          format(new Date(invoice.dueDate), "yyyy-MM-dd") ===
-          format(dueDateFilter, "yyyy-MM-dd"));
-      return matchesDate && matchesDueDate;
-    });
+  const getSortedAndPaginatedData = () => {
+    const data = searchTerm ? filteredInvoices : invoicesData;
+
+    // Apply date range filter
+    const dateRangeFiltered = dueDateRange
+      ? data.filter((invoice: any) => {
+          if (!invoice.invoice?.[0]?.due_date) return false;
+          const dueDate = new Date(invoice.invoice[0].due_date);
+          
+          if (dueDateRange.from && dueDateRange.to) {
+            return dueDate >= dueDateRange.from && dueDate <= dueDateRange.to;
+          } else if (dueDateRange.from) {
+            return dueDate >= dueDateRange.from;
+          } else if (dueDateRange.to) {
+            return dueDate <= dueDateRange.to;
+          }
+          return true;
+        })
+      : data;
+
+    // Apply status filter if any
+    const statusFiltered =
+      statusFilter.length > 0
+        ? dateRangeFiltered.filter((invoice: any) =>
+          statusFilter.includes(invoice?.invoice?.[0]?.status)
+        )
+        : dateRangeFiltered;
+
+    // Apply tag filter if any
+    const tagFiltered =
+      tagFilter.length > 0
+        ? statusFiltered.filter((invoice: any) =>
+          invoice?.tag && tagFilter.includes(invoice.tag.name)
+        )
+        : statusFiltered;
+
+    // Apply sorting
+    const sorted = sortData(tagFiltered);
+
+    // Get paginated data
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sorted.slice(startIndex, endIndex);
   };
 
   const getFilteredInvoices = () => {
@@ -1243,7 +1274,26 @@ const InvoiceList: React.FC = () => {
       );
     }
 
-    filtered = filterByDates(filtered);
+    filtered = filtered.filter((invoice) => {
+      const matchesDate =
+        !dateFilter ||
+        (invoice.date &&
+          format(new Date(invoice.date), "yyyy-MM-dd") ===
+          format(dateFilter, "yyyy-MM-dd"));
+        
+      const matchesDueDate = !dueDateRange || !invoice.invoice?.[0]?.due_date
+      ? true
+      : (dueDateRange.from && dueDateRange.to)
+      ? (new Date(invoice.invoice[0].due_date) >= dueDateRange.from &&
+         new Date(invoice.invoice[0].due_date) <= dueDateRange.to)
+      : dueDateRange.from
+      ? new Date(invoice.invoice[0].due_date) >= dueDateRange.from
+      : dueDateRange.to
+      ? new Date(invoice.invoice[0].due_date) <= dueDateRange.to
+      : true;
+
+      return matchesDate && matchesDueDate;
+    });
 
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
@@ -1262,34 +1312,6 @@ const InvoiceList: React.FC = () => {
     }
 
     return filtered;
-  };
-
-  const getSortedAndPaginatedData = () => {
-    const data = searchTerm ? filteredInvoices : invoicesData;
-
-    // Apply status filter if any
-    const statusFiltered =
-      statusFilter.length > 0
-        ? data.filter((invoice: any) =>
-          statusFilter.includes(invoice?.invoice?.[0]?.status)
-        )
-        : data;
-
-    // Apply tag filter if any
-    const tagFiltered =
-      tagFilter.length > 0
-        ? statusFiltered.filter((invoice: any) =>
-          invoice?.tag && tagFilter.includes(invoice.tag.name)
-        )
-        : statusFiltered;
-
-    // Apply sorting
-    const sorted = sortData(tagFiltered);
-
-    // Get paginated data
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sorted.slice(startIndex, endIndex);
   };
 
   const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -1941,8 +1963,39 @@ const InvoiceList: React.FC = () => {
                     onClick={() => handleSort("dueDate")}
                     className="cursor-pointer whitespace-nowrap"
                   >
-                    <div className="flex items-center">
-                      Due Date
+                    <div className="flex items-center gap-2">
+                      <span>Due Date</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={dueDateRange ? "secondary" : "ghost"}
+                            size="icon"
+                            className={cn(
+                              "h-8 w-8 p-0",
+                              dueDateRange && "bg-muted text-muted-foreground"
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation(); // Prevent sort trigger
+                            }}
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                            {dueDateRange && (
+                              <span className="sr-only">
+                                {dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} -{" "}
+                                {dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}
+                              </span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <div className="p-4">
+                            <DateRangePicker
+                              dateRange={dueDateRange}
+                              onDateRangeChange={setDueDateRange}
+                            />
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                       {getSortIcon("dueDate")}
                     </div>
                   </TableHead>

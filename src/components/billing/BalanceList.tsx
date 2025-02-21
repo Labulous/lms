@@ -12,6 +12,12 @@ import { BalanceTrackingItem } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 const BalanceList = () => {
   // State
@@ -19,7 +25,9 @@ const BalanceList = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [balaceList, setBalanceList] = useState<BalanceTrackingItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedClientInvoices, setSelectedClientInvoices] = useState<any[]>([]);
+  const [selectedClientName, setSelectedClientName] = useState("");
   const { user } = useAuth();
   const filteredBalances: BalanceTrackingItem[] = balaceList.filter(
     (balance) => {
@@ -66,6 +74,36 @@ const BalanceList = () => {
       minimumFractionDigits: 2,
     }).format(amount);
   };
+
+  // Function to fetch client invoices
+  const fetchClientInvoices = async (clientId: string, clientName: string) => {
+    try {
+      const { data: invoices, error } = await supabase
+        .from("invoices")
+        .select("*")
+        .eq("client_id", clientId)
+        .in("status", ["unpaid", "partially_paid"]);
+
+      if (error) {
+        console.error("Error fetching invoices:", error);
+        return;
+      }
+
+      // Transform the data to ensure numeric values
+      const transformedInvoices = invoices?.map(invoice => ({
+        ...invoice,
+        total_amount: Number(invoice.total_amount || 0),
+        amount_paid: Number(invoice.amount_paid || 0)
+      }));
+
+      setSelectedClientInvoices(transformedInvoices || []);
+      setSelectedClientName(clientName);
+      setDrawerOpen(true);
+    } catch (err) {
+      console.error("Error fetching client invoices:", err);
+    }
+  };
+
   useEffect(() => {
     const getPaymentList = async () => {
       setLoading(true);
@@ -121,6 +159,7 @@ const BalanceList = () => {
 
     getPaymentList();
   }, []);
+
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -155,10 +194,17 @@ const BalanceList = () => {
               <TableRow key={balance.id}>
                 <TableCell>{balance.client_name}</TableCell>
                 <TableCell className="text-center">
-                  {formatCurrency(balance.outstanding_balance)}
+                  <button
+                    onClick={() => fetchClientInvoices(balance.client_id, balance.client_name)}
+                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                  >
+                    {formatCurrency(balance.outstanding_balance)}
+                  </button>
                 </TableCell>
                 <TableCell
-                  className={`text-center`}
+                  className={`${
+                    balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
+                  } text-center`}
                 >
                   <div
                     className={`${
@@ -214,6 +260,43 @@ const BalanceList = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Invoice Details Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <TableHead>Outstanding</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedClientInvoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell>{invoice.invoice_number}</TableCell>
+                    <TableCell>
+                      {new Date(invoice.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.amount_paid)}</TableCell>
+                    <TableCell>
+                      {formatCurrency(invoice.total_amount - invoice.amount_paid)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
