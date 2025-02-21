@@ -535,6 +535,54 @@ class ClientsService {
       throw error;
     }
   }
+  async deleteUser(id: string): Promise<void> {
+    try {
+      // Archive related records in cases
+
+      const { data: clientData, error: clientDataError } = await supabase
+        .from("users")
+        .select(
+          `client:clients!id (
+          id
+          )`
+        )
+        .eq("id", id)
+        .single();
+      if (clientDataError) throw clientDataError;
+
+      const { error: archiveCasesError } = await supabase
+        .from("cases")
+        .update({ is_archive: true })
+        .eq("client_id", clientData?.client[0].id);
+
+      if (archiveCasesError) throw archiveCasesError;
+      const { error: usersUpdate } = await supabase
+        .from("users")
+        .update({ is_archive: true })
+        .eq("id", id);
+
+      if (usersUpdate) throw usersUpdate;
+
+      // Archive related records in special_service_prices
+      const { error: archivePricesError } = await supabase
+        .from("special_service_prices")
+        .update({ is_archive: true })
+        .eq("client_id", clientData?.client[0].id);
+
+      if (archivePricesError) throw archivePricesError;
+
+      // Archive the client
+      const { error } = await supabase
+        .from("clients")
+        .update({ is_archive: true })
+        .eq("client_id", clientData?.client[0].id);
+
+      if (error) throw error;
+    } catch (error) {
+      logger.error("Error archiving client", { id, error });
+      throw error;
+    }
+  }
 }
 
 export const clientsService = new ClientsService();

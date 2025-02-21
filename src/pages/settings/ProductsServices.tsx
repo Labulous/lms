@@ -140,17 +140,17 @@ const ProductsServices: React.FC = () => {
   const { data: products1, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-        .from("products")
-        .select(
-          `
+          .from("products")
+          .select(
+            `
     *,
     material:materials(name),
     product_type:product_types(name),
     billing_type:billing_types(name, label)
   `
-        )
-        .order("name")
-        .eq("lab_id", labIdData?.lab_id)
+          )
+          .order("name")
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -164,14 +164,14 @@ const ProductsServices: React.FC = () => {
   const { data: productTypes1, error: productTypesError } = useQuery(
     products1 && labIdData?.lab_id
       ? supabase
-        .from("product_types")
-        .select(
-          `
+          .from("product_types")
+          .select(
+            `
 *
       `
-        )
-        .order("name")
-        .eq("lab_id", labIdData?.lab_id)
+          )
+          .order("name")
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -185,15 +185,15 @@ const ProductsServices: React.FC = () => {
   const { data: servicesApi, error: servicesApiError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-        .from("services")
-        .select(
-          `
+          .from("services")
+          .select(
+            `
         *,
         material:materials(name)
       `
-        )
+          )
 
-        .eq("lab_id", labIdData?.lab_id)
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -204,14 +204,14 @@ const ProductsServices: React.FC = () => {
   const { data: materialsApi, error: materialsError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-        .from("materials")
-        .select(
-          `
+          .from("materials")
+          .select(
+            `
            *
           `
-        )
+          )
 
-        .eq("lab_id", labIdData?.lab_id)
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -554,8 +554,8 @@ const ProductsServices: React.FC = () => {
           aValue.toLowerCase() < bValue.toLowerCase()
             ? -1
             : aValue.toLowerCase() > bValue.toLowerCase()
-              ? 1
-              : 0;
+            ? 1
+            : 0;
         return sortConfig.direction === "asc" ? comparison : -comparison;
       }
 
@@ -572,13 +572,13 @@ const ProductsServices: React.FC = () => {
           ? aValue === bValue
             ? 0
             : aValue
-              ? -1
-              : 1
+            ? -1
+            : 1
           : aValue === bValue
-            ? 0
-            : aValue
-              ? 1
-              : -1;
+          ? 0
+          : aValue
+          ? 1
+          : -1;
       }
 
       // Handle string/number values
@@ -586,8 +586,8 @@ const ProductsServices: React.FC = () => {
         String(aValue).toLowerCase() < String(bValue).toLowerCase()
           ? -1
           : String(aValue).toLowerCase() > String(bValue).toLowerCase()
-            ? 1
-            : 0;
+          ? 1
+          : 0;
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   };
@@ -609,38 +609,48 @@ const ProductsServices: React.FC = () => {
     return Array.from(uniqueMaterials);
   }, [products]);
 
-
   // const filteredServices = useMemo(() => {
-  //   return services.filter(service => 
+  //   return services.filter(service =>
   //     service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
   //     (service.material?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   //   );
   // }, [services, searchTerm]);
 
-
   const filteredServices = useMemo(() => {
     let filtered = [...services];
 
     if (searchTerm) {
-      filtered = filtered.filter(service =>
-        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (service.material?.name ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (service) =>
+          service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (service.material?.name ?? "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
     }
 
     if (materialFilter.length > 0) {
-      filtered = filtered.filter(service =>
-        service.material?.name && materialFilter.includes(service.material.name)
+      filtered = filtered.filter(
+        (service) =>
+          service.material?.name &&
+          materialFilter.includes(service.material.name)
       );
     }
 
     return filtered;
   }, [services, searchTerm, materialFilter]);
 
-  console.log(materialsData, "materialsData");
+  console.log(filteredServices, "filteredServices");
 
   const [isServiceUploadOpen, setIsServiceUploadOpen] = useState(false);
+  useEffect(() => {
+    const urlParams = location.pathname + location.search;
 
+    if (urlParams.includes("products&")) {
+      const afterAmpersand = urlParams.split("products&")[1];
+      setMaterialFilter([afterAmpersand.split("%20").join(" ")]);
+    }
+  }, [location]);
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader
@@ -894,7 +904,9 @@ const ProductsServices: React.FC = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleEditClick(service)}>
+                            <DropdownMenuItem
+                              onClick={() => handleEditClick(service)}
+                            >
                               <Pencil className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
@@ -939,10 +951,11 @@ const ProductsServices: React.FC = () => {
           setItemsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${itemsToDelete[0] && "lead_time" in itemsToDelete[0]
-          ? "Product"
-          : "Service"
-          }`}
+        title={`Delete ${
+          itemsToDelete[0] && "lead_time" in itemsToDelete[0]
+            ? "Product"
+            : "Service"
+        }`}
         message={
           itemsToDelete.length === 1
             ? "Are you sure you want to delete this item? This action cannot be undone."
