@@ -485,7 +485,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         ];
         setStepData(steps);
       }
-      fetchCaseData(true);
+      // fetchCaseData(true);
       if (worksationTypesErrors) {
         setError(worksationTypesErrors?.message || "");
       } else {

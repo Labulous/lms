@@ -243,17 +243,21 @@ const ProductsServices: React.FC = () => {
 
   useEffect(() => {
     const urlParams = location.pathname + location.search; // Get full URL path + query
+
     if (urlParams.includes("products&")) {
-      const productsAfterAmpersand = urlParams.split("products&")[1];
+      const productsAfterAmpersand = decodeURIComponent(
+        urlParams.split("products&")[1]
+      );
       setActiveTab("products");
       setMaterialFilter([productsAfterAmpersand]);
     } else if (urlParams.includes("services&")) {
-      const servicesAfterAmpersand = urlParams.split("services&")[1];
+      const servicesAfterAmpersand = decodeURIComponent(
+        urlParams.split("services&")[1]
+      );
       setActiveTab("services");
       setMaterialFilter([servicesAfterAmpersand]);
     }
   }, [location]); // Run when the location changes
-
   const loadProductsAndTypes = async () => {
     try {
       //
@@ -645,12 +649,14 @@ const ProductsServices: React.FC = () => {
   const [isServiceUploadOpen, setIsServiceUploadOpen] = useState(false);
   useEffect(() => {
     const urlParams = location.pathname + location.search;
-
+    console.log(location, "location");
     if (urlParams.includes("products&")) {
       const afterAmpersand = urlParams.split("products&")[1];
       setMaterialFilter([afterAmpersand.split("%20").join(" ")]);
     }
-  }, [location]);
+  }, [location, materialFilter]);
+  console.log(materialFilter, "material");
+
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader

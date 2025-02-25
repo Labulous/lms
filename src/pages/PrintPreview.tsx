@@ -244,8 +244,13 @@ const PrintPreview = () => {
           };
         });
         return cases?.map((singleProps, index) => {
+          console.log(singleProps, "singleProps");
           return (
-            <LabSlipTemplate paperSize="LETTER" key={index} caseDetails={singleProps} />
+            <LabSlipTemplate
+              paperSize="LETTER"
+              key={index}
+              caseDetails={singleProps}
+            />
           );
         });
       } else {
@@ -283,7 +288,16 @@ const PrintPreview = () => {
       case "qr-code":
         return <QRCodeTemplate {...props} />;
       case "lab-slip":
-        return <LabSlipTemplate {...props} />;
+        return props.caseDetails?.map((singleProps, index) => {
+          console.log(singleProps, "singleProps");
+          return (
+            <LabSlipTemplate
+              paperSize="LETTER"
+              key={index}
+              caseDetails={singleProps}
+            />
+          );
+        });
       case "address-label":
         return <AddressLabelTemplate {...props} />;
       case "patient-label":
