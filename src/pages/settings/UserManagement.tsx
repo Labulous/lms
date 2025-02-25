@@ -492,14 +492,12 @@ export const UserManagement: React.FC = () => {
                                   </SelectItem>
                                 );
                               })}
-                            {user?.role == "super_admin" &&
-                              roles.super_admin.map((item, index) => {
-                                return (
-                                  <SelectItem key={index} value={item.role}>
-                                    {item.label}
-                                  </SelectItem>
-                                );
-                              })}
+                            {(user?.role as string) === "super_admin" &&
+                              roles.super_admin.map((item, index) => (
+                                <SelectItem key={index} value={item.role}>
+                                  {item.label}
+                                </SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
                       </div>
