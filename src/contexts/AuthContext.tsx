@@ -7,14 +7,14 @@ import React, {
   useRef,
 } from "react";
 import { supabase } from "../lib/supabase";
-import { getCurrentUser, CustomUser } from "../services/authService";
+import { getCurrentUser } from "../services/authService";
 import { createLogger } from "../utils/logger";
 import { Database } from "@/types/supabase";
 
 const logger = createLogger({ module: "AuthContext" });
 
 interface AuthContextType {
-  user: CustomUser | null;
+  user: Database["public"]["Tables"]["users"]["Row"] | null;
   loading: boolean;
   error: Error | null;
   signOut: () => Promise<void>;
@@ -28,17 +28,18 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const useAuth = () => useContext(AuthContext);
-type User = Database["public"]["Tables"]["users"]["Row"];
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<
+    Database["public"]["Tables"]["users"]["Row"] | null
+  >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const mounted = useRef(true);
   const initializationComplete = useRef(false);
-  const fetchingUserData = useRef(false);
+  const [initialized, setInitialized] = useState(false);
 
   const handleError = useCallback((error: unknown, context: string) => {
     if (!mounted.current) return;
@@ -50,9 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const fetchUserData = useCallback(async () => {
-    if (!mounted.current || fetchingUserData.current) return;
+    if (!mounted.current) return;
 
-    fetchingUserData.current = true;
     try {
       logger.debug("Fetching user data");
       const {
@@ -75,9 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         userId: authUser.id,
       });
       const userData = await getCurrentUser();
-
       if (!mounted.current) return;
-
       if (userData) {
         logger.info("User data retrieved successfully", {
           userId: userData.id,
@@ -96,56 +94,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (mounted.current) {
         setLoading(false);
       }
-      fetchingUserData.current = false;
     }
   }, [handleError]);
 
   const handleAuthChange = useCallback(
     async (event: string, session: any) => {
-      if (
-        !mounted.current ||
-        (initializationComplete.current && event === "INITIAL_SESSION")
-      ) {
-        logger.debug("Skipping auth change", {
-          event,
-          isInitialized: initializationComplete.current,
-          isMounted: mounted.current,
-        });
-        return;
-      }
+      if (!mounted.current) return;
 
       logger.debug("Processing auth change", {
         event,
         userId: session?.user?.id,
         hasUser: !!user,
-        isInitialized: initializationComplete.current,
       });
 
-      switch (event) {
-        case "SIGNED_IN":
-        case "INITIAL_SESSION":
-          if (session) {
-            setLoading(true);
-            await fetchUserData();
-          } else if (event === "INITIAL_SESSION") {
-            setLoading(false);
-          }
-          break;
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && !user) {
+        await fetchUserData();
+      }
 
-        case "SIGNED_OUT":
-        case "USER_DELETED":
-          setUser(null);
-          setLoading(false);
-          break;
-
-        case "TOKEN_REFRESHED":
-          if (session) {
-            await fetchUserData();
-          }
-          break;
-
-        default:
-          logger.debug(`Unhandled auth event: ${event}`);
+      if (event === "SIGNED_OUT" || event === "USER_DELETED") {
+        setUser(null);
+        setLoading(false);
       }
     },
     [fetchUserData, user]
@@ -154,13 +122,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     logger.debug("Initializing AuthContext");
     mounted.current = true;
-    let authListener: any;
 
     const initialize = async () => {
-      if (initializationComplete.current) {
-        logger.debug("Already initialized");
-        return;
-      }
+      if (initialized || initializationComplete.current) return;
 
       try {
         const {
@@ -170,11 +134,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (error) throw error;
 
-        await handleAuthChange("INITIAL_SESSION", session);
+        if (session) {
+          await handleAuthChange("INITIAL_SESSION", session);
+        } else {
+          setLoading(false);
+        }
       } catch (error) {
         handleError(error, "Failed to get initial session");
       } finally {
         initializationComplete.current = true;
+        setInitialized(true); // Ensure it does not run again
       }
     };
 
@@ -182,20 +151,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event !== "INITIAL_SESSION") {
-        handleAuthChange(event, session);
-      }
-    });
-
-    authListener = subscription;
+    } = supabase.auth.onAuthStateChange(handleAuthChange);
 
     return () => {
       logger.debug("AuthProvider cleanup");
       mounted.current = false;
-      authListener?.unsubscribe();
+      subscription?.unsubscribe();
     };
-  }, [handleAuthChange, handleError]);
+  }, [handleAuthChange, handleError, initialized]);
 
   const signOut = async () => {
     if (!mounted.current) return;
