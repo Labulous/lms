@@ -1613,6 +1613,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 </span>
                                 <input
                                   type="checkbox"
+                                  checked={row.isServicesAll}
                                   className="  cursor-pointer"
                                   onClick={
                                     () => {
