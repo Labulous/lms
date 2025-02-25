@@ -18,6 +18,7 @@ export interface Doctor {
   phone: string;
   email: string;
   notes: string;
+  order: number;
 }
 
 export interface Client {
@@ -122,6 +123,7 @@ class ClientsService {
           phone: doctor.phone,
           email: doctor.email,
           notes: doctor.notes || "",
+          order: doctor.order,
         })),
         created_at: client.created_at,
         updated_at: client.updated_at,
@@ -175,6 +177,7 @@ class ClientsService {
       phone: doctor.phone,
       email: doctor.email,
       notes: doctor.notes,
+      order: doctor.order,
     };
   }
 
@@ -428,12 +431,12 @@ class ClientsService {
         // Compare current doctors with new doctors to see if we need to update
         const currentDoctorsSet = new Set(
           currentDoctors.map(
-            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}|${d.order}`
           )
         );
         const newDoctorsSet = new Set(
           clientData.doctors.map(
-            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}|${d.order}`
           )
         );
 

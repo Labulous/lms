@@ -87,6 +87,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         email: doctor.email,
         phone: doctor.phone,
         notes: doctor.notes ?? "",
+        order: doctor.order ?? 1,
       })),
     });
     isFirst ? null : setIsEditing(true);
@@ -144,7 +145,13 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
       if (!prev) return null;
       const updatedDoctors = [...(prev.doctors || [])];
       if (!updatedDoctors[index]) {
-        updatedDoctors[index] = { name: "", email: "", phone: "", notes: "" };
+        updatedDoctors[index] = {
+          name: "",
+          email: "",
+          phone: "",
+          notes: "",
+          order: index + 1,
+        };
       }
       updatedDoctors[index] = { ...updatedDoctors[index], [field]: value };
       return {
@@ -161,7 +168,13 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
         ...prev,
         doctors: [
           ...(prev.doctors || []),
-          { name: "", email: "", phone: "", notes: "" },
+          {
+            name: "",
+            email: "",
+            phone: "",
+            notes: "",
+            order: (prev.doctors?.length || 0) + 1,
+          },
         ],
       };
     });
@@ -196,7 +209,6 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     setIsEditing(false);
     setEditedData(null);
   };
-  console.log(editedData, "Form");
 
   const handleOtherEmail = (
     index: number,
@@ -250,7 +262,11 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           <div className="space-x-2">
             {!isEditing ? (
               <>
-                <Button variant="outline" size="sm" onClick={()=> handleEditClick()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditClick()}
+                >
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
@@ -419,13 +435,15 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                         onClick={addOtherEmail}
                         className="mt-6 bg-blue-500 text-white px-2 py-2 rounded"
                       >
-                        Add Other Email 
+                        Add Other Email
                       </button>
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Additional Notes</Label>
+                  <Label className="text-sm font-medium">
+                    Additional Notes
+                  </Label>
                   <Textarea
                     name="notes"
                     value={
@@ -561,7 +579,10 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                           }}
                           className="h-4 w-4 rounded border-gray-300"
                         />
-                        <Label htmlFor="sameAsDelivery" className="text-sm font-normal text-muted-foreground">
+                        <Label
+                          htmlFor="sameAsDelivery"
+                          className="text-sm font-normal text-muted-foreground"
+                        >
                           Same as Delivery Address
                         </Label>
                       </div>
@@ -573,13 +594,13 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                         zipCode: client.billingAddress.zipCode,
                         country: client.billingAddress.country,
                       }) ===
-                      JSON.stringify({
-                        street: client.address.street,
-                        city: client.address.city,
-                        state: client.address.state,
-                        zipCode: client.address.zipCode,
-                        country: client.address.country,
-                      }) && (
+                        JSON.stringify({
+                          street: client.address.street,
+                          city: client.address.city,
+                          state: client.address.state,
+                          zipCode: client.address.zipCode,
+                          country: client.address.country,
+                        }) && (
                         <span className="text-sm text-muted-foreground">
                           (Same as Delivery Address)
                         </span>
