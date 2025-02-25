@@ -1142,34 +1142,36 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
         .join("")}`;
     };
 
-    const services = Object?.values(
-      teeth?.service?.reduce(
-        (
-          acc: any,
-          {
-            service,
-            teeth_number,
-          }: { service: { name: string }; teeth_number: number[] }
-        ) => {
-          const serviceName = service.name;
+    const services = teeth?.service
+      ? Object.values(
+          teeth.service.reduce(
+            (
+              acc: Record<string, { name: string; teeth: number[] }>,
+              {
+                service,
+                teeth_number,
+              }: { service: { name: string }; teeth_number: number[] }
+            ) => {
+              const serviceName = service.name;
 
-          if (!acc[serviceName]) {
-            acc[serviceName] = {
-              name: serviceName,
-              teeth: [],
-            };
-          }
+              if (!acc[serviceName]) {
+                acc[serviceName] = {
+                  name: serviceName,
+                  teeth: [],
+                };
+              }
 
-          // Merge teeth numbers and remove duplicates
-          acc[serviceName].teeth = [
-            ...new Set([...acc[serviceName].teeth, ...teeth_number]),
-          ];
+              // Merge teeth numbers and remove duplicates
+              acc[serviceName].teeth = Array.from(
+                new Set([...acc[serviceName].teeth, ...teeth_number])
+              );
 
-          return acc;
-        },
-        {}
-      )
-    );
+              return acc;
+            },
+            {} as Record<string, { name: string; teeth: number[] }>
+          )
+        )
+      : [];
 
     const groupShades: any = Object.values(
       teethproducts?.reduce((acc: any, product: any) => {
@@ -1724,8 +1726,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${item.products.length} gap-0`}>
-              {item.products.map((teeth: any, index: number) => {
+            <div className={`grid grid-cols-${item?.products?.length} gap-0`}>
+              {item?.products?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
                     <div className="border border-gray-300">

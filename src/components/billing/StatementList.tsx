@@ -244,7 +244,7 @@ const StatementList = ({ statement }: StatementList) => {
     };
     fetchClients();
     setFilteredStatements(statement);
-  }, []);
+  }, [statement]);
 
   const handleMonthChange = (e: any) => {
     setSelectMonth(e);

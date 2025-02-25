@@ -503,7 +503,6 @@ const ClientServicePricing = ({
       return 0;
     });
   };
-  console.log(isLoading, "loading");
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">

@@ -792,31 +792,57 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     });
   };
 
-  const handleRemoveServices = (id: string) => {
-    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      let updatedProducts = prevSelectedProducts.map((product) => {
-        // Remove the service from the main services array
-        const updatedServices =
-          product.services?.filter((service) => service.id !== id) || [];
+  const handleRemoveServices = (
+    id: string,
+    isMain: boolean,
+    isSubIndex?: number
+  ) => {
+    console.log(isSubIndex, "isSub");
+    if (!isMain) {
+      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+        let updatedProducts = prevSelectedProducts.map((product) => {
+          // Remove the service from the main services array
+          console.log(product, "product", id);
+          const updatedMainServices =
+            product.mainServices?.filter((service) => service.id !== id) || [];
 
-        // Remove the service from subRows' services array
-        const updatedSubRows = product.subRows?.map((subRow) => {
           return {
-            ...subRow,
-            services:
-              subRow.services?.filter((service) => service.id !== id) || [],
+            ...product,
+            mainServices: updatedMainServices, // Update the main services array
           };
         });
 
-        return {
-          ...product,
-          services: updatedServices, // Update the main services array
-          subRows: updatedSubRows, // Update the subRows with the modified services
-        };
+        return updatedProducts;
       });
+    } else {
+      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+        let updatedProducts = prevSelectedProducts.map((product) => {
+          // Remove the service from the main services array
+          const updatedServices =
+            product.services?.filter((service) => service.id !== id) || [];
 
-      return updatedProducts;
-    });
+          // Remove the service from subRows' services array
+          const updatedSubRows = product.subRows?.map((subRow, index) => {
+            if (index === isSubIndex) {
+              return {
+                ...subRow,
+                services:
+                  subRow.services?.filter((service) => service.id !== id) || [],
+              };
+            }
+            return subRow; // Keep other subRows unchanged
+          });
+
+          return {
+            ...product,
+            services: updatedServices, // Update the main services array
+            subRows: updatedSubRows, // Update the subRows with the modified services
+          };
+        });
+
+        return updatedProducts;
+      });
+    }
   };
 
   const handleProductSubSelect = (
@@ -1538,16 +1564,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             onClick={() => toggleServicesPopover(index)}
                           >
                             {row.isServicesAll ? (
-                              row?.services?.length === 0
-                            ) : row.mainServices?.length === 0 ||
-                              !row?.services ? (
+                              row?.services?.length === 0 || !row?.services ? (
+                                "Add Services"
+                              ) : (
+                                <span className="text-blue-600">
+                                  {row?.services?.length} Services Added
+                                </span>
+                              )
+                            ) : row?.mainServices?.length === 0 ||
+                              !row?.mainServices ? (
                               "Add Services"
                             ) : (
                               <span className="text-blue-600">
-                                {row.isServicesAll
-                                  ? row?.services?.length
-                                  : row?.mainServices?.length}{" "}
-                                Services Added
+                                {row?.mainServices?.length} Services Added
                               </span>
                             )}
                           </Button>
@@ -1576,12 +1605,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <div className="flex justify-between w-full">
                               <Label className="text-xs">Add Services</Label>
 
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant={
-                                    !row.isServicesAll ? "outline" : "default"
-                                  }
+                              <div className="flex gap-2">
+                                <span
+                                  className={`text-sm flex justify-center items-center`}
+                                >
+                                  Add to All
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  className="  cursor-pointer"
                                   onClick={
                                     () => {
                                       setselectedProducts(
@@ -1630,11 +1662,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     //   return updated;
                                     // })
                                   }
-                                >
-                                  {!row.isServicesAll
-                                    ? "Add to All"
-                                    : "Remove from All"}{" "}
-                                </Button>
+                                ></input>
                                 <Button
                                   size="sm"
                                   onClick={() =>
@@ -1683,7 +1711,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           <X
                                             onClick={() =>
                                               handleRemoveServices(
-                                                item.id as string
+                                                item.id as string,
+                                                true
                                               )
                                             }
                                             className="w-4 h-4 text-red-500 cursor-pointer"
@@ -1701,7 +1730,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                           <X
                                             onClick={() =>
                                               handleRemoveServices(
-                                                item.id as string
+                                                item.id as string,
+                                                false
                                               )
                                             }
                                             className="w-4 h-4 text-red-500 cursor-pointer"
@@ -3213,7 +3243,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             <X
                                               onClick={() =>
                                                 handleRemoveServices(
-                                                  item.id as string
+                                                  item.id as string,
+                                                  true,
+                                                  originalIndex
                                                 )
                                               }
                                               className="w-4 h-4 text-red-500 cursor-pointer"
@@ -4142,7 +4174,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             const updated = new Map(prev);
                                             // Set all values in the Map to false
                                             updated.forEach((_, key) => {
-                                              updated.set( subIndex + index + 100, false);
+                                              updated.set(
+                                                subIndex + index + 100,
+                                                false
+                                              );
                                             });
 
                                             return updated;

@@ -41,7 +41,6 @@ const Statements = () => {
   const fetchStatements = async () => {
     setIsLoading(true);
     setRefresh(false);
-
     console.log("use effect running!!!");
     try {
       // Get the lab ID associated with the current user

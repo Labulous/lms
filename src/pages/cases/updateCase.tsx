@@ -328,11 +328,7 @@ const UpdateCase: React.FC = () => {
           )
           .eq("id", caseId)
           .single()
-      : null, // Fetching a single record based on `activeCaseId`
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-    }
+      : null // Fetching a single record based on `activeCaseId`
   );
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
@@ -693,7 +689,8 @@ const UpdateCase: React.FC = () => {
                 ? true
                 : false;
             groupedProducts[productId].mainServices =
-              caseDataApi?.common_services?.filter(
+              caseDataApi?.common_services
+                ?.filter(
                   (service: { teeth: number[]; services: string[] }) =>
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
@@ -715,9 +712,8 @@ const UpdateCase: React.FC = () => {
                     return {
                       id: serviceData?.id,
                       name: serviceData?.name,
-                      is_taxable:serviceData?.is_taxable,
-                      price:serviceData?.price,
-
+                      is_taxable: serviceData?.is_taxable,
+                      price: serviceData?.price,
                     };
                   });
                 })

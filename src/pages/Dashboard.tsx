@@ -486,9 +486,9 @@ const Dashboard: React.FC = () => {
         const events: CalendarEvents[] = Object.entries(groupedCases).map(
           ([date, cases]) => {
             const eventDate = new Date(date);
-            const year = eventDate.getFullYear();
-            const month = eventDate.getMonth();
-            const day = eventDate.getDate();
+            const year = eventDate.getUTCFullYear();
+            const month = eventDate.getUTCMonth();
+            const day = eventDate.getUTCDate();
 
             const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
             const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end

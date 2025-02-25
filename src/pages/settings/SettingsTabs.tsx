@@ -25,7 +25,7 @@ const tabs = [
     href: "/settings/case-workflow",
   },
   { id: "working-tags", label: "Working Tags", href: "/settings/working-tags" },
-  { id: "working-pans", label: "Working Pans", href: "/settings/working-pans" },
+  // { id: "working-pans", label: "Working Pans", href: "/settings/working-pans" },
   {
     id: "user-management",
     label: "User Management",
