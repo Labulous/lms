@@ -664,7 +664,13 @@ const CaseList: React.FC = () => {
             dateObj.getUTCMilliseconds() // Get the milliseconds in UTC
           )
         );
-        console.log(dueDateUtc, "hi", new Date(dueDate).toUTCString(), value, "dueDateUtc");
+        console.log(
+          dueDateUtc,
+          "hi",
+          new Date(dueDate).toUTCString(),
+          value,
+          "dueDateUtc"
+        );
         if (!dueDate) return false;
         const rowDate = new Date(dueDateUtc);
         console.log(rowDate, "rowDate");
@@ -1045,31 +1051,15 @@ const CaseList: React.FC = () => {
     console.log(filter, "filter");
     if (filter) {
       // Get today's date in UTC at midnight
-      const today = new Date(
-        Date.UTC(
-          new Date().getUTCFullYear(),
-          new Date().getUTCMonth(),
-          new Date().getUTCDate()
-        )
-      );
-      const todayUTC = Date.UTC(
-        today.getUTCFullYear(),
-        today.getUTCMonth(),
-        today.getUTCDate()
-      );
+      const today = new Date();
+      const todayUTC = new Date();
 
       // Calculate tomorrow's date in UTC
-      const tomorrowUTC = todayUTC + 24 * 60 * 60 * 1000; // Add one day in milliseconds
       const tomorrow = new Date(today);
       tomorrow.setUTCDate(today.getUTCDate() + 1);
       const filteredCases = cases.filter((caseItem) => {
         const dueDate = new Date(caseItem.due_date);
 
-        const dueDateUTC = Date.UTC(
-          dueDate.getUTCFullYear(),
-          dueDate.getUTCMonth(),
-          dueDate.getUTCDate()
-        );
 
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
@@ -1081,11 +1071,11 @@ const CaseList: React.FC = () => {
         };
         // Set the start and end of today to compare full date range
         const startOfToday = new Date(today);
-        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+        startOfToday.setHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
 
         // End of today in UTC (11:59:59.999 PM UTC)
         const endOfToday = new Date(today);
-        endOfToday.setUTCHours(23, 59, 59, 999); //
+        endOfToday.setHours(23, 59, 59, 999); //
 
         const isDueToday = (dueDate: string) => {
           const due = new Date(dueDate);
@@ -1094,7 +1084,7 @@ const CaseList: React.FC = () => {
 
         switch (filter) {
           case "past_due":
-            return dueDateUTC < todayUTC && caseItem.status !== "completed";
+            return dueDate < todayUTC && caseItem.status !== "completed";
           case "due_today":
             return (
               isDueToday(caseItem.due_date) && caseItem.status !== "completed"
