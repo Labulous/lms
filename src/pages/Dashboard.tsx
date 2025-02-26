@@ -280,26 +280,20 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         // Get today's date in UTC
-        const today = new Date(
-          Date.UTC(
-            new Date().getUTCFullYear(),
-            new Date().getUTCMonth(),
-            new Date().getUTCDate()
-          )
-        );
+        const today = new Date();
 
         // Get tomorrow's date in UTC
         const tomorrow = new Date(today);
-        tomorrow.setUTCDate(today.getUTCDate() + 1); // Set tomorrow's date in UTC
+        tomorrow.setHours(today.getDate() + 1); // Set tomorrow's date in UTC
         // Set tomorrow's date
 
         // Set the start and end of today to compare full date range
         const startOfToday = new Date(today);
-        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+        startOfToday.setHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
 
         // End of today in UTC (11:59:59.999 PM UTC)
         const endOfToday = new Date(today);
-        endOfToday.setUTCHours(23, 59, 59, 999); //
+        endOfToday.setHours(23, 59, 59, 999); //
 
         // Function to check if a date is due today
         const isDueToday = (dueDate: string) => {
@@ -311,7 +305,7 @@ const Dashboard: React.FC = () => {
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
           return (
-            due.getDate() === tomorrow.getDate() &&
+            due.getDay() === tomorrow.getDay() &&
             due.getMonth() === tomorrow.getMonth() &&
             due.getFullYear() === tomorrow.getFullYear()
           );
