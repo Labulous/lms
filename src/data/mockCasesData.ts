@@ -161,13 +161,13 @@ const saveCaseProduct = async (
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
-              product.shades.occlusal_shade !== "manual" &&
-              product.shades.custom_occlusal_shade !== ""
-                ? product.shades.occlusal_shade
+              product?.shades?.occlusal_shade !== "manual" &&
+              product?.shades?.custom_occlusal_shade !== ""
+                ? product?.shades?.occlusal_shade
                 : null,
             body_shade_id:
               product.shades.body_shade !== "manual" &&
-              product.shades.custom_body_shade !== ""
+              product?.shades?.custom_body_shade !== ""
                 ? product.shades.body_shade
                 : null,
             gingival_shade_id:
@@ -586,25 +586,63 @@ const updateCases = async (
       console.log("Case products updated successfully:", caseProductData);
     }
 
-    const { error: deleteCaseProductTeethError } = await supabase
-      .from("case_product_teeth")
-      .delete()
-      .eq("case_id", caseId);
+    // Fetch existing case products first
+    const { data: existingCaseProducts, error: fetchCaseProductsError } =
+      await supabase
+        .from("case_product_teeth")
+        .select("id")
+        .eq("case_id", caseId);
 
-    if (deleteCaseProductTeethError) {
-      toast.error("Faild to remove existing case products");
+    if (fetchCaseProductsError) {
+      toast.error("Failed to fetch existing case products");
+      return; // Exit the function if there is an error fetching
     }
-    const { data: discountedPrices, error: discountedPricesError } =
-      await supabase.from("discounted_prices").delete().eq("case_id", caseId);
 
-    if (discountedPrices) {
-      const { error: dicountedPriceError } = await supabase
-        .from("discounted_prices")
+    // Check if there are any existing case products
+    if (existingCaseProducts && existingCaseProducts.length > 0) {
+      // Proceed to delete if products are found
+      const { error: deleteCaseProductTeethError } = await supabase
+        .from("case_product_teeth")
         .delete()
         .eq("case_id", caseId);
 
-      if (dicountedPriceError) {
-        toast.error("Faild to remove existing prices");
+      if (deleteCaseProductTeethError) {
+        toast.error("Failed to remove existing case products");
+      } else {
+        console.log("Case products successfully removed");
+      }
+    } else {
+    }
+
+    const { data: discountedPrices, error: discountedPricesError } =
+      await supabase.from("discounted_price").delete().eq("case_id", caseId);
+
+    if (discountedPrices) {
+      // Fetch existing discounted prices for the given caseId first
+      const { data: existingPrices, error: fetchError } = await supabase
+        .from("discounted_price")
+        .select("id")
+        .eq("case_id", caseId);
+
+      if (fetchError) {
+        toast.error("Failed to fetch existing prices");
+        return; // Exit the function if there is an error fetching
+      }
+
+      // Check if there are any existing discounted prices
+      if (existingPrices && existingPrices.length > 0) {
+        // Proceed to delete if prices are found
+        const { error: dicountedPriceError } = await supabase
+          .from("discounted_price")
+          .delete()
+          .eq("case_id", caseId);
+
+        if (dicountedPriceError) {
+          toast.error("Failed to remove existing prices");
+        } else {
+          toast.success("Prices successfully removed");
+        }
+      } else {
       }
     }
 
@@ -625,33 +663,33 @@ const updateCases = async (
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
-              product.shades.occlusal_shade !== "manual" &&
-              product.shades.custom_occlusal_shade !== ""
-                ? product.shades.occlusal_shade
+              product?.shades?.occlusal_shade !== "manual" &&
+              product?.shades?.custom_occlusal_shade !== ""
+                ? product?.shades?.occlusal_shade
                 : null,
             body_shade_id:
-              product.shades.body_shade !== "manual" &&
-              product.shades.custom_body_shade !== ""
-                ? product.shades.body_shade
+              product?.shades?.body_shade !== "manual" &&
+              product?.shades?.custom_body_shade !== ""
+                ? product?.shades?.body_shade
                 : null,
             gingival_shade_id:
-              product.shades.gingival_shade !== "manual" &&
-              product.shades.custom_gingival_shade !== ""
-                ? product.shades.gingival_shade
+              product?.shades?.gingival_shade !== "manual" &&
+              product?.shades?.custom_gingival_shade !== ""
+                ? product?.shades?.gingival_shade
                 : null,
             stump_shade_id:
-              product.shades.stump_shade !== "manual" &&
-              product.shades.custom_stump_shade !== ""
-                ? product.shades.stump_shade
+              product.shades?.stump_shade !== "manual" &&
+              product.shades?.custom_stump_shade !== ""
+                ? product?.shades?.stump_shade
                 : null,
-            manual_body_shade: product?.shades.manual_body || null,
-            manual_occlusal_shade: product?.shades.manual_occlusal || null,
-            manual_gingival_shade: product?.shades.manual_gingival || null,
-            manual_stump_shade: product?.shades.manual_stump || null,
-            custom_body_shade: product?.shades.custom_body || null,
-            custom_occlusal_shade: product?.shades.custom_occlusal || null,
-            custom_gingival_shade: product?.shades.custom_gingival || null,
-            custom_stump_shade: product?.shades.custom_stump || null,
+            manual_body_shade: product?.shades?.manual_body || null,
+            manual_occlusal_shade: product?.shades?.manual_occlusal || null,
+            manual_gingival_shade: product?.shades?.manual_gingival || null,
+            manual_stump_shade: product?.shades?.manual_stump || null,
+            custom_body_shade: product?.shades?.custom_body || null,
+            custom_occlusal_shade: product?.shades?.custom_occlusal || null,
+            custom_gingival_shade: product?.shades?.custom_gingival || null,
+            custom_stump_shade: product?.shades?.custom_stump || null,
             notes: product.notes || "",
             case_id: caseId,
           };
