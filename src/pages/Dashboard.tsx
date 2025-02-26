@@ -466,12 +466,13 @@ const Dashboard: React.FC = () => {
         //   },
         //   {}
         // );
-
+        console.log(casesList, "casesList");
         const groupedCases = casesList.reduce(
           (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
             if (
               ["in_queue", "in_progress", "on_hold"].includes(caseItem.status)
             ) {
+              console.log(caseItem.due_date, "caseItem.due_date");
               const dueDate = new Date(caseItem.due_date)
                 .toISOString()
                 .split("T")[0];
@@ -486,10 +487,11 @@ const Dashboard: React.FC = () => {
         const events: CalendarEvents[] = Object.entries(groupedCases).map(
           ([date, cases]) => {
             const eventDate = new Date(date);
-            const year = eventDate.getUTCFullYear();
-            const month = eventDate.getUTCMonth();
-            const day = eventDate.getUTCDate();
-
+            const year = eventDate.getFullYear();
+            const month = eventDate.getMonth();
+            const day = eventDate.getDate();
+            console.log(cases, "casescases");
+            // Ensure start and end times are in UTC
             const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
             const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
