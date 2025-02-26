@@ -472,12 +472,22 @@ const Dashboard: React.FC = () => {
             if (
               ["in_queue", "in_progress", "on_hold"].includes(caseItem.status)
             ) {
-              console.log(caseItem.due_date, "caseItem.due_date");
-              const dueDate = new Date(caseItem.due_date)
-                .toISOString()
-                .split("T")[0];
-              acc[dueDate] = acc[dueDate] || [];
-              acc[dueDate].push(caseItem);
+              const dueDate = new Date(caseItem.due_date);
+
+              // Get UTC date components
+              const year = dueDate.getUTCFullYear();
+              const month = dueDate.getUTCMonth() + 1; // Months are zero-based
+              const day = dueDate.getUTCDate();
+
+              // Format as YYYY-MM-DD (UTC)
+              const dueDateUTC = `${year}-${month
+                .toString()
+                .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+
+              console.log(caseItem.due_date, dueDateUTC, "caseItem.due_date");
+
+              acc[dueDateUTC] = acc[dueDateUTC] || [];
+              acc[dueDateUTC].push(caseItem);
             }
             return acc;
           },
@@ -487,13 +497,27 @@ const Dashboard: React.FC = () => {
         const events: CalendarEvents[] = Object.entries(groupedCases).map(
           ([date, cases]) => {
             const eventDate = new Date(date);
-            const year = eventDate.getFullYear();
-            const month = eventDate.getMonth();
-            const day = eventDate.getDate();
+            console.log(eventDate, "eventDate");
+            // const year = eventDate.getFullYear();
+            // const month = eventDate.getMonth();
+            // const day = eventDate.getDate();
             console.log(cases, "casescases");
             // Ensure start and end times are in UTC
-            const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
-            const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
+            const [year, month, day] = date.split("-").map(Number);
+
+            // Ensure start and end times are in UTC
+            const start = new Date(
+              `${year}-${month.toString().padStart(2, "0")}-${day
+                .toString()
+                .padStart(2, "0")}T00:00:00.000Z`
+            ); // 12 AM UTC
+            const end = new Date(
+              `${year}-${month.toString().padStart(2, "0")}-${day
+                .toString()
+                .padStart(2, "0")}T00:00:00.000Z`
+            );
+            // const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
+            // const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
             const today = new Date();
             const isPastDue = eventDate < today;
