@@ -2183,7 +2183,7 @@ export const StatementReceiptTemplate: React.FC<
       ?.filter((transaction: any) => transaction.type === "I")
       ?.reduce((total: any, item: any) => total + (item.amount || 0), 0);
 
-    const total_due_amount = totalInvoice - totalPayment + previousBalance;
+    const total_due_amount = totalInvoice - totalPayment;
 
     return (
       <div className="w-[600px] mx-auto p-8 bg-white border text-xs border-gray-300">
@@ -2340,15 +2340,15 @@ export const StatementReceiptTemplate: React.FC<
           </table>
         </div>
         <div className="mt-4 border-t border-gray-500 pt-3 text-xs text-right">
-          <p>
+          {/* <p>
             <strong>Previous Balance : </strong> ${previousBalance.toFixed(2)}
-          </p>
+          </p> */}
           <p>
             <strong>Payments : </strong> ${totalPayment.toFixed(2)}
           </p>
-          <p>
+          {/* <p>
             <strong>Current : </strong> ${total_due_amount.toFixed(2)}
-          </p>
+          </p> */}
           <p className="font-bold">
             Amount Due : ${total_due_amount.toFixed(2)}
           </p>
