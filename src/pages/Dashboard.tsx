@@ -503,16 +503,12 @@ const Dashboard: React.FC = () => {
             const [year, month, day] = date.split("-").map(Number);
 
             // Ensure start and end times are in UTC
-            const start = new Date(
-              `${year}-${month.toString().padStart(2, "0")}-${day
-                .toString()
-                .padStart(2, "0")}T00:00:00.000Z`
-            ); // 12 AM UTC
-            const end = new Date(
-              `${year}-${month.toString().padStart(2, "0")}-${day
-                .toString()
-                .padStart(2, "0")}T00:00:00.000Z`
-            );
+            const start = new Date(year, month - 1, day, 0, 0, 0, 0); // 12 AM UTC
+            const end = new Date(year, month - 1, day, 0, 0, 0, 0); // 11:59 PM UTC
+            
+            console.log("Start:", start.toISOString()); // This should always show the correct UTC date
+            console.log("End:", end.toISOString());
+            
             // const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
             // const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
