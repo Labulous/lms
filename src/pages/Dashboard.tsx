@@ -468,15 +468,18 @@ const Dashboard: React.FC = () => {
             ) {
               const dueDate = new Date(caseItem.due_date);
 
-              // Get UTC date components
+              // Force UTC to 12 AM
               const year = dueDate.getUTCFullYear();
-              const month = dueDate.getUTCMonth() + 1; // Months are zero-based
+              const month = dueDate.getUTCMonth() ; // Zero-based, keep as is
               const day = dueDate.getUTCDate();
 
+              // Create a fixed UTC date with 12 AM
+              const fixedUTCDate = new Date(
+                Date.UTC(year, month, day, 0, 0, 0, 0)
+              );
+
               // Format as YYYY-MM-DD (UTC)
-              const dueDateUTC = `${year}-${month
-                .toString()
-                .padStart(2, "0")}-${day.toString().padStart(2, "0")}`;
+              const dueDateUTC = fixedUTCDate.toISOString().split("T")[0];
 
               console.log(caseItem.due_date, dueDateUTC, "caseItem.due_date");
 
