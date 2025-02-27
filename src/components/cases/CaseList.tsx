@@ -100,7 +100,7 @@ const CaseList: React.FC = () => {
     const statusParam = searchParams.get("status");
     return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
   });
-  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>(() => {
+  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined | string>(() => {
     const dueDateParam = searchParams.get("dueDate");
 
     // Parse the date as UTC and return it, or undefined if no date is provided
@@ -130,7 +130,7 @@ const CaseList: React.FC = () => {
   let date;
 
   if (typeof dueDateFilter === "string") {
-    const [year, month, day] = dueDateFilter?.split("-").map(Number);
+    const [year, month, day] = dueDateFilter.split("-").map(Number);
     date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC
   } else {
     date = new Date();
@@ -618,7 +618,7 @@ const CaseList: React.FC = () => {
                 </div>
                 <DayPicker
                   mode="single"
-                  selected={dueDateFilter}
+                  selected={dueDateFilter as Date}
                   onSelect={(date) => {
                     setDueDateFilter(date || undefined);
                     column.setFilterValue(date || undefined);
