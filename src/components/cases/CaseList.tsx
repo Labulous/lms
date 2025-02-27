@@ -1071,11 +1071,10 @@ const CaseList: React.FC = () => {
           const due = new Date(dueDate);
           return due >= startOfToday && due <= endOfToday;
         };
-
         switch (filter) {
           case "past_due":
             return (
-              dueDate < todayUTC &&
+              new Date(caseItem.due_date) < startOfToday &&
               caseItem.status !== "completed" &&
               caseItem.status !== "on_hold" &&
               caseItem.status !== "cancelled"
