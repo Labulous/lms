@@ -2154,7 +2154,7 @@ export const StatementReceiptTemplate: React.FC<
   PrintStatementTemplateProps
 > = ({ caseDetails, labData, paperSize }) => {
   // Add ArchSelector components
-
+  console.log(caseDetails, "caseDetails");
   const Header: React.FC<{
     adjustment: any;
   }> = ({ adjustment }) => {
@@ -2165,7 +2165,17 @@ export const StatementReceiptTemplate: React.FC<
       accountNumber: "A123456789",
       amountDue: 245.75,
       dueDate: "2025-02-15",
-      transactions: caseDetails?.length ? caseDetails[0].invoiceData : [],
+      transactions: caseDetails?.length
+        ? caseDetails[0].invoiceData.filter((item: any) => {
+            // Include items that are not of type "P"
+            if (item.type !== "P") {
+              return true;
+            }
+
+            // For items with type "P", check if the date is less than or equal to updated_at
+            return item.date <= caseDetails[0].updated_at;
+          })
+        : [],
       previousBalance: 100.0,
       payments: 0.0,
     };
