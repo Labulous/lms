@@ -166,10 +166,8 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
           `
           )
           .eq("lab_id", lab?.labId)
-          .eq("status", "completed")
           .eq("client_id", selectedClient)
           .order("created_at", { ascending: true });
-
         if (casesError) {
           console.error("Error fetching completed invoices:", casesError);
           return;
