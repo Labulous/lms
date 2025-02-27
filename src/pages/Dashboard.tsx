@@ -315,7 +315,9 @@ const Dashboard: React.FC = () => {
         const pastDue = casesList.filter(
           (caseItem) =>
             new Date(caseItem.due_date) < startOfToday &&
-            caseItem.status !== "on_hold"
+            caseItem.status !== "on_hold" &&
+            caseItem.status !== "on_hold" &&
+            caseItem.status !== "cancelled"
         );
         const dueToday = casesList.filter(
           //active
@@ -470,7 +472,7 @@ const Dashboard: React.FC = () => {
 
               // Force UTC to 12 AM
               const year = dueDate.getUTCFullYear();
-              const month = dueDate.getUTCMonth() ; // Zero-based, keep as is
+              const month = dueDate.getUTCMonth(); // Zero-based, keep as is
               const day = dueDate.getUTCDate();
 
               // Create a fixed UTC date with 12 AM
@@ -505,10 +507,10 @@ const Dashboard: React.FC = () => {
             // Ensure start and end times are in UTC
             const start = new Date(year, month - 1, day, 0, 0, 0, 0); // 12 AM UTC
             const end = new Date(year, month - 1, day, 0, 0, 0, 0); // 11:59 PM UTC
-            
+
             console.log("Start:", start.toISOString()); // This should always show the correct UTC date
             console.log("End:", end.toISOString());
-            
+
             // const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
             // const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
