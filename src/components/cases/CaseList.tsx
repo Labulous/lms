@@ -104,21 +104,8 @@ const CaseList: React.FC = () => {
     const dueDateParam = searchParams.get("dueDate");
 
     // Parse the date as UTC and return it, or undefined if no date is provided
-    return dueDateParam
-      ? new Date(
-          Date.UTC(
-            new Date(dueDateParam).getUTCFullYear(),
-            new Date(dueDateParam).getUTCMonth(),
-            new Date(dueDateParam).getUTCDate(),
-            new Date(dueDateParam).getUTCHours(),
-            new Date(dueDateParam).getUTCMinutes(),
-            new Date(dueDateParam).getUTCSeconds(),
-            new Date(dueDateParam).getUTCMilliseconds()
-          )
-        )
-      : undefined;
+    return dueDateParam ? new Date() : undefined;
   });
-  console.log(dueDateFilter, "dueDateFilter");
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -140,9 +127,26 @@ const CaseList: React.FC = () => {
     }),
     [paginationState, pageSize]
   );
-  const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
+  let date;
+
+  if (typeof dueDateFilter === "string") {
+    const [year, month, day] = dueDateFilter?.split("-").map(Number);
+    date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC
+  } else {
+    date = new Date();
+  }
+
+  console.log(
+    dueDateFilter,
+    date,
+    searchParams.get("dueDate"),
+    "dueDateFilter"
+  );
+
   const month = date.getMonth() + 1; // Months are 0-indexed
-  const day = date.getDate();
+  const day = searchParams.get("dueDate")
+    ? searchParams.get("dueDate")?.split("-")[2]
+    : null;
   const columns: ColumnDef<ExtendedCase>[] = [
     {
       accessorKey: "select",
@@ -613,7 +617,6 @@ const CaseList: React.FC = () => {
                   )}
                 </div>
                 <DayPicker
-                  timeZone="UTC"
                   mode="single"
                   selected={dueDateFilter}
                   onSelect={(date) => {
@@ -651,34 +654,22 @@ const CaseList: React.FC = () => {
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
-        const dueDate = row.getValue(id) as string;
-        const dateObj = new Date(dueDate);
-        const dueDateUtc = new Date(
-          Date.UTC(
-            dateObj.getUTCFullYear(), // Get the full year in UTC
-            dateObj.getUTCMonth(), // Get the month (0-11) in UTC
-            dateObj.getUTCDate(), // Get the day of the month in UTC
-            dateObj.getUTCHours(), // Get the hours in UTC
-            dateObj.getUTCMinutes(), // Get the minutes in UTC
-            dateObj.getUTCSeconds(), // Get the seconds in UTC
-            dateObj.getUTCMilliseconds() // Get the milliseconds in UTC
-          )
-        );
-        console.log(
-          dueDateUtc,
-          "hi",
-          new Date(dueDate).toUTCString(),
-          value,
-          "dueDateUtc"
-        );
+        let dueDate = row.getValue(id) as string;
+
         if (!dueDate) return false;
-        const rowDate = new Date(dueDateUtc);
-        console.log(rowDate, "rowDate");
+        let rowDate = new Date(dueDate);
+        // value.setUTCDate(value.getUTCDate() + 1);
+        const filterDate = searchParams.get("dueDate");
+        const formatedDate = filterDate ? new Date(filterDate) : null;
+        const utcDate = formatedDate
+          ? formatedDate.setUTCDate(formatedDate.getUTCDate() + 1)
+          : null;
+        console.log(rowDate, value, formatedDate, formatedDate, "rowDate");
 
         return (
-          rowDate.getUTCFullYear() === value.getFullYear() &&
-          rowDate.getUTCMonth() === value.getMonth() &&
-          rowDate.getUTCDate() === value.getDate()
+          rowDate.getFullYear() === value.getFullYear() &&
+          rowDate.getMonth() === value.getMonth() &&
+          rowDate.getDate() === formatedDate?.getDate()
         );
       },
     },
@@ -1059,7 +1050,6 @@ const CaseList: React.FC = () => {
       tomorrow.setUTCDate(today.getUTCDate() + 1);
       const filteredCases = cases.filter((caseItem) => {
         const dueDate = new Date(caseItem.due_date);
-
 
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
