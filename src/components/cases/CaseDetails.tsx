@@ -419,6 +419,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         `
         )
         .eq("case_id", activeCaseId);
+
       const { data: worksationTypes, error: worksationTypesErrors } =
         await supabase
           .from("workstation_types")
@@ -786,21 +787,21 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       }
     : null;
 
-const fetchCaseData = async (refetch?: boolean) => {
-  try {
-    setLoading(refetch ? false : true);
-    const lab = await getLabDataByUserId(user?.id as string);
-    if (!lab?.id) {
-      console.error("Lab ID not found.");
-      return;
-    }
+  const fetchCaseData = async (refetch?: boolean) => {
+    try {
+      setLoading(refetch ? false : true);
+      const lab = await getLabDataByUserId(user?.id as string);
+      if (!lab?.id) {
+        console.error("Lab ID not found.");
+        return;
+      }
 
-    setLab(lab);
+      setLab(lab);
 
-    const { data: caseData, error } = await supabase
-      .from("cases")
-      .select(
-        `
+      const { data: caseData, error } = await supabase
+        .from("cases")
+        .select(
+          `
           id,
           created_at,
           received_date,
@@ -884,35 +885,35 @@ const fetchCaseData = async (refetch?: boolean) => {
           custom_occlusion_design_type,
           custon_alloy_type
         `
-      )
-      .eq("id", activeCaseId)
-      .single();
+        )
+        .eq("id", activeCaseId)
+        .single();
 
-    if (error) {
-      console.error("Supabase error:", error);
-      setError(error.message);
-      return;
-    }
+      if (error) {
+        console.error("Supabase error:", error);
+        setError(error.message);
+        return;
+      }
 
-    if (!caseData) {
-      console.error("No case data found");
-      setError("Case not found");
-      return;
-    }
-    let caseDataApi: any = caseData;
-    setCaseDetail(caseDataApi);
-    getWorkStationDetails(caseData?.created_at);
-    setFiles(caseData.attachements);
-    if (caseData.product_ids?.[0]?.products_id) {
-      const productsIdArray = caseData.product_ids[0].products_id;
-      const caseProductId = caseData.product_ids[0].id;
+      if (!caseData) {
+        console.error("No case data found");
+        setError("Case not found");
+        return;
+      }
+      let caseDataApi: any = caseData;
+      setCaseDetail(caseDataApi);
+      getWorkStationDetails(caseData?.created_at);
+      setFiles(caseData.attachements);
+      if (caseData.product_ids?.[0]?.products_id) {
+        const productsIdArray = caseData.product_ids[0].products_id;
+        const caseProductId = caseData.product_ids[0].id;
 
-      // Fetch products
-      if (productsIdArray?.length > 0) {
-        const { data: productData, error: productsError } = await supabase
-          .from("products")
-          .select(
-            `
+        // Fetch products
+        if (productsIdArray?.length > 0) {
+          const { data: productData, error: productsError } = await supabase
+            .from("products")
+            .select(
+              `
               id,
               name,
               price,
@@ -939,21 +940,21 @@ const fetchCaseData = async (refetch?: boolean) => {
                 is_active
               )
             `
-          )
-          .in("id", productsIdArray)
-          .eq("lab_id", lab.id);
+            )
+            .in("id", productsIdArray)
+            .eq("lab_id", lab.id);
 
-        if (productsError) {
-          setError(productsError.message);
-          return;
-        }
+          if (productsError) {
+            setError(productsError.message);
+            return;
+          }
 
-        // Fetch discounted prices
-        const { data: discountedPriceData, error: discountedPriceError } =
-          await supabase
-            .from("discounted_price")
-            .select(
-              `
+          // Fetch discounted prices
+          const { data: discountedPriceData, error: discountedPriceError } =
+            await supabase
+              .from("discounted_price")
+              .select(
+                `
               id,
               product_id,
               discount,
@@ -962,27 +963,27 @@ const fetchCaseData = async (refetch?: boolean) => {
               quantity,
               total
             `
-            )
-            .in("product_id", productsIdArray)
-            .eq("case_id", activeCaseId);
+              )
+              .in("product_id", productsIdArray)
+              .eq("case_id", activeCaseId);
 
-        if (discountedPriceError) {
-          console.error(
-            "Error fetching discounted prices:",
-            discountedPriceError
-          );
-          setError(discountedPriceError.message);
-          return;
-        }
+          if (discountedPriceError) {
+            console.error(
+              "Error fetching discounted prices:",
+              discountedPriceError
+            );
+            setError(discountedPriceError.message);
+            return;
+          }
 
-        // Fetch teeth products if case product ID exists
-        let teethProducts: any = [];
-        if (caseProductId) {
-          const { data: teethProductData, error: teethProductsError } =
-            await supabase
-              .from("case_product_teeth")
-              .select(
-                `
+          // Fetch teeth products if case product ID exists
+          let teethProducts: any = [];
+          if (caseProductId) {
+            const { data: teethProductData, error: teethProductsError } =
+              await supabase
+                .from("case_product_teeth")
+                .select(
+                  `
                 is_range,
                 occlusal_shade:shade_options!occlusal_shade_id (
                   name,
@@ -1019,61 +1020,61 @@ const fetchCaseData = async (refetch?: boolean) => {
                 type,
                 id
               `
-              )
-              .eq("case_product_id", caseProductId)
-              .eq("case_id", caseData.id);
+                )
+                .eq("case_product_id", caseProductId)
+                .eq("case_id", caseData.id);
 
-          if (teethProductsError) {
-            setError(teethProductsError.message);
-            return;
+            if (teethProductsError) {
+              setError(teethProductsError.message);
+              return;
+            }
+            teethProducts = teethProductData;
           }
-          teethProducts = teethProductData;
-        }
-        // Combine all product data
-        const productsWithDiscounts = productData.flatMap((product: any) => {
-          // Find all the discounted prices for this product
-          const relevantDiscounts = discountedPriceData.filter(
-            (discount: { product_id: string }) =>
-              discount.product_id === product.id
-          );
+          // Combine all product data
+          const productsWithDiscounts = productData.flatMap((product: any) => {
+            // Find all the discounted prices for this product
+            const relevantDiscounts = discountedPriceData.filter(
+              (discount: { product_id: string }) =>
+                discount.product_id === product.id
+            );
 
-          // Find all the teeth products for this product
-          const relevantTeethProducts = teethProducts.filter(
-            (teeth: any) => teeth.product_id === product.id
-          );
+            // Find all the teeth products for this product
+            const relevantTeethProducts = teethProducts.filter(
+              (teeth: any) => teeth.product_id === product.id
+            );
 
-          // Map each teeth product to a corresponding discounted price
-          return relevantTeethProducts.map((teeth: any, index: number) => {
-            // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
-            const discountedPrice =
-              relevantDiscounts[index % relevantDiscounts.length] || null;
-            console.log(lab, "lab");
-            return {
-              ...product,
-              discounted_price: discountedPrice,
-              teethProduct: teeth,
-            };
+            // Map each teeth product to a corresponding discounted price
+            return relevantTeethProducts.map((teeth: any, index: number) => {
+              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
+              const discountedPrice =
+                relevantDiscounts[index % relevantDiscounts.length] || null;
+              console.log(lab, "lab");
+              return {
+                ...product,
+                discounted_price: discountedPrice,
+                teethProduct: teeth,
+              };
+            });
           });
-        });
 
-        setCaseDetail({
-          ...(caseData as any),
-          products: productsWithDiscounts,
-          labDetail: lab,
-          discounted_price: discountedPriceData,
-        });
+          setCaseDetail({
+            ...(caseData as any),
+            products: productsWithDiscounts,
+            labDetail: lab,
+            discounted_price: discountedPriceData,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error fetching case data:", error);
+      toast.error("Failed to load case details");
+    } finally {
+      setLoading(false);
+      return () => {
+        document.body.style.pointerEvents = "auto";
+      };
     }
-  } catch (error) {
-    console.error("Error fetching case data:", error);
-    toast.error("Failed to load case details");
-  } finally {
-    setLoading(false);
-    return () => {
-      document.body.style.pointerEvents = "auto";
-    };
-  }
-};
+  };
 
   const hasRun = useRef(false);
 

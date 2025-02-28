@@ -1568,7 +1568,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 "Add Services"
                               ) : (
                                 <span className="text-blue-600">
-                                  {row?.services?.length} Services Added
+                                  {row?.services?.length} Common Services Added
                                 </span>
                               )
                             ) : row?.mainServices?.length === 0 ||

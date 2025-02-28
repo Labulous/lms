@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Briefcase,
@@ -27,6 +27,7 @@ interface MenuItem {
   label: string;
   href: string;
   roles: string[];
+  state?: any;
   subItems?: {
     label: string;
     href: string;
@@ -106,6 +107,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       icon: Briefcase,
       label: "Cases",
       href: "/cases",
+      state: {
+        from: "cases/id", // Passing the current pathname as the "from" state
+      },
       roles: ["admin", "super_admin", "technician"],
     },
     {
@@ -182,7 +186,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const filteredQuickActions = quickActions.filter(
     (action) => user && action.roles.includes(user.role)
   );
-
   return (
     <aside
       className={`bg-slate-100 text-gray-600 w-56 min-h-screen border-r border-slate-200 flex flex-col transition-all duration-300 ${
@@ -333,6 +336,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <Link
                 key={item.href}
                 to={item.href}
+                state={{
+                  from: location.pathname.includes("cases") ? "cases" : null,
+                }}
                 className={`flex items-center space-x-2 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors duration-200 ${
                   isActive
                     ? "bg-blue-100 text-blue-600"
