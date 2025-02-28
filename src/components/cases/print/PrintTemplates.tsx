@@ -459,16 +459,16 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <div className="mb-8">
                         <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4 gap-1">
                           <h3
-                            className="font-bold col-span-6 text-xs p-2"
+                            className="font-bold col-span-5 text-xs p-2"
                             style={{ lineHeight: "1.15" }}
                           >
                             Description
                           </h3>
                           <h2
-                            className="font-bold text-right col-span-1 text-xs p-2"
+                            className="font-bold text-right col-span-2 text-xs p-2"
                             style={{ lineHeight: "1.15" }}
                           >
-                            Price
+                            Item Price
                           </h2>
                           <h2
                             className="font-bold text-right col-span-1 text-xs p-2"
@@ -481,7 +481,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                             style={{ lineHeight: "1.15" }}
                           >
                             {" "}
-                            Price(%)
+                            Amount
                           </h2>
                           <h2
                             className="font-bold text-right col-span-2 text-xs p-2"
@@ -497,14 +497,14 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
                               style={{ lineHeight: "1.1" }}
                             >
-                              <div className="space-y-1 font-medium col-span-6 pl-2">
+                              <div className="space-y-1 font-medium col-span-5 pl-2">
                                 <div>
                                   <p>{item.service.name}</p>
                                   <p className="font-bold">Service</p>
                                 </div>
                               </div>
                               <p
-                                className="text-right col-span-1 pr-2 font-bold"
+                                className="text-right col-span-2 pr-2 font-bold"
                                 style={{ lineHeight: "1.15" }}
                               >
                                 ${item.service.price}
@@ -538,7 +538,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
                                 style={{ lineHeight: "1.1" }}
                               >
-                                <div className="space-y-1 font-medium col-span-6 pl-2">
+                                <div className="space-y-1 font-medium col-span-5 pl-2">
                                   <div>
                                     <p
                                       className="font-extrabold"
@@ -550,18 +550,69 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       className="text-sm pl-6 font-extrabold"
                                       style={{ lineHeight: "1.15" }}
                                     >
-                                      <span className="font-normal">
-                                        Teeth:{" "}
-                                      </span>
-                                      #
-                                      {item.teethProduct.type !== "Bridge"
-                                        ? item.teethProduct?.tooth_number
-                                            .map((item: number) => `${item}`)
-                                            .join(",")
-                                        : formatTeethRange(
+                                      <span className="font-normal"></span>
+                                      {item.teethProduct.type === "Bridge"
+                                        ? ""
+                                        : "Teeth:#"}
+                                      {item.teethProduct.type !== "Bridge" ? (
+                                        item.teethProduct?.tooth_number
+                                          .map((item: number) => `${item}`)
+                                          .join(",")
+                                      ) : (
+                                        <>
+                                          <span
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                  item?.teethProduct
+                                                    .type as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            Bridge:
+                                          </span>
+                                          #
+                                          {formatTeethRange(
                                             item.teethProduct?.tooth_number
                                           )}
+                                        </>
+                                      )}
                                     </p>
+                                    {item.teethProduct.pontic_teeth.length >
+                                      0 && (
+                                      <p
+                                        className="text-sm pl-6 font-extrabold"
+                                        style={{ lineHeight: "1.15" }}
+                                      >
+                                        <span className="font-normal"></span>
+                                        {item.teethProduct.type === "Bridge"
+                                          ? ""
+                                          : "Teeth:#"}
+                                        {item.teethProduct.type !== "Bridge" ? (
+                                          item.teethProduct?.pontic_teeth
+                                            .map((item: number) => `${item}`)
+                                            .join(",")
+                                        ) : (
+                                          <>
+                                            <span
+                                              style={{
+                                                color:
+                                                  TYPE_COLORS[
+                                                    item?.teethProduct
+                                                      .type as keyof typeof TYPE_COLORS
+                                                  ] || TYPE_COLORS.Other,
+                                              }}
+                                            >
+                                              Bridge:
+                                            </span>
+                                            #
+                                            {formatTeethRange(
+                                              item.teethProduct?.pontic_teeth
+                                            )}
+                                          </>
+                                        )}
+                                      </p>
+                                    )}
                                     <p
                                       className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
                                       style={{ lineHeight: "1.15" }}
@@ -594,8 +645,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                                 style={{
                                                   color:
                                                     TYPE_COLORS[
-                                                      item?.product_type
-                                                        ?.name as keyof typeof TYPE_COLORS
+                                                      item?.teethProduct
+                                                        .type as keyof typeof TYPE_COLORS
                                                     ] || TYPE_COLORS.Other,
                                                 }}
                                               >
@@ -773,7 +824,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   </div>
                                 </div>
                                 <p
-                                  className="text-right col-span-1 pr-2 font-bold"
+                                  className="text-right col-span-2 pr-2 font-bold"
                                   style={{ lineHeight: "1.15" }}
                                 >
                                   ${item.discounted_price.price}
@@ -1105,7 +1156,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
             if (groupStart === prev) {
               groups.push(`${groupStart}`);
             } else {
-              groups.push(`${groupStart}-#${prev}`);
+              groups.push(`${groupStart}-${prev}`);
             }
             groupStart = current; // Start a new group
           }
@@ -1117,7 +1168,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
       // Get consecutive groups of teeth
       const groupedTeeth = getConsecutiveGroups(teeth);
-
+      console.log(groupedTeeth, "groupedTeeth");
       // If there's only one group, return it
       return groupedTeeth.join(", ").split("#").join("");
     };
@@ -1226,7 +1277,6 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
     console.log(groupShades);
 
-
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1239,8 +1289,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
               <div className="font-bold">
                 {teeth.teethProduct.type === "Bridge" ? (
                   <span>
-                    #{formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
-                    <span className="text-xs text-primary">(Bridge)</span>
+                    <span className="text-xs text-primary">Bridge</span>#{" "}
+                    {formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
                   </span>
                 ) : (
                   <span>
@@ -1253,11 +1303,12 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
               </div>
             )}
           </div>
+
           {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
             <div className="flex ml-2">
-              <span className="w-20 text-xs">Pontic Teeth #: </span>
+              <span className="w-20 text-xs">Pontic Teeth: </span>
               <div className="font-bold text-xs">
-                #{formatTeethRange(teeth?.teethProduct.pontic_teeth)}
+                {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
           )}
@@ -1818,6 +1869,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
         }, {} as any)
       )
     : [];
+  console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div>
       <div
@@ -1830,7 +1882,9 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${consolidatedProducts?.length} gap-0`}>
+            <div
+              className={`grid grid-cols-${consolidatedProducts?.length} gap-0`}
+            >
               {consolidatedProducts?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
@@ -1845,7 +1899,13 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                       </div>
                       <div
                         className="p-4"
-                        style={{ maxHeight: "500px", overflowY: "hidden" }}
+                        style={{
+                          maxHeight:
+                            consolidatedProducts?.length === 1
+                              ? "790px"
+                              : "600px",
+                          overflowY: "hidden",
+                        }}
                       >
                         <TeetDetail
                           teeth={teeth}
