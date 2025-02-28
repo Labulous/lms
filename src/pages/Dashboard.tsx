@@ -676,7 +676,7 @@ const Dashboard: React.FC = () => {
               Good {getTimeOfDay()}, {user?.name}!
             </h2>
             <p className="text-gray-500">
-              Here's what's happening in your lab today.
+              {`Here is what is happening in your lab on ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.`}
             </p>
           </div>
         </div>
