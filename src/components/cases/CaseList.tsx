@@ -100,12 +100,14 @@ const CaseList: React.FC = () => {
     const statusParam = searchParams.get("status");
     return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
   });
-  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined | string>(() => {
-    const dueDateParam = searchParams.get("dueDate");
+  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined | string>(
+    () => {
+      const dueDateParam = searchParams.get("dueDate");
 
-    // Parse the date as UTC and return it, or undefined if no date is provided
-    return dueDateParam ? new Date() : undefined;
-  });
+      // Parse the date as UTC and return it, or undefined if no date is provided
+      return dueDateParam ? new Date() : undefined;
+    }
+  );
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -946,9 +948,9 @@ const CaseList: React.FC = () => {
           .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      refreshInterval: 5000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: 1,
     }
   );
   if (caseError && labIdData?.lab_id) {
