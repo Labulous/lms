@@ -282,7 +282,10 @@ const saveCaseProduct = async (
       "case_product_teeth rows created and discount prices inserted successfully!"
     );
     toast.success("Case created successfully");
-    navigate && navigate(`/cases/${savedCaseId}`);
+    navigate &&
+      navigate(`/cases/${savedCaseId}`, {
+        state: { scrollToTop: true, from: "edit" },
+      });
   } catch (error) {
     console.error("Error while processing case product:", error);
   }
