@@ -1226,9 +1226,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
     console.log(groupShades);
 
-    console.log(groupShades, "groupShades");
 
-    console.log(teeth?.teethProduct.tooth_number, "teeths 1");
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1713,7 +1711,113 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       </div>
     );
   };
-  console.log(item, "itemitemitem");
+
+  let productsConsolidate = item?.products;
+  const upperTeeth = new Set([
+    18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  ]);
+  const lowerTeeth = new Set([
+    38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+  ]);
+
+  const consolidatedProducts: any = productsConsolidate
+    ? Object.values(
+        item?.products?.reduce((acc: any, product: any) => {
+          const productId = product.id;
+
+          if (!productId || !product.teethProduct?.tooth_number) {
+            return acc;
+          }
+
+          const { tooth_number, type, pontic_teeth } = product.teethProduct;
+
+          if (type === "Bridge") {
+            // Determine if it's an upper, lower, or mixed bridge
+            const isUpper = tooth_number.every((tooth: number) =>
+              upperTeeth.has(tooth)
+            );
+            const isLower = tooth_number.every((tooth: number) =>
+              lowerTeeth.has(tooth)
+            );
+            const bridgeKey = `${productId}-${
+              isUpper ? "upper" : isLower ? "lower" : "mixed"
+            }`;
+
+            if (!acc[bridgeKey]) {
+              acc[bridgeKey] = {
+                ...product,
+                teethProduct: {
+                  ...product.teethProduct,
+                  tooth_number: [...tooth_number],
+                  pontic_teeth: [...pontic_teeth],
+                },
+                service: product.service
+                  ? [
+                      {
+                        service: product.service,
+                        teeth_number: [...tooth_number],
+                      },
+                    ]
+                  : [],
+              };
+            } else {
+              acc[bridgeKey].teethProduct.tooth_number = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.tooth_number,
+                  ...tooth_number,
+                ]),
+              ];
+              acc[bridgeKey].teethProduct.pontic_teeth = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.pontic_teeth,
+                  ...pontic_teeth,
+                ]),
+              ];
+
+              if (product.service) {
+                const existingService = acc[bridgeKey].service.find(
+                  (serviceObj: any) => serviceObj.service === product.service
+                );
+
+                if (existingService) {
+                  existingService.teeth_number = [
+                    ...new Set([
+                      ...existingService.teeth_number,
+                      ...tooth_number,
+                    ]),
+                  ];
+                } else {
+                  acc[bridgeKey].service.push({
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  });
+                }
+              }
+            }
+          } else {
+            // Non-Bridge products remain separate (no grouping)
+            acc[`${productId}-${tooth_number.join("-")}`] = {
+              ...product,
+              teethProduct: {
+                ...product.teethProduct,
+                tooth_number: [...tooth_number],
+                pontic_teeth: [...pontic_teeth],
+              },
+              service: product.service
+                ? [
+                    {
+                      service: product.service,
+                      teeth_number: [...tooth_number],
+                    },
+                  ]
+                : [],
+            };
+          }
+
+          return acc;
+        }, {} as any)
+      )
+    : [];
   return (
     <div>
       <div
@@ -1726,8 +1830,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${item?.products?.length} gap-0`}>
-              {item?.products?.map((teeth: any, index: number) => {
+            <div className={`grid grid-cols-${consolidatedProducts?.length} gap-0`}>
+              {consolidatedProducts?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
                     <div className="border border-gray-300">
@@ -1741,7 +1845,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                       </div>
                       <div
                         className="p-4"
-                        style={{ maxHeight: "400px", overflowY: "hidden" }}
+                        style={{ maxHeight: "500px", overflowY: "hidden" }}
                       >
                         <TeetDetail
                           teeth={teeth}
