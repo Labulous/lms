@@ -287,9 +287,6 @@ const Statements = () => {
           <p className="text-sm text-muted-foreground">
             Manage and track client statements
           </p>
-          <button onClick={() => updateBalanceTracking()}>
-            update balance tracking
-          </button>
         </div>
         <div className="flex items-center gap-2">
           {/* <Select>
