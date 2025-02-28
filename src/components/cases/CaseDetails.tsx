@@ -706,7 +706,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     {
       revalidateOnFocus: true, // Refetch when the window is focused
       revalidateOnReconnect: true, // Refetch when the network is reconnected
-      dedupingInterval: 0, // No deduplication, so it will not use cached data
     }
   );
 
