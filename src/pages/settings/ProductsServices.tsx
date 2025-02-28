@@ -472,6 +472,7 @@ const ProductsServices: React.FC = () => {
       navigate("/material-selection", { replace: true });
       setTimeout(() => {
         navigate(urlParams, { replace: true });
+        
       }, 100);
 
     } catch (err) {
