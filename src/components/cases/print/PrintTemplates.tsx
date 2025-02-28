@@ -1303,11 +1303,12 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
               </div>
             )}
           </div>
+
           {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
             <div className="flex ml-2">
-              <span className="w-20 text-xs">Pontic Teeth #: </span>
+              <span className="w-20 text-xs">Pontic Teeth: </span>
               <div className="font-bold text-xs">
-                #{formatTeethRange(teeth?.teethProduct.pontic_teeth)}
+                {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
           )}
