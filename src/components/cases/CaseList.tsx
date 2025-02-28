@@ -651,7 +651,6 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const date = row.getValue("due_date") as string;
-        console.log(date, "datedate");
         const parsedDate = new Date(date);
 
         return date ? formatDate(date) : "TBD";
@@ -668,7 +667,6 @@ const CaseList: React.FC = () => {
         const utcDate = formatedDate
           ? formatedDate.setUTCDate(formatedDate.getUTCDate() + 1)
           : null;
-        console.log(rowDate, value, formatedDate, formatedDate, "rowDate");
 
         return (
           rowDate.getFullYear() === value.getFullYear() &&
@@ -692,11 +690,7 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => {
         const date = row.getValue("received_date") as string;
         const createdAt = row.original.created_at;
-        console.log("Date values:", {
-          received_date: date,
-          created_at: createdAt,
-          case_id: row.original.id,
-        });
+
         return formatDate(date || createdAt);
       },
     },
@@ -952,7 +946,6 @@ const CaseList: React.FC = () => {
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      refreshInterval: 1,
     }
   );
   if (caseError && labIdData?.lab_id) {
@@ -1233,6 +1226,11 @@ const CaseList: React.FC = () => {
     getSortedRowModel: getSortedRowModel(),
   });
   useEffect(() => {
+    if (previousPath === "cases") {
+      handleFetchData();
+    }
+  }, [previousPath]);
+  useEffect(() => {
     if (statusFilter.length > 0) {
       table.getColumn("status")?.setFilterValue(statusFilter);
     } else {
@@ -1253,13 +1251,11 @@ const CaseList: React.FC = () => {
       setCases(arragedNewCases);
       hasRunRef.current = true; // Mark that the effect has run
     }
-    if (previousPath === "cases") {
-      handleFetchData();
-    }
   }, [arragedNewCases]);
   useEffect(() => {
     const filter = searchParams.get("filter");
     console.log(filter, "filter");
+
     if (filter) {
       // Get today's date in UTC at midnight
       const today = new Date();
