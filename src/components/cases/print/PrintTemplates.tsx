@@ -531,7 +531,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           ) : (
                             <></>
                           );
-
+                          console.log(item, "itemm");
                           return (
                             <React.Fragment key={index}>
                               <div
@@ -578,7 +578,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                         </>
                                       )}
                                     </p>
-                                    {item.teethProduct.pontic_teeth.length >
+                                    {item.teethProduct?.pontic_teeth?.length >
                                       0 && (
                                       <p
                                         className="text-sm pl-6 font-extrabold"
