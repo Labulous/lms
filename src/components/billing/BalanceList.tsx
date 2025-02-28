@@ -93,7 +93,8 @@ const BalanceList = () => {
       const transformedInvoices = invoices?.map(invoice => ({
         ...invoice,
         total_amount: Number(invoice.total_amount || 0),
-        amount_paid: Number(invoice.amount_paid || 0)
+        amount_paid: Number(invoice.amount_paid || 0),
+        due_amount: Number(invoice.due_amount || 0)
       }));
 
       setSelectedClientInvoices(transformedInvoices || []);
@@ -287,9 +288,10 @@ const BalanceList = () => {
                     </TableCell>
                     <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
                     <TableCell>{formatCurrency(invoice.amount_paid)}</TableCell>
-                    <TableCell>
+                    <TableCell>{formatCurrency(invoice.due_amount)}</TableCell>
+                    {/* <TableCell>
                       {formatCurrency(invoice.total_amount - invoice.amount_paid)}
-                    </TableCell>
+                    </TableCell> */}
                   </TableRow>
                 ))}
               </TableBody>

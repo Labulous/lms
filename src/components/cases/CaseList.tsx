@@ -78,6 +78,7 @@ import { ExtendedCase } from "./CaseDetails";
 import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 import toast from "react-hot-toast";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { calculateDueDate } from "@/lib/calculateDueDate";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -434,6 +435,7 @@ const CaseList: React.FC = () => {
                 "on_hold",
                 "completed",
                 "cancelled",
+                "shipped",
               ].map((status) => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
@@ -478,6 +480,8 @@ const CaseList: React.FC = () => {
                             status === "completed",
                           "bg-red-500 text-red-500 hover:bg-red-500":
                             status === "cancelled",
+                          "bg-purple-500 text-purple-500 hover:bg-purple-500":
+                            status === "shipped",
                         }
                       )}
                     >
@@ -628,10 +632,14 @@ const CaseList: React.FC = () => {
         </div>
       ),
       cell: ({ row }) => {
-        const date = row.getValue("due_date") as string;
-        const parsedDate = new Date(date);
+        // const dueDate = row.getValue("due_date") as string;
+        // const parsedDate = new Date(date);
+        // return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
 
-        return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
+        const dueDate = row.getValue("due_date") as string;
+        const client = row.getValue("client") as { client_name: string; additional_lead_time?: string } | null;
+        const parsedDate = calculateDueDate(dueDate, client ?? undefined);
+        return parsedDate;
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
@@ -699,6 +707,8 @@ const CaseList: React.FC = () => {
               <PrinterIcon className="mr-2 h-4 w-4" />
               Print
             </DropdownMenuItem> */}
+
+
             <DropdownMenuItem
               onClick={() => {
                 handlePrintOptionSelect("lab-slip", [row.original.id]);
@@ -707,6 +717,16 @@ const CaseList: React.FC = () => {
               <Printer className="h-4 w-4 mr-2" />
               Lab Slip
             </DropdownMenuItem>
+
+
+            {/* <DropdownMenuItem
+              onClick={() => {
+                handlePrintOptionSelect("lab-slip", [row.original.id]);
+              }}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Lab Slip
+            </DropdownMenuItem> */}
             <DropdownMenuItem
               onClick={() =>
                 handlePrintOptionSelect("address-label", [row.original.id])
@@ -756,9 +776,9 @@ const CaseList: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
        id,
         created_at,
         received_date,
@@ -783,11 +803,14 @@ const CaseList: React.FC = () => {
           street,
           city,
           state,
-          zip_code
+          zip_code,
+          additional_lead_time,
+          account_number
         ),
         doctor:doctors!doctor_id (
           id,
           name,
+          order,
           client:clients!client_id (
             id,
             client_name,
@@ -912,10 +935,10 @@ const CaseList: React.FC = () => {
           )
           )
     `
-          )
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-          .order("created_at", { ascending: false })
+        )
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -1095,6 +1118,7 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1107,6 +1131,24 @@ const CaseList: React.FC = () => {
       caseData:
         selectedCases.length > 0
           ? selectedCases.map((caseItem) => ({
+            id: caseItem.id,
+            patient_name: caseItem.patient_name,
+            case_number: caseItem.case_number,
+            qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+            client: caseItem.client,
+            doctor: caseItem.doctor,
+            created_at: caseItem.created_at,
+            //due_date: caseItem.due_date,
+            due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
+            tag: caseItem.tag,
+          }))
+          : cases
+            .filter((item) =>
+              selectedId && selectedId.length > 0
+                ? selectedId.includes(item.id)
+                : selectedCasesIds.includes(item.id)
+            )
+            .map((caseItem) => ({
               id: caseItem.id,
               patient_name: caseItem.patient_name,
               case_number: caseItem.case_number,
@@ -1114,31 +1156,17 @@ const CaseList: React.FC = () => {
               client: caseItem.client,
               doctor: caseItem.doctor,
               created_at: caseItem.created_at,
-              due_date: caseItem.due_date,
+              //due_date: caseItem.due_date,
+              due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
               tag: caseItem.tag,
-            }))
-          : cases
-              .filter((item) =>
-                selectedId && selectedId.length > 0
-                  ? selectedId.includes(item.id)
-                  : selectedCasesIds.includes(item.id)
-              )
-              .map((caseItem) => ({
-                id: caseItem.id,
-                patient_name: caseItem.patient_name,
-                case_number: caseItem.case_number,
-                qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-                client: caseItem.client,
-                doctor: caseItem.doctor,
-                created_at: caseItem.created_at,
-                due_date: caseItem.due_date,
-                tag: caseItem.tag,
-              })),
+            })),
       caseDetails: cases.filter((item) =>
         selectedId && selectedId.length > 0
           ? selectedId.includes(item.id)
           : selectedCasesIds.includes(item.id)
       ),
+
+
     };
 
     // Use a fixed storage key so that the data always overrides the previous entry.
@@ -1246,9 +1274,9 @@ const CaseList: React.FC = () => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -1345,5 +1373,22 @@ function getContrastColor(hexcolor: string): string {
   // Return black or white depending on background color luminance
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
+
+
+// export function calculateDueDate(
+//   dueDate?: string,
+//   client?: { client_name: string; additional_lead_time?: string }
+// ): string {
+//   if (!dueDate) return "TBD";
+//   const parsedDate = new Date(dueDate);
+//   if (isNaN(parsedDate.getTime())) return "Invalid Date";
+//   const additionalLeadTime = client?.additional_lead_time ? Number(client.additional_lead_time) : 0;
+
+//   if (!isNaN(additionalLeadTime) && additionalLeadTime > 0) {
+//     parsedDate.setDate(parsedDate.getDate() + additionalLeadTime);
+//   }
+
+//   return format(parsedDate, "MMM dd, yyyy");
+// }
 
 export default CaseList;

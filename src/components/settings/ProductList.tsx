@@ -46,11 +46,14 @@ import {
 import { cn } from "@/lib/utils";
 import BatchProductUpload from "./BatchProductUpload";
 import { EditProductForm } from "./EditProductForm";
+import toast from "react-hot-toast";
+import { Product } from "@/data/mockProductData";
 
 type SortConfig = {
   key: keyof Database["public"]["Tables"]["products"]["Row"];
   direction: "asc" | "desc";
 };
+import { Link, useNavigate } from "react-router-dom";
 
 interface ProductListProps {
   products: Database["public"]["Tables"]["products"]["Row"][];
@@ -74,6 +77,8 @@ const ProductList: React.FC<ProductListProps> = ({
   materialsData,
 }) => {
   // State
+  const navigate = useNavigate();
+  const [reloadKey, setReloadKey] = useState(0);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [materialFilter, setMaterialFilter] = useState<string[]>([]);
@@ -97,10 +102,12 @@ const ProductList: React.FC<ProductListProps> = ({
     }
   }, [location]);
 
+  
+
   // Get unique materials from products
   const materials = materialsData;
 
-  //console.log(materials, "materialsData");
+  console.log(materials, "materialsData");
 
   // Filtering
   const getFilteredProducts = () => {
@@ -129,7 +136,7 @@ const ProductList: React.FC<ProductListProps> = ({
     () => getFilteredProducts(),
     [products, searchTerm, materialFilter]
   );
-console.log(materialFilter,"materialFilter")
+  console.log(materialFilter, "materialFilter")
   // Sorting
   const handleSort = (
     key: keyof Database["public"]["Tables"]["products"]["Row"]
@@ -177,18 +184,39 @@ console.log(materialFilter,"materialFilter")
 
   // Batch Actions
   const handleBatchDuplicate = () => {
+    
     // Implement duplicate functionality for selected products
   };
 
-  const handleBatchDelete = () => {
-    if (!onBatchDelete || selectedProducts.length === 0) return;
+  // const handleBatchDelete = () => {
+  //   debugger;
+  //   if (!onBatchDelete || selectedProducts.length === 0) return;
 
-    // Get the selected product objects
+  //   // Get the selected product objects
+  //   const productsToDelete = products.filter((p) =>
+  //     selectedProducts.includes(p.id)
+  //   );
+  //   onBatchDelete(productsToDelete);
+  // };
+
+  const handleBatchDelete = () => {
+   
+    if (!onBatchDelete || selectedProducts.length === 0) {
+      toast.error("No products selected.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedProducts.length} selected product(s)?`
+    );
+    if (!confirmed) return;
     const productsToDelete = products.filter((p) =>
       selectedProducts.includes(p.id)
     );
     onBatchDelete(productsToDelete);
+    setSelectedProducts([]);
   };
+
+
 
   useEffect(() => {
     setCurrentPage(1);
@@ -209,6 +237,7 @@ console.log(materialFilter,"materialFilter")
       </div>
     );
   }
+
 
   return (
     <div className="space-y-4">

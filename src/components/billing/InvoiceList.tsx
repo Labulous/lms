@@ -225,7 +225,8 @@ const InvoiceList: React.FC = () => {
           street,
           city,
           state,
-          zip_code
+          zip_code,
+          tax_rate
         ),
         doctor:doctors!doctor_id (
           id,
@@ -432,7 +433,8 @@ const InvoiceList: React.FC = () => {
             street,
             city,
             state,
-            zip_code
+            zip_code,
+            tax_rate
           ),
           doctor:doctors!doctor_id (
             id,
@@ -539,6 +541,7 @@ const InvoiceList: React.FC = () => {
             `
             )
             .eq("lab_id", labIdData?.lab_id)
+            .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
             .in("id", productsIdArray);
 
           if (productsError) {

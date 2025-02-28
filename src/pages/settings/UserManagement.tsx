@@ -871,7 +871,6 @@ export const UserManagement: React.FC = () => {
                             onClick={() => handleDeleteClient(user)}
                           >
                             <Trash2 className="w-4 h-4" />
-                            hi
                           </Button>
                         </div>
                       </TableCell>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   ColumnDef,
   flexRender,
@@ -53,6 +58,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { AnyMxRecord } from "dns";
+import toast from "react-hot-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const logger = createLogger({ module: "ClientList" });
 
@@ -70,6 +77,11 @@ type Client = {
     state: string;
     zipCode: string;
   };
+  tags: {
+    color: string;
+    name: string;
+    id: string;
+  };
 };
 
 interface ClientListProps {
@@ -77,6 +89,8 @@ interface ClientListProps {
   loading: boolean;
   onDeleteClient: (clientId: string) => void;
 }
+
+
 
 const ClientList: React.FC<ClientListProps> = ({
   clients: initialClients,
@@ -94,6 +108,28 @@ const ClientList: React.FC<ClientListProps> = ({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [clients, setClients] = useState<Client[]>(initialClients);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tagFilter, setTagFilter] = useState<string[]>(() => {
+    const tagParam = searchParams.get("tags");
+    return tagParam ? tagParam.split(",") : [];
+  });
+
+
+
+  const [pageSize, setPageSize] = useState<number>(() => {
+    return Number(localStorage.getItem("selectedPageSize")) || 10;
+  });
+
+  useEffect(() => {
+    table.setPageSize(pageSize);
+  }, [pageSize]);
+
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = Number(e.target.value);
+    setPageSize(newSize);
+    localStorage.setItem("selectedPageSize", newSize.toString());
+  };
+
 
   useEffect(() => {
     setClients(initialClients);
@@ -124,6 +160,146 @@ const ClientList: React.FC<ClientListProps> = ({
           : false;
       },
     },
+
+    {
+      accessorKey: "tags",
+      header: ({ column }) => (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" className="p-0 hover:bg-transparent">
+              <div className="flex items-center">
+                Tag
+                <ChevronsUpDown className="ml-2 h-4 w-4" />
+                {tagFilter.length > 0 && (
+                  <Badge variant="outline" className="ml-2 bg-background">
+                    {tagFilter.length}
+                  </Badge>
+                )}
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[200px] p-2" align="start">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b">
+                <span className="text-sm font-medium">Filter by Tag</span>
+                {tagFilter.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setTagFilter([]);
+                      column.setFilterValue(undefined);
+                      searchParams.delete("tags");
+                      setSearchParams(searchParams);
+                    }}
+                    className="h-8 px-2 text-xs"
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
+              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
+                {Array.from(
+                  new Set(
+                    clients
+                      .filter((c) => c.tags?.name)
+                      .map((c) =>
+                        JSON.stringify({
+                          name: c.tags?.name,
+                          color: c.tags?.color,
+                        })
+                      )
+                  )
+                )
+                  .map((str) => JSON.parse(str))
+                  .map((tag, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`tag-${tag.name} ${index}`}
+                        checked={tagFilter.includes(tag.name)}
+                        onCheckedChange={(checked) => {
+                          const newTagFilter = checked
+                            ? [...tagFilter, tag.name]
+                            : tagFilter.filter((t) => t !== tag.name);
+                          setTagFilter(newTagFilter);
+                          column.setFilterValue(
+                            newTagFilter.length ? newTagFilter : undefined
+                          );
+                          if (newTagFilter.length > 0) {
+                            searchParams.set("tags", newTagFilter.join(","));
+                          } else {
+                            searchParams.delete("tags");
+                          }
+                          setSearchParams(searchParams);
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-4 h-4 rounded border"
+                          style={{
+                            backgroundColor: tag.color || "#f3f4f6",
+                            borderColor: "rgba(0,0,0,0.1)",
+                          }}
+                        />
+                        <label
+                          htmlFor={`tag-${tag.name}`}
+                          className="text-sm font-medium capitalize cursor-pointer"
+                        >
+                          {tag.name}
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      ),
+      cell: ({ row }) => {
+        const ddd = row.getValue("accountNumber");
+        if(ddd =="1024")
+        {
+          debugger;
+        }
+        const tag = row.getValue("tags") as { name: string; color: string };
+        if (!tag?.name) return null;
+
+        const color = tag.color || "#f3f4f6";
+        const name = tag.name;
+        const initials = name.slice(0, 2).toUpperCase();
+
+        return (
+          <div className="font-medium">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div
+                    className="w-8 h-6 rounded flex items-center justify-center text-xs font-medium border"
+                    style={{
+                      backgroundColor: color,
+                      borderColor: "rgba(0,0,0,0.1)",
+                      color: getContrastColor(color),
+                    }}
+                  >
+                    {initials}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{name}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        );
+      },
+      filterFn: (row, id, value: string[]) => {
+        if (!value?.length) return true;
+        const tag = row.getValue(id) as { name: string; color: string };
+        return value.includes(tag?.name || "");
+      },
+    },
+
+
     {
       accessorKey: "clientName",
       header: ({ column }) => {
@@ -224,6 +400,10 @@ const ClientList: React.FC<ClientListProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleToggleStatus(client)}>
+                {client.status === "Active" ? "Deactivate" : "Activate"}
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={() => navigate(`/clients/${client.id}`)}
               >
@@ -269,12 +449,59 @@ const ClientList: React.FC<ClientListProps> = ({
     },
   });
 
+
+  const handleToggleStatus = async (client: Client) => {
+  try {
+    const message = client.status === "Active"
+      ? "Are you sure you want to deactivate this client?"
+      : "Are you sure you want to activate this client?";
+
+    if (!window.confirm(message)) {
+      return;
+    }
+
+    // Determine new status values
+    const newIsActive = client.status === "Active" ? false : true;
+    const newStatus = newIsActive ? "Active" : "Inactive";
+
+    const { error } = await supabase
+      .from("clients")
+      .update({
+        isActive: newIsActive,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", client.id);
+
+    if (error) throw error;
+
+    toast.success("Client status updated successfully");
+
+    // Update state without refetching
+    setClients((prevClients) =>
+      prevClients.map((c) =>
+        c.id === client.id ? { ...c, status: newStatus, isActive: newIsActive } : c
+      )
+    );
+  } catch (error: any) {
+    toast.error(error?.message || "Failed to update client status");
+  }
+};
+
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
+  }
+  function getContrastColor(hexcolor: string): string {
+    if (!hexcolor || hexcolor === "transparent") return "red";
+    const r = parseInt(hexcolor.slice(1, 3), 16);
+    const g = parseInt(hexcolor.slice(3, 5), 16);
+    const b = parseInt(hexcolor.slice(5, 7), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5 ? "#000000" : "#ffffff";
   }
 
   return (
@@ -323,9 +550,9 @@ const ClientList: React.FC<ClientListProps> = ({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                       </TableHead>
                     );
                   })}
@@ -367,9 +594,10 @@ const ClientList: React.FC<ClientListProps> = ({
           <div className="flex items-center space-x-4">
             <select
               value={table.getState().pagination.pageSize}
-              onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
-              }}
+              // onChange={(e) => {
+              //   table.setPageSize(Number(e.target.value));
+              // }}
+              onChange={handlePageSizeChange}
               className="h-8 w-[70px] rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background"
             >
               {[10, 30, 50, 100].map((pageSize) => (

@@ -1,6 +1,7 @@
 import { supabase } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
 import { validateAccountNumber } from "../utils/accountNumberFormatter";
+import { WorkingTag } from "@/components/clients/EditClientForm";
 
 const logger = createLogger({ module: "ClientsService" });
 
@@ -42,6 +43,9 @@ export interface Client {
   salesRepName?: string;
   salesRepNote?: string;
   additionalLeadTime?: number;
+  workingTagName?: string;
+  isActive?: boolean;
+  tags?: WorkingTag;
 }
 
 export interface ClientType {
@@ -63,6 +67,7 @@ export interface ClientInput
   account_number?: string;
   lab_id?: string;
   doctors?: Omit<Doctor, "id">[];
+  workingTagName?: string;
 }
 
 class ClientsService {
@@ -84,7 +89,7 @@ class ClientsService {
         doctorsCount: doctors?.length,
       });
 
-      const transformedClient = {
+      const transformedClient: Client = {
         id: client.id,
         accountNumber: client.account_number,
         clientName: client.client_name,
@@ -125,7 +130,16 @@ class ClientsService {
         })),
         created_at: client.created_at,
         updated_at: client.updated_at,
-        status: client.status,
+        status: client.isActive ? "Active" : "Inactive",
+        tags: client.tag
+          ? {
+            id: client.tag.id,
+            name: client.tag.name,
+            color: client.tag.color,
+            created_at: client.tag?.created_at || "",
+            updated_at: client.tag?.updated_at || "",
+          }
+          : undefined, // Use `undefined` instead of `null`
       };
 
       return transformedClient;
@@ -137,6 +151,7 @@ class ClientsService {
       throw error;
     }
   }
+
 
   private transformClientToDB(client: ClientInput) {
     return {
@@ -166,6 +181,7 @@ class ClientsService {
       notes: client.notes || "",
       lab_id: client.lab_id,
       status: client.status,
+      working_tag_id: client.workingTagName
     };
   }
 
@@ -231,7 +247,14 @@ class ClientsService {
       logger.debug("Fetching all clients...");
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
-        .select("*")
+        .select(`
+          *,
+          tag:working_tags!working_tag_id (
+            id,
+            name,
+            color
+          )
+        `)
         .eq("lab_id", labId)
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("updated_at", { ascending: false });
@@ -307,7 +330,14 @@ class ClientsService {
 
       const { data: client, error } = await supabase
         .from("clients")
-        .select("*")
+        .select(`
+          *,
+          tag:working_tags!working_tag_id (
+            id,
+            name,
+            color
+          )
+        `)
         .eq("id", id)
         .single();
 
@@ -336,6 +366,7 @@ class ClientsService {
         sales_rep_name: typedClient.sales_rep_name,
         sales_rep_note: typedClient.sales_rep_note,
         additional_lead_time: typedClient.additional_lead_time,
+        tags: client?.tag || [],
       });
 
       const { data: doctors, error: doctorsError } = await supabase
@@ -385,10 +416,10 @@ class ClientsService {
         const { error: doctorsError } = await supabase.from("doctors").insert(
           clientData.doctors.map(
             (doctor) =>
-              ({
-                ...this.transformDoctorToDB(doctor),
-                client_id: clients.id,
-              } as any)
+            ({
+              ...this.transformDoctorToDB(doctor),
+              client_id: clients.id,
+            } as any)
           )
         );
 
