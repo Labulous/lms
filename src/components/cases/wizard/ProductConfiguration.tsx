@@ -1342,7 +1342,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-  console.log(isSingleService, "isSingle");
+  console.log(selectedProducts, "selectedProducts");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -1374,24 +1374,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <React.Fragment key={row.id}>
                   <TableRow key={row.id} className="border ">
                     <TableCell className="border-b w-[20px] cursor-pointer top-0 ">
-                      {expandedRows.includes(row.id) ? (
+                      {expandedRows.includes(row.id + index) ? (
                         <Minus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       ) : (
                         <Plus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       )}
                     </TableCell>
                     <TableCell className="border-b mr-2">
                       <Popover
-                        open={openTypePopover === row.id}
+                        open={openTypePopover === row.id + index}
                         onOpenChange={(open) => {
-                          setOpenTypePopover(open ? row.id : null);
-                          setExpandedRows([row.id]);
+                          setOpenTypePopover(open ? row.id + index : null);
+                          setExpandedRows([row.id + index]);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -1466,9 +1466,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                     <TableCell className="border-b">
                       <Popover
-                        open={openTeethPopover === row.id}
+                        open={openTeethPopover === row.id+index}
                         onOpenChange={(open) => {
-                          setOpenTeethPopover(open ? row.id : null);
+                          setOpenTeethPopover(open ? row.id+index : null);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -2997,7 +2997,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </Button>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.includes(row.id) &&
+                  {expandedRows.includes(row.id+index) &&
                     row?.subRows &&
                     row?.subRows?.length > 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
