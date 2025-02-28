@@ -915,7 +915,9 @@ const updateCases = async (
 
             console.log("Discount prices updated successfully!");
             if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+              navigate(`/cases/${caseId}`, {
+                state: { scrollToTop: true, from: "edit" },
+              });
             }
           } else {
             // Insert a new row if discounted_price_id does not exist
@@ -936,7 +938,9 @@ const updateCases = async (
 
             console.log("New discount price inserted successfully!");
             if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, { state: { scrollToTop: true } });
+              navigate(`/cases/${caseId}`, {
+                state: { scrollToTop: true, from: "edit" },
+              });
             }
           }
         };
