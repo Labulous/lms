@@ -1048,8 +1048,10 @@ const InvoiceList: React.FC = () => {
 
     switch (action) {
       case "exportPDF":
-      case "exportCSV":
         await setIsPreviewModalOpen(true);
+        break;
+      case "exportCSV":
+        exportToCSV();
         break;
       case "delete":
       case "markPaid":
@@ -1214,11 +1216,19 @@ const InvoiceList: React.FC = () => {
           const dueDate = new Date(invoice.invoice[0].due_date);
           
           if (dueDateRange.from && dueDateRange.to) {
-            return dueDate >= dueDateRange.from && dueDate <= dueDateRange.to;
+            // Create a copy of the end date and set it to the end of the day
+            const endDate = new Date(dueDateRange.to);
+            endDate.setHours(23, 59, 59, 999);
+            
+            return dueDate >= dueDateRange.from && dueDate <= endDate;
           } else if (dueDateRange.from) {
             return dueDate >= dueDateRange.from;
           } else if (dueDateRange.to) {
-            return dueDate <= dueDateRange.to;
+            // Create a copy of the end date and set it to the end of the day
+            const endDate = new Date(dueDateRange.to);
+            endDate.setHours(23, 59, 59, 999);
+            
+            return dueDate <= endDate;
           }
           return true;
         })
@@ -1496,6 +1506,132 @@ const InvoiceList: React.FC = () => {
     setIsPreviewModalOpen(true);
   };
 
+  const exportToCSV = () => {
+    // Get the data to export - use the same data source as what's displayed in the table
+    const dataToExport = selectedInvoices.length > 0
+      ? getSortedAndPaginatedData().filter(invoice => selectedInvoices.includes(invoice.id as string))
+      : getSortedAndPaginatedData();
+    
+    console.log("Data to export:", dataToExport);
+    
+    if (!dataToExport.length) {
+      toast.error("No invoices to export");
+      setLoadingState({ action: null, isLoading: false });
+      return;
+    }
+
+    try {
+      // Define CSV headers
+      const headers = [
+        "Invoice #",
+        "Date",
+        "Tag",
+        "Status",
+        "Client",
+        "Case #",
+        "Amount",
+        "Due Date"
+      ];
+      
+      // Function to escape CSV values properly
+      const escapeCSV = (value: any) => {
+        if (value === null || value === undefined) return '';
+        const stringValue = String(value);
+        // If the value contains commas, quotes, or newlines, wrap it in quotes and escape any quotes
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      };
+
+      // Create CSV rows from the data
+      const rows = dataToExport.map(invoice => {
+        // Format invoice number
+        const invoiceNumber = invoice.case_number 
+          ? `INV-${invoice.case_number.split("-").slice(1).join("-")}`
+          : "N/A";
+          
+        // Format date
+        const date = invoice?.received_date
+          ? new Date(invoice.received_date).toLocaleDateString()
+          : "N/A";
+          
+        // Get tag
+        const tag = invoice.tag?.name || "N/A";
+        
+        // Get status
+        const status = invoice?.invoice?.[0]?.status
+          ? `${invoice.invoice[0].status.charAt(0).toUpperCase()}${invoice.invoice[0].status.slice(1)}`
+          : "N/A";
+          
+        // Get client name
+        const client = invoice?.client?.client_name || "N/A";
+        
+        // Get case number
+        const caseNumber = invoice.case_number || "N/A";
+        
+        // Calculate amount
+        const amount = (
+          (typeof invoice.amount === "number" ? invoice.amount : 0) +
+          (invoice?.products?.reduce(
+            (sum, item) =>
+              sum +
+              (typeof item.discounted_price?.final_price === "number"
+                ? item.discounted_price.final_price
+                : 0),
+            0
+          ) ?? 0)
+        ).toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+        });
+        
+        // Format due date
+        const dueDate = invoice?.due_date
+          ? new Date(invoice.due_date).toLocaleDateString()
+          : "N/A";
+          
+        // Return array of values in the same order as headers
+        return [
+          escapeCSV(invoiceNumber),
+          escapeCSV(date),
+          escapeCSV(tag),
+          escapeCSV(status),
+          escapeCSV(client),
+          escapeCSV(caseNumber),
+          escapeCSV(amount),
+          escapeCSV(dueDate)
+        ];
+      });
+      
+      // Combine headers and rows into CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+      
+      console.log("CSV Content:", csvContent);
+      
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `invoices_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("CSV exported successfully");
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast.error("Failed to export CSV");
+    } finally {
+      setLoadingState({ action: null, isLoading: false });
+      setProcessingFeedback("");
+    }
+  };
+
   return (
     <div className="relative">
       {isCaseDrawerOpen && selectedCase && (
@@ -1596,6 +1732,13 @@ const InvoiceList: React.FC = () => {
                       <Bell className="mr-2 h-4 w-4" />
                       <span>Send Reminder</span>
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleBulkAction("exportCSV")}
+                      className="flex items-center"
+                    >
+                      <FileText className="mr-2 h-4 w-4" />
+                      <span>Export to CSV</span>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <Popover>
                       <PopoverTrigger asChild>
@@ -1607,95 +1750,20 @@ const InvoiceList: React.FC = () => {
                           <span>Change Due Date</span>
                         </DropdownMenuItem>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[200px] p-2" align="start">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                            <span className="text-sm font-medium">
-                              Filter by Status
-                            </span>
-                            {statusFilter.length > 0 && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setStatusFilter([])}
-                                className="h-8 px-2 text-xs"
-                              >
-                                Clear
-                              </Button>
-                            )}
-                          </div>
-                          {[
-                            "unpaid",
-                            "paid",
-                            "partially_paid",
-                            "overdue",
-                            "cancelled",
-                          ].map((status, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center space-x-2"
-                            >
-                              <Checkbox
-                                id={`status-${status}`}
-                                checked={
-                                  statusFilter.includes(
-                                    status as
-                                    | "draft"
-                                    | "unpaid"
-                                    | "pending"
-                                    | "approved"
-                                    | "paid"
-                                    | "overdue"
-                                    | "partially_paid"
-                                    | "cancelled"
-                                  )
-                                    ? true
-                                    : false
-                                }
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setStatusFilter(
-                                      (prev) => [...prev, status] as any
-                                    );
-                                  } else {
-                                    setStatusFilter((prev) =>
-                                      prev.filter((s) => s !== status)
-                                    );
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor={`status-${status}`}
-                                className="flex items-center text-sm font-medium cursor-pointer"
-                              >
-                                <Badge
-                                  variant={
-                                    getStatusBadgeVariant(
-                                      status as Invoice["status"]
-                                    ) as
-                                    | "filter"
-                                    | "secondary"
-                                    | "success"
-                                    | "destructive"
-                                    | "default"
-                                    | "warning"
-                                    | "outline"
-                                    | "Crown"
-                                    | "Bridge"
-                                    | "Removable"
-                                    | "Implant"
-                                    | "Coping"
-                                    | "Appliance"
-                                  }
-                                >
-                                  {status === "partially_paid"
-                                    ? "Partially Paid"
-                                    : status.charAt(0).toUpperCase() +
-                                    status.slice(1)}
-                                </Badge>
-                              </label>
-                            </div>
-                          ))}
+                      <PopoverContent 
+                        className="w-auto p-0" 
+                        align="center" 
+                        side="top"
+                        sideOffset={5}
+                        avoidCollisions={true}
+                        collisionPadding={20}
+                        sticky="always"
+                      >
+                        <div className="p-4">
+                          <DateRangePicker
+                            dateRange={dueDateRange}
+                            onDateRangeChange={setDueDateRange}
+                          />
                         </div>
                       </PopoverContent>
                     </Popover>
@@ -1972,7 +2040,9 @@ const InvoiceList: React.FC = () => {
                             size="icon"
                             className={cn(
                               "h-8 w-8 p-0",
-                              dueDateRange && "bg-muted text-muted-foreground"
+                              dueDateRange 
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                                : "bg-transparent hover:bg-muted"
                             )}
                             onClick={(e) => {
                               e.stopPropagation(); // Prevent sort trigger
@@ -1987,7 +2057,15 @@ const InvoiceList: React.FC = () => {
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent 
+                          className="w-auto p-0" 
+                          align="center" 
+                          side="top"
+                          sideOffset={5}
+                          avoidCollisions={true}
+                          collisionPadding={20}
+                          sticky="always"
+                        >
                           <div className="p-4">
                             <DateRangePicker
                               dateRange={dueDateRange}

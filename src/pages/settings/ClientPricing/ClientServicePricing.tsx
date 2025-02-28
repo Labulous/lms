@@ -261,21 +261,38 @@ const ClientServicePricing = ({
           price: item.price,
         }))
       );
+    } else if (selectedClient !== "default" && isDrawerOpen) {
+      // Initialize with empty array when drawer opens but no special prices exist
+      setClientPrices([]);
     }
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, specialProducts, selectedClient]);
   console.log(editableServices, "editable products");
   // Function to get client price
   const getClientPrice = (serviceId: string, clientId: string) => {
     if (clientId === "default") return null;
+    
+    // First check in clientPrices (for unsaved changes)
+    const clientPrice = clientPrices.find(
+      (cp) => cp.serviceId === serviceId && cp.clientId === clientId
+    );
+    
+    if (clientPrice !== undefined) {
+      return clientPrice.price;
+    }
+    
+    // Then check in specialProducts (from database)
     const specialPrice = specialProducts?.find(
       (item) => item.service_id === serviceId && item.client_id === clientId
     );
+    
     return specialPrice?.price;
   };
 
   const handlePriceChange = (serviceId: string, newPrice: string) => {
     const price = parseFloat(newPrice);
-    if (isNaN(price) || price < 0) return;
+    
+    // Allow empty string (to clear input) or valid numbers
+    if (newPrice !== "" && isNaN(price)) return;
 
     if (selectedClient !== "default") {
       const updatedPrices = [...clientPrices];
@@ -284,16 +301,75 @@ const ClientServicePricing = ({
       );
 
       if (existingPriceIndex >= 0) {
-        updatedPrices[existingPriceIndex].price = price;
+        // If newPrice is empty string, use 0 as the price
+        updatedPrices[existingPriceIndex].price = newPrice === "" ? 0 : price;
       } else {
         updatedPrices.push({
           serviceId,
           clientId: selectedClient,
-          price,
+          price: newPrice === "" ? 0 : price,
         });
       }
 
       setClientPrices(updatedPrices);
+    }
+  };
+
+  // Function to save all price changes to the database
+  const saveChanges = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Only process changes for the selected client
+      const clientChanges = clientPrices.filter(
+        cp => cp.clientId === selectedClient
+      );
+      
+      if (clientChanges.length === 0) {
+        toast.success("No changes to save");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Process each change
+      for (const change of clientChanges) {
+        // Check if the special price already exists
+        const { data: existingPrice } = await supabase
+          .from("special_service_prices")
+          .select("*")
+          .eq("service_id", change.serviceId)
+          .eq("client_id", selectedClient)
+          .single();
+        
+        if (existingPrice) {
+          // Update existing price
+          await supabase
+            .from("special_service_prices")
+            .update({ price: change.price })
+            .eq("service_id", change.serviceId)
+            .eq("client_id", selectedClient);
+        } else {
+          // Insert new price
+          await supabase
+            .from("special_service_prices")
+            .insert({
+              service_id: change.serviceId,
+              client_id: selectedClient,
+              price: change.price,
+              lab_id: labIdData?.lab_id,
+            });
+        }
+      }
+      
+      // Refresh the data
+      await handleFetchSpecialPrices();
+      toast.success("Changes saved successfully");
+      setIsDrawerOpen(false); // Close drawer after saving
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("Failed to save changes");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -569,13 +645,20 @@ const ClientServicePricing = ({
                       </span>
                     )}
                   </SheetTitle>
-                  <Button
-                    className="mt-5"
-                    disabled={isLoading}
-                    onClick={() => handleSubmit()}
-                  >
-                    {isLoading ? "Saving...." : "Save"}
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsDrawerOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={saveChanges}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
                 </div>
                 <SheetDescription>
                   Make changes to product prices below
@@ -723,12 +806,7 @@ const ClientServicePricing = ({
                                 <Input
                                   type="number"
                                   value={
-                                    selectedClient !== "default"
-                                      ? getClientPrice(
-                                          product.id,
-                                          selectedClient
-                                        ) ?? product.price
-                                      : product.price
+                                    getClientPrice(product.id, selectedClient) ?? ""
                                   }
                                   onChange={(e) =>
                                     handlePriceChange(
@@ -738,6 +816,7 @@ const ClientServicePricing = ({
                                   }
                                   step="0.01"
                                   min="0"
+                                  placeholder={product.price.toFixed(2)}
                                   className="w-24"
                                 />
                               ) : (
