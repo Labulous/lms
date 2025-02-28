@@ -1374,24 +1374,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <React.Fragment key={row.id}>
                   <TableRow key={row.id} className="border ">
                     <TableCell className="border-b w-[20px] cursor-pointer top-0 ">
-                      {expandedRows.includes(row.id) ? (
+                      {expandedRows.includes(row.id + index) ? (
                         <Minus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       ) : (
                         <Plus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       )}
                     </TableCell>
                     <TableCell className="border-b mr-2">
                       <Popover
-                        open={openTypePopover === row.id}
+                        open={openTypePopover === row.id + index}
                         onOpenChange={(open) => {
-                          setOpenTypePopover(open ? row.id : null);
-                          setExpandedRows([row.id]);
+                          setOpenTypePopover(open ? row.id + index : null);
+                          setExpandedRows([row.id + index]);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -1466,9 +1466,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                     <TableCell className="border-b">
                       <Popover
-                        open={openTeethPopover === row.id}
+                        open={openTeethPopover === row.id+index}
                         onOpenChange={(open) => {
-                          setOpenTeethPopover(open ? row.id : null);
+                          setOpenTeethPopover(open ? row.id+index : null);
                         }}
                       >
                         <PopoverTrigger asChild>
