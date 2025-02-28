@@ -641,7 +641,7 @@ const StatementList = ({ statement }: StatementList) => {
               <TableHead>Client</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">Outstanding Amount</TableHead>
-              <TableHead>Last Sent</TableHead>
+              <TableHead>Last Generated</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>

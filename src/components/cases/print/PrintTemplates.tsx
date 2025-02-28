@@ -411,8 +411,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     Date:
                                   </p>
                                   <p className="text-right min-w-[120px] text-sm">
-                                    {invoice?.due_date
-                                      ? formatDate(invoice.due_date)
+                                    {invoice?.created_at
+                                      ? formatDate(invoice.created_at)
                                       : "TBD"}
                                   </p>
                                 </div>
