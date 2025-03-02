@@ -438,7 +438,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.log(workStationData, "workStationData");
         fetchServices();
         const location = useLocation();
-        const previousPath = location.state.from || "No previous path available";
+        const previousPath = location?.state?.from || "No previous path available";
         if (previousPath === "edit") {
           fetchCaseData(true);
         }

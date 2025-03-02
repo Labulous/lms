@@ -33,6 +33,14 @@ export interface SavedProduct {
     discount: number;
     is_taxable: boolean;
   }[];
+  commonServices?: {
+    id: string | null;
+    name: string;
+    price: number;
+    discount: number;
+    is_taxable: boolean;
+    add_to_all: boolean;
+  }[];
   services?: {
     id: string | null;
     name: string;
