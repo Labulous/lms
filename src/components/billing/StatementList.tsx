@@ -101,6 +101,7 @@ export interface StatementDetails {
   statement: StatementList;
   client: Client;
   invoiceData: InvoiceItem[];
+  updated_at?: string;
 }
 
 const StatementList = ({ statement }: StatementList) => {
@@ -478,6 +479,7 @@ const StatementList = ({ statement }: StatementList) => {
       statement: statementData[0],
       client: clientData,
       invoiceData: combinedData || [],
+      updated_at: statementData[0].updated_at,
     };
     setStatementDetails([statementDetailsObject]);
     setSelectedStatements([statementId]);
@@ -639,7 +641,7 @@ const StatementList = ({ statement }: StatementList) => {
               <TableHead>Client</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">Outstanding Amount</TableHead>
-              <TableHead>Last Sent</TableHead>
+              <TableHead>Last Generated</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -654,8 +656,8 @@ const StatementList = ({ statement }: StatementList) => {
                 </TableCell>
                 <TableCell>{formatDate(statement.created_at)}</TableCell>
                 <TableCell>
-                  <Button 
-                    variant="link" 
+                  <Button
+                    variant="link"
                     className="p-0"
                     onClick={() => handleViewDetails(statement.id)}
                   >

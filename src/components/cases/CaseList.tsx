@@ -78,6 +78,7 @@ import { ExtendedCase } from "./CaseDetails";
 import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 import toast from "react-hot-toast";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
+import { useLocation } from "react-router-dom";
 import { calculateDueDate } from "@/lib/calculateDueDate";
 
 const logger = createLogger({ module: "CaseList" });
@@ -101,13 +102,14 @@ const CaseList: React.FC = () => {
     const statusParam = searchParams.get("status");
     return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
   });
-  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined>(() => {
-    const dueDateParam = searchParams.get("dueDate");
+  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined | string>(
+    () => {
+      const dueDateParam = searchParams.get("dueDate");
 
-    // Parse the date as UTC and return it, or undefined if no date is provided
-    return dueDateParam ? new Date(Date.parse(dueDateParam)) : undefined;
-  });
-
+      // Parse the date as UTC and return it, or undefined if no date is provided
+      return dueDateParam ? new Date() : undefined;
+    }
+  );
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -129,9 +131,27 @@ const CaseList: React.FC = () => {
     }),
     [paginationState, pageSize]
   );
-  const date = dueDateFilter ? new Date(dueDateFilter as Date) : new Date();
+  let date;
+  const location = useLocation();
+  const previousPath = location.state.from || "No previous path available";
+  if (typeof dueDateFilter === "string") {
+    const [year, month, day] = dueDateFilter.split("-").map(Number);
+    date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC
+  } else {
+    date = new Date();
+  }
+
+  console.log(
+    dueDateFilter,
+    date,
+    searchParams.get("dueDate"),
+    "dueDateFilter"
+  );
+
   const month = date.getMonth() + 1; // Months are 0-indexed
-  const day = date.getDate();
+  const day = searchParams.get("dueDate")
+    ? searchParams.get("dueDate")?.split("-")[2]
+    : null;
   const columns: ColumnDef<ExtendedCase>[] = [
     {
       accessorKey: "select",
@@ -579,7 +599,7 @@ const CaseList: React.FC = () => {
                   Due Date
                   {dueDateFilter && (
                     <Badge variant="outline" className="ml-2 bg-background">
-                      {`${shortMonths[month]} ${day}`}
+                      {`${shortMonths[month - 1]} ${day}`}
                     </Badge>
                   )}
                 </div>
@@ -606,11 +626,13 @@ const CaseList: React.FC = () => {
                 </div>
                 <DayPicker
                   mode="single"
-                  selected={dueDateFilter}
+                  selected={dueDateFilter as Date}
                   onSelect={(date) => {
                     setDueDateFilter(date || undefined);
                     column.setFilterValue(date || undefined);
                     if (date) {
+                      console.log(date, "datedatedate");
+
                       searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
                     } else {
                       searchParams.delete("dueDate");
@@ -643,13 +665,21 @@ const CaseList: React.FC = () => {
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
-        const dueDate = row.getValue(id) as string;
+        let dueDate = row.getValue(id) as string;
+
         if (!dueDate) return false;
-        const rowDate = new Date(dueDate);
+        let rowDate = new Date(dueDate);
+        // value.setUTCDate(value.getUTCDate() + 1);
+        const filterDate = searchParams.get("dueDate");
+        const formatedDate = filterDate ? new Date(filterDate) : null;
+        const utcDate = formatedDate
+          ? formatedDate.setUTCDate(formatedDate.getUTCDate() + 1)
+          : null;
+
         return (
           rowDate.getFullYear() === value.getFullYear() &&
           rowDate.getMonth() === value.getMonth() &&
-          rowDate.getDate() === value.getDate()
+          rowDate.getDate() === formatedDate?.getDate()
         );
       },
     },
@@ -668,11 +698,7 @@ const CaseList: React.FC = () => {
       cell: ({ row }) => {
         const date = row.getValue("received_date") as string;
         const createdAt = row.original.created_at;
-        console.log("Date values:", {
-          received_date: date,
-          created_at: createdAt,
-          case_id: row.original.id,
-        });
+
         return formatDate(date || createdAt);
       },
     },
@@ -941,9 +967,8 @@ const CaseList: React.FC = () => {
         .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      refreshInterval: 5000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
     }
   );
   if (caseError && labIdData?.lab_id) {
@@ -992,7 +1017,221 @@ const CaseList: React.FC = () => {
       };
     }
   );
+  const handleFetchData = async () => {
+    try {
+      const { data: query, error } = await supabase
+        .from("cases")
+        .select(
+          `
+                 id,
+        created_at,
+        received_date,
+        ship_date,
+        status,
+        patient_name,
+        due_date,
+        attachements,
+        case_number,
+        invoice:invoices!case_id (
+          id,
+          case_id,
+          amount,
+          status,
+          due_amount,
+          due_date
+        ),
+        client:clients!client_id (
+          id,
+          client_name,
+          phone,
+          street,
+          city,
+          state,
+          zip_code
+        ),
+        doctor:doctors!doctor_id (
+          id,
+          name,
+          client:clients!client_id (
+            id,
+            client_name,
+            phone
+          )
+        ),
+        tag:working_tags!working_tag_id (
+          name,
+          color
+        ),
+        working_pan_name,
+        working_pan_color,
+        rx_number,
+        received_date,
+        invoice_notes,
+        isDueDateTBD,
+        appointment_date,
+        instruction_notes,
+        otherItems,
+        occlusal_type,
+        contact_type,
+        pontic_type,
+        qr_code,
+        custom_contact_details,
+        custom_occulusal_details,
+        custom_pontic_details,
+        enclosed_items:enclosed_case!enclosed_case_id (
+          impression,
+          biteRegistration,
+          photos,
+          jig,
+          opposingModel,
+          articulator,
+          returnArticulator,
+          cadcamFiles,
+          consultRequested,
+          user_id
+        ),
+        created_by:users!created_by (
+          name,
+          id
+        ),
+        product_ids:case_products!id (
+          products_id,
+          id
+        ),
+         margin_design_type,
+        occlusion_design_type,
+        alloy_type,
+        custom_margin_design_type,
+        custom_occlusion_design_type,
+        custon_alloy_type,
+      discounted_price:discounted_price!id (
+                id,
+                product_id,
+                discount,
+                final_price,
+                price,
+                quantity,
+                total
+          ),
+        teethProduct: case_product_teeth!id (
+          id,
+          is_range,
 
+          tooth_number,
+          product_id,
+          occlusal_shade:shade_options!occlusal_shade_id (
+          name,
+          category,
+          is_active
+          ),
+           body_shade:shade_options!body_shade_id (
+           name,
+           category,
+            is_active
+            ),
+            gingival_shade:shade_options!gingival_shade_id (
+            name,
+            category,
+             is_active
+             ),
+             stump_shade:shade_options!stump_shade_id (
+               name,
+              category,
+              is_active
+                    ),
+                  pontic_teeth,
+                  notes,
+                  product_id,
+                  custom_body_shade,
+                  custom_occlusal_shade,
+                  custom_gingival_shade,
+                  custom_stump_shade,
+                  type,
+          product:products!product_id (
+                    id,
+                    name,
+                    price,
+                    lead_time,
+                    is_client_visible,
+                    is_taxable,
+                    created_at,
+                    updated_at,
+                    requires_shade,
+                    material:materials!material_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    product_type:product_types!product_type_id (
+                      name,
+                      description,
+                      is_active
+                    ),
+                    billing_type:billing_types!billing_type_id (
+                      name,
+                      label,
+                      description,
+                      is_active
+                    )
+          )
+          )
+          `
+        )
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.log("failed to fetch cases");
+      }
+      const arragedNewCases: ExtendedCase[] =
+        query?.map((item: any) => {
+          return {
+            ...item,
+            products: item.teethProduct.map((tp: any) => ({
+              id: tp.product.id,
+              name: tp.product.name,
+              price: tp.product.price,
+              lead_time: tp.product.lead_time,
+              is_client_visible: tp.product.is_client_visible,
+              is_taxable: tp.product.is_taxable,
+              created_at: tp.product.created_at,
+              updated_at: tp.product.updated_at,
+              requires_shade: tp.product.requires_shade,
+              material: tp.product.material,
+              product_type: tp.product.product_type,
+              billing_type: tp.product.billing_type,
+              discounted_price: tp.product.discounted_price,
+              teethProduct: {
+                id: tp.id,
+                is_range: tp.is_range,
+                tooth_number: tp.tooth_number,
+                product_id: tp.product_id,
+                occlusal_shade: tp.occlusal_shade,
+                body_shade: tp.body_shade,
+                gingival_shade: tp.gingival_shade,
+                stump_shade: tp.stump_shade,
+                manual_occlusal_shade: tp.manual_occlusal_shade,
+                manual_body_shade: tp.manual_body_shade,
+                manual_gingival_shade: tp.manual_gingival_shade,
+                manual_stump_shade: tp.manual_stump_shade,
+                custom_occlusal_shade: tp.custom_occlusal_shade,
+                custom_body_shade: tp.custom_body_shade,
+                custom_gingival_shade: tp.custom_gingival_shade,
+                custom_stump_shade: tp.custom_stump_shade,
+                custom_occlusal_details: tp.occlusal_shade,
+                notes: tp.notes,
+              },
+            })),
+          };
+        }) || [];
+      if (arragedNewCases) {
+        setCases(arragedNewCases);
+      }
+    } catch (err) {
+      console.log("err");
+    }
+  };
   const table = useReactTable({
     data: filteredCases as ExtendedCase[],
     columns,
@@ -1010,12 +1249,18 @@ const CaseList: React.FC = () => {
     getSortedRowModel: getSortedRowModel(),
   });
   useEffect(() => {
+    if (previousPath === "cases") {
+      handleFetchData();
+    }
+  }, [previousPath]);
+  useEffect(() => {
     if (statusFilter.length > 0) {
       table.getColumn("status")?.setFilterValue(statusFilter);
     } else {
       table.getColumn("status")?.setFilterValue(undefined);
     }
     if (dueDateFilter) {
+      console.log(dueDateFilter, "dueDateFilter");
       table.getColumn("due_date")?.setFilterValue(dueDateFilter);
     } else {
       table.getColumn("due_date")?.setFilterValue(undefined);
@@ -1027,40 +1272,23 @@ const CaseList: React.FC = () => {
   useEffect(() => {
     if (arragedNewCases && arragedNewCases.length > 0 && !hasRunRef.current) {
       setCases(arragedNewCases);
-      console.log("hi");
       hasRunRef.current = true; // Mark that the effect has run
     }
   }, [arragedNewCases]);
   useEffect(() => {
     const filter = searchParams.get("filter");
+    console.log(filter, "filter");
 
     if (filter) {
       // Get today's date in UTC at midnight
-      const today = new Date(
-        Date.UTC(
-          new Date().getUTCFullYear(),
-          new Date().getUTCMonth(),
-          new Date().getUTCDate()
-        )
-      );
-      const todayUTC = Date.UTC(
-        today.getUTCFullYear(),
-        today.getUTCMonth(),
-        today.getUTCDate()
-      );
+      const today = new Date();
+      const todayUTC = new Date();
 
       // Calculate tomorrow's date in UTC
-      const tomorrowUTC = todayUTC + 24 * 60 * 60 * 1000; // Add one day in milliseconds
       const tomorrow = new Date(today);
       tomorrow.setUTCDate(today.getUTCDate() + 1);
       const filteredCases = cases.filter((caseItem) => {
         const dueDate = new Date(caseItem.due_date);
-
-        const dueDateUTC = Date.UTC(
-          dueDate.getUTCFullYear(),
-          dueDate.getUTCMonth(),
-          dueDate.getUTCDate()
-        );
 
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
@@ -1072,20 +1300,24 @@ const CaseList: React.FC = () => {
         };
         // Set the start and end of today to compare full date range
         const startOfToday = new Date(today);
-        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+        startOfToday.setHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
 
         // End of today in UTC (11:59:59.999 PM UTC)
         const endOfToday = new Date(today);
-        endOfToday.setUTCHours(23, 59, 59, 999); //
+        endOfToday.setHours(23, 59, 59, 999); //
 
         const isDueToday = (dueDate: string) => {
           const due = new Date(dueDate);
           return due >= startOfToday && due <= endOfToday;
         };
-
         switch (filter) {
           case "past_due":
-            return dueDateUTC < todayUTC && caseItem.status !== "completed";
+            return (
+              new Date(caseItem.due_date) < startOfToday &&
+              caseItem.status !== "completed" &&
+              caseItem.status !== "on_hold" &&
+              caseItem.status !== "cancelled"
+            );
           case "due_today":
             return (
               isDueToday(caseItem.due_date) && caseItem.status !== "completed"

@@ -415,7 +415,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         <SelectValue placeholder="Select a client" />
                       </SelectTrigger>
                       <SelectContent className="max-h-[300px] overflow-y-auto">
-                        <div className="sticky top-0 bg-white p-2 border-b">
+                        <div className="sticky top-0 bg-white p-2 border-b z-10">
                           <input
                             type="text"
                             placeholder="Search by account # or name..."
@@ -423,6 +423,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full px-3 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                             onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
                           />
                         </div>
                         {filteredClients.length > 0 ? (

@@ -393,7 +393,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.error("Lab ID not found.");
         return;
       }
-      console.log(lab, "lablab");
       setLab(lab);
 
       const { data: workStationData, error: workStationError } = await supabase
@@ -422,6 +421,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         `
         )
         .eq("case_id", activeCaseId);
+
       const { data: worksationTypes, error: worksationTypesErrors } =
         await supabase
           .from("workstation_types")
@@ -440,7 +440,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       } else {
         console.log(workStationData, "workStationData");
         fetchServices();
-
+        const location = useLocation();
+        const previousPath = location.state.from || "No previous path available";
+        if (previousPath === "edit") {
+          fetchCaseData(true);
+        }
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -708,7 +712,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     {
       revalidateOnFocus: true, // Refetch when the window is focused
       revalidateOnReconnect: true, // Refetch when the network is reconnected
-      dedupingInterval: 0, // No deduplication, so it will not use cached data
     }
   );
 
@@ -1459,182 +1462,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     const updatedProductIds = updatedInvoice?.items?.map((item) => item.id);
     console.log(updatedInvoice, "updated Invoices");
 
-    // const { data: casesData, error: CaseDataerror } = await supabase;
-    //   .from("cases")
-    //   .select(
-    //     `
-    //   client_id
-    // `
-    //   )
-    //   .eq("id", updatedInvoice.id)
-    //   .order("created_at", { ascending: false });
-
-    // if (CaseDataerror) {
-    //   throw new Error(CaseDataerror.message);
-    // }
-
-    // try {
-    //   setLoadingState({ isLoading: true, action: "save" });
-
-    //   const { data: updatedCaseProducts, error: updateCaseProductsError } =
-    //     await supabase
-    //       .from("case_products")
-    //       .update({ products_id: updatedProductIds })
-    //       .eq("case_id", updatedInvoice.id)
-    //       .select();
-
-    //   if (updateCaseProductsError) {
-    //     throw new Error(updateCaseProductsError.message);
-    //   }
-    //   console.log(updatedCaseProducts, "updatedCaseProducts");
-    //   for (const item of updatedInvoice?.items || []) {
-    //     try {
-    //       // Calculate the final price based on the quantity, unit price, and discount
-    //       const finalPrice =
-    //         item.quantity *
-    //         Number(item.unitPrice) *
-    //         (1 - (item.discount || 0) / 100);
-
-    //       if (item.discountId && item.caseProductTeethId) {
-    //         // Update the discounted_price table
-    //         const { data: updatedDiscount, error: updateDiscountError } =
-    //           await supabase
-    //             .from("discounted_price")
-    //             .update({
-    //               discount: item.discount,
-    //               quantity: item.quantity || 1,
-    //               price: Number(item.unitPrice),
-    //               final_price: Number(finalPrice),
-    //             })
-    //             .eq("id", item.discountId)
-    //             .select();
-
-    //         if (updateDiscountError) {
-    //           throw new Error(updateDiscountError.message);
-    //         }
-
-    //         // Update the case_product_teeth table
-    //         const { data: updateTeeth, error: updateTeethError } =
-    //           await supabase
-    //             .from("case_product_teeth")
-    //             .update({
-    //               tooth_number: item.toothNumber
-    //                 .split(",")
-    //                 .map((num) => num.trim()), // Split string into an array and trim whitespace
-    //             })
-    //             .eq("id", item.caseProductTeethId)
-    //             .select("*");
-
-    //         console.log("Updated discount row:", updatedDiscount);
-    //         console.log("Updated teeth row:", updateTeeth);
-    //       } else {
-    //         // Create a new discounted_price row
-    //         const { data: newDiscount, error: newDiscountError } =
-    //           await supabase
-    //             .from("discounted_price")
-    //             .insert([
-    //               {
-    //                 discount: item.discount,
-    //                 quantity: item.quantity,
-    //                 price: item.unitPrice,
-    //                 final_price: finalPrice,
-    //                 product_id: item.id,
-    //                 case_id: updatedInvoice.id,
-    //                 user_id: user?.id,
-    //               },
-    //             ])
-    //             .select();
-
-    //         if (newDiscountError) {
-    //           throw new Error(newDiscountError.message);
-    //         }
-
-    //         console.log("Created new discount row:", newDiscount);
-
-    //         // Create a new case_product_teeth row
-    //         const { data: newTeeth, error: newTeethError } = await supabase
-    //           .from("case_product_teeth")
-    //           .insert([
-    //             {
-    //               tooth_number: item.toothNumber
-    //                 .split(",")
-    //                 .map((num) => num.trim()),
-    //               product_id: item.id, // Ensure to include the product_id
-    //               case_id: updatedInvoice.id,
-    //               lab_id: lab?.id,
-    //               case_product_id: updatedCaseProducts[0].id,
-    //             },
-    //           ])
-    //           .select("*");
-
-    //         if (newTeethError) {
-    //           throw new Error(newTeethError.message);
-    //         }
-
-    //         console.log("Created new teeth row:", newTeeth);
-    //       }
-    //       if (casesData && casesData.length > 0 && casesData[0]?.client_id) {
-    //         await updateBalanceTracking(casesData[0]?.client_id);
-    //       }
-    //     } catch (error) {
-    //       console.error(
-    //         `Error processing item with productId ${item.id}:`,
-    //         error
-    //       );
-    //       // Optionally, continue with the next item instead of throwing
-    //     }
-    //   }
-
-    //   const { error: updateCasesError } = await supabase
-    //     .from("cases")
-    //     .update({
-    //       invoice_notes: updatedInvoice?.notes?.invoiceNotes,
-    //     })
-    //     .eq("id", updatedInvoice.id);
-
-    //   if (updateCasesError) {
-    //     throw new Error(updateCasesError.message);
-    //   }
-    //   function updateInvoice(
-    //     old_amount: number,
-    //     new_amount: number,
-    //     due_amount: number
-    //   ) {
-    //     let paid_amount = old_amount - due_amount;
-    //     let new_due_amount = Math.max(0, new_amount - paid_amount);
-
-    //     return {
-    //       amount: new_amount,
-    //       due_amount: new_due_amount,
-    //     };
-    //   }
-
-    //   const { error: updateInvoicesError } = await supabase
-    //     .from("invoices")
-    //     .update(
-    //       updateInvoice(
-    //         Number(updatedInvoice.oldTotalAmount),
-    //         Number(updatedInvoice.totalAmount),
-    //         Number(updatedInvoice.totalDue)
-    //       )
-    //     )
-    //     .eq("case_id", updatedInvoice.id);
-
-    //   if (updateInvoicesError) {
-    //     throw new Error(updateInvoicesError.message);
-    //   }
-
-    //   toast.success("Invoice and related data updated successfully");
-
-    //   handleCloseEditModal();
-    //   setCaseRefresh(true);
-    // } catch (error) {
-    //   console.error("Error saving invoice:", error);
-    //   toast.error("Failed to update invoice");
-    // } finally {
-    //   setLoadingState({ isLoading: false, action: null });
-    //   fetchCaseData(true);
-    // }
     fetchCaseData(true);
     toast.success("Invoice Updated SucessFully!!");
   };

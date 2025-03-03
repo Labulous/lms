@@ -283,7 +283,7 @@ const PrintPreview = () => {
       paperSize,
       caseDetails,
     };
-
+    console.log(caseDetails, "case details.");
     switch (type) {
       case "qr-code":
         return <QRCodeTemplate {...props} />;

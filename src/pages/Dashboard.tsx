@@ -280,26 +280,20 @@ const Dashboard: React.FC = () => {
 
         // Fetch case metrics and calendar events
         // Get today's date in UTC
-        const today = new Date(
-          Date.UTC(
-            new Date().getUTCFullYear(),
-            new Date().getUTCMonth(),
-            new Date().getUTCDate()
-          )
-        );
+        const today = new Date();
 
         // Get tomorrow's date in UTC
         const tomorrow = new Date(today);
-        tomorrow.setUTCDate(today.getUTCDate() + 1); // Set tomorrow's date in UTC
+        tomorrow.setHours(today.getDate() + 1); // Set tomorrow's date in UTC
         // Set tomorrow's date
 
         // Set the start and end of today to compare full date range
         const startOfToday = new Date(today);
-        startOfToday.setUTCHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
+        startOfToday.setHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
 
         // End of today in UTC (11:59:59.999 PM UTC)
         const endOfToday = new Date(today);
-        endOfToday.setUTCHours(23, 59, 59, 999); //
+        endOfToday.setHours(23, 59, 59, 999); //
 
         // Function to check if a date is due today
         const isDueToday = (dueDate: string) => {
@@ -311,7 +305,7 @@ const Dashboard: React.FC = () => {
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
           return (
-            due.getDate() === tomorrow.getDate() &&
+            due.getDay() === tomorrow.getDay() &&
             due.getMonth() === tomorrow.getMonth() &&
             due.getFullYear() === tomorrow.getFullYear()
           );
@@ -321,7 +315,9 @@ const Dashboard: React.FC = () => {
         const pastDue = casesList.filter(
           (caseItem) =>
             new Date(caseItem.due_date) < startOfToday &&
-            caseItem.status !== "on_hold"
+            caseItem.status !== "on_hold" &&
+            caseItem.status !== "on_hold" &&
+            caseItem.status !== "cancelled"
         );
         const dueToday = casesList.filter(
           //active
@@ -466,17 +462,31 @@ const Dashboard: React.FC = () => {
         //   },
         //   {}
         // );
-
+        console.log(casesList, "casesList");
         const groupedCases = casesList.reduce(
           (acc: Record<string, CasesDues[]>, caseItem: CasesDues) => {
             if (
               ["in_queue", "in_progress", "on_hold"].includes(caseItem.status)
             ) {
-              const dueDate = new Date(caseItem.due_date)
-                .toISOString()
-                .split("T")[0];
-              acc[dueDate] = acc[dueDate] || [];
-              acc[dueDate].push(caseItem);
+              const dueDate = new Date(caseItem.due_date);
+
+              // Force UTC to 12 AM
+              const year = dueDate.getUTCFullYear();
+              const month = dueDate.getUTCMonth(); // Zero-based, keep as is
+              const day = dueDate.getUTCDate();
+
+              // Create a fixed UTC date with 12 AM
+              const fixedUTCDate = new Date(
+                Date.UTC(year, month, day, 0, 0, 0, 0)
+              );
+
+              // Format as YYYY-MM-DD (UTC)
+              const dueDateUTC = fixedUTCDate.toISOString().split("T")[0];
+
+              console.log(caseItem.due_date, dueDateUTC, "caseItem.due_date");
+
+              acc[dueDateUTC] = acc[dueDateUTC] || [];
+              acc[dueDateUTC].push(caseItem);
             }
             return acc;
           },
@@ -486,12 +496,23 @@ const Dashboard: React.FC = () => {
         const events: CalendarEvents[] = Object.entries(groupedCases).map(
           ([date, cases]) => {
             const eventDate = new Date(date);
-            const year = eventDate.getUTCFullYear();
-            const month = eventDate.getUTCMonth();
-            const day = eventDate.getUTCDate();
+            console.log(eventDate, "eventDate");
+            // const year = eventDate.getFullYear();
+            // const month = eventDate.getMonth();
+            // const day = eventDate.getDate();
+            console.log(cases, "casescases");
+            // Ensure start and end times are in UTC
+            const [year, month, day] = date.split("-").map(Number);
 
-            const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
-            const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
+            // Ensure start and end times are in UTC
+            const start = new Date(year, month - 1, day, 0, 0, 0, 0); // 12 AM UTC
+            const end = new Date(year, month - 1, day, 0, 0, 0, 0); // 11:59 PM UTC
+
+            console.log("Start:", start.toISOString()); // This should always show the correct UTC date
+            console.log("End:", end.toISOString());
+
+            // const start = new Date(year, month, day, 0, 0, 0, 0); // UTC start
+            // const end = new Date(year, month, day, 23, 59, 59, 999); // UTC end
 
             const today = new Date();
             const isPastDue = eventDate < today;
@@ -655,7 +676,7 @@ const Dashboard: React.FC = () => {
               Good {getTimeOfDay()}, {user?.name}!
             </h2>
             <p className="text-gray-500">
-              Here's what's happening in your lab today.
+              {`Here is what is happening in your lab on ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.`}
             </p>
           </div>
         </div>

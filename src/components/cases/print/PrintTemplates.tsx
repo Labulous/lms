@@ -412,8 +412,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     Date:
                                   </p>
                                   <p className="text-right min-w-[120px] text-sm">
-                                    {invoice?.due_date
-                                      ? formatDate(invoice.due_date)
+                                    {invoice?.created_at
+                                      ? formatDate(invoice.created_at)
                                       : "TBD"}
                                   </p>
                                 </div>
@@ -460,16 +460,16 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       <div className="mb-8">
                         <div className="grid grid-cols-12 border border-gray-300 bg-gray-100 mb-4 gap-1">
                           <h3
-                            className="font-bold col-span-6 text-xs p-2"
+                            className="font-bold col-span-5 text-xs p-2"
                             style={{ lineHeight: "1.15" }}
                           >
                             Description
                           </h3>
                           <h2
-                            className="font-bold text-right col-span-1 text-xs p-2"
+                            className="font-bold text-right col-span-2 text-xs p-2"
                             style={{ lineHeight: "1.15" }}
                           >
-                            Price
+                            Item Price
                           </h2>
                           <h2
                             className="font-bold text-right col-span-1 text-xs p-2"
@@ -482,7 +482,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                             style={{ lineHeight: "1.15" }}
                           >
                             {" "}
-                            Price(%)
+                            Amount
                           </h2>
                           <h2
                             className="font-bold text-right col-span-2 text-xs p-2"
@@ -498,14 +498,14 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
                               style={{ lineHeight: "1.1" }}
                             >
-                              <div className="space-y-1 font-medium col-span-6 pl-2">
+                              <div className="space-y-1 font-medium col-span-5 pl-2">
                                 <div>
                                   <p>{item.service.name}</p>
                                   <p className="font-bold">Service</p>
                                 </div>
                               </div>
                               <p
-                                className="text-right col-span-1 pr-2 font-bold"
+                                className="text-right col-span-2 pr-2 font-bold"
                                 style={{ lineHeight: "1.15" }}
                               >
                                 ${item.service.price}
@@ -539,7 +539,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
                                 style={{ lineHeight: "1.1" }}
                               >
-                                <div className="space-y-1 font-medium col-span-6 pl-2">
+                                <div className="space-y-1 font-medium col-span-5 pl-2">
                                   <div>
                                     <p
                                       className="font-extrabold"
@@ -551,18 +551,69 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       className="text-sm pl-6 font-extrabold"
                                       style={{ lineHeight: "1.15" }}
                                     >
-                                      <span className="font-normal">
-                                        Teeth:{" "}
-                                      </span>
-                                      #
-                                      {item.teethProduct.type !== "Bridge"
-                                        ? item.teethProduct?.tooth_number
+                                      <span className="font-normal"></span>
+                                      {item.teethProduct.type === "Bridge"
+                                        ? ""
+                                        : "Teeth:#"}
+                                      {item.teethProduct.type !== "Bridge" ? (
+                                        item.teethProduct?.tooth_number
                                           .map((item: number) => `${item}`)
                                           .join(",")
-                                        : formatTeethRange(
-                                          item.teethProduct?.tooth_number
-                                        )}
+                                      ) : (
+                                        <>
+                                          <span
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                  item?.teethProduct
+                                                    .type as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            Bridge:
+                                          </span>
+                                          #
+                                          {formatTeethRange(
+                                            item.teethProduct?.tooth_number
+                                          )}
+                                        </>
+                                      )}
                                     </p>
+                                    {item.teethProduct.pontic_teeth.length >
+                                      0 && (
+                                      <p
+                                        className="text-sm pl-6 font-extrabold"
+                                        style={{ lineHeight: "1.15" }}
+                                      >
+                                        <span className="font-normal"></span>
+                                        {item.teethProduct.type === "Bridge"
+                                          ? ""
+                                          : "Teeth:#"}
+                                        {item.teethProduct.type !== "Bridge" ? (
+                                          item.teethProduct?.pontic_teeth
+                                            .map((item: number) => `${item}`)
+                                            .join(",")
+                                        ) : (
+                                          <>
+                                            <span
+                                              style={{
+                                                color:
+                                                  TYPE_COLORS[
+                                                    item?.teethProduct
+                                                      .type as keyof typeof TYPE_COLORS
+                                                  ] || TYPE_COLORS.Other,
+                                              }}
+                                            >
+                                              Bridge:
+                                            </span>
+                                            #
+                                            {formatTeethRange(
+                                              item.teethProduct?.pontic_teeth
+                                            )}
+                                          </>
+                                        )}
+                                      </p>
+                                    )}
                                     <p
                                       className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
                                       style={{ lineHeight: "1.15" }}
@@ -577,58 +628,58 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                           ?.custom_occlusal_shade ||
                                         item?.teethProduct
                                           ?.manual_occlusal_shade) && (
-                                          <>
-                                            <span>
-                                              <span className="font-normal">
-                                                Incisal:{" "}
-                                              </span>
-                                              <span className="font-bold">
-                                                {item?.teethProduct
-                                                  ?.manual_occlusal_shade ||
-                                                  item?.teethProduct
-                                                    ?.occlusal_shade?.name}
-                                              </span>
-                                              {item?.teethProduct
-                                                ?.custom_occlusal_shade && (
-                                                  <span
-                                                    className="font-extrabold"
-                                                    style={{
-                                                      color:
-                                                        TYPE_COLORS[
-                                                        item?.product_type
-                                                          ?.name as keyof typeof TYPE_COLORS
-                                                        ] || TYPE_COLORS.Other,
-                                                    }}
-                                                  >
-                                                    {
-                                                      item?.teethProduct
-                                                        ?.custom_occlusal_shade
-                                                    }{" "}
-                                                    (custom)
-                                                  </span>
-                                                )}
+                                        <>
+                                          <span>
+                                            <span className="font-normal">
+                                              Incisal:{" "}
                                             </span>
-                                            {(item?.teethProduct?.body_shade
+                                            <span className="font-bold">
+                                              {item?.teethProduct
+                                                ?.manual_occlusal_shade ||
+                                                item?.teethProduct
+                                                  ?.occlusal_shade?.name}
+                                            </span>
+                                            {item?.teethProduct
+                                              ?.custom_occlusal_shade && (
+                                              <span
+                                                className="font-extrabold"
+                                                style={{
+                                                  color:
+                                                    TYPE_COLORS[
+                                                      item?.teethProduct
+                                                        .type as keyof typeof TYPE_COLORS
+                                                    ] || TYPE_COLORS.Other,
+                                                }}
+                                              >
+                                                {
+                                                  item?.teethProduct
+                                                    ?.custom_occlusal_shade
+                                                }{" "}
+                                                (custom)
+                                              </span>
+                                            )}
+                                          </span>
+                                          {(item?.teethProduct?.body_shade
+                                            ?.name ||
+                                            item?.teethProduct?.gingival_shade
                                               ?.name ||
-                                              item?.teethProduct?.gingival_shade
-                                                ?.name ||
-                                              item?.teethProduct?.stump_shade ||
-                                              item?.teethProduct
-                                                ?.custom_body_shade ||
-                                              item?.teethProduct
-                                                ?.custom_gingival_shade ||
-                                              item?.teethProduct
-                                                ?.custom_stump_shade ||
-                                              item?.teethProduct
-                                                ?.manual_body_shade ||
-                                              item?.teethProduct
-                                                ?.manual_gingival_shade ||
-                                              item?.teethProduct
-                                                ?.manual_stump_shade) && (
-                                                <span>,</span>
-                                              )}
-                                          </>
-                                        )}
+                                            item?.teethProduct?.stump_shade ||
+                                            item?.teethProduct
+                                              ?.custom_body_shade ||
+                                            item?.teethProduct
+                                              ?.custom_gingival_shade ||
+                                            item?.teethProduct
+                                              ?.custom_stump_shade ||
+                                            item?.teethProduct
+                                              ?.manual_body_shade ||
+                                            item?.teethProduct
+                                              ?.manual_gingival_shade ||
+                                            item?.teethProduct
+                                              ?.manual_stump_shade) && (
+                                            <span>,</span>
+                                          )}
+                                        </>
+                                      )}
 
                                       {/* Body Shade */}
                                       {(item?.teethProduct?.body_shade?.name ||
@@ -774,7 +825,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                   </div>
                                 </div>
                                 <p
-                                  className="text-right col-span-1 pr-2 font-bold"
+                                  className="text-right col-span-2 pr-2 font-bold"
                                   style={{ lineHeight: "1.15" }}
                                 >
                                   ${item.discounted_price.price}
@@ -1126,7 +1177,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
             if (groupStart === prev) {
               groups.push(`${groupStart}`);
             } else {
-              groups.push(`${groupStart}-#${prev}`);
+              groups.push(`${groupStart}-${prev}`);
             }
             groupStart = current; // Start a new group
           }
@@ -1138,7 +1189,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
       // Get consecutive groups of teeth
       const groupedTeeth = getConsecutiveGroups(teeth);
-
+      console.log(groupedTeeth, "groupedTeeth");
       // If there's only one group, return it
       return groupedTeeth.join(", ").split("#").join("");
     };
@@ -1247,9 +1298,6 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
     console.log(groupShades);
 
-    console.log(groupShades, "groupShades");
-
-    console.log(teeth?.teethProduct.tooth_number, "teeths 1");
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1262,8 +1310,8 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
               <div className="font-bold">
                 {teeth.teethProduct.type === "Bridge" ? (
                   <span>
-                    #{formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
-                    <span className="text-xs text-primary">(Bridge)</span>
+                    <span className="text-xs text-primary">Bridge</span>#{" "}
+                    {formatTeethRange(teeth?.teethProduct.tooth_number)}{" "}
                   </span>
                 ) : (
                   <span>
@@ -1276,11 +1324,12 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
               </div>
             )}
           </div>
+
           {teeth?.teethProduct?.pontic_teeth?.length > 0 && (
             <div className="flex ml-2">
-              <span className="w-20 text-xs">Pontic Teeth #: </span>
+              <span className="w-20 text-xs">Pontic Teeth: </span>
               <div className="font-bold text-xs">
-                #{formatTeethRange(teeth?.teethProduct.pontic_teeth)}
+                {formatTeethRange(teeth?.teethProduct.pontic_teeth)}
               </div>
             </div>
           )}
@@ -1734,7 +1783,114 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       </div>
     );
   };
-  console.log(item, "itemitemitem");
+
+  let productsConsolidate = item?.products;
+  const upperTeeth = new Set([
+    18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  ]);
+  const lowerTeeth = new Set([
+    38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
+  ]);
+
+  const consolidatedProducts: any = productsConsolidate
+    ? Object.values(
+        item?.products?.reduce((acc: any, product: any) => {
+          const productId = product.id;
+
+          if (!productId || !product.teethProduct?.tooth_number) {
+            return acc;
+          }
+
+          const { tooth_number, type, pontic_teeth } = product.teethProduct;
+
+          if (type === "Bridge") {
+            // Determine if it's an upper, lower, or mixed bridge
+            const isUpper = tooth_number.every((tooth: number) =>
+              upperTeeth.has(tooth)
+            );
+            const isLower = tooth_number.every((tooth: number) =>
+              lowerTeeth.has(tooth)
+            );
+            const bridgeKey = `${productId}-${
+              isUpper ? "upper" : isLower ? "lower" : "mixed"
+            }`;
+
+            if (!acc[bridgeKey]) {
+              acc[bridgeKey] = {
+                ...product,
+                teethProduct: {
+                  ...product.teethProduct,
+                  tooth_number: [...tooth_number],
+                  pontic_teeth: [...pontic_teeth],
+                },
+                service: product.service
+                  ? [
+                      {
+                        service: product.service,
+                        teeth_number: [...tooth_number],
+                      },
+                    ]
+                  : [],
+              };
+            } else {
+              acc[bridgeKey].teethProduct.tooth_number = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.tooth_number,
+                  ...tooth_number,
+                ]),
+              ];
+              acc[bridgeKey].teethProduct.pontic_teeth = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.pontic_teeth,
+                  ...pontic_teeth,
+                ]),
+              ];
+
+              if (product.service) {
+                const existingService = acc[bridgeKey].service.find(
+                  (serviceObj: any) => serviceObj.service === product.service
+                );
+
+                if (existingService) {
+                  existingService.teeth_number = [
+                    ...new Set([
+                      ...existingService.teeth_number,
+                      ...tooth_number,
+                    ]),
+                  ];
+                } else {
+                  acc[bridgeKey].service.push({
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  });
+                }
+              }
+            }
+          } else {
+            // Non-Bridge products remain separate (no grouping)
+            acc[`${productId}-${tooth_number.join("-")}`] = {
+              ...product,
+              teethProduct: {
+                ...product.teethProduct,
+                tooth_number: [...tooth_number],
+                pontic_teeth: [...pontic_teeth],
+              },
+              service: product.service
+                ? [
+                    {
+                      service: product.service,
+                      teeth_number: [...tooth_number],
+                    },
+                  ]
+                : [],
+            };
+          }
+
+          return acc;
+        }, {} as any)
+      )
+    : [];
+  console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div>
       <div
@@ -1747,8 +1903,10 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${item?.products?.length} gap-0`}>
-              {item?.products?.map((teeth: any, index: number) => {
+            <div
+              className={`grid grid-cols-${consolidatedProducts?.length} gap-0`}
+            >
+              {consolidatedProducts?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
                     <div className="border border-gray-300">
@@ -1762,7 +1920,13 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                       </div>
                       <div
                         className="p-4"
-                        style={{ maxHeight: "400px", overflowY: "hidden" }}
+                        style={{
+                          maxHeight:
+                            consolidatedProducts?.length === 1
+                              ? "790px"
+                              : "600px",
+                          overflowY: "hidden",
+                        }}
                       >
                         <TeetDetail
                           teeth={teeth}
@@ -2175,7 +2339,7 @@ export const StatementReceiptTemplate: React.FC<
   PrintStatementTemplateProps
 > = ({ caseDetails, labData, paperSize }) => {
   // Add ArchSelector components
-
+  console.log(caseDetails, "caseDetails");
   const Header: React.FC<{
     adjustment: any;
   }> = ({ adjustment }) => {
@@ -2186,7 +2350,17 @@ export const StatementReceiptTemplate: React.FC<
       accountNumber: "A123456789",
       amountDue: 245.75,
       dueDate: "2025-02-15",
-      transactions: caseDetails?.length ? caseDetails[0].invoiceData : [],
+      transactions: caseDetails?.length
+        ? caseDetails[0].invoiceData.filter((item: any) => {
+            // Include items that are not of type "P"
+            if (item.type !== "P") {
+              return true;
+            }
+
+            // For items with type "P", check if the date is less than or equal to updated_at
+            return item.date <= caseDetails[0].updated_at;
+          })
+        : [],
       previousBalance: 100.0,
       payments: 0.0,
     };
@@ -2204,7 +2378,7 @@ export const StatementReceiptTemplate: React.FC<
       ?.filter((transaction: any) => transaction.type === "I")
       ?.reduce((total: any, item: any) => total + (item.amount || 0), 0);
 
-    const total_due_amount = totalInvoice - totalPayment + previousBalance;
+    const total_due_amount = totalInvoice - totalPayment;
 
     return (
       <div className="w-[600px] mx-auto p-8 bg-white border text-xs border-gray-300">
@@ -2361,15 +2535,15 @@ export const StatementReceiptTemplate: React.FC<
           </table>
         </div>
         <div className="mt-4 border-t border-gray-500 pt-3 text-xs text-right">
-          <p>
+          {/* <p>
             <strong>Previous Balance : </strong> ${previousBalance.toFixed(2)}
-          </p>
+          </p> */}
           <p>
             <strong>Payments : </strong> ${totalPayment.toFixed(2)}
           </p>
-          <p>
+          {/* <p>
             <strong>Current : </strong> ${total_due_amount.toFixed(2)}
-          </p>
+          </p> */}
           <p className="font-bold">
             Amount Due : ${total_due_amount.toFixed(2)}
           </p>

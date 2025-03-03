@@ -341,19 +341,37 @@ const ClientProductPricing = ({
           price: item.price,
         }))
       );
+    } else if (selectedClient !== "default" && isDrawerOpen) {
+      // Initialize with empty array when drawer opens but no special prices exist
+      setClientPrices([]);
     }
-  }, [isDrawerOpen]);
+  }, [isDrawerOpen, specialProducts, selectedClient]);
+
   const getClientPrice = (productId: string, clientId: string) => {
     if (clientId === "default") return null;
+    
+    // First check in clientPrices (for unsaved changes)
+    const clientPrice = clientPrices.find(
+      (cp) => cp.productId === productId && cp.clientId === clientId
+    );
+    
+    if (clientPrice !== undefined) {
+      return clientPrice.price;
+    }
+    
+    // Then check in specialProducts (from database)
     const specialPrice = specialProducts?.find(
       (item) => item.product_id === productId && item.client_id === clientId
     );
+    
     return specialPrice?.price;
   };
 
   const handlePriceChange = (productId: string, newPrice: string) => {
     const price = parseFloat(newPrice);
-    if (isNaN(price) || price < 0) return;
+    
+    // Allow empty string (to clear input) or valid numbers
+    if (newPrice !== "" && isNaN(price)) return;
 
     if (selectedClient !== "default") {
       const updatedPrices = [...clientPrices];
@@ -362,16 +380,74 @@ const ClientProductPricing = ({
       );
 
       if (existingPriceIndex >= 0) {
-        updatedPrices[existingPriceIndex].price = price;
+        // If newPrice is empty string, use 0 as the price
+        updatedPrices[existingPriceIndex].price = newPrice === "" ? 0 : price;
       } else {
         updatedPrices.push({
           productId,
           clientId: selectedClient,
-          price,
+          price: newPrice === "" ? 0 : price,
         });
       }
 
       setClientPrices(updatedPrices);
+    }
+  };
+
+  const saveChanges = async () => {
+    try {
+      setIsLoading(true);
+
+      // Only process changes for the selected client
+      const clientChanges = clientPrices.filter(
+        (cp) => cp.clientId === selectedClient
+      );
+
+      if (clientChanges.length === 0) {
+        toast.success("No changes to save");
+        setIsLoading(false);
+        return;
+      }
+
+      // Process each change
+      for (const change of clientChanges) {
+        // Check if the special price already exists
+        const { data: existingPrice } = await supabase
+          .from("special_product_prices")
+          .select("*")
+          .eq("product_id", change.productId)
+          .eq("client_id", selectedClient)
+          .single();
+
+        if (existingPrice) {
+          // Update existing price
+          await supabase
+            .from("special_product_prices")
+            .update({ price: change.price })
+            .eq("product_id", change.productId)
+            .eq("client_id", selectedClient);
+        } else {
+          // Insert new price
+          await supabase
+            .from("special_product_prices")
+            .insert({
+              product_id: change.productId,
+              client_id: selectedClient,
+              price: change.price,
+              lab_id: labIdData?.lab_id,
+            });
+        }
+      }
+
+      // Refresh the data
+      await handleFetchSpecialPrices();
+      toast.success("Changes saved successfully");
+      setIsDrawerOpen(false); // Close drawer after saving
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("Failed to save changes");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -587,33 +663,33 @@ const ClientProductPricing = ({
               </Button>
             </SheetTrigger>
             <SheetContent className="w-[80vw] flex flex-col h-full">
-              <SheetHeader className="flex-shrink-0">
-                <div className="flex justify-between">
-                  <SheetTitle className="flex items-center gap-2">
-                    Edit Prices
-                    {selectedClient !== "default" && (
-                      <span className="text-primary">
-                        –{" "}
-                        {
-                          clients?.find((c) => c.id === selectedClient)
-                            ?.client_name
-                        }
-                      </span>
-                    )}
-                  </SheetTitle>
-                  <Button
-                    className="mt-5"
-                    disabled={isLoading}
-                    onClick={() => handleSubmit()}
-                  >
-                    {isLoading ? "Saving...." : "Save"}
-                  </Button>
-                </div>
+              <SheetHeader className="mb-5">
+                <SheetTitle>Edit Prices</SheetTitle>
                 <SheetDescription>
-                  Make changes to product prices below
+                  Update prices for {selectedClient === "default"
+                    ? "default"
+                    : clients?.find((c) => c.id === selectedClient)?.client_name
+                  }
                 </SheetDescription>
               </SheetHeader>
-              <div className="flex-1 overflow-y-auto mt-6">
+              <div className="space-y-5">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Products</h3>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDrawerOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={saveChanges}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </div>
                 <div className="rounded-md border h-full">
                   <Table>
                     <TableHeader className="sticky top-0 bg-white z-10">
@@ -742,12 +818,7 @@ const ClientProductPricing = ({
                                 <Input
                                   type="number"
                                   value={
-                                    selectedClient !== "default"
-                                      ? getClientPrice(
-                                          product.id,
-                                          selectedClient
-                                        ) ?? product.price
-                                      : product.price
+                                    getClientPrice(product.id, selectedClient) ?? ""
                                   }
                                   onChange={(e) =>
                                     handlePriceChange(
@@ -757,6 +828,7 @@ const ClientProductPricing = ({
                                   }
                                   step="0.01"
                                   min="0"
+                                  placeholder={product.price.toFixed(2)}
                                   className="w-24"
                                 />
                               ) : (

@@ -1342,7 +1342,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     if (b.name === "Custom") return -1; // "Custom" should go to the bottom
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
-  console.log(isSingleService, "isSingle");
+  console.log(selectedProducts, "selectedProducts");
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -1374,24 +1374,24 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                 <React.Fragment key={row.id}>
                   <TableRow key={row.id} className="border ">
                     <TableCell className="border-b w-[20px] cursor-pointer top-0 ">
-                      {expandedRows.includes(row.id) ? (
+                      {expandedRows.includes(row.id + index) ? (
                         <Minus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       ) : (
                         <Plus
-                          onClick={() => toggleRowExpansion(row.id)}
+                          onClick={() => toggleRowExpansion(row.id + index)}
                           className="h-6 w-6"
                         />
                       )}
                     </TableCell>
                     <TableCell className="border-b mr-2">
                       <Popover
-                        open={openTypePopover === row.id}
+                        open={openTypePopover === row.id + index}
                         onOpenChange={(open) => {
-                          setOpenTypePopover(open ? row.id : null);
-                          setExpandedRows([row.id]);
+                          setOpenTypePopover(open ? row.id + index : null);
+                          setExpandedRows([row.id + index]);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -1466,9 +1466,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                     <TableCell className="border-b">
                       <Popover
-                        open={openTeethPopover === row.id}
+                        open={openTeethPopover === row.id+index}
                         onOpenChange={(open) => {
-                          setOpenTeethPopover(open ? row.id : null);
+                          setOpenTeethPopover(open ? row.id+index : null);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -1568,7 +1568,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 "Add Services"
                               ) : (
                                 <span className="text-blue-600">
-                                  {row?.services?.length} Services Added
+                                  {row?.services?.length} Common Services Added
                                 </span>
                               )
                             ) : row?.mainServices?.length === 0 ||
@@ -2997,7 +2997,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </Button>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.includes(row.id) &&
+                  {expandedRows.includes(row.id+index) &&
                     row?.subRows &&
                     row?.subRows?.length > 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
@@ -3123,7 +3123,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <Popover
                               open={
                                 servicesPopoverOpen.get(
-                                  subIndex + index + 100
+                                  subIndex + index + 100 + originalIndex
                                 ) || false
                               }
                             >
@@ -3139,7 +3139,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   disabled={!row.id && row.type !== "Service"}
                                   onClick={() =>
                                     toggleServicesPopover(
-                                      subIndex + index + 100
+                                      subIndex + index + 100 + originalIndex
                                     )
                                   }
                                 >
@@ -3149,7 +3149,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   >
                                     <span className="text-xs">
                                       {" "}
-                                      {!row_sub?.services?.[index] ||
+                                      {row_sub?.services?.length === 0 ||
                                       !row.services ? (
                                         "Add Services"
                                       ) : (
@@ -3167,7 +3167,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setServicesPopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -3175,7 +3178,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setServicesPopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -3192,7 +3198,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         setServicesPopoverOpen((prev) => {
                                           const updated = new Map(prev);
                                           updated.set(
-                                            subIndex + index + 100,
+                                            subIndex +
+                                              index +
+                                              100 +
+                                              originalIndex,
                                             false
                                           );
                                           return updated;
@@ -3266,7 +3275,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               <Popover
                                 open={
                                   shadePopoverOpen.get(
-                                    subIndex + index + 100
+                                    subIndex + index + 100 + originalIndex
                                   ) || false
                                 }
                               >
@@ -3284,7 +3293,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     }`}
                                     disabled={row_sub.teeth.length === 0}
                                     onClick={() =>
-                                      toggleShadePopover(subIndex + index + 100)
+                                      toggleShadePopover(
+                                        subIndex + index + 100 + originalIndex
+                                      )
                                     }
                                   >
                                     {row_sub.shades?.body_shade ||
@@ -3381,7 +3392,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadePopoverOpen((prev) => {
                                       const updated = new Map(prev);
                                       updated.set(
-                                        subIndex + index + 100,
+                                        subIndex + index + 100 + originalIndex,
                                         false
                                       );
                                       return updated;
@@ -3392,7 +3403,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     setShadePopoverOpen((prev) => {
                                       const updated = new Map(prev);
                                       updated.set(
-                                        subIndex + index + 100,
+                                        subIndex + index + 100 + originalIndex,
                                         false
                                       );
                                       return updated;
@@ -4161,7 +4172,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         size="sm"
                                         onClick={() =>
                                           handleCancelShades(
-                                            subIndex + index + 100
+                                            subIndex +
+                                              index +
+                                              100 +
+                                              originalIndex
                                           )
                                         }
                                       >
@@ -4176,7 +4190,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             // Set all values in the Map to false
                                             updated.forEach((_, key) => {
                                               updated.set(
-                                                subIndex + index + 100,
+                                                subIndex +
+                                                  index +
+                                                  100 +
+                                                  originalIndex,
                                                 false
                                               );
                                             });
@@ -4196,8 +4213,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <TableCell className=" border-b">
                             <Popover
                               open={
-                                notePopoverOpen.get(subIndex + index + 100) ||
-                                false
+                                notePopoverOpen.get(
+                                  subIndex + index + 100 + originalIndex
+                                ) || false
                               }
                             >
                               <PopoverTrigger asChild>
@@ -4211,7 +4229,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   )}
                                   disabled={!row_sub.id}
                                   onClick={() =>
-                                    toggleNotePopover(subIndex + index + 100)
+                                    toggleNotePopover(
+                                      subIndex + index + 100 + originalIndex
+                                    )
                                   }
                                 >
                                   <StickyNote className="h-4 w-4" />
@@ -4223,7 +4243,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setNotePopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -4231,7 +4254,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setNotePopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -4246,7 +4272,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         setNotePopoverOpen((prev) => {
                                           const updated = new Map(prev);
                                           updated.set(
-                                            subIndex + index + 100,
+                                            subIndex +
+                                              index +
+                                              100 +
+                                              originalIndex,
                                             false
                                           );
                                           return updated;
@@ -4314,7 +4343,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <Popover
                               open={
                                 percentPopoverOpen.get(
-                                  subIndex + index + 100
+                                  subIndex + index + 100 + originalIndex
                                 ) || false
                               }
                             >
@@ -4331,7 +4360,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   )}
                                   disabled={!row_sub.id}
                                   onClick={() =>
-                                    togglePercentPopover(subIndex + index + 100)
+                                    togglePercentPopover(
+                                      subIndex + index + 100 + originalIndex
+                                    )
                                   }
                                 >
                                   {row_sub.discount}
@@ -4344,7 +4375,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setPercentPopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -4352,7 +4386,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   e.preventDefault();
                                   setPercentPopoverOpen((prev) => {
                                     const updated = new Map(prev);
-                                    updated.set(subIndex + index + 100, false);
+                                    updated.set(
+                                      subIndex + index + 100 + originalIndex,
+                                      false
+                                    );
                                     return updated;
                                   });
                                 }}
@@ -4367,7 +4404,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       size="sm"
                                       onClick={() => {
                                         handleDiscountChange(
-                                          subIndex + index + 100
+                                          subIndex + index + 100 + originalIndex
                                         );
                                       }}
                                     >
