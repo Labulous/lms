@@ -74,6 +74,7 @@ const ProductList: React.FC<ProductListProps> = ({
   materialsData,
 }) => {
   // State
+
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [materialFilter, setMaterialFilter] = useState<string[]>([]);
@@ -129,7 +130,6 @@ const ProductList: React.FC<ProductListProps> = ({
     () => getFilteredProducts(),
     [products, searchTerm, materialFilter]
   );
-console.log(materialFilter,"materialFilter")
   // Sorting
   const handleSort = (
     key: keyof Database["public"]["Tables"]["products"]["Row"]

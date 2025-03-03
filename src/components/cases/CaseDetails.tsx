@@ -280,6 +280,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const routeCaseId = params.caseId;
   const activeCaseId = propCaseId || routeCaseId;
 
+  const baseUrl = import.meta.env.VITE_BASE_URL; // ✅ Works in Vite
   const navigate = useNavigate();
   const safeNavigate = (path: string) => {
     if (drawerMode && onNavigate) {
@@ -288,7 +289,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       navigate(path);
     }
   };
-
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [isApiLoad, setIsApiLoad] = useState(true);
@@ -437,11 +437,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       } else {
         console.log(workStationData, "workStationData");
         fetchServices();
-        const location = useLocation();
-        const previousPath = location?.state?.from || "No previous path available";
-        if (previousPath === "edit") {
-          fetchCaseData(true);
-        }
+        let previousPath =
+          location?.state?.from || "No previous path available";
+          console.log(previousPath,"previousPath")
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -1089,6 +1087,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.log(caseDetailApi, "caseDetailApi");
         setCaseDetail(caseDetailApi);
         fetchCaseData(true);
+
       }
       setError("No case ID provided");
       setLoading(false);
@@ -1098,6 +1097,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
+      fetchCaseData(true);
+      
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
@@ -1622,7 +1623,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       )
     : [];
 
-  console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1631,7 +1631,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             <div className="flex items-start space-x-4">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={`/${location.pathname}`}
+                  value={`${baseUrl}/${location.pathname}`}
                   size={64}
                   level="H"
                   includeMargin={true}

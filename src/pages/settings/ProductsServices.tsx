@@ -291,9 +291,6 @@ const ProductsServices: React.FC = () => {
       //
       setProducts(productsResult || []);
       setProductTypes(productTypesData || []);
-
-      console.log(productsResult, "products api");
-      console.log(productTypesData, "product_types api");
     } catch (error) {
       console.error("Error loading data:", error);
       toast.error(
@@ -328,8 +325,6 @@ const ProductsServices: React.FC = () => {
   };
 
   const handleEditProduct = async (product: Product) => {
-    console.log(product, "ProductList");
-
     const { data, error } = await supabase
       .from("products")
       .update({
@@ -412,15 +407,57 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = async (item: Product | Service) => {
-    // setItemsToDelete([item]);
-    // setIsDeleteModalOpen(true);
-    toast.error("Feature under development");
+  const handleDeleteClick = async (
+    item: Product | Service,
+    isService?: boolean
+  ) => {
+    if (!item.id) {
+      toast.error("Item ID is missing");
+      return;
+    }
+
+    if (isService) {
+      const { error } = await supabase
+        .from("services")
+        .delete()
+        .eq("id", item.id);
+
+      if (error) {
+        toast.error("Failed to delete item");
+        console.error("Delete error:", error);
+      } else {
+        toast.success("Service deleted successfully");
+        const updatedServices = services.filter(
+          (product) => product.id !== item.id
+        );
+        setServices(updatedServices);
+        loadProductsAndTypes();
+        console.log("Deleted item:", item);
+      }
+    } else {
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", item.id);
+
+      if (error) {
+        toast.error("Failed to delete item");
+        console.error("Delete error:", error);
+      } else {
+        toast.success("Item deleted successfully");
+        const updatedProducts = products.filter(
+          (product) => product.id !== item.id
+        );
+        setProducts(updatedProducts);
+        loadProductsAndTypes();
+        console.log("Deleted item:", item);
+      }
+    }
   };
   const handleEditClick = async (item: Product | Service) => {
     // setItemsToDelete([item]);
     // setIsDeleteModalOpen(true);
-    toast.error("Feature under development");
+    toast.error("Feature under development hi");
   };
 
   // Batch delete function for services
@@ -487,7 +524,6 @@ const ProductsServices: React.FC = () => {
     try {
       // Create products one by one to ensure proper error handling
       for (const product of products) {
-        console.log("Adding product:", product); // Debug log
         await productsService.addProduct(product);
       }
 
@@ -644,18 +680,13 @@ const ProductsServices: React.FC = () => {
     return filtered;
   }, [services, searchTerm, materialFilter]);
 
-  console.log(filteredServices, "filteredServices");
-
-  const [isServiceUploadOpen, setIsServiceUploadOpen] = useState(false);
   useEffect(() => {
     const urlParams = location.pathname + location.search;
-    console.log(location, "location");
     if (urlParams.includes("products&")) {
       const afterAmpersand = urlParams.split("products&")[1];
       setMaterialFilter([afterAmpersand.split("%20").join(" ")]);
     }
   }, [location, materialFilter]);
-  console.log(materialFilter, "material");
 
   return (
     <div className="container mx-auto px-4 py-4">
@@ -919,7 +950,7 @@ const ProductsServices: React.FC = () => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() => handleDeleteClick(service)}
+                              onClick={() => handleDeleteClick(service, true)}
                             >
                               <Trash className="mr-2 h-4 w-4" />
                               Delete
