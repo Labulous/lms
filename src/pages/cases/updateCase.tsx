@@ -574,8 +574,8 @@ const UpdateCase: React.FC = () => {
           ...prevData,
           clientId: caseDataApi?.client?.id || "",
           doctorId: caseDataApi?.doctor?.id || "",
-          patientFirstName: caseDataApi?.patient_name?.split(" ")[0] || "hi",
-          patientLastName: caseDataApi?.patient_name?.split(" ")[1] || "hi2",
+          patientFirstName: caseDataApi?.patient_name?.split(" ")[0] || "",
+          patientLastName: caseDataApi?.patient_name?.split(" ")[1] || "",
           orderDate: caseDataApi?.received_date
             ? new Date(caseDataApi.received_date).toISOString()
             : new Date().toISOString(),
@@ -620,7 +620,6 @@ const UpdateCase: React.FC = () => {
             customContact: caseDataApi.custom_contact_details || "",
             marginDesign: caseDataApi?.margin_design_type || "",
             occlusalDesign: caseDataApi?.occlusion_design_type || "",
-
             alloyType: caseDataApi?.alloy_type || "",
             customMargin: caseDataApi?.custom_margin_design_type || "",
             customOcclusalDesign:
@@ -852,7 +851,8 @@ const UpdateCase: React.FC = () => {
 
           const updatedProduct = {
             ...product,
-            services: servicesForSubRow || [], // Initialize services as an empty array if not already defined
+            services: servicesForSubRow || [],
+            commonServices:[...product?.services  || [], servicesForSubRow], // Initialize services as an empty array if not already defined
             subRows: product.subRows?.map((subRow) => ({
               ...subRow,
               ...subRow.shades,

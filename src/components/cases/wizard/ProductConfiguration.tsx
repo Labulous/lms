@@ -1645,7 +1645,7 @@ console.log(index,SubIndex,"index subIndex")
                                         }
                                         )
                                       </span>{" "}
-                                      Indivitual Services
+                                      Individual Services
                                     </p>
                                   </div>
                                   <Button
