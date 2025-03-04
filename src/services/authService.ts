@@ -277,6 +277,7 @@ export const createUserByAdmins = async (
   email: string,
   phone: string,
   password: string,
+  // user_id: string,
   additionalClientFields?: {
     accountNumber: string;
     clientName: string;
@@ -337,19 +338,22 @@ export const createUserByAdmins = async (
     }
 
     // 3. Insert the new user into the 'users' table with the specified role
-    const { error: insertError } = await supabase.from("users").insert([
-      {
-        id: newUserId,
-        name: name,
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        lab_id: labId,
-        phone: phone,
-        role: role, // Set the role as provided
-      },
-    ]);
-
+    const { data: insertedData, error: insertError } = await supabase
+      .from("users")
+      .insert([
+        {
+          id: newUserId,
+          name: name,
+          email: email,
+          firstname: firstname,
+          lastname: lastname,
+          lab_id: labId,
+          phone: phone,
+          role: role, // Set the role as provided
+        },
+      ])
+      .select("*");
+    console.log(insertedData, "insertedData");
     if (insertError) {
       console.error("Error inserting user into users table:", insertError);
       throw insertError;
@@ -380,6 +384,7 @@ export const createUserByAdmins = async (
             clinic_registration_number:
               additionalClientFields.clinicRegistrationNumber,
             notes: additionalClientFields.notes,
+            // user_id: newUserId,
           },
         ]);
 

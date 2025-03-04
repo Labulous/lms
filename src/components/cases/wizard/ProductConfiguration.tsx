@@ -845,7 +845,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
-
+console.log(index,SubIndex,"index subIndex")
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
         // Create a copy of the previous selected products to avoid direct mutation
@@ -1619,7 +1619,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             <div className="w-full">
                               <div className="flex justify-between mb-4">
                                 <div>
-                                  <h2>Add Additional Services</h2>
+                                  <h2>Add Additional Services main</h2>
                                 </div>
                                 <div className="flex gap-2">
                                   <div className="text-blue-600">
@@ -3226,7 +3226,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   size="sm"
                                   className="h-7 w-full justify-start text-left text-xs"
                                   disabled={!row.id && row.type !== "Service"}
-                                  onClick={() => toggleServicesPopover(index)}
+                                  onClick={() => toggleServicesPopover(subIndex + index + 100 + originalIndex)}
                                 >
                                   {row?.commonServices?.length === 0 ? (
                                     "Add Services"
@@ -3274,7 +3274,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <div className="space-y-2 w-full">
                                   <div className="flex justify-between w-full">
                                     <Label className="text-xs">
-                                      Add Services
+                                      Add Services sub
                                     </Label>
                                     <Button
                                       size="sm"
