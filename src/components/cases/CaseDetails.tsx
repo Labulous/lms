@@ -316,6 +316,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
   const [caseRefresh, setCaseRefresh] = useState<boolean>(false);
   const [files, setFiles] = useState<string[]>([]);
+  const [loadingAgain, setLoadingAgain] = useState(true);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -1080,6 +1081,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       toast.error("Failed to load case details");
     } finally {
       setLoading(false);
+      setLoadingAgain(false);
       return () => {
         document.body.style.pointerEvents = "auto";
       };
@@ -1663,7 +1665,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <span className="text-xs text-gray-500">INV #:</span>
                     <div
                       className="text-xs font-medium text-primary cursor-pointer"
-                      onClick={() => setIsPreviewModalOpen(true)}
+                      onClick={() => loadingAgain ? null : setIsPreviewModalOpen(true)}
                     >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
