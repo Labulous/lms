@@ -881,20 +881,7 @@ console.log(index,SubIndex,"index subIndex")
           // Assign the updated subRows back to the selected product
           updatedProducts[index] = {
             ...updatedProducts[index],
-            commonServices: [
-              ...(updatedProducts[index].commonServices || []), // Ensure it's an array
-              {
-                id: product.id,
-                name: product.name,
-                price:
-                  clientSpecialProducts?.find(
-                    (item) => item.product_id === product.id
-                  )?.price || product.price,
-                add_to_all: false,
-                discount: 0,
-                is_taxable: false,
-              },
-            ],
+          
             subRows: updatedSubRows,
           };
 
@@ -1645,7 +1632,7 @@ console.log(index,SubIndex,"index subIndex")
                                         }
                                         )
                                       </span>{" "}
-                                      Indivitual Services
+                                      Individual Services
                                     </p>
                                   </div>
                                   <Button

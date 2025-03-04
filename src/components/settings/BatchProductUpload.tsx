@@ -205,7 +205,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           return;
         }
 
-        setProducts(newProducts.map(product => ({ ...product, lab_id: labId })));
+        setProducts(
+          newProducts.map((product) => ({ ...product, lab_id: labId }))
+        );
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -270,10 +272,13 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       if (!product.billing_type_id?.trim()) {
         errors.push(`Row ${index + 1}: Billing Type is required`);
       }
-      if (typeof product.price !== 'number') {
+      if (typeof product.price !== "number") {
         errors.push(`Row ${index + 1}: Price must be a number`);
       }
-      if (product.lead_time !== undefined && typeof product.lead_time !== 'number') {
+      if (
+        product.lead_time !== undefined &&
+        typeof product.lead_time !== "number"
+      ) {
         errors.push(`Row ${index + 1}: Lead time must be a number`);
       }
     });
@@ -307,11 +312,11 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
     try {
       // Ensure all products have the lab_id
-      const productsWithLabId = products.map(product => ({
+      const productsWithLabId = products.map((product) => ({
         ...product,
-        lab_id: labId
+        lab_id: labId,
       }));
-      
+
       await onUpload(productsWithLabId);
       // toast.success("Products added successfully!");
       setIsOpen(false);
@@ -326,11 +331,18 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
   useEffect(() => {
     const fetchReferenceData = async () => {
-      const [materialsData, billingTypesData] =
-        await Promise.all([
-          supabase.from("materials").select("*").order("name"),
-          supabase.from("billing_types").select("*").order("name"),
-        ]);
+      const [materialsData, billingTypesData] = await Promise.all([
+        supabase
+          .from("materials")
+          .select("*")
+          .order("name")
+          .eq("lab_id", labId),
+        supabase
+          .from("billing_types")
+          .select("*")
+          .order("name")
+          .eq("lab_id", labId),
+      ]);
 
       if (materialsData.data) setMaterials(materialsData.data as any);
       if (billingTypesData.data) setBillingTypes(billingTypesData.data as any);
@@ -339,7 +351,13 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
     if (isOpen) fetchReferenceData();
   }, [isOpen]); // Only fetch when dialog opens
 
-  const hasUnsavedChanges = products.some((product) => product.name || product.price || product.material_id || product.billing_type_id);
+  const hasUnsavedChanges = products.some(
+    (product) =>
+      product.name ||
+      product.price ||
+      product.material_id ||
+      product.billing_type_id
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -366,7 +384,8 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
         <DialogHeader>
           <DialogTitle>Batch Add Products</DialogTitle>
           <DialogDescription>
-            Add multiple products at once using either manual entry or CSV upload
+            Add multiple products at once using either manual entry or CSV
+            upload
           </DialogDescription>
         </DialogHeader>
         <div id="dialog-description" className="sr-only">
@@ -385,10 +404,15 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
           <TabsContent value="manual">
             <div className="space-y-4">
               {products.map((product, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]">
+                <div
+                  key={index}
+                  className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]"
+                >
                   <div className="grid grid-cols-12 gap-4 items-end">
                     <div className="col-span-5 space-y-2">
-                      <Label htmlFor={`name-${index}`} className="text-xs">Name</Label>
+                      <Label htmlFor={`name-${index}`} className="text-xs">
+                        Name
+                      </Label>
                       <Input
                         id={`name-${index}`}
                         value={product.name}
@@ -399,7 +423,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`material-${index}`} className="text-xs">Material</Label>
+                      <Label htmlFor={`material-${index}`} className="text-xs">
+                        Material
+                      </Label>
                       <Select
                         value={product.material_id}
                         onValueChange={(value) =>
@@ -419,7 +445,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       </Select>
                     </div>
                     <div className="col-span-1 space-y-2">
-                      <Label htmlFor={`price-${index}`} className="text-xs">Price</Label>
+                      <Label htmlFor={`price-${index}`} className="text-xs">
+                        Price
+                      </Label>
                       <Input
                         id={`price-${index}`}
                         type="number"
@@ -435,7 +463,10 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       />
                     </div>
                     <div className="col-span-2 space-y-2">
-                      <Label htmlFor={`billingType-${index}`} className="text-xs">
+                      <Label
+                        htmlFor={`billingType-${index}`}
+                        className="text-xs"
+                      >
                         Billing Type
                       </Label>
                       <Select
@@ -457,7 +488,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                       </Select>
                     </div>
                     <div className="col-span-1 space-y-2">
-                      <Label htmlFor={`leadTime-${index}`} className="text-xs">Lead Time (days)</Label>
+                      <Label htmlFor={`leadTime-${index}`} className="text-xs">
+                        Lead Time (days)
+                      </Label>
                       <Input
                         id={`leadTime-${index}`}
                         type="number"
@@ -493,7 +526,10 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "is_client_visible", checked)
                         }
                       />
-                      <Label htmlFor={`clientVisible-${index}`} className="text-xs">
+                      <Label
+                        htmlFor={`clientVisible-${index}`}
+                        className="text-xs"
+                      >
                         Visible to Clients
                       </Label>
                     </div>
@@ -505,7 +541,9 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "is_taxable", checked)
                         }
                       />
-                      <Label htmlFor={`taxable-${index}`} className="text-xs">Taxable</Label>
+                      <Label htmlFor={`taxable-${index}`} className="text-xs">
+                        Taxable
+                      </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox
@@ -515,7 +553,10 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                           updateProduct(index, "requires_shade", checked)
                         }
                       />
-                      <Label htmlFor={`requiresShade-${index}`} className="text-xs">
+                      <Label
+                        htmlFor={`requiresShade-${index}`}
+                        className="text-xs"
+                      >
                         Requires Shade
                       </Label>
                     </div>

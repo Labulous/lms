@@ -294,7 +294,6 @@ const InvoiceList: React.FC = () => {
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -407,6 +406,7 @@ const InvoiceList: React.FC = () => {
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
+            type:tp.type
           },
         })),
       };

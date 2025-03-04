@@ -72,7 +72,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             )
           `
           )
-          .eq("id", user.id);
+          .eq("id", user.id)
+          .or("is_archive.is.null,is_archive.eq.false");
+
         console.log(data, error, "labdata");
         if (error) {
           throw new Error(error.message);

@@ -118,6 +118,7 @@ export const UserManagement: React.FC = () => {
     admin: [
       { label: "Admin", role: "admin" },
       { label: "Technician", role: "technician" },
+
     ],
   };
   const navigate = useNavigate();

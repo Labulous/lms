@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
 import { Database, labDetail } from "@/types/supabase";
@@ -309,7 +310,7 @@ export const createUserByAdmins = async (
     }
 
     if (authData.length > 0) {
-      throw new Error("User already exists in Supabase Auth.");
+      toast.error("User already exists in Supabase Auth.")
     }
 
     // 2. Sign up the new user in Supabase Auth
@@ -384,7 +385,6 @@ export const createUserByAdmins = async (
             clinic_registration_number:
               additionalClientFields.clinicRegistrationNumber,
             notes: additionalClientFields.notes,
-            user_id: newUserId,
           },
         ]);
 
@@ -396,7 +396,6 @@ export const createUserByAdmins = async (
         throw clientInsertError;
       }
     }
-
     // 5. Update the lab table to add the user ID or email to the appropriate field based on the role
     const fieldToUpdate =
       role === "admin"
