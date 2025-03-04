@@ -307,11 +307,21 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
     try {
       // Ensure all products have the lab_id
-      const productsWithLabId = products.map(product => ({
-        ...product,
-        lab_id: labId
-      }));
-      
+      // const productsWithLabId = products.map(product => ({
+      //   ...product,
+      //   lab_id: labId,
+      //   code: product.material_id,
+      // }));
+
+      const productsWithLabId = products.map(product => {
+        const selectedMaterial = materials.find(mat => mat.id === product.material_id);
+        return {
+          ...product,
+          lab_id: labId,
+          code: selectedMaterial ? selectedMaterial?.code : null,
+        };
+      });
+
       await onUpload(productsWithLabId);
       // toast.success("Products added successfully!");
       setIsOpen(false);

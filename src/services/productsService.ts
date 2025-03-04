@@ -302,6 +302,7 @@ class ProductsService {
   }
 
   async createMaterial(input: {
+    code: string,
     name: string;
     description: string | null;
     lab_id: string;
@@ -311,6 +312,7 @@ class ProductsService {
         .from("materials")
         .insert([
           {
+            code: input.code.trim(),
             name: input.name.trim(),
             description: input.description?.trim() || null,
             lab_id: input.lab_id,
@@ -335,13 +337,14 @@ class ProductsService {
 
   async updateMaterial(
     id: string,
-    input: { name: string; description: string | null }
+    input: { code: string; name: string; description: string | null }
   ) {
-    console.log(id,"id")
+    console.log(id, "id")
     try {
       const { data, error } = await supabase
         .from("materials")
         .update({
+          code: input.code.trim(),
           name: input.name.trim(),
           description: input.description?.trim() || null,
           is_active: true,

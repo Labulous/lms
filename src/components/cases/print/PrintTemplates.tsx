@@ -167,6 +167,14 @@ interface PrintStatementTemplateProps {
   ref?: any;
 }
 
+interface SelectedOrderTemplateProps {
+  caseDetails: any[] | undefined;
+  paperSize: keyof typeof PAPER_SIZES;
+  ref?: any;
+}
+
+
+
 // Helper function to get QR code size based on paper size
 const getQRCodeSize = (
   paperSize: keyof typeof PAPER_SIZES,
@@ -2206,9 +2214,7 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
   );
 };
 
-export const AdjustmentReceiptTemplate: React.FC<
-  PrintStatementTemplateProps
-> = ({ caseDetails, labData, paperSize }) => {
+export const AdjustmentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({ caseDetails, labData, paperSize }) => {
   // Add ArchSelector components
 
   const Header: React.FC<{
@@ -2591,3 +2597,49 @@ export const StatementReceiptTemplate: React.FC<
     </div>
   );
 };
+
+
+export const SelectedOrderTemplate: React.FC<SelectedOrderTemplateProps> = ({
+  caseDetails,
+}) => {
+  // Ensure caseDetails is a single record
+  const record = caseDetails?.[0];
+
+  return (
+    <div
+      ref={(el) => {
+        if (el) {
+          el.style.width = "8.5in";
+          el.style.height = "11in";
+        }
+      }}
+      className="p-8 bg-white border border-gray-300"
+      style={{
+        width: "8.5in",
+        minHeight: "11in",
+        maxHeight: "11in",
+        overflow: "hidden",
+        pageBreakInside: "avoid",
+      }}
+    >
+      <h1 className="text-2xl font-bold text-center mb-4">Lab Slip</h1>
+
+      {/* Use a single record only */}
+      <p className="text-sm">
+        <strong>Patient Name:</strong> {record?.patientName || "N/A"}
+      </p>
+      <p className="text-sm">
+        <strong>Date:</strong> {record?.date || "N/A"}
+      </p>
+      <p className="text-sm">
+        <strong>Test:</strong> {record?.test || "N/A"}
+      </p>
+      <p className="mt-6 text-sm">
+        <strong>Doctor's Notes:</strong> {record?.notes || "N/A"}
+      </p>
+    </div>
+  );
+};
+
+
+

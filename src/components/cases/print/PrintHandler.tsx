@@ -5,6 +5,7 @@ import {
   LabSlipTemplate,
   AddressLabelTemplate,
   PatientLabelTemplate,
+  SelectedOrderTemplate,
 } from "./PrintTemplates";
 
 // Paper sizes in points (1 inch = 72 points)
@@ -15,7 +16,7 @@ export const PAPER_SIZES = {
 } as const;
 
 interface PrintHandlerProps {
-  type: "qr-code" | "lab-slip" | "address-label" | "patient-label";
+  type: "qr-code" | "lab-slip" | "address-label" | "patient-label" | "selected-order";
   paperSize?: keyof typeof PAPER_SIZES;
   caseData: {
     id: string;
@@ -91,6 +92,8 @@ const PrintHandler: React.FC<PrintHandlerProps> = ({
         return <AddressLabelTemplate {...props} />;
       case "patient-label":
         return <PatientLabelTemplate {...props} />;
+      case "selected-order":
+        return <SelectedOrderTemplate caseDetails={undefined} {...props} />;
       default:
         return null;
     }

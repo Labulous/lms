@@ -46,6 +46,7 @@ export interface WorkingTag {
  * Reference data interfaces
  */
 export interface Material {
+  [x: string]: any;
   id: string;
   name: string;
   description: string | null;

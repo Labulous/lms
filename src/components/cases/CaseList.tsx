@@ -1491,6 +1491,12 @@ const CaseList: React.FC = () => {
                       <FileText className="h-4 w-4 mr-2" />
                       Patient Label
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintOptionSelect("selected-order")}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Selected Order
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <Button variant="outline" size="sm"

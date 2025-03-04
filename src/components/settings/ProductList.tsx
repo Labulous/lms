@@ -102,7 +102,7 @@ const ProductList: React.FC<ProductListProps> = ({
     }
   }, [location]);
 
-  
+
 
   // Get unique materials from products
   const materials = materialsData;
@@ -184,7 +184,7 @@ const ProductList: React.FC<ProductListProps> = ({
 
   // Batch Actions
   const handleBatchDuplicate = () => {
-    
+
     // Implement duplicate functionality for selected products
   };
 
@@ -200,7 +200,7 @@ const ProductList: React.FC<ProductListProps> = ({
   // };
 
   const handleBatchDelete = () => {
-   
+
     if (!onBatchDelete || selectedProducts.length === 0) {
       toast.error("No products selected.");
       return;
@@ -237,7 +237,6 @@ const ProductList: React.FC<ProductListProps> = ({
       </div>
     );
   }
-
 
   return (
     <div className="space-y-4">
@@ -376,6 +375,15 @@ const ProductList: React.FC<ProductListProps> = ({
                 </div>
               </TableHead>
               <TableHead
+                onClick={() => handleSort("name")}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center">
+                  Code
+                  {getSortIcon("name")}
+                </div>
+              </TableHead>
+              <TableHead
                 onClick={() => handleSort("material")}
                 className="cursor-pointer"
               >
@@ -503,7 +511,13 @@ const ProductList: React.FC<ProductListProps> = ({
                     <ChevronRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </TableCell>
-                <TableCell>{product.material?.name}</TableCell>
+                <TableCell>
+                  {materialsData && materialsData.length > 0
+                    ? materialsData.find((mat) => mat.id === product.material_id)?.code ?? "N/A"
+                    : "N/A"}
+                </TableCell>
+                <TableCell>{product.material?.name}</TableCell>               
+
                 <TableCell className="text-right">
                   $
                   {product.price.toLocaleString("en-US", {

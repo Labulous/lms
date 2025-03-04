@@ -335,6 +335,18 @@ const ProductsServices: React.FC = () => {
   const handleEditProduct = async (product: Product) => {
     console.log(product, "ProductList");
 
+    // Fetch the material code based on material_id
+    const { data: materialData, error: materialError } = await supabase
+      .from("materials")
+      .select("code")
+      .eq("id", product.material_id)
+      .single();
+
+    if (materialError) {
+      throw new Error("Failed to fetch material code");
+    }
+
+
     const { data, error } = await supabase
       .from("products")
       .update({
@@ -347,6 +359,7 @@ const ProductsServices: React.FC = () => {
         material_id: product.material_id,
         billing_type_id: product.billing_type_id,
         requires_shade: product.requires_shade,
+        product_code: materialData?.code,
       })
       .eq("id", product.id)
       .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
@@ -472,7 +485,7 @@ const ProductsServices: React.FC = () => {
       navigate("/material-selection", { replace: true });
       setTimeout(() => {
         navigate(urlParams, { replace: true });
-        
+
       }, 100);
 
     } catch (err) {
@@ -556,7 +569,7 @@ const ProductsServices: React.FC = () => {
         toast.error("Failed to archive the items.");
       } else {
         toast.success("Items successfully archived.");
-       
+
         fetchServices();
         const urlParams = location.pathname + location.search; // Get full URL path + query
         navigate("/material-selection", { replace: true });
@@ -952,6 +965,17 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("name")}
                       </div>
                     </TableHead>
+
+                    <TableHead
+                      className="cursor-pointer w-[560px]"
+                      onClick={() => handleSort("name")}
+                    >
+                      <div className="flex items-center">
+                        Code
+                        {getSortIcon("name")}
+                      </div>
+                    </TableHead>
+
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("material_id")}
@@ -1026,11 +1050,20 @@ const ProductsServices: React.FC = () => {
                       <TableCell className="font-medium">
                         {service.name}
                       </TableCell>
+
+                      <TableCell>
+                        {materialsData && materialsData.length > 0
+                          ? (materialsData.find((mat) => mat.id === service.material_id) as any)?.code ?? "N/A"
+                          : "N/A"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {service?.material?.name}
                         </Badge>
                       </TableCell>
+
+
+
                       <TableCell className="text-right">
                         ${service.price}
                       </TableCell>
