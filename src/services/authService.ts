@@ -384,7 +384,7 @@ export const createUserByAdmins = async (
             clinic_registration_number:
               additionalClientFields.clinicRegistrationNumber,
             notes: additionalClientFields.notes,
-            // user_id: newUserId,
+            user_id: newUserId,
           },
         ]);
 
