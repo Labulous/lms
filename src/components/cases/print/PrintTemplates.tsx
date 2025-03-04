@@ -362,9 +362,11 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
   const DisplayGroupedProducts = ({
     groups,
     products,
+    details,
   }: {
     groups: { [key: string]: any[] };
     products: any[];
+    details: any[];
   }) => {
     const [services, setLabServices] = useState<any[]>([]);
     const { user } = useAuth();
@@ -393,7 +395,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
         fetchServices();
       }
     }, [user?.id]);
-
+    console.log(details, "productsproducts");
     const groupedServicesByName: {
       [serviceName: string]: {
         teeth: number[];
@@ -404,7 +406,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       };
     } = {};
     if (services && services.length > 0) {
-      products.forEach((product: any) => {
+      details.forEach((product: any) => {
         // Check if the product has common_services
         if (product.common_services && product.common_services.length > 0) {
           product.common_services.forEach((commonService: any) => {
@@ -472,7 +474,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                   className="text-right col-span-1 pr-2 "
                   style={{ lineHeight: "1.15" }}
                 >
-                  {serviceDetails.discount ||0}%
+                  {serviceDetails.discount || 0}%
                 </p>
                 <p
                   className="text-right col-span-2 pr-2 font-bold"
@@ -918,7 +920,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       </div>
     );
   };
-
+  console.log(caseDetails, "products invoice");
   return (
     <div>
       {caseDetails?.map((invoice, index) => {
@@ -1076,6 +1078,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                         <DisplayGroupedProducts
                           groups={group}
                           products={invoice.products}
+                          details={caseDetails}
                         />
                         {/* {products.map((item: any, index: number) => {
                         

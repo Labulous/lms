@@ -429,6 +429,7 @@ export function PaymentsList() {
     } finally {
       toast.success("New payment added successfully.");
       setShowNewPaymentModal(false);
+      getPaymentList()
     }
   };
 

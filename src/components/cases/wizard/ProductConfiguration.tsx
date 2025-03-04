@@ -1648,7 +1648,18 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       Indivitual Services
                                     </p>
                                   </div>
-                                  <Button size={"sm"}>Save</Button>
+                                  <Button
+                                    size={"sm"}
+                                    onClick={() =>
+                                      setServicesPopoverOpen((prev) => {
+                                        const updated = new Map(prev);
+                                        updated.set(index, false);
+                                        return updated;
+                                      })
+                                    }
+                                  >
+                                    Save
+                                  </Button>
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 gap-2 w-full">
@@ -1694,7 +1705,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     (subRow) => ({
                                                       ...subRow,
                                                       services: [
-                                                        ...currentProduct?.services || [],
+                                                        ...(currentProduct?.services ||
+                                                          []),
                                                       ],
                                                     })
                                                   ) || [];

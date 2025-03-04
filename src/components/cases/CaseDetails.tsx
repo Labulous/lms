@@ -365,12 +365,16 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         products: detail?.products
           ? detail.products.map((item: any) => ({
               ...item,
-              service: item.additional_services_id
+              service: item.teethProduct.additional_services_id
                 ? data
                     .filter(
                       (service) =>
-                        Array.isArray(item.additional_services_id) &&
-                        item.additional_services_id.includes(service.id)
+                        Array.isArray(
+                          item.teethProduct.additional_services_id
+                        ) &&
+                        item.teethProduct.additional_services_id.includes(
+                          service.id
+                        )
                     )
                     .map((service) => ({
                       id: service.id,
@@ -379,7 +383,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     }))[0]
                 : [],
             }))
-          : [],
+          : [
+              {
+                name: "zahid",
+                price: 0,
+                quantity: 1,
+              },
+            ],
       }));
     }
   };
@@ -1014,6 +1024,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 notes,
                 product_id,
                 custom_body_shade,
+                additional_services_id,
                 custom_occlusal_shade,
                 custom_gingival_shade,
                 custom_stump_shade,
@@ -1057,7 +1068,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 ...product,
                 discounted_price: discountedPrice,
                 teethProduct: teeth,
-                // additional_service_id: ["5bee4f3e-7b40-4483-801b-407e4ea83c75"],
+                additional_service_id: teeth?.additional_services_id,
               };
             });
           });
@@ -2304,7 +2315,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const finalPrice =
                             product?.discounted_price?.final_price || price;
                           const quantity =
-                            product?.discounted_price.quantity || 1;
+                            product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
                           console.log(product, "productproduct");
                           const serviceRow = product.service ? (
@@ -2319,7 +2330,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {"product.service.name"}
+                                {product.service.name}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2373,7 +2384,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             <React.Fragment key={index}>
                               <TableRow>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                  {product.teethProduct.tooth_number?.length > 1
+                                  {product.teethProduct?.tooth_number?.length >
+                                  1
                                     ? formatTeethRange(
                                         product.teethProduct?.tooth_number
                                       )
@@ -2442,7 +2454,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   {product?.discounted_price?.total.toLocaleString()}
                                 </TableCell>
                               </TableRow>
-                              {product?.service?.name ? serviceRow : null}
+                              {serviceRow}
                             </React.Fragment>
                           );
                         })}
