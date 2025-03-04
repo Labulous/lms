@@ -1619,7 +1619,7 @@ console.log(index,SubIndex,"index subIndex")
                             <div className="w-full">
                               <div className="flex justify-between mb-4">
                                 <div>
-                                  <h2>Add Additional Services main</h2>
+                                  <h2>Add Additional Services </h2>
                                 </div>
                                 <div className="flex gap-2">
                                   <div className="text-blue-600">
