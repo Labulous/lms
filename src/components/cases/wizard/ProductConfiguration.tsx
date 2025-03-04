@@ -3060,7 +3060,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                   </TableRow>
                   {expandedRows.includes(row.id + index) &&
                     row?.subRows &&
-                    row?.subRows?.length > 1 &&
+                    row?.subRows?.length >= 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
                       let originalIndex = subIndex;
                       subIndex = subIndex + 100;
@@ -3398,7 +3398,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     row_sub.shades?.stump_shade ? (
                                       <div>
                                         {row_sub.shades?.occlusal_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.occlusal_shade === null
                                           ? row_sub.shades?.manual_occlusal
                                           : shadesItems.filter(
                                               (item) =>
@@ -3414,7 +3415,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               </span>
                                             )}
                                         /
-                                        {row_sub.shades?.body_shade === "manual"
+                                        {row_sub.shades?.body_shade === null ||
+                                        row_sub.shades?.body_shade === "manual"
                                           ? row_sub.shades?.manual_body
                                           : shadesItems.filter(
                                               (item) =>
@@ -3431,7 +3433,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             )}
                                         /
                                         {row_sub.shades?.gingival_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.gingival_shade === null
                                           ? row_sub.shades?.manual_gingival
                                           : shadesItems.filter(
                                               (item) =>
@@ -3448,7 +3451,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             )}
                                         /
                                         {row_sub.shades?.stump_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.stump_shade === null
                                           ? row_sub.shades?.manual_stump
                                           : shadesItems.filter(
                                               (item) =>
@@ -3517,7 +3521,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.occlusal_shade || ""
+                                            row_sub.shades?.manual_occlusal ? "manual" :  row_sub.shades?.occlusal_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3703,7 +3707,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="body">Body</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.body_shade || ""
+                                            row_sub.shades?.manual_body ? "manual" :  row_sub.shades?.body_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3890,7 +3894,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.gingival_shade || ""
+                                            row_sub.shades?.manual_gingival ? "manual" :  row_sub.shades?.gingival_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -4075,7 +4079,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="stump">Stump</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.stump_shade || ""
+                                            row_sub.shades?.manual_stump ? "manual" : row_sub.shades?.stump_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(

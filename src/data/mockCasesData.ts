@@ -162,22 +162,30 @@ const saveCaseProduct = async (
             occlusal_shade_id:
               product?.shades?.occlusal_shade !== "manual" &&
               product?.shades?.custom_occlusal_shade !== ""
-                ? product?.shades?.occlusal_shade
+                ? product?.shades?.occlusal_shade !== ""
+                  ? product?.shades?.occlusal_shade
+                  : null
                 : null,
             body_shade_id:
               product.shades.body_shade !== "manual" &&
               product?.shades?.custom_body_shade !== ""
-                ? product.shades.body_shade
+                ? product.shades.body_shade !== ""
+                  ? product.shades.body_shade
+                  : null
                 : null,
             gingival_shade_id:
               product.shades.gingival_shade !== "manual" &&
               product.shades.custom_gingival_shade !== ""
-                ? product.shades.gingival_shade
+                ? product.shades.gingival_shade !== ""
+                  ? product.shades.gingival_shade
+                  : null
                 : null,
             stump_shade_id:
               product.shades.stump_shade !== "manual" &&
               product.shades.custom_stump_shade !== ""
-                ? product.shades.stump_shade
+                ? product.shades.stump_shade !== ""
+                  ? product.shades.stump_shade
+                  : null
                 : null,
             manual_body_shade: product?.shades.manual_body || null,
             manual_occlusal_shade: product?.shades.manual_occlusal || null,
@@ -680,22 +688,30 @@ const updateCases = async (
             occlusal_shade_id:
               product?.shades?.occlusal_shade !== "manual" &&
               product?.shades?.custom_occlusal_shade !== ""
-                ? product?.shades?.occlusal_shade
+                ? product?.shades?.occlusal_shade !== ""
+                  ? product?.shades?.occlusal_shade
+                  : null
                 : null,
             body_shade_id:
               product?.shades?.body_shade !== "manual" &&
               product?.shades?.custom_body_shade !== ""
-                ? product?.shades?.body_shade
+                ? product?.shades?.body_shade !== ""
+                  ? product?.shades?.body_shade
+                  : null
                 : null,
             gingival_shade_id:
               product?.shades?.gingival_shade !== "manual" &&
               product?.shades?.custom_gingival_shade !== ""
-                ? product?.shades?.gingival_shade
+                ? product?.shades?.gingival_shade != ""
+                  ? product?.shades?.gingival_shade
+                  : null
                 : null,
             stump_shade_id:
               product.shades?.stump_shade !== "manual" &&
               product.shades?.custom_stump_shade !== ""
-                ? product?.shades?.stump_shade
+                ? product?.shades?.stump_shade !== ""
+                  ? product?.shades?.stump_shade
+                  : null
                 : null,
             manual_body_shade: product?.shades?.manual_body || null,
             manual_occlusal_shade: product?.shades?.manual_occlusal || null,

@@ -365,7 +365,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         products: detail?.products
           ? detail.products.map((item: any) => ({
               ...item,
-              service: item.teethProduct.additional_services_id
+              service: item.teethProduct?.additional_services_id
                 ? data
                     .filter(
                       (service) =>
@@ -383,13 +383,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     }))[0]
                 : [],
             }))
-          : [
-              {
-                name: "zahid",
-                price: 0,
-                quantity: 1,
-              },
-            ],
+          : [],
       }));
     }
   };

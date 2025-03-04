@@ -328,7 +328,11 @@ const UpdateCase: React.FC = () => {
           )
           .eq("id", caseId)
           .single()
-      : null // Fetching a single record based on `activeCaseId`
+      : null,
+      {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+      }
   );
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
