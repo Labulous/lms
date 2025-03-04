@@ -565,8 +565,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                             style={{
                                               color:
                                                 TYPE_COLORS[
-                                                  item?.teethProduct
-                                                    .type as keyof typeof TYPE_COLORS
+                                                item?.teethProduct
+                                                  .type as keyof typeof TYPE_COLORS
                                                 ] || TYPE_COLORS.Other,
                                             }}
                                           >
@@ -581,39 +581,39 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     </p>
                                     {item.teethProduct.pontic_teeth.length >
                                       0 && (
-                                      <p
-                                        className="text-sm pl-6 font-extrabold"
-                                        style={{ lineHeight: "1.15" }}
-                                      >
-                                        <span className="font-normal"></span>
-                                        {item.teethProduct.type === "Bridge"
-                                          ? ""
-                                          : "Teeth:#"}
-                                        {item.teethProduct.type !== "Bridge" ? (
-                                          item.teethProduct?.pontic_teeth
-                                            .map((item: number) => `${item}`)
-                                            .join(",")
-                                        ) : (
-                                          <>
-                                            <span
-                                              style={{
-                                                color:
-                                                  TYPE_COLORS[
+                                        <p
+                                          className="text-sm pl-6 font-extrabold"
+                                          style={{ lineHeight: "1.15" }}
+                                        >
+                                          <span className="font-normal"></span>
+                                          {item.teethProduct.type === "Bridge"
+                                            ? ""
+                                            : "Teeth:#"}
+                                          {item.teethProduct.type !== "Bridge" ? (
+                                            item.teethProduct?.pontic_teeth
+                                              .map((item: number) => `${item}`)
+                                              .join(",")
+                                          ) : (
+                                            <>
+                                              <span
+                                                style={{
+                                                  color:
+                                                    TYPE_COLORS[
                                                     item?.teethProduct
                                                       .type as keyof typeof TYPE_COLORS
-                                                  ] || TYPE_COLORS.Other,
-                                              }}
-                                            >
-                                              Bridge:
-                                            </span>
-                                            #
-                                            {formatTeethRange(
-                                              item.teethProduct?.pontic_teeth
-                                            )}
-                                          </>
-                                        )}
-                                      </p>
-                                    )}
+                                                    ] || TYPE_COLORS.Other,
+                                                }}
+                                              >
+                                                Bridge:
+                                              </span>
+                                              #
+                                              {formatTeethRange(
+                                                item.teethProduct?.pontic_teeth
+                                              )}
+                                            </>
+                                          )}
+                                        </p>
+                                      )}
                                     <p
                                       className="text-sm flex gap-0 flex-wrap pl-6 mt-3"
                                       style={{ lineHeight: "1.15" }}
@@ -628,58 +628,58 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                           ?.custom_occlusal_shade ||
                                         item?.teethProduct
                                           ?.manual_occlusal_shade) && (
-                                        <>
-                                          <span>
-                                            <span className="font-normal">
-                                              Incisal:{" "}
-                                            </span>
-                                            <span className="font-bold">
-                                              {item?.teethProduct
-                                                ?.manual_occlusal_shade ||
-                                                item?.teethProduct
-                                                  ?.occlusal_shade?.name}
-                                            </span>
-                                            {item?.teethProduct
-                                              ?.custom_occlusal_shade && (
-                                              <span
-                                                className="font-extrabold"
-                                                style={{
-                                                  color:
-                                                    TYPE_COLORS[
-                                                      item?.teethProduct
-                                                        .type as keyof typeof TYPE_COLORS
-                                                    ] || TYPE_COLORS.Other,
-                                                }}
-                                              >
-                                                {
-                                                  item?.teethProduct
-                                                    ?.custom_occlusal_shade
-                                                }{" "}
-                                                (custom)
+                                          <>
+                                            <span>
+                                              <span className="font-normal">
+                                                Incisal:{" "}
                                               </span>
-                                            )}
-                                          </span>
-                                          {(item?.teethProduct?.body_shade
-                                            ?.name ||
-                                            item?.teethProduct?.gingival_shade
+                                              <span className="font-bold">
+                                                {item?.teethProduct
+                                                  ?.manual_occlusal_shade ||
+                                                  item?.teethProduct
+                                                    ?.occlusal_shade?.name}
+                                              </span>
+                                              {item?.teethProduct
+                                                ?.custom_occlusal_shade && (
+                                                  <span
+                                                    className="font-extrabold"
+                                                    style={{
+                                                      color:
+                                                        TYPE_COLORS[
+                                                        item?.teethProduct
+                                                          .type as keyof typeof TYPE_COLORS
+                                                        ] || TYPE_COLORS.Other,
+                                                    }}
+                                                  >
+                                                    {
+                                                      item?.teethProduct
+                                                        ?.custom_occlusal_shade
+                                                    }{" "}
+                                                    (custom)
+                                                  </span>
+                                                )}
+                                            </span>
+                                            {(item?.teethProduct?.body_shade
                                               ?.name ||
-                                            item?.teethProduct?.stump_shade ||
-                                            item?.teethProduct
-                                              ?.custom_body_shade ||
-                                            item?.teethProduct
-                                              ?.custom_gingival_shade ||
-                                            item?.teethProduct
-                                              ?.custom_stump_shade ||
-                                            item?.teethProduct
-                                              ?.manual_body_shade ||
-                                            item?.teethProduct
-                                              ?.manual_gingival_shade ||
-                                            item?.teethProduct
-                                              ?.manual_stump_shade) && (
-                                            <span>,</span>
-                                          )}
-                                        </>
-                                      )}
+                                              item?.teethProduct?.gingival_shade
+                                                ?.name ||
+                                              item?.teethProduct?.stump_shade ||
+                                              item?.teethProduct
+                                                ?.custom_body_shade ||
+                                              item?.teethProduct
+                                                ?.custom_gingival_shade ||
+                                              item?.teethProduct
+                                                ?.custom_stump_shade ||
+                                              item?.teethProduct
+                                                ?.manual_body_shade ||
+                                              item?.teethProduct
+                                                ?.manual_gingival_shade ||
+                                              item?.teethProduct
+                                                ?.manual_stump_shade) && (
+                                                <span>,</span>
+                                              )}
+                                          </>
+                                        )}
 
                                       {/* Body Shade */}
                                       {(item?.teethProduct?.body_shade?.name ||
@@ -977,6 +977,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     caseDetail: ExtendedCase;
   }> = ({ caseDetail }) => {
     return (
+
       <div className="space-y-4">
         {/* First Row - Logo, Pan#, QR */}
         <div className="flex justify-between items-start">
@@ -1025,12 +1026,18 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                 </span>
               </div> */}
 
-              <div className="flex">
-                <span className="w-16">Clinic # :</span>
-                <span className="font-bold">
-                  {caseDetail?.client?.account_number}
-                </span>
-              </div>
+              {caseDetail?.isDisplayAcctOnly ? (
+                <div className="flex">
+                  <span className="w-16">Clinic # :</span>
+                  <span className="font-bold">{caseDetail?.client?.account_number}</span>
+                </div>
+              ) : (
+                <div className="flex">
+                  <span className="w-16">Clinic:</span>
+                  <span className="font-bold">{caseDetail?.client?.client_name}</span>
+                </div>
+              )}
+
 
               {/* <div className="flex">
                 <span className="w-16">Doctor:</span>
@@ -1038,21 +1045,27 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                   {caseDetail?.doctor?.name || "N/A"}
                 </span>
               </div> */}
-              <div className="flex">
-                <span className="w-16">Doctor#:</span>
-                <span className="font-bold">
-                  {caseDetail?.doctor?.order || "N/A"}
-                </span>
-              </div>
+              {caseDetail?.isDisplayDoctorAcctOnly ? (
+                <div className="flex">
+                  <span className="w-16">Doctor#:</span>
+                  <span className="font-bold">{caseDetail?.doctor?.order || "N/A"}</span>
+                </div>
+              ) : (
+                <div className="flex">
+                  <span className="w-16">Doctor:</span>
+                  <span className="font-bold">{caseDetail?.doctor?.name || "N/A"}</span>
+                </div>
+              )}
+
             </div>
-            {/* <div className="mt-3">
-              <div className="flex">
-                <span className="w-16">Patient:</span>
-                <span className="font-bold">
-                  {caseDetail?.patient_name || "N/A"}
-                </span>
+            {!caseDetail?.isHidePatientName && (
+              <div className="mt-3">
+                <div className="flex">
+                  <span className="w-16">Patient:</span>
+                  <span className="font-bold">{caseDetail?.patient_name || "N/A"}</span>
+                </div>
               </div>
-            </div> */}
+            )}
           </div>
           <div>
             <div className="space-y-1">
@@ -1794,101 +1807,100 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
   const consolidatedProducts: any = productsConsolidate
     ? Object.values(
-        item?.products?.reduce((acc: any, product: any) => {
-          const productId = product.id;
+      item?.products?.reduce((acc: any, product: any) => {
+        const productId = product.id;
 
-          if (!productId || !product.teethProduct?.tooth_number) {
-            return acc;
-          }
+        if (!productId || !product.teethProduct?.tooth_number) {
+          return acc;
+        }
 
-          const { tooth_number, type, pontic_teeth } = product.teethProduct;
+        const { tooth_number, type, pontic_teeth } = product.teethProduct;
 
-          if (type === "Bridge") {
-            // Determine if it's an upper, lower, or mixed bridge
-            const isUpper = tooth_number.every((tooth: number) =>
-              upperTeeth.has(tooth)
-            );
-            const isLower = tooth_number.every((tooth: number) =>
-              lowerTeeth.has(tooth)
-            );
-            const bridgeKey = `${productId}-${
-              isUpper ? "upper" : isLower ? "lower" : "mixed"
+        if (type === "Bridge") {
+          // Determine if it's an upper, lower, or mixed bridge
+          const isUpper = tooth_number.every((tooth: number) =>
+            upperTeeth.has(tooth)
+          );
+          const isLower = tooth_number.every((tooth: number) =>
+            lowerTeeth.has(tooth)
+          );
+          const bridgeKey = `${productId}-${isUpper ? "upper" : isLower ? "lower" : "mixed"
             }`;
 
-            if (!acc[bridgeKey]) {
-              acc[bridgeKey] = {
-                ...product,
-                teethProduct: {
-                  ...product.teethProduct,
-                  tooth_number: [...tooth_number],
-                  pontic_teeth: [...pontic_teeth],
-                },
-                service: product.service
-                  ? [
-                      {
-                        service: product.service,
-                        teeth_number: [...tooth_number],
-                      },
-                    ]
-                  : [],
-              };
-            } else {
-              acc[bridgeKey].teethProduct.tooth_number = [
-                ...new Set([
-                  ...acc[bridgeKey].teethProduct.tooth_number,
-                  ...tooth_number,
-                ]),
-              ];
-              acc[bridgeKey].teethProduct.pontic_teeth = [
-                ...new Set([
-                  ...acc[bridgeKey].teethProduct.pontic_teeth,
-                  ...pontic_teeth,
-                ]),
-              ];
-
-              if (product.service) {
-                const existingService = acc[bridgeKey].service.find(
-                  (serviceObj: any) => serviceObj.service === product.service
-                );
-
-                if (existingService) {
-                  existingService.teeth_number = [
-                    ...new Set([
-                      ...existingService.teeth_number,
-                      ...tooth_number,
-                    ]),
-                  ];
-                } else {
-                  acc[bridgeKey].service.push({
-                    service: product.service,
-                    teeth_number: [...tooth_number],
-                  });
-                }
-              }
-            }
-          } else {
-            // Non-Bridge products remain separate (no grouping)
-            acc[`${productId}-${tooth_number.join("-")}`] = {
+          if (!acc[bridgeKey]) {
+            acc[bridgeKey] = {
               ...product,
               teethProduct: {
                 ...product.teethProduct,
                 tooth_number: [...tooth_number],
-                pontic_teeth: [...pontic_teeth],
+                pontic_teeth: [...(pontic_teeth || [])],
               },
               service: product.service
                 ? [
-                    {
-                      service: product.service,
-                      teeth_number: [...tooth_number],
-                    },
-                  ]
+                  {
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  },
+                ]
                 : [],
             };
-          }
+          } else {
+            acc[bridgeKey].teethProduct.tooth_number = [
+              ...new Set([
+                ...acc[bridgeKey].teethProduct.tooth_number,
+                ...tooth_number,
+              ]),
+            ];
+            acc[bridgeKey].teethProduct.pontic_teeth = [
+              ...new Set([
+                ...acc[bridgeKey].teethProduct.pontic_teeth,
+                ...pontic_teeth,
+              ]),
+            ];
 
-          return acc;
-        }, {} as any)
-      )
+            if (product.service) {
+              const existingService = acc[bridgeKey].service.find(
+                (serviceObj: any) => serviceObj.service === product.service
+              );
+
+              if (existingService) {
+                existingService.teeth_number = [
+                  ...new Set([
+                    ...existingService.teeth_number,
+                    ...tooth_number,
+                  ]),
+                ];
+              } else {
+                acc[bridgeKey].service.push({
+                  service: product.service,
+                  teeth_number: [...tooth_number],
+                });
+              }
+            }
+          }
+        } else {
+          // Non-Bridge products remain separate (no grouping)
+          acc[`${productId}-${tooth_number.join("-")}`] = {
+            ...product,
+            teethProduct: {
+              ...product.teethProduct,
+              tooth_number: [...tooth_number],
+              pontic_teeth: [...(pontic_teeth || [])],
+            },
+            service: product.service
+              ? [
+                {
+                  service: product.service,
+                  teeth_number: [...tooth_number],
+                },
+              ]
+              : [],
+          };
+        }
+
+        return acc;
+      }, {} as any)
+    )
     : [];
   console.log(consolidatedProducts, "consolidatedProducts");
   return (
@@ -2352,14 +2364,14 @@ export const StatementReceiptTemplate: React.FC<
       dueDate: "2025-02-15",
       transactions: caseDetails?.length
         ? caseDetails[0].invoiceData.filter((item: any) => {
-            // Include items that are not of type "P"
-            if (item.type !== "P") {
-              return true;
-            }
+          // Include items that are not of type "P"
+          if (item.type !== "P") {
+            return true;
+          }
 
-            // For items with type "P", check if the date is less than or equal to updated_at
-            return item.date <= caseDetails[0].updated_at;
-          })
+          // For items with type "P", check if the date is less than or equal to updated_at
+          return item.date <= caseDetails[0].updated_at;
+        })
         : [],
       previousBalance: 100.0,
       payments: 0.0,

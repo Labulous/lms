@@ -155,6 +155,7 @@ const PrintPreview = () => {
   console.log(caseData, "lab datatat");
 
   const renderTemplate = () => {
+    debugger;
     if (Array.isArray(caseData)) {
       if (type === "lab-slip") {
         const cases = caseDetails?.map((caseItem) => {

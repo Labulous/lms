@@ -110,6 +110,7 @@ const CaseList: React.FC = () => {
       return dueDateParam ? new Date() : undefined;
     }
   );
+
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -123,6 +124,7 @@ const CaseList: React.FC = () => {
     pageSize: 10,
   });
   const [pageSize, setPageSize] = useState<number>(15);
+  const [selectedOrderCases, setSelectedOrderCases] = useState<ExtendedCase[]>([]);
 
   const pagination = useMemo(
     () => ({
@@ -133,7 +135,7 @@ const CaseList: React.FC = () => {
   );
   let date;
   const location = useLocation();
-  const previousPath = location.state.from || "No previous path available";
+  const previousPath = location.state?.from || "No previous path available";
   if (typeof dueDateFilter === "string") {
     const [year, month, day] = dueDateFilter.split("-").map(Number);
     date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC
@@ -814,6 +816,9 @@ const CaseList: React.FC = () => {
         due_date,
         attachements,
         case_number,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -1032,6 +1037,9 @@ const CaseList: React.FC = () => {
         due_date,
         attachements,
         case_number,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -1350,7 +1358,6 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
-    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1418,6 +1425,18 @@ const CaseList: React.FC = () => {
   // }
   const amount = 20133;
 
+  const handleSelectedOrderData = () => {
+    const selectedOrderCases = table.getFilteredSelectedRowModel().rows.map(row => row.original);
+    console.log("Selected Order Cases:", selectedOrderCases);
+    if (selectedOrderCases.length === 0) {
+      alert("No cases selected!");
+      return;
+    }
+    setSelectedOrderCases(selectedOrderCases);
+    navigate("selected-order-cases", { state: { selectedCases: selectedOrderCases } });
+  };
+
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -1474,6 +1493,12 @@ const CaseList: React.FC = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button variant="outline" size="sm"
+                  onClick={handleSelectedOrderData}
+                  disabled={table.getSelectedRowModel().rows.length === 0}
+                >
+                  Selected Orders
+                </Button>
               </>
             ) : null}
           </div>

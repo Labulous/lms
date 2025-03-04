@@ -386,9 +386,27 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
         <div className="col-span-4">
           <div className="space-y-4">
             <div className="space-y-0">
-              <Label htmlFor="clientId" className="text-xs">
-                Client *
-              </Label>
+
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="clientId" className="text-xs">
+                  Client *
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="isDisplayAcctOnly" className="text-xs">
+                    Display Account # Only
+                  </Label>
+                  <Checkbox
+                    id="isDisplayAcctOnly"
+                    name="isDisplayAcctOnly"
+                    checked={formData.isDisplayAcctOnly}
+                    onCheckedChange={(checked) => {
+                      onChange("isDisplayAcctOnly", checked);
+                    }}
+
+                  />
+                </div>
+              </div>
+
               <div className="mt-1">
                 {loading ? (
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -459,9 +477,25 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0">
-              <Label htmlFor="doctorId" className="text-xs">
-                Doctor *
-              </Label>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="doctorId" className="text-xs">
+                  Doctor *
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="isDisplayDoctorAcctOnly" className="text-xs">
+                    Display Doctor # Only
+                  </Label>
+                  <Checkbox
+                    id="isDisplayDoctorAcctOnly"
+                    name="isDisplayDoctorAcctOnly"
+                    checked={formData.isDisplayDoctorAcctOnly}
+                    onCheckedChange={(checked) => {
+                      onChange("isDisplayDoctorAcctOnly", checked);
+                    }}
+
+                  />
+                </div>
+              </div>
               <Select
                 name="doctorId"
                 value={formData.doctorId}
@@ -481,7 +515,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {selectedClient?.doctors &&
-                  selectedClient.doctors.length > 0 ? (
+                    selectedClient.doctors.length > 0 ? (
                     selectedClient.doctors.map((doctor) => (
                       <SelectItem key={doctor.id} value={doctor.id || "_no_id"}>
                         {doctor.name}
@@ -500,9 +534,26 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
             </div>
 
             <div className="space-y-0">
-              <Label htmlFor="patientFirstName" className="text-xs">
-                Patient Name *
-              </Label>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="patientFirstName" className="text-xs">
+                  Patient Name *
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="isHidePatientName" className="text-xs">
+                    Hide Patient Name
+                  </Label>
+                  <Checkbox
+                    id="isHidePatientName"
+                    name="isHidePatientName"
+                    checked={formData.isHidePatientName}
+                    onCheckedChange={(checked) => {
+                      onChange("isHidePatientName", checked);
+                    }}
+
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Input
@@ -894,11 +945,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                         {!isCustomColor ? (
                           <div className="grid grid-cols-5 gap-2 bg-white z-50">
                             <div
-                              className={`h-12 w-12 rounded-md cursor-pointer relative bg-white ${
-                                !formData.workingPanColor
-                                  ? "border-2 border-black"
-                                  : "border-2 border-gray-200"
-                              }`}
+                              className={`h-12 w-12 rounded-md cursor-pointer relative bg-white ${!formData.workingPanColor
+                                ? "border-2 border-black"
+                                : "border-2 border-gray-200"
+                                }`}
                               onClick={() =>
                                 onChange("workingPanColor", undefined)
                               }
@@ -915,11 +965,10 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                               return (
                                 <div
                                   key={key}
-                                  className={`h-12 w-12 rounded-md cursor-pointer ${
-                                    formData.workingPanColor === item
-                                      ? "border-2 border-black"
-                                      : ""
-                                  }`}
+                                  className={`h-12 w-12 rounded-md cursor-pointer ${formData.workingPanColor === item
+                                    ? "border-2 border-black"
+                                    : ""
+                                    }`}
                                   style={{
                                     backgroundColor: item,
                                   }}

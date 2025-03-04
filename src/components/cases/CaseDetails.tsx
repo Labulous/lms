@@ -160,7 +160,7 @@ export interface ExtendedCase {
   doctor: {
     id: string;
     name: string;
-    order:string;
+    order: number;
     client: {
       id: string;
       client_name: string;
@@ -233,6 +233,9 @@ export interface ExtendedCase {
   }[];
   labDetail?: labDetail;
   isDueDateTBD?: boolean;
+  isDisplayAcctOnly?: boolean;
+  isDisplayDoctorAcctOnly?: boolean;
+  isHidePatientName?: boolean;
 }
 
 interface CaseDetailsProps {
@@ -550,6 +553,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         case_number,
         common_services,
         is_appointment_TBD,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -820,6 +826,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           attachements,
           case_number,
           common_services,
+          isDisplayAcctOnly,
+          isDisplayDoctorAcctOnly,
+          isHidePatientName,
           invoice:invoices!case_id (
             id,
             case_id,

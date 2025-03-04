@@ -135,7 +135,25 @@ const ClientList: React.FC<ClientListProps> = ({
     setClients(initialClients);
   }, [initialClients]);
 
+
+
   const columns: ColumnDef<Client>[] = [
+    {
+      accessorKey: "colorTag",
+      header: "",
+      cell: ({ row }) => {
+        const color = row.getValue("colorTag") as string || "#f3f4f6"; // Default gray color
+        return (
+          <div
+            className="w-6 h-6 rounded border"
+            style={{
+              backgroundColor: color,
+              borderColor: "rgba(0,0,0,0.1)",
+            }}
+          />
+        );
+      },
+    },
     {
       accessorKey: "accountNumber",
       header: ({ column }) => {
@@ -158,144 +176,6 @@ const ClientList: React.FC<ClientListProps> = ({
         return cellValue != null
           ? cellValue.toString().toLowerCase().includes(value.toLowerCase())
           : false;
-      },
-    },
-
-    {
-      accessorKey: "tags",
-      header: ({ column }) => (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" className="p-0 hover:bg-transparent">
-              <div className="flex items-center">
-                Tag
-                <ChevronsUpDown className="ml-2 h-4 w-4" />
-                {tagFilter.length > 0 && (
-                  <Badge variant="outline" className="ml-2 bg-background">
-                    {tagFilter.length}
-                  </Badge>
-                )}
-              </div>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[200px] p-2" align="start">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b">
-                <span className="text-sm font-medium">Filter by Tag</span>
-                {tagFilter.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setTagFilter([]);
-                      column.setFilterValue(undefined);
-                      searchParams.delete("tags");
-                      setSearchParams(searchParams);
-                    }}
-                    className="h-8 px-2 text-xs"
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
-              <div className="max-h-[200px] overflow-y-auto space-y-2 pr-2">
-                {Array.from(
-                  new Set(
-                    clients
-                      .filter((c) => c.tags?.name)
-                      .map((c) =>
-                        JSON.stringify({
-                          name: c.tags?.name,
-                          color: c.tags?.color,
-                        })
-                      )
-                  )
-                )
-                  .map((str) => JSON.parse(str))
-                  .map((tag, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`tag-${tag.name} ${index}`}
-                        checked={tagFilter.includes(tag.name)}
-                        onCheckedChange={(checked) => {
-                          const newTagFilter = checked
-                            ? [...tagFilter, tag.name]
-                            : tagFilter.filter((t) => t !== tag.name);
-                          setTagFilter(newTagFilter);
-                          column.setFilterValue(
-                            newTagFilter.length ? newTagFilter : undefined
-                          );
-                          if (newTagFilter.length > 0) {
-                            searchParams.set("tags", newTagFilter.join(","));
-                          } else {
-                            searchParams.delete("tags");
-                          }
-                          setSearchParams(searchParams);
-                        }}
-                      />
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-4 h-4 rounded border"
-                          style={{
-                            backgroundColor: tag.color || "#f3f4f6",
-                            borderColor: "rgba(0,0,0,0.1)",
-                          }}
-                        />
-                        <label
-                          htmlFor={`tag-${tag.name}`}
-                          className="text-sm font-medium capitalize cursor-pointer"
-                        >
-                          {tag.name}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      ),
-      cell: ({ row }) => {
-        const ddd = row.getValue("accountNumber");
-        if(ddd =="1024")
-        {
-          debugger;
-        }
-        const tag = row.getValue("tags") as { name: string; color: string };
-        if (!tag?.name) return null;
-
-        const color = tag.color || "#f3f4f6";
-        const name = tag.name;
-        const initials = name.slice(0, 2).toUpperCase();
-
-        return (
-          <div className="font-medium">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <div
-                    className="w-8 h-6 rounded flex items-center justify-center text-xs font-medium border"
-                    style={{
-                      backgroundColor: color,
-                      borderColor: "rgba(0,0,0,0.1)",
-                      color: getContrastColor(color),
-                    }}
-                  >
-                    {initials}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{name}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        );
-      },
-      filterFn: (row, id, value: string[]) => {
-        if (!value?.length) return true;
-        const tag = row.getValue(id) as { name: string; color: string };
-        return value.includes(tag?.name || "");
       },
     },
 
@@ -451,41 +331,41 @@ const ClientList: React.FC<ClientListProps> = ({
 
 
   const handleToggleStatus = async (client: Client) => {
-  try {
-    const message = client.status === "Active"
-      ? "Are you sure you want to deactivate this client?"
-      : "Are you sure you want to activate this client?";
+    try {
+      const message = client.status === "Active"
+        ? "Are you sure you want to deactivate this client?"
+        : "Are you sure you want to activate this client?";
 
-    if (!window.confirm(message)) {
-      return;
+      if (!window.confirm(message)) {
+        return;
+      }
+
+      // Determine new status values
+      const newIsActive = client.status === "Active" ? false : true;
+      const newStatus = newIsActive ? "Active" : "Inactive";
+
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          isActive: newIsActive,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", client.id);
+
+      if (error) throw error;
+
+      toast.success("Client status updated successfully");
+
+      // Update state without refetching
+      setClients((prevClients) =>
+        prevClients.map((c) =>
+          c.id === client.id ? { ...c, status: newStatus, isActive: newIsActive } : c
+        )
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update client status");
     }
-
-    // Determine new status values
-    const newIsActive = client.status === "Active" ? false : true;
-    const newStatus = newIsActive ? "Active" : "Inactive";
-
-    const { error } = await supabase
-      .from("clients")
-      .update({
-        isActive: newIsActive,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", client.id);
-
-    if (error) throw error;
-
-    toast.success("Client status updated successfully");
-
-    // Update state without refetching
-    setClients((prevClients) =>
-      prevClients.map((c) =>
-        c.id === client.id ? { ...c, status: newStatus, isActive: newIsActive } : c
-      )
-    );
-  } catch (error: any) {
-    toast.error(error?.message || "Failed to update client status");
-  }
-};
+  };
 
 
   if (loading) {

@@ -19,6 +19,7 @@ export interface Doctor {
   phone: string;
   email: string;
   notes: string;
+  order?:string;
 }
 
 export interface Client {
@@ -46,6 +47,7 @@ export interface Client {
   workingTagName?: string;
   isActive?: boolean;
   tags?: WorkingTag;
+  colorTag?:string;
 }
 
 export interface ClientType {
@@ -131,15 +133,7 @@ class ClientsService {
         created_at: client.created_at,
         updated_at: client.updated_at,
         status: client.isActive ? "Active" : "Inactive",
-        tags: client.tag
-          ? {
-            id: client.tag.id,
-            name: client.tag.name,
-            color: client.tag.color,
-            created_at: client.tag?.created_at || "",
-            updated_at: client.tag?.updated_at || "",
-          }
-          : undefined, // Use `undefined` instead of `null`
+        colorTag : client.colorTag,       
       };
 
       return transformedClient;
@@ -181,7 +175,7 @@ class ClientsService {
       notes: client.notes || "",
       lab_id: client.lab_id,
       status: client.status,
-      working_tag_id: client.workingTagName
+      colorTag : client.colorTag,
     };
   }
 
@@ -191,6 +185,7 @@ class ClientsService {
       phone: doctor.phone,
       email: doctor.email,
       notes: doctor.notes,
+      order : doctor.order,
     };
   }
 
@@ -248,12 +243,7 @@ class ClientsService {
       const { data: clients, error: clientsError } = await supabase
         .from("clients")
         .select(`
-          *,
-          tag:working_tags!working_tag_id (
-            id,
-            name,
-            color
-          )
+          *
         `)
         .eq("lab_id", labId)
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
@@ -331,12 +321,7 @@ class ClientsService {
       const { data: client, error } = await supabase
         .from("clients")
         .select(`
-          *,
-          tag:working_tags!working_tag_id (
-            id,
-            name,
-            color
-          )
+          *
         `)
         .eq("id", id)
         .single();
@@ -459,12 +444,12 @@ class ClientsService {
         // Compare current doctors with new doctors to see if we need to update
         const currentDoctorsSet = new Set(
           currentDoctors.map(
-            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}|${d.order}`
           )
         );
         const newDoctorsSet = new Set(
           clientData.doctors.map(
-            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}`
+            (d) => `${d.name}|${d.email}|${d.phone}|${d.notes}|${d.order}`
           )
         );
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ArrowUp, ArrowDown } from "lucide-react"
 import {
   Tooltip,
   TooltipContent,
@@ -29,6 +30,7 @@ import {
   FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { HexColorPicker } from "react-colorful";
 
 interface ClientAccountInfoProps {
   client: Client;
@@ -39,6 +41,7 @@ interface ClientAccountInfoProps {
   onDelete: () => void;
   setIsEditing: (isEditing: boolean) => void;
 }
+
 
 const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   client,
@@ -51,6 +54,32 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
 }) => {
   const [otherEmailInputs, setOtherEmailInputs] = useState([1]);
 
+  const [isCustomColor, setIsCustomColor] = useState(false);
+  const [isAddingPan, setIsAddingPan] = useState(false);
+
+  const colors = [
+    "#FF5733", // Vibrant Red-Orange
+    "#33FF57", // Bright Green
+    "#3357FF", // Bold Blue
+    "#FF33A8", // Hot Pink
+    "#FFD133", // Bright Yellow
+    "#33FFF5", // Aqua Blue
+    "#8D33FF", // Deep Purple
+    "#FF8633", // Soft Orange
+    "#33FF99", // Mint Green
+    "#FF3333", // Bright Red
+    "#4CAF50", // Forest Green
+    "#FFC107", // Amber
+    "#9C27B0", // Amethyst Purple
+    "#2196F3", // Sky Blue
+    "#FF9800", // Vivid Orange
+    "#E91E63", // Raspberry Pink
+    "#607D8B", // Cool Gray
+    "#673AB7", // Royal Purple
+    "#00BCD4", // Cerulean Blue
+    "#FFEB3B", // Lemon Yellow
+  ];
+
   const handleEditClick = (isFirst?: boolean) => {
     // Initialize editedData with all current client data
     setEditedData({
@@ -62,6 +91,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
       email: client.email,
       billingEmail: client.billingEmail,
       otherEmail: client.otherEmail,
+      colorTag: client.colorTag,
       address: {
         street: client.address.street,
         city: client.address.city,
@@ -82,11 +112,12 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
       additionalLeadTime: client.additionalLeadTime,
       salesRepNote: client.salesRepNote,
       notes: client.notes ?? "",
-      doctors: client.doctors.map((doctor) => ({
+      doctors: client.doctors?.map((doctor, index) => ({
         name: doctor.name,
         email: doctor.email,
         phone: doctor.phone,
         notes: doctor.notes ?? "",
+        order: `${client.accountNumber}-${index + 1}`,
       })),
     });
     isFirst ? null : setIsEditing(true);
@@ -157,11 +188,12 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   const addDoctor = () => {
     setEditedData((prev) => {
       if (!prev) return null;
+      const newDoctorOrder = `${prev.accountNumber}-${(prev.doctors?.length ?? 0) + 1}`;
       return {
         ...prev,
         doctors: [
           ...(prev.doctors || []),
-          { name: "", email: "", phone: "", notes: "" },
+          { name: "", phone: "", email: "", notes: "", order: newDoctorOrder },
         ],
       };
     });
@@ -180,6 +212,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   };
 
   const handleSave = async () => {
+    debugger;
     if (!editedData) return;
 
     try {
@@ -218,6 +251,32 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
     setEditedData({ ...editedData, otherEmail: newOtherEmails });
     setOtherEmailInputs(otherEmailInputs.slice(0, -1));
   };
+
+  const handleColorChange = (field: keyof ClientInput, value: string | undefined) => {
+    setEditedData((prevData) => {
+      if (!prevData) return prevData;
+      return {
+        ...prevData,
+        [field]: value ?? "",
+      };
+    });
+  };
+
+  const handleMove = (index: number, direction: "up" | "down") => {
+    debugger;
+    if (!editedData?.doctors) return;
+
+    const newDoctors = [...editedData.doctors];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= newDoctors.length) return;
+
+    // Swap elements
+    [newDoctors[index], newDoctors[newIndex]] = [newDoctors[newIndex], newDoctors[index]];
+    setEditedData({ ...editedData, doctors: newDoctors });
+  };
+
+
   return (
     <div className="space-y-6">
       <Card>
@@ -250,7 +309,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
           <div className="space-x-2">
             {!isEditing ? (
               <>
-                <Button variant="outline" size="sm" onClick={()=> handleEditClick()}>
+                <Button variant="outline" size="sm" onClick={() => handleEditClick()}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
@@ -280,7 +339,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 <CardTitle className="text-lg">Basic Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label className="text-sm font-medium">Account Number</Label>
                   <Input
                     name="accountNumber"
@@ -292,7 +351,130 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                     className="bg-muted"
                     onChange={handleInputChange}
                   />
+                </div> */}
+
+                <div className="grid grid-cols-2 gap-4 items-center">
+                  {/* Account Number Field */}
+                  <div>
+                    <Label htmlFor="accountNumber">Account Number*</Label>
+                    <Input
+                      name="accountNumber"
+                      value={
+                        isEditing
+                          ? editedData?.accountNumber ?? ""
+                          : client.accountNumber
+                      }
+                      className="bg-muted"
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  {/* Color Tag */}
+                  <div>
+                    <Label>Color Tag</Label>
+                    <div className="relative">
+                      <div className="flex gap-1 relative items-center">
+                        <div
+                          className={`flex h-8 w-10 rounded-md cursor-pointer relative bg-white ${isEditing ? "border-2 border-gray-400" : "opacity-50 cursor-not-allowed"
+                            }`}
+                          style={{
+                            backgroundColor: editedData?.colorTag || "white",
+                            border: "2px solid rgba(0,0,0,0.4)",
+                          }}
+                          onClick={() => {
+                            if (isEditing) setIsAddingPan(!isAddingPan);
+                          }}
+                        >
+                          {!editedData?.colorTag && (
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                content: '""',
+                                background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {isAddingPan && isEditing && (
+                        <div
+                          className="w-72 absolute top-12 bg-white p-2 z-50 border rounded-md"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                        >
+                          <div className="flex justify-end py-2">
+                            <button onClick={() => setIsAddingPan(false)}>
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className=" space-y-5 bg-white">
+                            <div className="flex w-full gap-4">
+                              <Button
+                                size={"sm"}
+                                onClick={() => setIsCustomColor(false)}
+                                className="w-1/2"
+                                variant={isCustomColor ? "secondary" : "destructive"}
+                              >
+                                Select Colors
+                              </Button>
+                              <Button
+                                size={"sm"}
+                                onClick={() => setIsCustomColor(true)}
+                                className="w-1/2"
+                                variant={isCustomColor ? "destructive" : "secondary"}
+                              >
+                                Select Custom Color
+                              </Button>
+                            </div>
+
+                            {!isCustomColor ? (
+                              <div className="grid grid-cols-5 gap-2 bg-white z-50">
+                                <div
+                                  className={`h-12 w-12 rounded-md cursor-pointer relative bg-white ${!editedData?.colorTag ? "border-2 border-black" : "border-2 border-gray-200"
+                                    }`}
+                                  onClick={() => handleColorChange("colorTag", undefined)}
+                                >
+                                  <div
+                                    className="absolute inset-0"
+                                    style={{
+                                      content: '""',
+                                      background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                                    }}
+                                  />
+                                </div>
+                                {colors.map((item, key) => (
+                                  <div
+                                    key={key}
+                                    className={`h-12 w-12 rounded-md cursor-pointer ${editedData?.colorTag === item ? "border-2 border-black" : ""
+                                      }`}
+                                    style={{ backgroundColor: item }}
+                                    onClick={() => {
+                                      handleColorChange("colorTag", item);
+                                      setIsAddingPan(false);
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <HexColorPicker
+                                color={editedData?.colorTag || "#ffffff"}
+                                onChange={(color) => {
+                                  handleColorChange("colorTag", color);
+                                }}
+                                style={{ width: "100%" }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Client Name</Label>
                   <div className="relative">
@@ -419,7 +601,7 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                         onClick={addOtherEmail}
                         className="mt-6 bg-blue-500 text-white px-2 py-2 rounded"
                       >
-                        Add Other Email 
+                        Add Other Email
                       </button>
                     </div>
                   )}
@@ -755,86 +937,90 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {(isEditing ? editedData?.doctors : client.doctors)?.map(
-                    (doctor, index) => (
-                      <Card key={index}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3">
-                          <CardTitle className="text-base">
-                            Doctor #{index + 1}
-                          </CardTitle>
+                  {(isEditing ? editedData?.doctors : client.doctors)?.map((doctor, index) => (
+                    <Card key={index}>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 py-3">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base">Doctor #{index + 1}</CardTitle>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">
+                            Order #{editedData?.accountNumber ? `${editedData.accountNumber}-${index + 1}` : index + 1}
+                          </span>
+
                           {isEditing && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeDoctor(index)}
-                            >
-                              <UserMinus className="h-4 w-4" />
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMove(index, "up")}
+                                disabled={index === 0}
+                              >
+                                <ArrowUp className="h-4 w-4 text-blue-500" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleMove(index, "down")}
+                                disabled={index === (editedData?.doctors?.length ?? client.doctors?.length) - 1}
+                              >
+                                <ArrowDown className="h-4 w-4 text-blue-500" />
+                              </Button>
+                            </>
+                          )}
+
+                          {/* Remove Doctor Button (Only in edit mode) */}
+                          {isEditing && (
+                            <Button variant="ghost" size="sm" onClick={() => removeDoctor(index)}>
+                              <UserMinus className="h-4 w-4 text-red-500" />
                             </Button>
                           )}
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Name</Label>
-                            <Input
-                              value={doctor.name}
-                              onChange={(e) =>
-                                handleDoctorChange(
-                                  index,
-                                  "name",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isEditing}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Email</Label>
-                            <Input
-                              type="email"
-                              value={doctor.email}
-                              onChange={(e) =>
-                                handleDoctorChange(
-                                  index,
-                                  "email",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isEditing}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Phone</Label>
-                            <Input
-                              type="tel"
-                              value={doctor.phone}
-                              onChange={(e) =>
-                                handleDoctorChange(
-                                  index,
-                                  "phone",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isEditing}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Notes</Label>
-                            <Input
-                              value={doctor.notes ?? ""}
-                              onChange={(e) =>
-                                handleDoctorChange(
-                                  index,
-                                  "notes",
-                                  e.target.value
-                                )
-                              }
-                              disabled={!isEditing}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  )}
+                        </div>
+                      </CardHeader>
+
+                      {/* Doctor Fields */}
+                      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Name</Label>
+                          <Input
+                            value={doctor.name}
+                            onChange={(e) => handleDoctorChange(index, "name", e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Email</Label>
+                          <Input
+                            type="email"
+                            value={doctor.email}
+                            onChange={(e) => handleDoctorChange(index, "email", e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Phone</Label>
+                          <Input
+                            type="tel"
+                            value={doctor.phone}
+                            onChange={(e) => handleDoctorChange(index, "phone", e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Notes</Label>
+                          <Input
+                            value={doctor.notes ?? ""}
+                            onChange={(e) => handleDoctorChange(index, "notes", e.target.value)}
+                            disabled={!isEditing}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+
                 </div>
               )}
             </CardContent>

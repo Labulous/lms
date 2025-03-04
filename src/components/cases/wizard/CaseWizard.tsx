@@ -22,11 +22,11 @@ type WizardStep = "order" | "products" | "files" | "notes";
 
 export interface FormData {
   notes:
-    | {
-        instructionNotes?: string | undefined;
-        invoiceNotes?: string | undefined;
-      }
-    | undefined;
+  | {
+    instructionNotes?: string | undefined;
+    invoiceNotes?: string | undefined;
+  }
+  | undefined;
   clientId: string;
   patientFirstName: string;
   doctorId?: string;
@@ -57,6 +57,9 @@ export interface FormData {
   };
   otherItems?: string;
   clientName?: string;
+  isDisplayAcctOnly?: boolean;
+  isDisplayDoctorAcctOnly?: boolean;
+  isHidePatientName?: boolean;
 }
 
 interface CaseWizardProps {
@@ -103,6 +106,9 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
       instructionNotes: "",
       invoiceNotes: "",
     },
+    isDisplayAcctOnly: false,
+    isDisplayDoctorAcctOnly: false,
+    isHidePatientName: false,
   });
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -341,16 +347,14 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
                 className={`flex-1 ${index > 0 ? "ml-4" : ""}`}
               >
                 <div
-                  className={`text-sm font-medium ${
-                    currentStep === step.key ? "text-blue-600" : "text-gray-500"
-                  }`}
+                  className={`text-sm font-medium ${currentStep === step.key ? "text-blue-600" : "text-gray-500"
+                    }`}
                 >
                   {step.label}
                 </div>
                 <div
-                  className={`mt-2 h-1 rounded-full ${
-                    currentStep === step.key ? "bg-blue-600" : "bg-gray-200"
-                  }`}
+                  className={`mt-2 h-1 rounded-full ${currentStep === step.key ? "bg-blue-600" : "bg-gray-200"
+                    }`}
                 />
               </div>
             ))}

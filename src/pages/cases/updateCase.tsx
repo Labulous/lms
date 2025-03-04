@@ -168,6 +168,9 @@ const UpdateCase: React.FC = () => {
         attachements,
         case_number,
         common_services,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -423,6 +426,7 @@ const UpdateCase: React.FC = () => {
     getCasesLength();
   }, [user?.id]);
   const handleSubmit = async (e: React.FormEvent) => {
+    debugger;
     e.preventDefault();
     setErrors({});
 
@@ -517,6 +521,9 @@ const UpdateCase: React.FC = () => {
           working_pan_color: formData.workingPanColor,
           enclosed_case_id: transformedData.enclosed_case_id,
           attachements: selectedFiles.map((item) => item.url),
+          isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
+          isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
+          isHidePatientName: transformedData.isHidePatientName || false,
         },
         invoiceId: caseDetailApi?.invoice?.[0].id,
         products: selectedProducts.filter((item) => item.id && item.type),
@@ -587,6 +594,9 @@ const UpdateCase: React.FC = () => {
           workingTagName: caseDataApi.tag?.id || null,
           workingPanColor: caseDataApi.working_pan_color || "",
           is_appointment_TBD: caseDataApi.is_appointment_TBD,
+          isDisplayAcctOnly: caseDataApi.isDisplayAcctOnly,
+          isDisplayDoctorAcctOnly: caseDataApi.isDisplayDoctorAcctOnly,
+          isHidePatientName: caseDataApi.isHidePatientName,
           enclosedItems: {
             ...prevData.enclosedItems, // Preserve existing enclosedItems and override
             impression: caseDataApi.enclosed_items?.impression || 0,
