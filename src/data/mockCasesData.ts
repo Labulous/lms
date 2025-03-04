@@ -155,9 +155,8 @@ const saveCaseProduct = async (
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
             type: product.type || "",
-            additional_services_id: main.isServicesAll
-              ? product?.services?.map((item: { id: string }) => item.id) || []
-              : [],
+            additional_services_id:
+              product?.services?.map((item: { id: string }) => item.id) || [],
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -416,25 +415,39 @@ const saveCases = async (
 
       const totalServiceAmount = cases.products.reduce(
         (sum: number, product: any) => {
-          // Check if we need to use subRows or mainServices based on isServicesAll
-          const services = product.isServicesAll
-            ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use services from subRows if isServicesAll is true
-            : product.mainServices || []; // Use mainServices if isServicesAll is false
+          // Extract subRows services
+          const services =
+            product.subRows?.flatMap((subRow: any) => subRow?.services || []) ||
+            [];
 
-          if (!services || services.length === 0) return sum;
+          // Extract commonServices that are not added to all
+          const servicesCommon =
+            product.commonServices?.filter((item: any) => !item.add_to_all) ||
+            [];
 
+          // Calculate total amount for services in subRows
           const totalAmount = services.reduce(
             (subSum: number, service: any) => {
               const finalDiscount = service.discount || 0;
               const priceAfterDiscount =
                 service.price - (service.price * finalDiscount) / 100;
-
               return subSum + priceAfterDiscount;
             },
             0
           );
 
-          return sum + totalAmount;
+          // Calculate total amount for commonServices
+          const commonServicesAmount = servicesCommon.reduce(
+            (subSum: number, service: any) => {
+              const finalDiscount = service.discount || 0;
+              const priceAfterDiscount =
+                service.price - (service.price * finalDiscount) / 100;
+              return subSum + priceAfterDiscount;
+            },
+            0
+          );
+
+          return sum + totalAmount + commonServicesAmount;
         },
         0
       );
@@ -660,9 +673,8 @@ const updateCases = async (
             pontic_teeth: product.pontic_teeth || [],
             product_id: product.id,
             type: product.type || "",
-            additional_services_id: main.isServicesAll
-              ? product?.services?.map((item: { id: string }) => item.id) || []
-              : [],
+            additional_services_id:
+              product?.services?.map((item: { id: string }) => item.id) || [],
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -714,18 +726,25 @@ const updateCases = async (
             ? product.price - (product.price * productDiscount) / 100
             : product.price;
 
-        // Select services based on isServicesAll
-        const services = product.isServicesAll
-          ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use subRow services if isServicesAll is true
-          : product.mainServices || []; // Use mainServices if isServicesAll is false
+        const subRowServices =
+          product.subRows?.flatMap((subRow: any) => subRow?.services || []) ||
+          [];
+
+        // Get commonServices that are NOT added to all
+        const commonServices =
+          product.commonServices?.filter((item: any) => !item.add_to_all) || [];
+
+        // Merge subRow services and common services
+        const allServices = [...subRowServices, ...commonServices];
 
         // Calculate total service price after discount
-        const totalServicePrice = services.reduce(
+        const totalServicePrice = allServices.reduce(
           (subSum: number, service: any) => {
             const servicePrice = service.price || 0;
+            const finalDiscount = service.discount || 0;
             const priceAfterDiscountService =
-              serviceDiscount > 0
-                ? servicePrice - (servicePrice * serviceDiscount) / 100
+              finalDiscount > 0
+                ? servicePrice - (servicePrice * finalDiscount) / 100
                 : servicePrice;
 
             return subSum + priceAfterDiscountService;
@@ -805,25 +824,37 @@ const updateCases = async (
       },
       0
     );
-
     const totalServiceAmount = cases.products.reduce(
       (sum: number, product: any) => {
-        // Check if we need to use subRows or mainServices based on isServicesAll
-        const services = product.isServicesAll
-          ? product.subRows?.flatMap((subRow: any) => subRow?.services || []) // Use services from subRows if isServicesAll is true
-          : product.mainServices || []; // Use mainServices if isServicesAll is false
+        // Extract subRows services
+        const services =
+          product.subRows?.flatMap((subRow: any) => subRow?.services || []) ||
+          [];
 
-        if (!services || services.length === 0) return sum;
+        // Extract commonServices that are not added to all
+        const servicesCommon =
+          product.commonServices?.filter((item: any) => !item.add_to_all) || [];
 
+        // Calculate total amount for services in subRows
         const totalAmount = services.reduce((subSum: number, service: any) => {
           const finalDiscount = service.discount || 0;
           const priceAfterDiscount =
             service.price - (service.price * finalDiscount) / 100;
-
           return subSum + priceAfterDiscount;
         }, 0);
 
-        return sum + totalAmount;
+        // Calculate total amount for commonServices
+        const commonServicesAmount = servicesCommon.reduce(
+          (subSum: number, service: any) => {
+            const finalDiscount = service.discount || 0;
+            const priceAfterDiscount =
+              service.price - (service.price * finalDiscount) / 100;
+            return subSum + priceAfterDiscount;
+          },
+          0
+        );
+
+        return sum + totalAmount + commonServicesAmount;
       },
       0
     );

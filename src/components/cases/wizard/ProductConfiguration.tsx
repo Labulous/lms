@@ -1584,18 +1584,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
                           >
-                            {row?.commonServices?.length === 0 ? (
-                              "Add Services"
-                            ) : (
+                            {row?.commonServices &&
+                            row?.commonServices?.length > 0 ? (
                               <span className="text-blue-600">
                                 {row?.commonServices?.length} Common Services
                                 Added
                               </span>
+                            ) : (
+                              "Add Services"
                             )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-80 p-3"
+                          className="w-[25rem] p-3"
                           onEscapeKeyDown={(e) => {
                             e.preventDefault();
                             setServicesPopoverOpen((prev) => {
@@ -1616,6 +1617,40 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         >
                           <div className="w-full">
                             <div className="w-full">
+                              <div className="flex justify-between mb-4">
+                                <div>
+                                  <h2>Add Additional Services</h2>
+                                </div>
+                                <div className="flex gap-2">
+                                  <div className="text-blue-600">
+                                    <p className="text-xs">
+                                      <span className="font-bold">
+                                        (
+                                        {
+                                          row?.commonServices?.filter(
+                                            (item) => !item?.add_to_all
+                                          ).length
+                                        }
+                                        )
+                                      </span>
+                                      common Services
+                                    </p>
+                                    <p className="text-xs">
+                                      <span className="font-bold">
+                                        (
+                                        {
+                                          row?.commonServices?.filter(
+                                            (item) => item?.add_to_all
+                                          ).length
+                                        }
+                                        )
+                                      </span>{" "}
+                                      Indivitual Services
+                                    </p>
+                                  </div>
+                                  <Button size={"sm"}>Save</Button>
+                                </div>
+                              </div>
                               <div className="grid grid-cols-1 gap-2 w-full">
                                 {row?.commonServices?.map((item) => (
                                   <div
@@ -1659,7 +1694,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                                     (subRow) => ({
                                                       ...subRow,
                                                       services: [
-                                                        ...currentProduct.services,
+                                                        ...currentProduct?.services || [],
                                                       ],
                                                     })
                                                   ) || [];

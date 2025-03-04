@@ -439,7 +439,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         fetchServices();
         let previousPath =
           location?.state?.from || "No previous path available";
-          console.log(previousPath,"previousPath")
+        console.log(previousPath, "previousPath");
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -706,7 +706,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       revalidateOnReconnect: true, // Refetch when the network is reconnected
     }
   );
-
+  console.log(caseDataa, "caseDataaf");
   // Error handling
   if (caseError) {
     return <div>Error fetching case data: {caseError.message}</div>;
@@ -761,6 +761,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           additional_services_id:
             caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
+          services: {
+            name: "zahid",
+            price: 12,
+          },
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -786,7 +790,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         })),
       }
     : null;
-
+  console.log(caseDetailApi, "caseDetailApi");
   const fetchCaseData = async (refetch?: boolean) => {
     try {
       setLoading(refetch ? false : true);
@@ -1053,6 +1057,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 ...product,
                 discounted_price: discountedPrice,
                 teethProduct: teeth,
+                // additional_service_id: ["5bee4f3e-7b40-4483-801b-407e4ea83c75"],
               };
             });
           });
@@ -1087,7 +1092,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         console.log(caseDetailApi, "caseDetailApi");
         setCaseDetail(caseDetailApi);
         fetchCaseData(true);
-
       }
       setError("No case ID provided");
       setLoading(false);
@@ -1098,7 +1102,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
       fetchCaseData(true);
-      
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
@@ -1622,7 +1625,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         }, {} as any)
       )
     : [];
-
+  console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -2303,7 +2306,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const quantity =
                             product?.discounted_price.quantity || 1;
                           const subtotal = finalPrice * quantity;
-
+                          console.log(product, "productproduct");
                           const serviceRow = product.service ? (
                             <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
@@ -2316,7 +2319,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 />
                               </TableCell>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.service.name}
+                                {"product.service.name"}
                               </TableCell>
                               <TableCell className="w-[1px] p-0">
                                 <Separator
@@ -2439,7 +2442,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   {product?.discounted_price?.total.toLocaleString()}
                                 </TableCell>
                               </TableRow>
-                              {serviceRow}
+                              {product?.service?.name ? serviceRow : null}
                             </React.Fragment>
                           );
                         })}
