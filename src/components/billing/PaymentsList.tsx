@@ -462,7 +462,9 @@ export function PaymentsList() {
             )
           `
           )
-          .eq("id", user?.id);
+          .eq("id", user?.id)
+          .or("is_archive.is.null,is_archive.eq.false");
+
 
         if (error) {
           throw new Error(error.message);
