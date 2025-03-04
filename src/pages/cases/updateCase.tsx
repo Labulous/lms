@@ -328,7 +328,11 @@ const UpdateCase: React.FC = () => {
           )
           .eq("id", caseId)
           .single()
-      : null // Fetching a single record based on `activeCaseId`
+      : null,
+      {
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+      }
   );
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
@@ -722,7 +726,41 @@ const UpdateCase: React.FC = () => {
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
+            groupedProducts[productId].commonServices =
+              caseDataApi?.common_services
+                ?.filter(
+                  (service: { teeth: number[]; services: string[] }) =>
+                    // Check if service.teeth is an array or a single tooth value
+                    Array.isArray(service.teeth)
+                      ? service.teeth.some((tooth: number) =>
+                          Array.from(groupedProducts[productId].teeth).includes(
+                            tooth
+                          )
+                        ) // Convert Set to Array and check
+                      : Array.from(groupedProducts[productId].teeth).includes(
+                          service.teeth
+                        ) // Convert Set to Array for a single value
+                )
+                .map((service: { teeth: number[]; services: string[] }) => {
+                  // Map through the service.services array and find the corresponding service data from servicesData
+                  return service.services.map((serviceId: string) => {
+                    const serviceData = servicesData?.find(
+                      (item) => item.id === serviceId
+                    );
+                    return {
+                      id: serviceData?.id,
+                      name: serviceData?.name,
+                      is_taxable: serviceData?.is_taxable,
+                      price: serviceData?.price,
+                      add_to_all: false,
+                    };
+                  });
+                })
+                .flat() || []; // Flatten the array of arrays into a single array
 
+            item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
+              groupedProducts[productId].pontic_teeth.add(tooth)
+            );
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
               console.log(item, "itemitem");

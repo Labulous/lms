@@ -280,6 +280,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const routeCaseId = params.caseId;
   const activeCaseId = propCaseId || routeCaseId;
 
+  const baseUrl = import.meta.env.VITE_BASE_URL; // ✅ Works in Vite
   const navigate = useNavigate();
   const safeNavigate = (path: string) => {
     if (drawerMode && onNavigate) {
@@ -288,7 +289,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       navigate(path);
     }
   };
-
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [isApiLoad, setIsApiLoad] = useState(true);
@@ -365,12 +365,16 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         products: detail?.products
           ? detail.products.map((item: any) => ({
               ...item,
-              service: item.additional_services_id
+              service: item.teethProduct?.additional_services_id
                 ? data
                     .filter(
                       (service) =>
-                        Array.isArray(item.additional_services_id) &&
-                        item.additional_services_id.includes(service.id)
+                        Array.isArray(
+                          item.teethProduct.additional_services_id
+                        ) &&
+                        item.teethProduct.additional_services_id.includes(
+                          service.id
+                        )
                     )
                     .map((service) => ({
                       id: service.id,
@@ -437,11 +441,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       } else {
         console.log(workStationData, "workStationData");
         fetchServices();
-        const location = useLocation();
-        const previousPath = location.state.from || "No previous path available";
-        if (previousPath === "edit") {
-          fetchCaseData(true);
-        }
+        let previousPath =
+          location?.state?.from || "No previous path available";
+        console.log(previousPath, "previousPath");
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -708,7 +710,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       revalidateOnReconnect: true, // Refetch when the network is reconnected
     }
   );
-
+  console.log(caseDataa, "caseDataaf");
   // Error handling
   if (caseError) {
     return <div>Error fetching case data: {caseError.message}</div>;
@@ -763,6 +765,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           additional_services_id:
             caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
+          services: {
+            name: "zahid",
+            price: 12,
+          },
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -788,7 +794,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         })),
       }
     : null;
-
+  console.log(caseDetailApi, "caseDetailApi");
   const fetchCaseData = async (refetch?: boolean) => {
     try {
       setLoading(refetch ? false : true);
@@ -1012,6 +1018,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 notes,
                 product_id,
                 custom_body_shade,
+                additional_services_id,
                 custom_occlusal_shade,
                 custom_gingival_shade,
                 custom_stump_shade,
@@ -1055,6 +1062,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 ...product,
                 discounted_price: discountedPrice,
                 teethProduct: teeth,
+                additional_service_id: teeth?.additional_services_id,
               };
             });
           });
@@ -1098,6 +1106,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
+      fetchCaseData(true);
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
@@ -1621,7 +1630,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         }, {} as any)
       )
     : [];
-
   console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
@@ -1631,7 +1639,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             <div className="flex items-start space-x-4">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={`/${location.pathname}`}
+                  value={`${baseUrl}/${location.pathname}`}
                   size={64}
                   level="H"
                   includeMargin={true}
@@ -2301,9 +2309,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const finalPrice =
                             product?.discounted_price?.final_price || price;
                           const quantity =
-                            product?.discounted_price.quantity || 1;
+                            product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-
+                          console.log(product, "productproduct");
                           const serviceRow = product.service ? (
                             <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
@@ -2370,7 +2378,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             <React.Fragment key={index}>
                               <TableRow>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                  {product.teethProduct.tooth_number?.length > 1
+                                  {product.teethProduct?.tooth_number?.length >
+                                  1
                                     ? formatTeethRange(
                                         product.teethProduct?.tooth_number
                                       )

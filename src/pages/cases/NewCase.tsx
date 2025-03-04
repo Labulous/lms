@@ -229,6 +229,8 @@ const NewCase: React.FC = () => {
     console.warn("No lab ID found.");
     return null;
   }
+  console.log(selectedServices, "selectedServices");
+
   // If no match is found, return null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -287,7 +289,6 @@ const NewCase: React.FC = () => {
       setErrors(validationErrors);
       return;
     }
-
     try {
       setLoadingState({ isLoading: true, action: "save" });
       const transformedData = {
@@ -325,7 +326,10 @@ const NewCase: React.FC = () => {
           common_services:
             selectedProducts.map((product) => ({
               teeth: product.teeth,
-              services: product?.mainServices?.map((item) => item.id) || [],
+              services:
+                product?.commonServices
+                  ?.filter((item) => !item.add_to_all && item.id)
+                  ?.map((item) => item.id) || [],
             })) || [],
           lab_id: labIdData?.lab_id,
           attachements: selectedFiles.map((item) => item.url),
