@@ -656,14 +656,14 @@ const CaseList: React.FC = () => {
         </div>
       ),
       cell: ({ row }) => {
-        // const dueDate = row.getValue("due_date") as string;
-        // const parsedDate = new Date(date);
-        // return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
-
         const dueDate = row.getValue("due_date") as string;
-        const client = row.getValue("client") as { client_name: string; additional_lead_time?: string } | null;
-        const parsedDate = calculateDueDate(dueDate, client ?? undefined);
-        return parsedDate;
+        const parsedDate = new Date(date);
+        return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
+
+        // const dueDate = row.getValue("due_date") as string;
+        // const client = row.getValue("client") as { client_name: string; additional_lead_time?: string } | null;
+        // const parsedDate = calculateDueDate(dueDate, client ?? undefined);
+        // return parsedDate;
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
@@ -1358,6 +1358,7 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1417,6 +1418,235 @@ const CaseList: React.FC = () => {
     window.open(previewUrl, "_blank");
   };
 
+
+  const handlePrintSelectedOrder = () => {
+    const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
+
+    if (selectedCases.length === 0) {
+      alert("Please select at least one case to print.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Selected Orders</title>
+        <style>
+           @media screen {
+            body { display: none; } /* Hide content in normal view */
+          }
+          @media print {
+            @page {
+              size: Letter;  /* Set page size to Letter (8.5" x 11") */
+              margin: 0.5in; /* Set 0.5-inch margins for better printing */
+            }
+            body {
+              display: block;
+              background: white !important;
+              font-family: Arial, sans-serif;
+              font-size: 12pt; /* Readable text size */
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            h2 { text-align: center; margin-bottom: 10px; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th, td {
+              border: 1px solid black;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f2f2f2;
+            }
+            .color-box {
+              width: 12px;
+              height: 12px;
+              display: inline-block;
+              border: 1px solid #000;
+              margin-right: 5px;
+              vertical-align: middle;
+            }
+          }
+        </style>
+      </head>
+      <body>       
+        <table>
+          <thead>
+            <tr>
+              <th>Pan</th>
+              <th>Tag</th>
+              <th>Case #</th>
+              <th>Patient Name</th>
+              <th>Status</th>
+              <th>Doctor</th>
+              <th>Client</th>
+              <th>Due Date</th>
+              <th>Ordered Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${selectedCases
+        .map(
+          (caseItem) => `
+                <tr>
+                  <td>
+                    <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"};"></span>
+                    ${caseItem.working_pan_name || ""}
+                  </td>
+                  <td>
+                    ${caseItem?.tag?.name
+                      ? `<span class="color-box" style="background-color: ${caseItem.tag.color};"></span>
+                        ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
+                      : ""}
+                  </td>
+                  <td>${caseItem.case_number}</td>
+                  <td>${caseItem.patient_name}</td>
+                  <td>${caseItem.status}</td>
+                  <td>${caseItem.doctor.name}</td>
+                  <td>${caseItem.client.client_name}</td>
+                  <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
+                  <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
+                </tr>
+              `
+        )
+        .join("")}
+          </tbody>
+        </table>
+  
+        <script>
+          setTimeout(() => {
+            window.print();
+            window.onafterprint = () => {
+              window.close();
+            };
+          }, 500);
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
+
+
+  // const handlePrintSelectedOrder = () => {
+  //   const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
+
+  //   if (selectedCases.length === 0) {
+  //     alert("Please select at least one case to print.");
+  //     return;
+  //   }
+
+  //   const printWindow = window.open("", "_blank");
+  //   if (!printWindow) return;
+
+  //   printWindow.document.open();
+  //   printWindow.document.write(`
+  //     <!DOCTYPE html>
+  //     <html lang="en">
+  //     <head>
+  //       <meta charset="UTF-8">
+  //       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //       <title style="font-size:20px">Selected Orders</title>
+  //       <style>
+  //         @media screen {
+  //           body { display: none; } /* Hide content in normal view */
+  //         }
+  //         @media print {
+  //           @page {
+  //             size: Letter;  /* Set page size to Letter (8.5" x 11") */
+  //             margin: 0.5in; /* Set 0.5-inch margins for better printing */
+  //           }
+  //           body {
+  //             display: block;
+  //             background: white !important;
+  //             font-family: Arial, sans-serif;
+  //             font-size: 12pt; /* Readable text size */
+  //             -webkit-print-color-adjust: exact;
+  //             print-color-adjust: exact;
+  //           }
+  //           h2 { text-align: center; margin-bottom: 10px; }
+  //           table {
+  //             width: 100%;
+  //             border-collapse: collapse;
+  //             margin-top: 10px;
+  //           }
+  //           th, td {
+  //             border: 1px solid black;
+  //             padding: 8px;
+  //             text-align: left;
+  //           }
+  //           th {
+  //             background-color: #f2f2f2;
+  //           }
+  //         }
+  //       </style>
+  //     </head>
+  //     <body>       
+  //       <table>
+  //         <thead>
+  //           <tr>
+  //             <th>Pan</th>
+  //             <th>Tag</th>
+  //             <th>Case #</th>
+  //             <th>Patient Name</th>
+  //             <th>Status</th>
+  //             <th>Doctor</th>
+  //             <th>Client</th>
+  //             <th>Due Date</th>
+  //             <th>Ordered Date</th>
+  //           </tr>
+  //         </thead>
+  //         <tbody>
+  //           ${selectedCases
+  //       .map(
+  //         (caseItem) => `
+  //               <tr>
+  //                 <td>${caseItem.working_pan_name}</td>
+  //                 <td>${caseItem.tag}</td>
+  //                 <td>${caseItem.case_number}</td>
+  //                 <td>${caseItem.patient_name}</td>
+  //                 <td>${caseItem.status}</td>
+  //                 <td>${caseItem.doctor.name}</td>
+  //                 <td>${caseItem.client.client_name}</td>
+  //                 <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
+  //                 <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
+  //               </tr>
+  //             `
+  //       )
+  //       .join("")}
+  //         </tbody>
+  //       </table>
+
+  //       <script>
+  //         setTimeout(() => {
+  //           window.print();
+  //           setTimeout(() => window.close(), 500);
+  //         }, 500);
+  //       </script>
+  //     </body>
+  //     </html>
+  //   `);
+  //   printWindow.document.close();
+  // };
+
+
+
+
+
+
   if (!arragedNewCases) {
     return <div>Loading...</div>;
   }
@@ -1425,16 +1655,7 @@ const CaseList: React.FC = () => {
   // }
   const amount = 20133;
 
-  const handleSelectedOrderData = () => {
-    const selectedOrderCases = table.getFilteredSelectedRowModel().rows.map(row => row.original);
-    console.log("Selected Order Cases:", selectedOrderCases);
-    if (selectedOrderCases.length === 0) {
-      alert("No cases selected!");
-      return;
-    }
-    setSelectedOrderCases(selectedOrderCases);
-    navigate("selected-order-cases", { state: { selectedCases: selectedOrderCases } });
-  };
+
 
 
   return (
@@ -1492,19 +1713,13 @@ const CaseList: React.FC = () => {
                       Patient Label
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("selected-order")}
+                      onClick={() => handlePrintSelectedOrder()}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       Selected Order
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button variant="outline" size="sm"
-                  onClick={handleSelectedOrderData}
-                  disabled={table.getSelectedRowModel().rows.length === 0}
-                >
-                  Selected Orders
-                </Button>
               </>
             ) : null}
           </div>

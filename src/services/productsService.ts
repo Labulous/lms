@@ -20,6 +20,7 @@ export interface ProductInput {
   billing_type_id: string;
   requires_shade?: boolean;
   lab_id: string;
+  product_code:string;
 }
 
 export interface ProductTypes {

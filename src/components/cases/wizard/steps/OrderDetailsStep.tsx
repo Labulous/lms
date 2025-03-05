@@ -74,6 +74,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
+  additional_lead_time?:string;
   doctors: {
     id: string;
     name: string;
@@ -172,10 +173,26 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     }
   }, []);
 
-  const selectedClient = useMemo(
-    () => (clients || []).find((client) => client.id === formData.clientId),
-    [clients, formData.clientId]
-  );
+  // const selectedClient = useMemo(
+  //   () => (clients || []).find((client) => client.id === formData.clientId),
+  //   [clients, formData.clientId] 
+  // );
+
+  const selectedClient = useMemo(() => {
+    const client = (clients || []).find((client) => client.id === formData.clientId);  
+    if (client && formData.orderDate) {
+      let newDueDate = new Date(formData.orderDate);
+      const leadTime = client.additional_lead_time ? Number(client.additional_lead_time) : 0;
+  
+      if (leadTime > 0) {
+        newDueDate.setDate(newDueDate.getDate() + leadTime);
+      }  
+      onChange("dueDate", newDueDate.toISOString()); 
+    }  
+    return client;
+  }, [clients, formData.clientId, formData.orderDate]);
+  
+  
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -398,7 +415,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <Checkbox
                     id="isDisplayAcctOnly"
                     name="isDisplayAcctOnly"
-                    checked={formData.isDisplayAcctOnly}
+                    checked={Boolean(formData.isDisplayAcctOnly)}
                     onCheckedChange={(checked) => {
                       onChange("isDisplayAcctOnly", checked);
                     }}

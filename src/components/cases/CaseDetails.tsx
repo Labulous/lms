@@ -371,25 +371,25 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         ...detail,
         products: detail?.products
           ? detail.products.map((item: any) => ({
-              ...item,
-              service: item.teethProduct?.additional_services_id
-                ? data
-                    .filter(
-                      (service) =>
-                        Array.isArray(
-                          item.teethProduct.additional_services_id
-                        ) &&
-                        item.teethProduct.additional_services_id.includes(
-                          service.id
-                        )
+            ...item,
+            service: item.teethProduct?.additional_services_id
+              ? data
+                .filter(
+                  (service) =>
+                    Array.isArray(
+                      item.teethProduct.additional_services_id
+                    ) &&
+                    item.teethProduct.additional_services_id.includes(
+                      service.id
                     )
-                    .map((service) => ({
-                      id: service.id,
-                      name: service.name,
-                      price: service.price,
-                    }))[0]
-                : [],
-            }))
+                )
+                .map((service) => ({
+                  id: service.id,
+                  name: service.name,
+                  price: service.price,
+                }))[0]
+              : [],
+          }))
           : [],
       }));
     }
@@ -756,56 +756,56 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-        ...caseItem,
-        labDetail: lab,
-        custom_occlusal_details: caseDataa?.custom_occulusal_details,
-        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-          id: tp.product.id,
-          name: tp.product.name,
-          price: tp.product.price,
-          service_price: tp.product.service_price,
-          service_discount: tp.product.service_discount,
-          lead_time: tp.product.lead_time,
-          is_client_visible: tp.product.is_client_visible,
-          is_taxable: tp.product.is_taxable,
-          created_at: tp.product.created_at,
-          updated_at: tp.product.updated_at,
-          requires_shade: tp.product.requires_shade,
-          material: tp.product.material,
-          product_type: tp.product.product_type,
-          common_services: caseItem?.common_services,
-          billing_type: tp.product.billing_type,
-          additional_services_id:
-            caseItem?.teethProduct?.[index].additional_services_id,
-          discounted_price: caseItem?.discounted_price[index],
-          services: {
-            name: "zahid",
-            price: 12,
-          },
-          teethProduct: {
-            id: tp.id,
-            is_range: tp.is_range,
-            tooth_number: tp.tooth_number,
-            pontic_teeth: tp.pontic_teeth,
-            product_id: tp.product_id,
-            occlusal_shade: tp.occlusal_shade,
-            body_shade: tp.body_shade,
-            gingival_shade: tp.gingival_shade,
-            stump_shade: tp.stump_shade,
-            manual_occlusal_shade: tp.manual_occlusal_shade,
-            manual_body_shade: tp.manual_body_shade,
-            type: tp.type,
-            manual_gingival_shade: tp.manual_gingival_shade,
-            manual_stump_shade: tp.manual_stump_shade,
-            custom_occlusal_shade: tp.custom_occlusal_shade,
-            custom_body_shade: tp.custom_body_shade,
-            custom_gingival_shade: tp.custom_gingival_shade,
-            custom_stump_shade: tp.custom_stump_shade,
-            custom_occlusal_details: tp.occlusal_shade,
-            notes: tp.notes,
-          },
-        })),
-      }
+      ...caseItem,
+      labDetail: lab,
+      custom_occlusal_details: caseDataa?.custom_occulusal_details,
+      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+        id: tp.product.id,
+        name: tp.product.name,
+        price: tp.product.price,
+        service_price: tp.product.service_price,
+        service_discount: tp.product.service_discount,
+        lead_time: tp.product.lead_time,
+        is_client_visible: tp.product.is_client_visible,
+        is_taxable: tp.product.is_taxable,
+        created_at: tp.product.created_at,
+        updated_at: tp.product.updated_at,
+        requires_shade: tp.product.requires_shade,
+        material: tp.product.material,
+        product_type: tp.product.product_type,
+        common_services: caseItem?.common_services,
+        billing_type: tp.product.billing_type,
+        additional_services_id:
+          caseItem?.teethProduct?.[index].additional_services_id,
+        discounted_price: caseItem?.discounted_price[index],
+        services: {
+          name: "zahid",
+          price: 12,
+        },
+        teethProduct: {
+          id: tp.id,
+          is_range: tp.is_range,
+          tooth_number: tp.tooth_number,
+          pontic_teeth: tp.pontic_teeth,
+          product_id: tp.product_id,
+          occlusal_shade: tp.occlusal_shade,
+          body_shade: tp.body_shade,
+          gingival_shade: tp.gingival_shade,
+          stump_shade: tp.stump_shade,
+          manual_occlusal_shade: tp.manual_occlusal_shade,
+          manual_body_shade: tp.manual_body_shade,
+          type: tp.type,
+          manual_gingival_shade: tp.manual_gingival_shade,
+          manual_stump_shade: tp.manual_stump_shade,
+          custom_occlusal_shade: tp.custom_occlusal_shade,
+          custom_body_shade: tp.custom_body_shade,
+          custom_gingival_shade: tp.custom_gingival_shade,
+          custom_stump_shade: tp.custom_stump_shade,
+          custom_occlusal_details: tp.occlusal_shade,
+          notes: tp.notes,
+        },
+      })),
+    }
     : null;
   console.log(caseDetailApi, "caseDetailApi");
   const fetchCaseData = async (refetch?: boolean) => {
@@ -1843,8 +1843,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   <span className="text-sm font-medium">
                     {caseDetail.isDueDateTBD
                       ? "TBD"
-                      //: formatDate(caseDetail.due_date)}
-                      : calculateDueDate(caseDetail.due_date, caseDetail.client ?? undefined)}
+                      : formatDate(caseDetail.due_date)}
+                    {/* : calculateDueDate(caseDetail.due_date, caseDetail.client ?? undefined)} */}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -2399,7 +2399,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <TableRow>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                   {product.teethProduct?.tooth_number?.length >
-                                  1
+                                    1
                                     ? formatTeethRange(
                                       product.teethProduct?.tooth_number
                                     )

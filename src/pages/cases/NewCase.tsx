@@ -27,6 +27,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
+  additional_lead_time:string,
   doctors: {
     id: string;
     name: string;
@@ -194,6 +195,7 @@ const NewCase: React.FC = () => {
              id,
              client_name,
              account_number,
+             additional_lead_time,
              doctors:doctors!id (
              id,
              name
@@ -201,6 +203,7 @@ const NewCase: React.FC = () => {
             `
         )
         .eq("lab_id", labIdData.lab_id)
+        .or("isActive.is.null,isActive.eq.true")
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("client_name", { ascending: true })
       : null,

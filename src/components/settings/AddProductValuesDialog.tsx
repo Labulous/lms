@@ -62,16 +62,16 @@ export function AddProductValuesDialog({
         });
       } else {
 
-      const existingMaterials = await productsService.getMaterials(labId);
-      const isDuplicate = existingMaterials.some(
-        (material: any) => material.code === code.trim()
-      );
+        const existingMaterials = await productsService.getMaterials(labId);
+        const isDuplicate = existingMaterials.some(
+          (material: any) => material.code === code.trim()
+        );
 
-      if (isDuplicate) {
-        toast.error("Code already exists. Please use a unique code.");
-        setIsLoading(false);
-        return;
-      }
+        if (isDuplicate) {
+          toast.error("Code already exists. Please use a unique code.");
+          setIsLoading(false);
+          return;
+        }
 
 
         await productsService.createMaterial({
@@ -106,19 +106,22 @@ export function AddProductValuesDialog({
       try {
         const materials = await productsService.getMaterials(labId);
         if (materials.length > 0) {
-          const lastCode = Math.max(...materials.map(m => parseInt(m.code, 10)));
-          setCode((lastCode + 1).toString().padStart(4, "0"));
+          const lastCode = Math.max(...materials.map(m => parseInt(m.code, 10) || 0));
+          const nextCode = Math.ceil((lastCode + 1) / 1000) * 1000; 
+          setCode(nextCode.toString().padStart(4, "0"));
         } else {
-          setCode("0001");
+          setCode("1000");
         }
       } catch (error) {
         console.error("Error fetching last code:", error);
       }
-    };  
-    fetchLastCode();
-  }, []); 
+    };
 
-  
+    fetchLastCode();
+  }, []);
+
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -48,6 +48,7 @@ export interface Client {
   isActive?: boolean;
   tags?: WorkingTag;
   colorTag?:string;
+  additional_lead_time?:number;
 }
 
 export interface ClientType {
@@ -246,6 +247,7 @@ class ClientsService {
           *
         `)
         .eq("lab_id", labId)
+        .or("isActive.is.null,isActive.eq.true")
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("updated_at", { ascending: false });
 

@@ -5,7 +5,6 @@ import CaseDetails from "../components/cases/CaseDetails";
 import NewCase from "./cases/NewCase";
 import { useParams } from "react-router-dom";
 import UpdateCase from "./cases/updateCase";
-import SelectedOrderCases from "@/components/cases/SelectedOrderCases";
 const Cases: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-4">
@@ -14,7 +13,6 @@ const Cases: React.FC = () => {
         <Route path="new" element={<NewCase />} />
         <Route path="update" element={<UpdateCase />} />
         <Route path=":caseId" element={<CaseDetails />} />
-        <Route path="selected-order-cases" element={<SelectedOrderCases />} />
       </Routes>
     </div>
   );

@@ -200,13 +200,12 @@ export default function EditProductValuesDialog({
                           value={editForm.code}
                           onChange={(e) => {
                             const inputValue = e.target.value;
-                            if (/^\d{0,4}$/.test(inputValue)) {
+                            if (/^\d*$/.test(inputValue)) { 
                               setEditForm({ ...editForm, code: inputValue });
                             }
                           }}
                           placeholder="Enter 4-digit code"
-                          maxLength={4}
-                          disabled={true}
+                          disabled={isLoading}
                         />
                       ) : (
                         value.code
