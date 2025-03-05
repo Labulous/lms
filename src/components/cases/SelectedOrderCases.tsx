@@ -491,6 +491,12 @@ const SelectedOrderCases: React.FC = () => {
     // };
 
     const handlePrint = () => {
+        if (!tableRef.current) {
+            console.error("Table reference is null!");
+            return;
+        }
+    
+        const printContent = tableRef.current.outerHTML; // Capture only the referenced div
         const printWindow = window.open("", "_blank");
     
         if (printWindow) {
@@ -500,12 +506,24 @@ const SelectedOrderCases: React.FC = () => {
                         <title>Print Order</title>
                         <style>
                             @media print {
+                                * {
+                                    box-sizing: border-box;
+                                }
                                 body {
                                     font-family: Arial, sans-serif;
-                                    padding: 20px;
-                                    color: black;
+                                    margin: 0;
+                                    padding: 0;
                                     background-color: white;
-                                    zoom: 100%;
+                                    color: black;
+                                    width: 100%;
+                                    height: 100%;
+                                    overflow: hidden;
+                                }
+                                #printable-content {
+                                    width: 100%;
+                                    max-width: 100%;
+                                    margin: 0;
+                                    padding: 20px;
                                 }
                                 table {
                                     width: 100%;
@@ -520,21 +538,38 @@ const SelectedOrderCases: React.FC = () => {
                                     background-color: #f2f2f2 !important;
                                 }
     
-                                /* Ensure Colors in Print */
-                                .row-icon {
-                                    -webkit-print-color-adjust: exact !important;
-                                    print-color-adjust: exact !important;
+                                /* Hide Everything Else */
+                                body * {
+                                    visibility: hidden;
+                                }
+                                #printable-content, #printable-content * {
+                                    visibility: visible;
+                                }
+                                #printable-content {
+                                    position: absolute;
+                                    left: 0;
+                                    top: 0;
+                                    width: 100%;
+                                    height: 100%;
                                 }
     
                                 /* Hide Print Button */
                                 .print-button {
                                     display: none !important;
                                 }
+    
+                                /* Ensure Colors in Print */
+                                .row-icon {
+                                    -webkit-print-color-adjust: exact !important;
+                                    print-color-adjust: exact !important;
+                                }
                             }
                         </style>
                     </head>
                     <body>
-                        ${document.body.innerHTML} 
+                        <div id="printable-content">
+                            ${printContent}  <!-- Print only the referenced div -->
+                        </div>
                     </body>
                 </html>
             `);
@@ -551,6 +586,8 @@ const SelectedOrderCases: React.FC = () => {
             console.error("Popup blocked! Allow popups for this site.");
         }
     };
+    
+    
     
 
 
