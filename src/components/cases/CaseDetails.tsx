@@ -1077,11 +1077,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
               const discountedPrice =
                 relevantDiscounts[index % relevantDiscounts.length] || null;
-              console.log(
-                teethProducts.filter((item) => item.product_id === product.id),
-                teeth, teethProducts,
-                "teethteeth"
-              );
               return {
                 ...product,
                 discounted_price: discountedPrice,
@@ -1121,7 +1116,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       if (caseDetailApi) {
         console.log(caseDetailApi, "caseDetailApi");
         setCaseDetail(caseDetailApi);
-        // fetchCaseData(true);
+        fetchCaseData(true);
       }
       setError("No case ID provided");
       setLoading(false);
@@ -1131,7 +1126,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
-      // fetchCaseData(true);
+      fetchCaseData(true);
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
