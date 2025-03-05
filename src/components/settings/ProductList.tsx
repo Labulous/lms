@@ -46,16 +46,22 @@ import {
 import { cn } from "@/lib/utils";
 import BatchProductUpload from "./BatchProductUpload";
 import { EditProductForm } from "./EditProductForm";
+import toast from "react-hot-toast";
+import { Product } from "@/data/mockProductData";
 
 type SortConfig = {
   key: keyof Database["public"]["Tables"]["products"]["Row"];
   direction: "asc" | "desc";
 };
+import { Link, useNavigate } from "react-router-dom";
 
 interface ProductListProps {
   products: Database["public"]["Tables"]["products"]["Row"][];
   onEdit?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
-  onDelete?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
+  onDelete?: (
+    product: Database["public"]["Tables"]["products"]["Row"],
+    tableName: string
+  ) => void;
   onBatchDelete?: (
     products: Database["public"]["Tables"]["products"]["Row"][]
   ) => void;
@@ -74,6 +80,8 @@ const ProductList: React.FC<ProductListProps> = ({
   materialsData,
 }) => {
   // State
+  const navigate = useNavigate();
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,7 +109,7 @@ const ProductList: React.FC<ProductListProps> = ({
   // Get unique materials from products
   const materials = materialsData;
 
-  //console.log(materials, "materialsData");
+  console.log(materials, "materialsData");
 
   // Filtering
   const getFilteredProducts = () => {
@@ -130,6 +138,7 @@ const ProductList: React.FC<ProductListProps> = ({
     () => getFilteredProducts(),
     [products, searchTerm, materialFilter]
   );
+  console.log(materialFilter, "materialFilter");
   // Sorting
   const handleSort = (
     key: keyof Database["public"]["Tables"]["products"]["Row"]
@@ -180,14 +189,31 @@ const ProductList: React.FC<ProductListProps> = ({
     // Implement duplicate functionality for selected products
   };
 
-  const handleBatchDelete = () => {
-    if (!onBatchDelete || selectedProducts.length === 0) return;
+  // const handleBatchDelete = () => {
+  //   debugger;
+  //   if (!onBatchDelete || selectedProducts.length === 0) return;
 
-    // Get the selected product objects
+  //   // Get the selected product objects
+  //   const productsToDelete = products.filter((p) =>
+  //     selectedProducts.includes(p.id)
+  //   );
+  //   onBatchDelete(productsToDelete);
+  // };
+
+  const handleBatchDelete = () => {
+    if (!onBatchDelete || selectedProducts.length === 0) {
+      toast.error("No products selected.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${selectedProducts.length} selected product(s)?`
+    );
+    if (!confirmed) return;
     const productsToDelete = products.filter((p) =>
       selectedProducts.includes(p.id)
     );
     onBatchDelete(productsToDelete);
+    setSelectedProducts([]);
   };
 
   useEffect(() => {
@@ -347,6 +373,15 @@ const ProductList: React.FC<ProductListProps> = ({
                 </div>
               </TableHead>
               <TableHead
+                onClick={() => handleSort("name")}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center">
+                  Code
+                  {getSortIcon("name")}
+                </div>
+              </TableHead>
+              <TableHead
                 onClick={() => handleSort("material")}
                 className="cursor-pointer"
               >
@@ -474,7 +509,15 @@ const ProductList: React.FC<ProductListProps> = ({
                     <ChevronRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </TableCell>
+                <TableCell>
+                  {materialsData && materialsData.length > 0
+                    ? materialsData.find(
+                        (mat) => mat.id === product.material_id
+                      )?.code ?? "N/A"
+                    : "N/A"}
+                </TableCell>
                 <TableCell>{product.material?.name}</TableCell>
+
                 <TableCell className="text-right">
                   $
                   {product.price.toLocaleString("en-US", {
@@ -532,7 +575,7 @@ const ProductList: React.FC<ProductListProps> = ({
                           setOpenMenuId(null);
                           if (onDelete) {
                             try {
-                              await onDelete(product);
+                              await onDelete(product, "products");
                             } catch (error) {
                               console.error("Error deleting product:", error);
                             }

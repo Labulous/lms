@@ -7,8 +7,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { Textarea } from "../ui/textarea";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { getLabIdByUserId } from "../../services/authService";
+import { ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Plus, Trash2 } from "lucide-react";
+import { HexColorPicker } from "react-colorful";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+
+const colors = [
+  "#FF5733", // Vibrant Red-Orange
+  "#33FF57", // Bright Green
+  "#3357FF", // Bold Blue
+  "#FF33A8", // Hot Pink
+  "#FFD133", // Bright Yellow
+  "#33FFF5", // Aqua Blue
+  "#8D33FF", // Deep Purple
+  "#FF8633", // Soft Orange
+  "#33FF99", // Mint Green
+  "#FF3333", // Bright Red
+  "#4CAF50", // Forest Green
+  "#FFC107", // Amber
+  "#9C27B0", // Amethyst Purple
+  "#2196F3", // Sky Blue
+  "#FF9800", // Vivid Orange
+  "#E91E63", // Raspberry Pink
+  "#607D8B", // Cool Gray
+  "#673AB7", // Royal Purple
+  "#00BCD4", // Cerulean Blue
+  "#FFEB3B", // Lemon Yellow
+];
+
+
 
 interface Doctor {
   name: string;
@@ -16,6 +64,14 @@ interface Doctor {
   email: string;
   notes: string;
 }
+export interface WorkingTag {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
 
 interface EditClientFormProps {
   client: Client | null;
@@ -34,11 +90,21 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   const [formData, setFormData] = useState<ClientInput | null>(null);
   const [sameAsDelivery, setSameAsDelivery] = useState(false);
   const [otherEmailInputs, setOtherEmailInputs] = useState([1]);
+  const [tags, setTags] = useState<WorkingTag[]>([]);
+  const [pans, setPans] = useState<WorkingTag[]>([]);
+  const [isAddingTag, setIsAddingTag] = useState(false);
+  const [isCustomColor, setIsCustomColor] = useState(false);
+  const [editingTag, setEditingTag] = useState<WorkingTag | null>(null);
+  const [isEditingTag, setIsEditingTag] = useState(false);
+  const [isLoading, setLoading] = useState<boolean>(false);
+  const [isAddingPan, setIsAddingPan] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (client) {
       // Keep account_number in the form data but remove other server-side fields
       const { id, created_at, updated_at, ...clientData } = client;
+
       setFormData({
         accountNumber: clientData.accountNumber,
         clientName: clientData.clientName,
@@ -49,18 +115,18 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
         billingEmail: clientData.billingEmail,
         otherEmail: clientData.otherEmail,
         address: {
-          street: clientData.address.street,
-          city: clientData.address.city,
-          state: clientData.address.state,
-          zipCode: clientData.address.zipCode,
-          country: clientData.address.country,
+          street: clientData.address?.street || "",
+          city: clientData.address?.city || "",
+          state: clientData.address?.state || "",
+          zipCode: clientData.address?.zipCode || "",
+          country: clientData.address?.country || "",
         },
         billingAddress: {
-          street: clientData.billingAddress.street,
-          city: clientData.billingAddress.city,
-          state: clientData.billingAddress.state,
-          zipCode: clientData.billingAddress.zipCode,
-          country: clientData.billingAddress.country,
+          street: clientData.billingAddress?.street || "",
+          city: clientData.billingAddress?.city || "",
+          state: clientData.billingAddress?.state || "",
+          zipCode: clientData.billingAddress?.zipCode || "",
+          country: clientData.billingAddress?.country || "",
         },
         clinicRegistrationNumber: clientData.clinicRegistrationNumber,
         taxRate: clientData.taxRate,
@@ -68,18 +134,37 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
         additionalLeadTime: clientData.additionalLeadTime,
         salesRepNote: clientData.salesRepNote,
         notes: clientData.notes ?? "",
-        doctors: clientData.doctors.map((doctor) => ({
+        colorTag: clientData.colorTag,
+        workingTagName: clientData.tags ? clientData.tags.id : "",
+        doctors: clientData.doctors?.map((doctor, index) => ({
           name: doctor.name,
           email: doctor.email,
           phone: doctor.phone,
           notes: doctor.notes ?? "",
-        })),
+          order: `${clientData.accountNumber}-${index + 1}`,
+        })) || [],
+
       });
+
+      if (clientData?.tags) {
+        setTags([{
+          id: clientData.tags.id,
+          name: clientData.tags.name,
+          color: clientData.tags.color,
+          created_at: clientData.tags.created_at || "",
+          updated_at: clientData.tags.updated_at || "",
+        }]);
+      } else {
+        setTags([]);
+      }
     }
+
     setOtherEmailInputs(
-      client?.otherEmail?.map((_item, idex) => idex + 1) || [1]
+      client?.otherEmail?.map((_item, index) => index + 1) || [1]
     );
+
   }, [client]);
+
 
   if (!formData) {
     return (
@@ -93,7 +178,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    console.log(name,"name")
+    console.log(name, "name")
     setFormData((prev) => {
       if (!prev) return null;
 
@@ -146,15 +231,19 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   const addDoctor = () => {
     setFormData((prev) => {
       if (!prev) return null;
+
+      const newDoctorOrder = `${prev.accountNumber}-${(prev.doctors?.length ?? 0) + 1}`;
+
       return {
         ...prev,
         doctors: [
-          ...(prev.doctors ?? []), // Ensures `doctors` defaults to an empty array if undefined
-          { name: "", phone: "", email: "", notes: "" },
+          ...(prev.doctors ?? []),
+          { name: "", phone: "", email: "", notes: "", order: newDoctorOrder },
         ],
       };
     });
   };
+
 
   const removeDoctor = (index: number) => {
     setFormData((prev) => {
@@ -167,11 +256,13 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    debugger;
     e.preventDefault();
     try {
       if (!formData) return;
       await onSubmit(formData);
       toast.success("Client updated successfully");
+      navigate("/clients");
       // Navigate to client details page
       // navigate(`/clients/${client?.id}`);
     } catch (error) {
@@ -219,6 +310,170 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   };
   console.log(sameAsDelivery, "sameAsDelivery");
   console.log(formData, "Formdata");
+
+  const WorkingTagSelect = ({
+    value,
+    onValueChange,
+    tags,
+    onEdit,
+    onDelete,
+  }: {
+    value: string;
+    onValueChange: (value: string) => void;
+    tags: WorkingTag[];
+    onEdit: (id: string) => void;
+    onDelete: (id: string) => void;
+  }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+      <Select
+        value={value}
+        onValueChange={onValueChange}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        <SelectTrigger className="bg-white">
+          <SelectValue placeholder="Select Tag" className="text-gray-500">
+            {value && tags.find((t) => t.id === value) && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{
+                    backgroundColor: tags.find((t) => t.id === value)?.color,
+                  }}
+                />
+                <span>
+                  {tags.find((t) => t.id === value)?.name || "Unnamed tag"}
+                </span>
+              </div>
+            )}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          className="max-h-[200px] overflow-y-auto"
+        >
+          {tags && tags.length > 0 ? (
+            tags.map((tag) => (
+              <SelectItem key={tag.id} value={tag.id} className="pr-24">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: tag.color }}
+                  />
+                  <span>{tag.name || "Unnamed tag"}</span>
+                </div>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                  <button
+                    type="button"
+                    className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEdit(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDelete(tag.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              </SelectItem>
+            ))
+          ) : (
+            <SelectItem value="_no_tags" disabled>
+              No tags available
+            </SelectItem>
+          )}
+        </SelectContent>
+      </Select>
+    );
+  };
+
+  const handleEditTag = async (tagId: string) => {
+    const tag = tags.find((t) => t.id === tagId);
+    if (tag) {
+      setEditingTag(tag);
+      setIsEditingTag(true);
+    }
+  };
+
+
+
+  const handleUpdateTag = async () => {
+    if (!editingTag || !user) return;
+
+    try {
+      setLoading(true);
+      const labId = await getLabIdByUserId(user.id);
+      if (!labId) {
+        throw new Error("No lab found for user");
+      }
+
+      const { error } = await supabase
+        .from("working_tags")
+        .update({
+          name: editingTag.name,
+          color: editingTag.color,
+        })
+        .eq("id", editingTag.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setTags(tags.map((tag) => (tag.id === editingTag.id ? editingTag : tag)));
+
+      setIsEditingTag(false);
+      setEditingTag(null);
+      toast.success("Tag updated successfully");
+    } catch (error) {
+      console.error("Error updating tag:", error);
+      toast.error("Failed to update tag");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleColorChange = (field: keyof ClientInput, value: string | undefined) => {
+    setFormData((prevData) => {
+      if (!prevData) return prevData;
+
+      return {
+        ...prevData,
+        [field]: value ?? "",
+      };
+    });
+  };
+
+  const handleMove = (index: number, direction: "up" | "down") => {
+    debugger;
+    if (!formData?.doctors) return;
+
+    const newDoctors = [...formData.doctors];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (newIndex < 0 || newIndex >= newDoctors.length) return;
+
+    // Swap elements
+    [newDoctors[index], newDoctors[newIndex]] = [newDoctors[newIndex], newDoctors[index]];
+    setFormData({ ...formData, doctors: newDoctors });
+  };
+
+
+  console.log('working tags ........', formData)
+
   return (
     <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
       <Card className="shadow-sm">
@@ -231,7 +486,7 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
             <h3 className="font-medium text-sm text-muted-foreground">
               Basic Information
             </h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 items-center">
               <div>
                 <Label htmlFor="accountNumber">Account Number*</Label>
                 <Input
@@ -242,6 +497,117 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                   className="mt-1"
                   required
                 />
+              </div>
+              {/* Optional Second Input or Color Box */}
+              <div>
+                <Label>Color Tag</Label>
+                <div className="relative">
+                  <div className="flex gap-1 relative items-center">
+                    <div
+                      className={`flex h-8 w-10 rounded-md cursor-pointer relative bg-white`}
+                      style={{
+                        backgroundColor: formData.colorTag || "white",
+                        border: "2px solid rgba(0,0,0,0.4)",
+                      }}
+                      onClick={() => setIsAddingPan(!isAddingPan)}
+                    >
+                      {!formData.colorTag && (
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            content: '""',
+                            background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  {isAddingPan && (
+                    <div
+                      className="w-72 absolute top-12 bg-white p-2 z-50 border rounded-md"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                    >
+                      <div className="flex justify-end py-2">
+                        <button onClick={() => setIsAddingPan(false)}>
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <div className=" space-y-5 bg-white">
+                        <div className="flex w-full gap-4">
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(false)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "secondary" : "destructive"
+                            }
+                          >
+                            Select Colors
+                          </Button>
+                          <Button
+                            size={"sm"}
+                            onClick={() => setIsCustomColor(true)}
+                            className="w-1/2"
+                            variant={
+                              isCustomColor ? "destructive" : "secondary"
+                            }
+                          >
+                            Select Custom Color
+                          </Button>
+                        </div>
+                        {!isCustomColor ? (
+                          <div className="grid grid-cols-5 gap-2 bg-white z-50">
+                            <div
+                              className={`h-12 w-12 rounded-md cursor-pointer relative bg-white ${!formData.colorTag
+                                ? "border-2 border-black"
+                                : "border-2 border-gray-200"
+                                }`}
+                              onClick={() => handleColorChange("colorTag", undefined)}
+                            >
+                              <div
+                                className="absolute inset-0"
+                                style={{
+                                  content: '""',
+                                  background: `linear-gradient(to top right, transparent calc(50% - 2px), rgba(0,0,0,0.4), transparent calc(50% + 2px))`,
+                                }}
+                              />
+                            </div>
+                            {colors.map((item, key) => {
+                              return (
+                                <div
+                                  key={key}
+                                  className={`h-12 w-12 rounded-md cursor-pointer ${formData.colorTag === item
+                                    ? "border-2 border-black"
+                                    : ""
+                                    }`}
+                                  style={{
+                                    backgroundColor: item,
+                                  }}
+                                  onClick={() => {
+                                    handleColorChange("colorTag", item);
+                                    setIsAddingPan(false);
+                                  }}
+                                ></div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <HexColorPicker
+                            color={formData.colorTag || "#ffffff"}
+                            onChange={(color) => {
+                              handleColorChange("colorTag", color);
+                            }}
+                            style={{ width: "100%" }}
+                          />
+
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -581,15 +947,16 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
               Doctor Information
             </h3>
             <div className="space-y-6">
-              {(formData?.doctors ?? []).map((doctor, index) => (
+              {/* {(formData?.doctors ?? []).map((doctor, index) => (
                 <div
                   key={index}
                   className="relative bg-white rounded-md border border-slate-200 overflow-hidden"
                 >
                   <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
-                  <div className="p-4">
-                    <div className="absolute top-2 right-3 text-sm font-medium text-slate-400">
-                      Doctor #{index + 1}
+                  <div className="p-4 relative">
+                    <div className="flex justify-between text-sm font-medium text-slate-400">
+                      <span>Doctor #{index + 1}</span>
+                      <span>Order: {formData?.accountNumber}-{index + 1}</span>
                     </div>
                     <DoctorFields
                       doctor={doctor}
@@ -598,8 +965,51 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
                       showRemove={formData?.doctors ? formData?.doctors?.length > 1 : false}
                     />
                   </div>
+
+
+                </div>
+              ))} */}
+
+              {(formData?.doctors ?? []).map((doctor, index) => (
+                <div key={index} className="relative bg-white rounded-md border border-slate-200 overflow-hidden p-4">
+                  <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-600" />
+
+                  {/* Doctor Left | Order + Arrows Right */}
+                  <div className="flex justify-between items-center text-sm font-medium text-slate-400">
+                    <span className="text-left">Doctor #{index + 1}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-right">Order: {formData?.accountNumber}-{index + 1}</span>
+                      <button
+                        type="button"
+                        className="p-1 bg-gray-200 hover:bg-gray-300 rounded"
+                        onClick={() => handleMove(index, "up")}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="text-blue-600 w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1 bg-gray-200 hover:bg-gray-300 rounded"
+                        onClick={() => handleMove(index, "down")}
+                        disabled={(formData?.doctors?.length ?? 0) - 1 === index}
+                      >
+                        <ArrowDown className="text-blue-600 w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Doctor Fields */}
+                  <DoctorFields
+                    doctor={doctor}
+                    onChange={(field, value) => handleDoctorChange(index, field as keyof Doctor, value)}
+                    onRemove={() => removeDoctor(index)}
+                    showRemove={(formData?.doctors?.length ?? 0) > 1}
+                  />
                 </div>
               ))}
+
+
+
             </div>
             <Button
               type="button"

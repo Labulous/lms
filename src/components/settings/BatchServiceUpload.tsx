@@ -268,6 +268,7 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
   };
 
   const handleSubmit = async () => {
+    debugger;
     try {
       if (!labId) {
         toast.error("Lab ID not available. Please try again.");
@@ -289,10 +290,20 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
       setIsSubmitting(true);
 
       // Ensure all services have lab_id
-      const servicesWithLabId = services.map((service) => ({
-        ...service,
-        lab_id: labId,
-      }));
+      // const servicesWithLabId = services.map((service) => ({
+      //   ...service,
+      //   lab_id: labId,
+      // }));
+
+      const servicesWithLabId = services.map(service => {
+        const selectedMaterial = materials.find(mat => mat.id === service.material_id);
+        return {
+          ...service,
+          lab_id: labId,
+          product_code: selectedMaterial ? selectedMaterial?.code : null,
+        };
+      });
+
 
       await onUpload(servicesWithLabId);
       console.log(servicesWithLabId, "servicesWithLabId");

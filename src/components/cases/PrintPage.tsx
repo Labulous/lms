@@ -1,11 +1,12 @@
 import React from 'react';
 
 interface PrintPageProps {
-  type: 'invoice' | 'lab-slip' | 'address-label' | 'qr-code-label' | 'patient-label';
+  type: 'invoice' | 'lab-slip' | 'address-label' | 'qr-code-label' | 'patient-label' | 'selected-order';
   data: any; // Replace 'any' with a more specific type based on the data structure
 }
 
 const PrintPage: React.FC<PrintPageProps> = ({ type }) => {
+  debugger;
   const renderContent = () => {
     switch (type) {
       case 'invoice':
@@ -18,6 +19,8 @@ const PrintPage: React.FC<PrintPageProps> = ({ type }) => {
         return renderQRCodeLabel();
       case 'patient-label':
         return renderPatientLabel();
+      case 'selected-order':
+        return renderSelectedOrder();
       default:
         return <div>Invalid print type</div>;
     }
@@ -61,6 +64,12 @@ const PrintPage: React.FC<PrintPageProps> = ({ type }) => {
   return (
     <div className="print-page">
       {renderContent()}
+    </div>
+  );
+  const renderSelectedOrder = () => (
+    <div className="patient-label">
+      <h1>Selected Order</h1>
+      {/* Add patient label details here */}
     </div>
   );
 };

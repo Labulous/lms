@@ -62,6 +62,7 @@ const emptyProduct = (): ProductInput => ({
   requires_shade: false,
   description: "",
   lab_id: "",
+  product_code: "",
 });
 
 const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
@@ -287,6 +288,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   };
 
   const handleSubmit = async () => {
+    debugger;
     if (!labId) {
       toast.error("Lab ID not available. Please try again.");
       return;
@@ -312,12 +314,41 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
 
     try {
       // Ensure all products have the lab_id
-      const productsWithLabId = products.map((product) => ({
-        ...product,
-        lab_id: labId,
-      }));
+      // const productsWithLabId = products.map(product => ({
+      //   ...product,
+      //   lab_id: labId,
+      //   code: product.material_id,
+      // }));
 
-      await onUpload(productsWithLabId);
+      // const productsWithLabId = products.map(product => {
+      //   const selectedMaterial = materials.find(mat => mat.id === product.material_id);
+      //   return {
+      //     ...product,
+      //     lab_id: labId,
+      //     code: selectedMaterial ? selectedMaterial?.code : null,
+      //   };
+      // });
+
+      const productsWithLabId = products.map(product => {
+        const selectedMaterial = materials.find(mat => mat.id === product.material_id);
+        if (!selectedMaterial) {
+          return { ...product, lab_id: labId, code: null };
+        }
+        const existingProducts = products.filter(p => p.material_id === product.material_id);
+        const highestProductCode = existingProducts.length > 0
+          ? Math.max(...existingProducts.map(p => parseInt(p?.product_code, 10) || 0))
+          : 0;
+
+        return {
+          ...product,
+          lab_id: labId,
+          code: highestProductCode > 0 ? highestProductCode + 1 : selectedMaterial.code + 1,
+        };
+      });
+
+
+
+      //await onUpload(productsWithLabId);
       // toast.success("Products added successfully!");
       setIsOpen(false);
       setProducts([{ ...emptyProduct(), lab_id: labId }]);

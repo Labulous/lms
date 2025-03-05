@@ -80,7 +80,7 @@ const BalanceList = () => {
     try {
       const { data: invoices, error } = await supabase
         .from("invoices")
-        .select("*")
+        .select("*, cases(case_number)") 
         .eq("client_id", clientId)
         .in("status", ["unpaid", "partially_paid"]);
 
@@ -93,7 +93,9 @@ const BalanceList = () => {
       const transformedInvoices = invoices?.map(invoice => ({
         ...invoice,
         total_amount: Number(invoice.total_amount || 0),
-        amount_paid: Number(invoice.amount_paid || 0)
+        amount_paid: Number(invoice.amount_paid || 0),
+        due_amount: Number(invoice.due_amount || 0),
+        case_number: invoice.cases?.case_number || ""
       }));
 
       setSelectedClientInvoices(transformedInvoices || []);
@@ -202,14 +204,12 @@ const BalanceList = () => {
                   </button>
                 </TableCell>
                 <TableCell
-                  className={`${
-                    balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
-                  } text-center`}
+                  className={`${balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
+                    } text-center`}
                 >
                   <div
-                    className={`${
-                      balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
-                    } text-center`}
+                    className={`${balance.credit > 0 ? "bg-red-500 text-white my-0 h-12 flex justify-center items-center" : ""
+                      } text-center`}
                   >
                     {balance.credit ? formatCurrency(balance.credit) : 0}
                   </div>
@@ -281,15 +281,27 @@ const BalanceList = () => {
               <TableBody>
                 {selectedClientInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
-                    <TableCell>{invoice.invoice_number}</TableCell>
+                    <TableCell>
+                      {/* {invoice.invoice_number} */}
+                      {(() => {
+                        const caseNumber = invoice?.case_number ?? "";
+                        const parts = caseNumber.split("-");
+                        parts[0] = "INV";
+                        return parts.join("-");
+                      })()}
+                    </TableCell>
                     <TableCell>
                       {new Date(invoice.created_at).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{formatCurrency(invoice.total_amount)}</TableCell>
-                    <TableCell>{formatCurrency(invoice.amount_paid)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.amount)}</TableCell>
                     <TableCell>
-                      {formatCurrency(invoice.total_amount - invoice.amount_paid)}
+                      {formatCurrency(invoice.amount - invoice.due_amount)}
                     </TableCell>
+                    {/* <TableCell>{formatCurrency(invoice.amount_paid)}</TableCell> */}
+                    <TableCell>{formatCurrency(invoice.due_amount)}</TableCell>
+                    {/* <TableCell>
+                      {formatCurrency(invoice.total_amount - invoice.amount_paid)}
+                    </TableCell> */}
                   </TableRow>
                 ))}
               </TableBody>

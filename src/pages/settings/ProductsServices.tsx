@@ -48,6 +48,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 export interface ServicesFormData {
   categories: string[];
@@ -93,6 +94,7 @@ interface SortConfig {
 }
 
 const ProductsServices: React.FC = () => {
+  const navigate = useNavigate();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -125,7 +127,6 @@ const ProductsServices: React.FC = () => {
   });
 
   const { user } = useAuth();
-
   const {
     data: labIdData,
     error: labError,
@@ -151,6 +152,7 @@ const ProductsServices: React.FC = () => {
           )
           .order("name")
           .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -194,6 +196,7 @@ const ProductsServices: React.FC = () => {
           )
 
           .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -272,6 +275,7 @@ const ProductsServices: React.FC = () => {
           `
         )
         .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("name");
 
       if (productsError) {
@@ -325,6 +329,19 @@ const ProductsServices: React.FC = () => {
   };
 
   const handleEditProduct = async (product: Product) => {
+    console.log(product, "ProductList");
+
+    // Fetch the material code based on material_id
+    const { data: materialData, error: materialError } = await supabase
+      .from("materials")
+      .select("code")
+      .eq("id", product.material_id)
+      .single();
+
+    if (materialError) {
+      throw new Error("Failed to fetch material code");
+    }
+
     const { data, error } = await supabase
       .from("products")
       .update({
@@ -337,8 +354,10 @@ const ProductsServices: React.FC = () => {
         material_id: product.material_id,
         billing_type_id: product.billing_type_id,
         requires_shade: product.requires_shade,
+        product_code: materialData?.code,
       })
       .eq("id", product.id)
+      .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       .select();
 
     if (error) {
@@ -362,6 +381,7 @@ const ProductsServices: React.FC = () => {
           const { error } = await supabase
             .from("products")
             .delete()
+            .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
             .eq("id", item.id);
 
           if (error) throw error;
@@ -409,51 +429,65 @@ const ProductsServices: React.FC = () => {
 
   const handleDeleteClick = async (
     item: Product | Service,
-    isService?: boolean
+    tableName: string
   ) => {
-    if (!item.id) {
-      toast.error("Item ID is missing");
-      return;
-    }
+    const confirmed = window.confirm(
+      `Are you sure you want to archive "${item.name}"?`
+    );
+    if (!confirmed) return;
 
-    if (isService) {
-      const { error } = await supabase
-        .from("services")
-        .delete()
-        .eq("id", item.id);
-
-      if (error) {
-        toast.error("Failed to delete item");
-        console.error("Delete error:", error);
-      } else {
-        toast.success("Service deleted successfully");
-        const updatedServices = services.filter(
-          (product) => product.id !== item.id
-        );
-        setServices(updatedServices);
-        loadProductsAndTypes();
-        console.log("Deleted item:", item);
-      }
-    } else {
-      const { error } = await supabase
+    try {
+      // Check if the item exists in 'products'
+      const { data: productData, error: productError } = await supabase
         .from("products")
-        .delete()
+        .select("id")
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .eq("id", item.id)
+        .single();
+
+      if (productData) {
+        tableName = "products";
+      } else {
+        // Check if the item exists in 'services' only if not found in 'products'
+        const { data: serviceData, error: serviceError } = await supabase
+          .from("services")
+          .select("id")
+          .eq("id", item.id)
+          .single();
+
+        if (serviceData) {
+          tableName = "services";
+        } else {
+          toast.error("Item not found in any table.");
+          return;
+        }
+      }
+
+      // Perform the update on the correct table
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update({ is_archive: true })
         .eq("id", item.id);
 
-      if (error) {
-        toast.error("Failed to delete item");
-        console.error("Delete error:", error);
+      if (updateError) {
+        console.error(`Error archiving ${tableName}:`, updateError);
+        toast.error(`Failed to archive the item from ${tableName}.`);
       } else {
-        toast.success("Item deleted successfully");
-        const updatedProducts = products.filter(
-          (product) => product.id !== item.id
-        );
-        setProducts(updatedProducts);
-        loadProductsAndTypes();
-        console.log("Deleted item:", item);
+        toast.success("Item successfully archived.");
       }
+
+      const urlParams = location.pathname + location.search; // Get full URL path + query
+
+      navigate("/material-selection", { replace: true });
+      setTimeout(() => {
+        navigate(urlParams, { replace: true });
+      }, 100);
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("An error occurred.");
     }
   };
+
   const handleEditClick = async (item: Product | Service) => {
     // setItemsToDelete([item]);
     // setIsDeleteModalOpen(true);
@@ -461,16 +495,96 @@ const ProductsServices: React.FC = () => {
   };
 
   // Batch delete function for services
-  const handleBatchDelete = async () => {
-    if (selectedServices.length === 0) return;
+  const handleBatchDelete = async (selectedItems: (Product | Service)[]) => {
+    if (!selectedItems || selectedItems.length === 0) {
+      toast.error("No items selected.");
+      return;
+    }
 
-    const servicesToDelete = services.filter((service) =>
-      selectedServices.includes(service.id)
-    );
-    setItemsToDelete(servicesToDelete);
-    setIsDeleteModalOpen(true);
-    setSelectedServices([]); // Clear selection after setting items to delete
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({
+          is_archive: true,
+          updated_at: new Date().toISOString(),
+        })
+        .in(
+          "id",
+          selectedItems.map((item) => item.id)
+        );
+
+      if (error) {
+        console.error("Error archiving products:", error);
+        toast.error("Failed to archive the items.");
+      } else {
+        toast.success("Items successfully archived.");
+        const urlParams = location.pathname + location.search; // Get full URL path + query
+        navigate("/material-selection", { replace: true });
+        setTimeout(() => {
+          navigate(urlParams, { replace: true });
+        }, 100);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("An error occurred.");
+    }
   };
+
+  // Batch delete function for services
+  const handleServiceBatchDelete = async (selectedItems: any[]) => {
+    debugger;
+    if (!selectedItems || selectedItems.length === 0) {
+      toast.error("No items selected.");
+      return;
+    }
+
+    const selectedIds = selectedItems.map((item) =>
+      typeof item === "string" ? item : item.id
+    );
+
+    const confirmed = window.confirm(
+      `Are you sure you want to archive ${selectedIds.length} item(s)?`
+    );
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from("services")
+        .update({
+          is_archive: true,
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", selectedIds);
+
+      if (error) {
+        console.error("Error archiving services:", error);
+        toast.error("Failed to archive the items.");
+      } else {
+        toast.success("Items successfully archived.");
+
+        fetchServices();
+        const urlParams = location.pathname + location.search; // Get full URL path + query
+        navigate("/material-selection", { replace: true });
+        setTimeout(() => {
+          navigate(urlParams, { replace: true });
+        }, 100);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("An error occurred.");
+    }
+  };
+
+  // const handleBatchDelete = async () => {
+  //   if (selectedServices.length === 0) return;
+
+  //   const servicesToDelete = services.filter((service) =>
+  //     selectedServices.includes(service.id)
+  //   );
+  //   setItemsToDelete(servicesToDelete);
+  //   setIsDeleteModalOpen(true);
+  //   setSelectedServices([]); // Clear selection after setting items to delete
+  // };
 
   const fetchServices = async () => {
     try {
@@ -482,7 +596,8 @@ const ProductsServices: React.FC = () => {
         material:materials(name)
               `
         )
-        .eq("lab_id", labIdData?.lab_id);
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false"); // Includes null and false values
 
       setServices(services as any[]);
     } catch (err) {
@@ -725,7 +840,7 @@ const ProductsServices: React.FC = () => {
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={handleBatchDelete}
+                    onClick={() => handleServiceBatchDelete(selectedServices)}
                   >
                     <Trash className="mr-2 h-4 w-4" />
                     Delete Selected ({selectedServices.length})
@@ -833,6 +948,17 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("name")}
                       </div>
                     </TableHead>
+
+                    <TableHead
+                      className="cursor-pointer w-[560px]"
+                      onClick={() => handleSort("name")}
+                    >
+                      <div className="flex items-center">
+                        Code
+                        {getSortIcon("name")}
+                      </div>
+                    </TableHead>
+
                     <TableHead
                       className="cursor-pointer"
                       onClick={() => handleSort("material_id")}
@@ -907,11 +1033,22 @@ const ProductsServices: React.FC = () => {
                       <TableCell className="font-medium">
                         {service.name}
                       </TableCell>
+
+                      <TableCell>
+                        {materialsData && materialsData.length > 0
+                          ? (
+                              materialsData.find(
+                                (mat) => mat.id === service.material_id
+                              ) as any
+                            )?.code ?? "N/A"
+                          : "N/A"}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {service?.material?.name}
                         </Badge>
                       </TableCell>
+
                       <TableCell className="text-right">
                         ${service.price}
                       </TableCell>
@@ -950,7 +1087,9 @@ const ProductsServices: React.FC = () => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() => handleDeleteClick(service, true)}
+                              onClick={() =>
+                                handleDeleteClick(service, "services")
+                              }
                             >
                               <Trash className="mr-2 h-4 w-4" />
                               Delete

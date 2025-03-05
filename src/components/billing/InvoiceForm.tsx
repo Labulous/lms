@@ -82,6 +82,7 @@ const InvoiceForm: React.FC = () => {
   };
 
   const handlePreview = () => {
+    debugger;
     if (!selectedClientId || items.length === 0) {
       alert("Please select a client and add at least one item");
       return;

@@ -27,6 +27,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
+  additional_lead_time:string,
   doctors: {
     id: string;
     name: string;
@@ -85,6 +86,9 @@ const NewCase: React.FC = () => {
       instructionNotes: "",
       invoiceNotes: "",
     },
+    isDisplayAcctOnly: false,
+    isDisplayDoctorAcctOnly: false,
+    isHidePatientName: false,
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<FormData>>({});
@@ -185,21 +189,23 @@ const NewCase: React.FC = () => {
   } = useQuery(
     labIdData
       ? supabase
-          .from("clients")
-          .select(
-            `
+        .from("clients")
+        .select(
+          `
              id,
              client_name,
              account_number,
+             additional_lead_time,
              doctors:doctors!id (
              id,
              name
              )
             `
-          )
-          .eq("lab_id", labIdData.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-          .order("client_name", { ascending: true })
+        )
+        .eq("lab_id", labIdData.lab_id)
+        .or("isActive.is.null,isActive.eq.true")
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("client_name", { ascending: true })
       : null,
     {
       revalidateOnFocus: false,
@@ -235,6 +241,7 @@ const NewCase: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    debugger;
 
     // Validation
     const validationErrors: Partial<FormData> = {};
@@ -344,10 +351,13 @@ const NewCase: React.FC = () => {
           custom_occlusion_design_type:
             transformedData.caseDetails?.customOcclusalDesign,
           custon_alloy_type: transformedData.caseDetails?.customAlloy,
+          isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
+          isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
+          isHidePatientName: transformedData.isHidePatientName || false,
         },
         products: selectedProducts,
         enclosedItems: transformedData.enclosedItems,
-        services: selectedServices,
+        services: selectedServices
       };
 
       // Add case to database

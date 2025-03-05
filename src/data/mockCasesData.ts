@@ -20,6 +20,7 @@ export const CASE_STATUSES = [
   "on_hold",
   "completed",
   "cancelled",
+  "shipped"
 ] as const;
 
 export type CaseStatus = (typeof CASE_STATUSES)[number];

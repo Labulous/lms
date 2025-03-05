@@ -113,6 +113,7 @@ export function EditProductForm({
   });
 
   async function onSubmit(values: z.infer<typeof productSchema>) {
+    debugger;
     try {
       await onSave(values);
       onClose();

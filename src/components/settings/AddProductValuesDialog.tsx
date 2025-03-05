@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,20 @@ export function AddProductValuesDialog({
   labId,
   reCall,
 }: AddProductValuesDialogProps) {
+  const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!code.trim()) {
+      toast.error("Code is required");
+      return;
+    }
+
+
 
     if (!name.trim()) {
       toast.error("Name is required");
@@ -53,15 +61,28 @@ export function AddProductValuesDialog({
           lab_id: labId,
         });
       } else {
+
+        const existingMaterials = await productsService.getMaterials(labId);
+        const isDuplicate = existingMaterials.some(
+          (material: any) => material.code === code.trim()
+        );
+
+        if (isDuplicate) {
+          toast.error("Code already exists. Please use a unique code.");
+          setIsLoading(false);
+          return;
+        }
+
+
         await productsService.createMaterial({
+          code,
           name,
           description: description || null,
           lab_id: labId,
         });
       }
       toast.success(
-        `${
-          type === "product_types" ? "Product type" : "Material"
+        `${type === "product_types" ? "Product type" : "Material"
         } created successfully`
       );
       setName("");
@@ -71,15 +92,36 @@ export function AddProductValuesDialog({
       console.error("Error creating value:", error);
       toast.error(
         error.message ||
-          `Failed to create ${
-            type === "product_types" ? "product type" : "material"
-          }`
+        `Failed to create ${type === "product_types" ? "product type" : "material"
+        }`
       );
     } finally {
       setIsLoading(false);
       reCall && reCall();
     }
   };
+
+  useEffect(() => {
+    const fetchLastCode = async () => {
+      try {
+        const materials = await productsService.getMaterials(labId);
+        if (materials.length > 0) {
+          const lastCode = Math.max(...materials.map(m => parseInt(m.code, 10) || 0));
+          const nextCode = Math.ceil((lastCode + 1) / 1000) * 1000; 
+          setCode(nextCode.toString().padStart(4, "0"));
+        } else {
+          setCode("1000");
+        }
+      } catch (error) {
+        console.error("Error fetching last code:", error);
+      }
+    };
+
+    fetchLastCode();
+  }, []);
+
+
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,6 +136,26 @@ export function AddProductValuesDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="code" className="text-sm font-medium">
+              Code
+            </label>
+            <Input
+              id="code"
+              type="number"
+              value={code}
+              onChange={(e) => {
+                const newValue = e.target.value.replace(/\D/, "");
+                if (newValue.length <= 4) {
+                  setCode(newValue);
+                }
+              }}
+              placeholder="Enter 4-digit number"
+              disabled={true}
+            />
+
+          </div>
+
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
               Name

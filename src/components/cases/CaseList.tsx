@@ -79,6 +79,7 @@ import { formatDateWithTime, formatDate } from "@/lib/formatedDate";
 import toast from "react-hot-toast";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useLocation } from "react-router-dom";
+import { calculateDueDate } from "@/lib/calculateDueDate";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -109,6 +110,7 @@ const CaseList: React.FC = () => {
       return dueDateParam ? new Date() : undefined;
     }
   );
+
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
     return tagParam ? tagParam.split(",") : [];
@@ -122,6 +124,7 @@ const CaseList: React.FC = () => {
     pageSize: 10,
   });
   const [pageSize, setPageSize] = useState<number>(15);
+  const [selectedOrderCases, setSelectedOrderCases] = useState<ExtendedCase[]>([]);
 
   const pagination = useMemo(
     () => ({
@@ -454,6 +457,7 @@ const CaseList: React.FC = () => {
                 "on_hold",
                 "completed",
                 "cancelled",
+                "shipped",
               ].map((status) => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
@@ -498,6 +502,8 @@ const CaseList: React.FC = () => {
                             status === "completed",
                           "bg-red-500 text-red-500 hover:bg-red-500":
                             status === "cancelled",
+                          "bg-purple-500 text-purple-500 hover:bg-purple-500":
+                            status === "shipped",
                         }
                       )}
                     >
@@ -650,10 +656,14 @@ const CaseList: React.FC = () => {
         </div>
       ),
       cell: ({ row }) => {
-        const date = row.getValue("due_date") as string;
+        const dueDate = row.getValue("due_date") as string;
         const parsedDate = new Date(date);
+        return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
 
-        return date ? formatDate(date) : "TBD";
+        // const dueDate = row.getValue("due_date") as string;
+        // const client = row.getValue("client") as { client_name: string; additional_lead_time?: string } | null;
+        // const parsedDate = calculateDueDate(dueDate, client ?? undefined);
+        // return parsedDate;
       },
       filterFn: (row, id, value: Date) => {
         if (!value) return true;
@@ -725,6 +735,8 @@ const CaseList: React.FC = () => {
               <PrinterIcon className="mr-2 h-4 w-4" />
               Print
             </DropdownMenuItem> */}
+
+
             <DropdownMenuItem
               onClick={() => {
                 handlePrintOptionSelect("lab-slip", [row.original.id]);
@@ -733,6 +745,16 @@ const CaseList: React.FC = () => {
               <Printer className="h-4 w-4 mr-2" />
               Lab Slip
             </DropdownMenuItem>
+
+
+            {/* <DropdownMenuItem
+              onClick={() => {
+                handlePrintOptionSelect("lab-slip", [row.original.id]);
+              }}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Lab Slip
+            </DropdownMenuItem> */}
             <DropdownMenuItem
               onClick={() =>
                 handlePrintOptionSelect("address-label", [row.original.id])
@@ -782,9 +804,9 @@ const CaseList: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
        id,
         created_at,
         received_date,
@@ -794,6 +816,9 @@ const CaseList: React.FC = () => {
         due_date,
         attachements,
         case_number,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -809,11 +834,14 @@ const CaseList: React.FC = () => {
           street,
           city,
           state,
-          zip_code
+          zip_code,
+          additional_lead_time,
+          account_number
         ),
         doctor:doctors!doctor_id (
           id,
           name,
+          order,
           client:clients!client_id (
             id,
             client_name,
@@ -938,10 +966,10 @@ const CaseList: React.FC = () => {
           )
           )
     `
-          )
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-          .order("created_at", { ascending: false })
+        )
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true,
@@ -1009,6 +1037,9 @@ const CaseList: React.FC = () => {
         due_date,
         attachements,
         case_number,
+        isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -1327,6 +1358,7 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1339,6 +1371,24 @@ const CaseList: React.FC = () => {
       caseData:
         selectedCases.length > 0
           ? selectedCases.map((caseItem) => ({
+            id: caseItem.id,
+            patient_name: caseItem.patient_name,
+            case_number: caseItem.case_number,
+            qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+            client: caseItem.client,
+            doctor: caseItem.doctor,
+            created_at: caseItem.created_at,
+            //due_date: caseItem.due_date,
+            due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
+            tag: caseItem.tag,
+          }))
+          : cases
+            .filter((item) =>
+              selectedId && selectedId.length > 0
+                ? selectedId.includes(item.id)
+                : selectedCasesIds.includes(item.id)
+            )
+            .map((caseItem) => ({
               id: caseItem.id,
               patient_name: caseItem.patient_name,
               case_number: caseItem.case_number,
@@ -1346,31 +1396,17 @@ const CaseList: React.FC = () => {
               client: caseItem.client,
               doctor: caseItem.doctor,
               created_at: caseItem.created_at,
-              due_date: caseItem.due_date,
+              //due_date: caseItem.due_date,
+              due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
               tag: caseItem.tag,
-            }))
-          : cases
-              .filter((item) =>
-                selectedId && selectedId.length > 0
-                  ? selectedId.includes(item.id)
-                  : selectedCasesIds.includes(item.id)
-              )
-              .map((caseItem) => ({
-                id: caseItem.id,
-                patient_name: caseItem.patient_name,
-                case_number: caseItem.case_number,
-                qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-                client: caseItem.client,
-                doctor: caseItem.doctor,
-                created_at: caseItem.created_at,
-                due_date: caseItem.due_date,
-                tag: caseItem.tag,
-              })),
+            })),
       caseDetails: cases.filter((item) =>
         selectedId && selectedId.length > 0
           ? selectedId.includes(item.id)
           : selectedCasesIds.includes(item.id)
       ),
+
+
     };
 
     // Use a fixed storage key so that the data always overrides the previous entry.
@@ -1382,6 +1418,235 @@ const CaseList: React.FC = () => {
     window.open(previewUrl, "_blank");
   };
 
+
+  const handlePrintSelectedOrder = () => {
+    const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
+
+    if (selectedCases.length === 0) {
+      alert("Please select at least one case to print.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    printWindow.document.open();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Selected Orders</title>
+        <style>
+           @media screen {
+            body { display: none; } /* Hide content in normal view */
+          }
+          @media print {
+            @page {
+              size: Letter;  /* Set page size to Letter (8.5" x 11") */
+              margin: 0.5in; /* Set 0.5-inch margins for better printing */
+            }
+            body {
+              display: block;
+              background: white !important;
+              font-family: Arial, sans-serif;
+              font-size: 12pt; /* Readable text size */
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
+            h2 { text-align: center; margin-bottom: 10px; }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
+            }
+            th, td {
+              border: 1px solid black;
+              padding: 8px;
+              text-align: left;
+            }
+            th {
+              background-color: #f2f2f2;
+            }
+            .color-box {
+              width: 12px;
+              height: 12px;
+              display: inline-block;
+              border: 1px solid #000;
+              margin-right: 5px;
+              vertical-align: middle;
+            }
+          }
+        </style>
+      </head>
+      <body>       
+        <table>
+          <thead>
+            <tr>
+              <th>Pan</th>
+              <th>Tag</th>
+              <th>Case #</th>
+              <th>Patient Name</th>
+              <th>Status</th>
+              <th>Doctor</th>
+              <th>Client</th>
+              <th>Due Date</th>
+              <th>Ordered Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${selectedCases
+        .map(
+          (caseItem) => `
+                <tr>
+                  <td>
+                    <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"};"></span>
+                    ${caseItem.working_pan_name || ""}
+                  </td>
+                  <td>
+                    ${caseItem?.tag?.name
+                      ? `<span class="color-box" style="background-color: ${caseItem.tag.color};"></span>
+                        ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
+                      : ""}
+                  </td>
+                  <td>${caseItem.case_number}</td>
+                  <td>${caseItem.patient_name}</td>
+                  <td>${caseItem.status}</td>
+                  <td>${caseItem.doctor.name}</td>
+                  <td>${caseItem.client.client_name}</td>
+                  <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
+                  <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
+                </tr>
+              `
+        )
+        .join("")}
+          </tbody>
+        </table>
+  
+        <script>
+          setTimeout(() => {
+            window.print();
+            window.onafterprint = () => {
+              window.close();
+            };
+          }, 500);
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  };
+
+
+
+  // const handlePrintSelectedOrder = () => {
+  //   const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
+
+  //   if (selectedCases.length === 0) {
+  //     alert("Please select at least one case to print.");
+  //     return;
+  //   }
+
+  //   const printWindow = window.open("", "_blank");
+  //   if (!printWindow) return;
+
+  //   printWindow.document.open();
+  //   printWindow.document.write(`
+  //     <!DOCTYPE html>
+  //     <html lang="en">
+  //     <head>
+  //       <meta charset="UTF-8">
+  //       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  //       <title style="font-size:20px">Selected Orders</title>
+  //       <style>
+  //         @media screen {
+  //           body { display: none; } /* Hide content in normal view */
+  //         }
+  //         @media print {
+  //           @page {
+  //             size: Letter;  /* Set page size to Letter (8.5" x 11") */
+  //             margin: 0.5in; /* Set 0.5-inch margins for better printing */
+  //           }
+  //           body {
+  //             display: block;
+  //             background: white !important;
+  //             font-family: Arial, sans-serif;
+  //             font-size: 12pt; /* Readable text size */
+  //             -webkit-print-color-adjust: exact;
+  //             print-color-adjust: exact;
+  //           }
+  //           h2 { text-align: center; margin-bottom: 10px; }
+  //           table {
+  //             width: 100%;
+  //             border-collapse: collapse;
+  //             margin-top: 10px;
+  //           }
+  //           th, td {
+  //             border: 1px solid black;
+  //             padding: 8px;
+  //             text-align: left;
+  //           }
+  //           th {
+  //             background-color: #f2f2f2;
+  //           }
+  //         }
+  //       </style>
+  //     </head>
+  //     <body>       
+  //       <table>
+  //         <thead>
+  //           <tr>
+  //             <th>Pan</th>
+  //             <th>Tag</th>
+  //             <th>Case #</th>
+  //             <th>Patient Name</th>
+  //             <th>Status</th>
+  //             <th>Doctor</th>
+  //             <th>Client</th>
+  //             <th>Due Date</th>
+  //             <th>Ordered Date</th>
+  //           </tr>
+  //         </thead>
+  //         <tbody>
+  //           ${selectedCases
+  //       .map(
+  //         (caseItem) => `
+  //               <tr>
+  //                 <td>${caseItem.working_pan_name}</td>
+  //                 <td>${caseItem.tag}</td>
+  //                 <td>${caseItem.case_number}</td>
+  //                 <td>${caseItem.patient_name}</td>
+  //                 <td>${caseItem.status}</td>
+  //                 <td>${caseItem.doctor.name}</td>
+  //                 <td>${caseItem.client.client_name}</td>
+  //                 <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
+  //                 <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
+  //               </tr>
+  //             `
+  //       )
+  //       .join("")}
+  //         </tbody>
+  //       </table>
+
+  //       <script>
+  //         setTimeout(() => {
+  //           window.print();
+  //           setTimeout(() => window.close(), 500);
+  //         }, 500);
+  //       </script>
+  //     </body>
+  //     </html>
+  //   `);
+  //   printWindow.document.close();
+  // };
+
+
+
+
+
+
   if (!arragedNewCases) {
     return <div>Loading...</div>;
   }
@@ -1389,6 +1654,9 @@ const CaseList: React.FC = () => {
   //   return <div>Error: {error}</div>;
   // }
   const amount = 20133;
+
+
+
 
   return (
     <div className="space-y-6">
@@ -1444,6 +1712,12 @@ const CaseList: React.FC = () => {
                       <FileText className="h-4 w-4 mr-2" />
                       Patient Label
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handlePrintSelectedOrder()}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Selected Order
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
@@ -1478,9 +1752,9 @@ const CaseList: React.FC = () => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -1577,5 +1851,22 @@ function getContrastColor(hexcolor: string): string {
   // Return black or white depending on background color luminance
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
+
+
+// export function calculateDueDate(
+//   dueDate?: string,
+//   client?: { client_name: string; additional_lead_time?: string }
+// ): string {
+//   if (!dueDate) return "TBD";
+//   const parsedDate = new Date(dueDate);
+//   if (isNaN(parsedDate.getTime())) return "Invalid Date";
+//   const additionalLeadTime = client?.additional_lead_time ? Number(client.additional_lead_time) : 0;
+
+//   if (!isNaN(additionalLeadTime) && additionalLeadTime > 0) {
+//     parsedDate.setDate(parsedDate.getDate() + additionalLeadTime);
+//   }
+
+//   return format(parsedDate, "MMM dd, yyyy");
+// }
 
 export default CaseList;

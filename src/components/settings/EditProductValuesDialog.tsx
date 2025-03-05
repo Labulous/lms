@@ -23,6 +23,7 @@ import { toast } from "react-hot-toast";
 
 interface Value {
   id: string;
+  code: string;
   name: string;
   description: string | null;
 }
@@ -48,6 +49,7 @@ export default function EditProductValuesDialog({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Value>({
     id: "",
+    code: "",
     name: "",
     description: "",
   });
@@ -86,6 +88,7 @@ export default function EditProductValuesDialog({
     setEditingId(value.id);
     setEditForm({
       id: value.id,
+      code: value.code,
       name: value.name,
       description: value.description,
     });
@@ -106,7 +109,22 @@ export default function EditProductValuesDialog({
         });
       } else {
         console.log(updatedValue, "updatedValue");
+
+
+        const existingMaterials = await productsService.getMaterials(labId); 
+        const isDuplicate = existingMaterials.some(
+          (material: any) =>
+            material.code === updatedValue.code.trim() && material.id !== updatedValue.id
+        );
+
+        if (isDuplicate) {
+          toast.error("Code already exists. Please use a unique code.");
+          setIsLoading(false);
+          return;
+        }
+
         await productsService.updateMaterial(updatedValue.id, {
+          code: updatedValue.code.trim(),
           name: updatedValue.name.trim(),
           description: updatedValue.description?.trim() || null,
         });
@@ -144,7 +162,7 @@ export default function EditProductValuesDialog({
 
   const handleCancel = () => {
     setEditingId(null);
-    setEditForm({ id: "", name: "", description: "" });
+    setEditForm({ id: "", code: "", name: "", description: "" });
   };
 
   return (
@@ -166,6 +184,7 @@ export default function EditProductValuesDialog({
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Code</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
@@ -174,6 +193,25 @@ export default function EditProductValuesDialog({
               <TableBody>
                 {values.map((value) => (
                   <TableRow key={value.id}>
+                    <TableCell>
+                      {editingId === value.id ? (
+                        <Input
+                          type="text"
+                          value={editForm.code}
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (/^\d*$/.test(inputValue)) { 
+                              setEditForm({ ...editForm, code: inputValue });
+                            }
+                          }}
+                          placeholder="Enter 4-digit code"
+                          disabled={isLoading}
+                        />
+                      ) : (
+                        value.code
+                      )}
+                    </TableCell>
+
                     <TableCell>
                       {editingId === value.id ? (
                         <Input
