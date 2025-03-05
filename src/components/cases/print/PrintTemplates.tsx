@@ -1582,9 +1582,9 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       >
         <div className="flex justify-start flex-col  mb-2">
           <div className="flex">
-            <h3 className="font-bold text-2xl ">{teeth.teethProduct.type}</h3>
+            <h3 className="font-bold text-sm ">{teeth.teethProduct.type}</h3>
             <p
-              className="text-lg pl-2 font-extrabold mt-1"
+              className="text-sm pl-2 font-extrabold mt-1"
               style={{ lineHeight: "1.15" }}
             >
               {teeth.teethProduct.type !== "Bridge" ? (
@@ -1618,7 +1618,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                         {item.name}
                       </p>
                       <p
-                        className="text-sm pl-6 font-extrabold"
+                        className="text-xs pl-6 font-extrabold"
                         style={{ lineHeight: "1.15" }}
                       >
                         (#
@@ -1647,7 +1647,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
                       {item.teethProduct?.pontic_teeth?.length > 0 && (
                         <p
-                          className="text-sm pl-6 font-extrabold"
+                          className="text-xs pl-6 font-extrabold"
                           style={{ lineHeight: "1.15" }}
                         >
                           <span className="font-normal"></span>
@@ -1678,7 +1678,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                         </p>
                       )}
                       <p
-                        className="text-sm flex gap-0 flex-wrap pl-6 mt-1"
+                        className="text-xs flex gap-0 flex-wrap pl-6 mt-1"
                         style={{ lineHeight: "1.15" }}
                       >
                         <span className="font-normal">Shade:&nbsp;</span>
