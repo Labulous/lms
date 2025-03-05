@@ -1,4 +1,4 @@
-import { useState, useEffect, SetStateAction } from "react";
+import { useState, useEffect, SetStateAction, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
@@ -88,6 +88,7 @@ const UpdateCase: React.FC = () => {
     action: null,
     isLoading: false,
   });
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   const [searchParams] = useSearchParams();
   const caseId = searchParams.get("caseId");
@@ -402,7 +403,6 @@ const UpdateCase: React.FC = () => {
         })),
       }
     : null;
-  const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const getCasesLength = async () => {
