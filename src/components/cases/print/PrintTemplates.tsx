@@ -458,8 +458,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
     const Services = () => {
       return (
         <>
-          {groupedServicesByName && (
-            <h3 className="font-bold text-2xl mb-2">Additional Services</h3>
+          {Object.entries(groupedServicesByName)?.length >0 && (
+            <h3 className="font-bold text-[14px] mb-2">Additional Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
@@ -468,13 +468,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                 className="grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300"
                 style={{ lineHeight: "1.1" }}
               >
-                <div className="space-y-1 font-medium col-span-5 pl-2 flex justify-center items-center">
-                  <h3>{serviceName}</h3>
+                <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
+                  <h3 className="text-sm font-bold">{serviceName}</h3>
                   <p
-                    className="text-sm pl-2 font-extrabold mt-1"
+                    className="text-xs pl-2 font-extrabold mt-1"
                     style={{ lineHeight: "1.15" }}
                   >
-                    <>(# {serviceDetails.teeth.join(",#")})</>
+                    <>(#{serviceDetails.teeth.join(",#")})</>
                   </p>
                 </div>
                 <p
@@ -583,13 +583,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             <div key={type} style={{ marginBottom: "20px" }}>
               {/* Display the type as the title */}
               <div className="flex justify-start text-center items-center mb-2">
-                <h3 className="font-bold text-2xl ">{type}</h3>
+                <h2 className="font-bold text-sm ">{type}</h2>
                 <p
-                  className="text-lg pl-2 font-extrabold mt-1"
+                  className="text-xs pl-2 font-extrabold mt-1"
                   style={{ lineHeight: "1.15" }}
                 >
                   {type !== "Bridge" ? (
-                    <># {allToothNumbers.join(",# ")}</>
+                    <>#{allToothNumbers.join(",#")}</>
                   ) : (
                     <>
                       <span
@@ -653,47 +653,49 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                         style={{ lineHeight: "1.1" }}
                       >
                         <div className="space-y-1 font-medium col-span-5 pl-2">
-                          <div>
-                            <p
-                              className="font-extrabold"
-                              style={{ lineHeight: "1.15" }}
-                            >
-                              {item.name}
-                            </p>
-                            <p
-                              className="text-sm pl-6 font-extrabold"
-                              style={{ lineHeight: "1.15" }}
-                            >
-                              (#
-                              {item.teethProduct.type ? (
-                                item.teethProduct?.tooth_number
-                                  .map((item: number) => `${item}`)
-                                  .join(",#")
-                              ) : (
-                                <>
-                                  <span
-                                    style={{
-                                      color:
-                                        TYPE_COLORS[
-                                        item?.teethProduct
-                                          .type as keyof typeof TYPE_COLORS
-                                        ] || TYPE_COLORS.Other,
-                                    }}
-                                  >
-                                    Bridge:
-                                  </span>
-                                  #
-                                  {formatTeethRange(
-                                    item.teethProduct?.tooth_number
-                                  )}
-                                </>
-                              )}
-                              )
-                            </p>
+                          <div className="">
+                            <div className="">
+                              <p
+                                className="font-extrabold text-xs"
+                                style={{ lineHeight: "1.15" }}
+                              >
+                                {item.name}
+                              </p>
+                              <p
+                                className="text-xs pl-6 font-extrabold"
+                                style={{ lineHeight: "1.15" }}
+                              >
+                                (#
+                                {item.teethProduct.type ? (
+                                  item.teethProduct?.tooth_number
+                                    .map((item: number) => `${item}`)
+                                    .join(",#")
+                                ) : (
+                                  <>
+                                    <span
+                                      style={{
+                                        color:
+                                          TYPE_COLORS[
+                                            item?.teethProduct
+                                              .type as keyof typeof TYPE_COLORS
+                                          ] || TYPE_COLORS.Other,
+                                      }}
+                                    >
+                                      Bridge:
+                                    </span>
+                                    #
+                                    {formatTeethRange(
+                                      item.teethProduct?.tooth_number
+                                    )}
+                                  </>
+                                )}
+                                )
+                              </p>
+                            </div>
 
                             {item.teethProduct?.pontic_teeth?.length > 0 && (
                               <p
-                                className="text-sm pl-6 font-extrabold"
+                                className="text-xs pl-6 font-extrabold"
                                 style={{ lineHeight: "1.15" }}
                               >
                                 <span className="font-normal"></span>
@@ -726,7 +728,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               </p>
                             )}
                             <p
-                              className="text-sm flex gap-0 flex-wrap pl-6 mt-1"
+                              className="text-xs flex gap-0 flex-wrap pl-6 mt-1"
                               style={{ lineHeight: "1.15" }}
                             >
                               <span className="font-normal">Shade:&nbsp;</span>
@@ -2208,64 +2210,64 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                   Case Details
                 </h3>
               </div>
-              <div className="p-2">
-                <div className="grid grid-cols-6 gap-4">
+              <div className="p-2 px-1">
+                <div className="grid grid-cols-6 gap-5">
                   <div>
                     <div className="text-xs text-gray-600">Occlusal Type</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.occlusal_type !== "custom"
-                        ? item.occlusal_type
+                        ? item.occlusal_type?.split("_")?.join(" ")
                         : item.custom_occlusal_details || ""}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600">Contact Type</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.contact_type === "not_applicable"
                         ? ""
                         : item.contact_type !== "custom"
-                          ? item.contact_type
-                          : item.custom_contact_details || ""}
+                        ? item.contact_type?.split("_")?.join(" ")
+                        : item.custom_contact_details || ""}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600">Pontic Type</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.pontic_type === "not_applicable"
                         ? ""
                         : item.pontic_type !== "custom"
-                          ? item.pontic_type
-                          : item.custom_pontic_details || ""}
+                        ? item.pontic_type?.split("_")?.join(" ")
+                        : item.custom_pontic_details || ""}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600">Margin Design</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.margin_design_type === "not_applicable"
                         ? ""
                         : item.margin_design_type !== "custom"
-                          ? item.margin_design_type
-                          : item.custom_margin_design_type || ""}
+                        ? item.margin_design_type?.split("_")?.join(" ")
+                        : item.custom_margin_design_type || ""}
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-600">Occlusal Design</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="text-xs text-gray-600 w-32">Occlusal Design</div>
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.occlusion_design_type === "not_applicable"
                         ? ""
                         : item.occlusion_design_type !== "custom"
-                          ? item.occlusion_design_type
-                          : item.custom_margin_design_type || ""}
+                        ? item.occlusion_design_type?.split("_")?.join(" ")
+                        : item.custom_margin_design_type || ""}
                     </div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-600">Alloy</div>
-                    <div className="font-bold text-xs min-h-[14px]">
+                    <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.alloy_type === "not_applicable"
                         ? ""
                         : item.alloy_type !== "custom"
-                          ? item.alloy_type
-                          : item.custon_alloy_type || ""}
+                        ? item.alloy_type?.split("_")?.join(" ")?.split("-").join(" ")
+                        : item.custon_alloy_type || ""}
                     </div>
                   </div>
                 </div>

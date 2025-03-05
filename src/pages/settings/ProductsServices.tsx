@@ -141,18 +141,18 @@ const ProductsServices: React.FC = () => {
   const { data: products1, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-        .from("products")
-        .select(
-          `
+          .from("products")
+          .select(
+            `
     *,
     material:materials(name),
     product_type:product_types(name),
     billing_type:billing_types(name, label)
   `
-        )
-        .order("name")
-        .eq("lab_id", labIdData?.lab_id)
-        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+          )
+          .order("name")
+          .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -166,15 +166,14 @@ const ProductsServices: React.FC = () => {
   const { data: productTypes1, error: productTypesError } = useQuery(
     products1 && labIdData?.lab_id
       ? supabase
-        .from("product_types")
-        .select(
-          `
+          .from("product_types")
+          .select(
+            `
 *
       `
-        )
-        .order("name")
-        .eq("lab_id", labIdData?.lab_id)
-
+          )
+          .order("name")
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -188,16 +187,16 @@ const ProductsServices: React.FC = () => {
   const { data: servicesApi, error: servicesApiError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-        .from("services")
-        .select(
-          `
+          .from("services")
+          .select(
+            `
         *,
         material:materials(name)
       `
-        )
+          )
 
-        .eq("lab_id", labIdData?.lab_id)
-        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+          .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -208,14 +207,14 @@ const ProductsServices: React.FC = () => {
   const { data: materialsApi, error: materialsError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-        .from("materials")
-        .select(
-          `
+          .from("materials")
+          .select(
+            `
            *
           `
-        )
+          )
 
-        .eq("lab_id", labIdData?.lab_id)
+          .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -343,7 +342,6 @@ const ProductsServices: React.FC = () => {
       throw new Error("Failed to fetch material code");
     }
 
-
     const { data, error } = await supabase
       .from("products")
       .update({
@@ -429,7 +427,10 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-  const handleDeleteClick = async (item: Product | Service) => {
+  const handleDeleteClick = async (
+    item: Product | Service,
+    tableName: string
+  ) => {
     const confirmed = window.confirm(
       `Are you sure you want to archive "${item.name}"?`
     );
@@ -443,8 +444,6 @@ const ProductsServices: React.FC = () => {
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .eq("id", item.id)
         .single();
-
-      let tableName = "";
 
       if (productData) {
         tableName = "products";
@@ -482,15 +481,12 @@ const ProductsServices: React.FC = () => {
       navigate("/material-selection", { replace: true });
       setTimeout(() => {
         navigate(urlParams, { replace: true });
-
       }, 100);
-
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("An error occurred.");
     }
   };
-
 
   const handleEditClick = async (item: Product | Service) => {
     // setItemsToDelete([item]);
@@ -512,20 +508,21 @@ const ProductsServices: React.FC = () => {
           is_archive: true,
           updated_at: new Date().toISOString(),
         })
-        .in("id", selectedItems.map((item) => item.id));
+        .in(
+          "id",
+          selectedItems.map((item) => item.id)
+        );
 
       if (error) {
         console.error("Error archiving products:", error);
         toast.error("Failed to archive the items.");
       } else {
-
         toast.success("Items successfully archived.");
         const urlParams = location.pathname + location.search; // Get full URL path + query
         navigate("/material-selection", { replace: true });
         setTimeout(() => {
           navigate(urlParams, { replace: true });
         }, 100);
-
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -533,10 +530,8 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-
-
   // Batch delete function for services
-  const handleServiceBatchDelete = async (selectedItems: (any)[]) => {
+  const handleServiceBatchDelete = async (selectedItems: any[]) => {
     debugger;
     if (!selectedItems || selectedItems.length === 0) {
       toast.error("No items selected.");
@@ -573,15 +568,12 @@ const ProductsServices: React.FC = () => {
         setTimeout(() => {
           navigate(urlParams, { replace: true });
         }, 100);
-
       }
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("An error occurred.");
     }
   };
-
-
 
   // const handleBatchDelete = async () => {
   //   if (selectedServices.length === 0) return;
@@ -717,8 +709,8 @@ const ProductsServices: React.FC = () => {
           aValue.toLowerCase() < bValue.toLowerCase()
             ? -1
             : aValue.toLowerCase() > bValue.toLowerCase()
-              ? 1
-              : 0;
+            ? 1
+            : 0;
         return sortConfig.direction === "asc" ? comparison : -comparison;
       }
 
@@ -735,13 +727,13 @@ const ProductsServices: React.FC = () => {
           ? aValue === bValue
             ? 0
             : aValue
-              ? -1
-              : 1
+            ? -1
+            : 1
           : aValue === bValue
-            ? 0
-            : aValue
-              ? 1
-              : -1;
+          ? 0
+          : aValue
+          ? 1
+          : -1;
       }
 
       // Handle string/number values
@@ -749,8 +741,8 @@ const ProductsServices: React.FC = () => {
         String(aValue).toLowerCase() < String(bValue).toLowerCase()
           ? -1
           : String(aValue).toLowerCase() > String(bValue).toLowerCase()
-            ? 1
-            : 0;
+          ? 1
+          : 0;
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   };
@@ -1044,7 +1036,11 @@ const ProductsServices: React.FC = () => {
 
                       <TableCell>
                         {materialsData && materialsData.length > 0
-                          ? (materialsData.find((mat) => mat.id === service.material_id) as any)?.code ?? "N/A"
+                          ? (
+                              materialsData.find(
+                                (mat) => mat.id === service.material_id
+                              ) as any
+                            )?.code ?? "N/A"
                           : "N/A"}
                       </TableCell>
                       <TableCell>
@@ -1052,8 +1048,6 @@ const ProductsServices: React.FC = () => {
                           {service?.material?.name}
                         </Badge>
                       </TableCell>
-
-
 
                       <TableCell className="text-right">
                         ${service.price}
@@ -1093,7 +1087,9 @@ const ProductsServices: React.FC = () => {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               className="text-red-600"
-                              onClick={() => handleDeleteClick(service, true)}
+                              onClick={() =>
+                                handleDeleteClick(service, "services")
+                              }
                             >
                               <Trash className="mr-2 h-4 w-4" />
                               Delete
@@ -1131,10 +1127,11 @@ const ProductsServices: React.FC = () => {
           setItemsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${itemsToDelete[0] && "lead_time" in itemsToDelete[0]
-          ? "Product"
-          : "Service"
-          }`}
+        title={`Delete ${
+          itemsToDelete[0] && "lead_time" in itemsToDelete[0]
+            ? "Product"
+            : "Service"
+        }`}
         message={
           itemsToDelete.length === 1
             ? "Are you sure you want to delete this item? This action cannot be undone."

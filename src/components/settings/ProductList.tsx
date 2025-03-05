@@ -58,7 +58,10 @@ import { Link, useNavigate } from "react-router-dom";
 interface ProductListProps {
   products: Database["public"]["Tables"]["products"]["Row"][];
   onEdit?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
-  onDelete?: (product: Database["public"]["Tables"]["products"]["Row"]) => void;
+  onDelete?: (
+    product: Database["public"]["Tables"]["products"]["Row"],
+    tableName: string
+  ) => void;
   onBatchDelete?: (
     products: Database["public"]["Tables"]["products"]["Row"][]
   ) => void;
@@ -103,8 +106,6 @@ const ProductList: React.FC<ProductListProps> = ({
     }
   }, [location]);
 
-
-
   // Get unique materials from products
   const materials = materialsData;
 
@@ -137,7 +138,7 @@ const ProductList: React.FC<ProductListProps> = ({
     () => getFilteredProducts(),
     [products, searchTerm, materialFilter]
   );
-  console.log(materialFilter, "materialFilter")
+  console.log(materialFilter, "materialFilter");
   // Sorting
   const handleSort = (
     key: keyof Database["public"]["Tables"]["products"]["Row"]
@@ -185,7 +186,6 @@ const ProductList: React.FC<ProductListProps> = ({
 
   // Batch Actions
   const handleBatchDuplicate = () => {
-
     // Implement duplicate functionality for selected products
   };
 
@@ -201,7 +201,6 @@ const ProductList: React.FC<ProductListProps> = ({
   // };
 
   const handleBatchDelete = () => {
-
     if (!onBatchDelete || selectedProducts.length === 0) {
       toast.error("No products selected.");
       return;
@@ -216,8 +215,6 @@ const ProductList: React.FC<ProductListProps> = ({
     onBatchDelete(productsToDelete);
     setSelectedProducts([]);
   };
-
-
 
   useEffect(() => {
     setCurrentPage(1);
@@ -514,10 +511,12 @@ const ProductList: React.FC<ProductListProps> = ({
                 </TableCell>
                 <TableCell>
                   {materialsData && materialsData.length > 0
-                    ? materialsData.find((mat) => mat.id === product.material_id)?.code ?? "N/A"
+                    ? materialsData.find(
+                        (mat) => mat.id === product.material_id
+                      )?.code ?? "N/A"
                     : "N/A"}
                 </TableCell>
-                <TableCell>{product.material?.name}</TableCell>               
+                <TableCell>{product.material?.name}</TableCell>
 
                 <TableCell className="text-right">
                   $
@@ -576,7 +575,7 @@ const ProductList: React.FC<ProductListProps> = ({
                           setOpenMenuId(null);
                           if (onDelete) {
                             try {
-                              await onDelete(product);
+                              await onDelete(product, "products");
                             } catch (error) {
                               console.error("Error deleting product:", error);
                             }

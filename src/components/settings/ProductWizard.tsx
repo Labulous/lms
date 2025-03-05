@@ -139,6 +139,7 @@ const ProductWizard: React.FC<ProductWizardProps> = ({
         billing_type_id: formData.billing_type_id || "",
         requires_shade: formData.requires_shade,
         lab_id: labId,
+        product_code: "",
       };
 
       console.log("Saving product with data:", productData);
