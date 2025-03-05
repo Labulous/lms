@@ -1359,7 +1359,6 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
-    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);

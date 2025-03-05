@@ -371,25 +371,25 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         ...detail,
         products: detail?.products
           ? detail.products.map((item: any) => ({
-            ...item,
-            service: item.teethProduct?.additional_services_id
-              ? data
-                .filter(
-                  (service) =>
-                    Array.isArray(
-                      item.teethProduct.additional_services_id
-                    ) &&
-                    item.teethProduct.additional_services_id.includes(
-                      service.id
+              ...item,
+              service: item.teethProduct?.additional_services_id
+                ? data
+                    .filter(
+                      (service) =>
+                        Array.isArray(
+                          item.teethProduct.additional_services_id
+                        ) &&
+                        item.teethProduct.additional_services_id.includes(
+                          service.id
+                        )
                     )
-                )
-                .map((service) => ({
-                  id: service.id,
-                  name: service.name,
-                  price: service.price,
-                }))[0]
-              : [],
-          }))
+                    .map((service) => ({
+                      id: service.id,
+                      name: service.name,
+                      price: service.price,
+                    }))[0]
+                : [],
+            }))
           : [],
       }));
     }
@@ -542,9 +542,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const { data: caseDataa, error: caseError } = useQuery(
     activeCaseId
       ? supabase
-        .from("cases")
-        .select(
-          `
+          .from("cases")
+          .select(
+            `
         id,
         created_at,
         received_date,
@@ -714,9 +714,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           )
           )
       `
-        )
-        .eq("id", activeCaseId)
-        .single()
+          )
+          .eq("id", activeCaseId)
+          .single()
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true, // Refetch when the window is focused
@@ -756,56 +756,56 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-      ...caseItem,
-      labDetail: lab,
-      custom_occlusal_details: caseDataa?.custom_occulusal_details,
-      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-        id: tp.product.id,
-        name: tp.product.name,
-        price: tp.product.price,
-        service_price: tp.product.service_price,
-        service_discount: tp.product.service_discount,
-        lead_time: tp.product.lead_time,
-        is_client_visible: tp.product.is_client_visible,
-        is_taxable: tp.product.is_taxable,
-        created_at: tp.product.created_at,
-        updated_at: tp.product.updated_at,
-        requires_shade: tp.product.requires_shade,
-        material: tp.product.material,
-        product_type: tp.product.product_type,
-        common_services: caseItem?.common_services,
-        billing_type: tp.product.billing_type,
-        additional_services_id:
-          caseItem?.teethProduct?.[index].additional_services_id,
-        discounted_price: caseItem?.discounted_price[index],
-        services: {
-          name: "zahid",
-          price: 12,
-        },
-        teethProduct: {
-          id: tp.id,
-          is_range: tp.is_range,
-          tooth_number: tp.tooth_number,
-          pontic_teeth: tp.pontic_teeth,
-          product_id: tp.product_id,
-          occlusal_shade: tp.occlusal_shade,
-          body_shade: tp.body_shade,
-          gingival_shade: tp.gingival_shade,
-          stump_shade: tp.stump_shade,
-          manual_occlusal_shade: tp.manual_occlusal_shade,
-          manual_body_shade: tp.manual_body_shade,
-          type: tp.type,
-          manual_gingival_shade: tp.manual_gingival_shade,
-          manual_stump_shade: tp.manual_stump_shade,
-          custom_occlusal_shade: tp.custom_occlusal_shade,
-          custom_body_shade: tp.custom_body_shade,
-          custom_gingival_shade: tp.custom_gingival_shade,
-          custom_stump_shade: tp.custom_stump_shade,
-          custom_occlusal_details: tp.occlusal_shade,
-          notes: tp.notes,
-        },
-      })),
-    }
+        ...caseItem,
+        labDetail: lab,
+        custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          service_price: tp.product.service_price,
+          service_discount: tp.product.service_discount,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          common_services: caseItem?.common_services,
+          billing_type: tp.product.billing_type,
+          additional_services_id:
+            caseItem?.teethProduct?.[index].additional_services_id,
+          discounted_price: caseItem?.discounted_price[index],
+          services: {
+            name: "zahid",
+            price: 12,
+          },
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            pontic_teeth: tp.pontic_teeth,
+            product_id: tp.product_id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            type: tp.type,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+          },
+        })),
+      }
     : null;
   console.log(caseDetailApi, "caseDetailApi");
   const fetchCaseData = async (refetch?: boolean) => {
@@ -1059,6 +1059,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             teethProducts = teethProductData;
           }
           // Combine all product data
+          console.log(teethProducts, "teethProductData");
           const productsWithDiscounts = productData.flatMap((product: any) => {
             // Find all the discounted prices for this product
             const relevantDiscounts = discountedPriceData.filter(
@@ -1070,13 +1071,17 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             const relevantTeethProducts = teethProducts.filter(
               (teeth: any) => teeth.product_id === product.id
             );
-
+            console.log(relevantTeethProducts, "relevantTeethProducts");
             // Map each teeth product to a corresponding discounted price
-            return relevantTeethProducts.map((teeth: any, index: number) => {
+            return teethProducts.map((teeth: any, index: number) => {
               // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
               const discountedPrice =
                 relevantDiscounts[index % relevantDiscounts.length] || null;
-              console.log(lab, "lab");
+              console.log(
+                teethProducts.filter((item) => item.product_id === product.id),
+                teeth, teethProducts,
+                "teethteeth"
+              );
               return {
                 ...product,
                 discounted_price: discountedPrice,
@@ -1116,7 +1121,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       if (caseDetailApi) {
         console.log(caseDetailApi, "caseDetailApi");
         setCaseDetail(caseDetailApi);
-        fetchCaseData(true);
+        // fetchCaseData(true);
       }
       setError("No case ID provided");
       setLoading(false);
@@ -1126,7 +1131,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
-      fetchCaseData(true);
+      // fetchCaseData(true);
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
@@ -1554,28 +1559,81 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
   const consolidatedProducts: any = productsConsolidate
     ? Object.values(
-      caseDetail?.products?.reduce((acc: any, product: any) => {
-        const productId = product.id;
+        caseDetail?.products?.reduce((acc: any, product: any) => {
+          const productId = product.id;
 
-        if (!productId || !product.teethProduct?.tooth_number) {
-          return acc;
-        }
+          if (!productId || !product.teethProduct?.tooth_number) {
+            return acc;
+          }
 
-        const { tooth_number, type, pontic_teeth } = product.teethProduct;
+          const { tooth_number, type, pontic_teeth } = product.teethProduct;
 
-        if (type === "Bridge") {
-          // Determine if it's an upper, lower, or mixed bridge
-          const isUpper = tooth_number.every((tooth: number) =>
-            upperTeeth.has(tooth)
-          );
-          const isLower = tooth_number.every((tooth: number) =>
-            lowerTeeth.has(tooth)
-          );
-          const bridgeKey = `${productId}-${isUpper ? "upper" : isLower ? "lower" : "mixed"
+          if (type === "Bridge") {
+            // Determine if it's an upper, lower, or mixed bridge
+            const isUpper = tooth_number.every((tooth: number) =>
+              upperTeeth.has(tooth)
+            );
+            const isLower = tooth_number.every((tooth: number) =>
+              lowerTeeth.has(tooth)
+            );
+            const bridgeKey = `${productId}-${
+              isUpper ? "upper" : isLower ? "lower" : "mixed"
             }`;
 
-          if (!acc[bridgeKey]) {
-            acc[bridgeKey] = {
+            if (!acc[bridgeKey]) {
+              acc[bridgeKey] = {
+                ...product,
+                teethProduct: {
+                  ...product.teethProduct,
+                  tooth_number: [...tooth_number],
+                  pontic_teeth: [...pontic_teeth],
+                },
+                service: product.service
+                  ? [
+                      {
+                        service: product.service,
+                        teeth_number: [...tooth_number],
+                      },
+                    ]
+                  : [],
+              };
+            } else {
+              acc[bridgeKey].teethProduct.tooth_number = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.tooth_number,
+                  ...tooth_number,
+                ]),
+              ];
+              acc[bridgeKey].teethProduct.pontic_teeth = [
+                ...new Set([
+                  ...acc[bridgeKey].teethProduct.pontic_teeth,
+                  ...pontic_teeth,
+                ]),
+              ];
+
+              if (product.service) {
+                const existingService = acc[bridgeKey].service.find(
+                  (serviceObj: any) => serviceObj.service === product.service
+                );
+
+                if (existingService) {
+                  existingService.teeth_number = [
+                    ...new Set([
+                      ...existingService.teeth_number,
+                      ...tooth_number,
+                    ]),
+                  ];
+                } else {
+                  acc[bridgeKey].service.push({
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  });
+                }
+              }
+            }
+          } else {
+            // Non-Bridge products remain separate (no grouping)
+            acc[`${productId}-${tooth_number.join("-")}`] = {
               ...product,
               teethProduct: {
                 ...product.teethProduct,
@@ -1584,72 +1642,21 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               },
               service: product.service
                 ? [
-                  {
-                    service: product.service,
-                    teeth_number: [...tooth_number],
-                  },
-                ]
+                    {
+                      service: product.service,
+                      teeth_number: [...tooth_number],
+                    },
+                  ]
                 : [],
             };
-          } else {
-            acc[bridgeKey].teethProduct.tooth_number = [
-              ...new Set([
-                ...acc[bridgeKey].teethProduct.tooth_number,
-                ...tooth_number,
-              ]),
-            ];
-            acc[bridgeKey].teethProduct.pontic_teeth = [
-              ...new Set([
-                ...acc[bridgeKey].teethProduct.pontic_teeth,
-                ...pontic_teeth,
-              ]),
-            ];
-
-            if (product.service) {
-              const existingService = acc[bridgeKey].service.find(
-                (serviceObj: any) => serviceObj.service === product.service
-              );
-
-              if (existingService) {
-                existingService.teeth_number = [
-                  ...new Set([
-                    ...existingService.teeth_number,
-                    ...tooth_number,
-                  ]),
-                ];
-              } else {
-                acc[bridgeKey].service.push({
-                  service: product.service,
-                  teeth_number: [...tooth_number],
-                });
-              }
-            }
           }
-        } else {
-          // Non-Bridge products remain separate (no grouping)
-          acc[`${productId}-${tooth_number.join("-")}`] = {
-            ...product,
-            teethProduct: {
-              ...product.teethProduct,
-              tooth_number: [...tooth_number],
-              pontic_teeth: [...pontic_teeth],
-            },
-            service: product.service
-              ? [
-                {
-                  service: product.service,
-                  teeth_number: [...tooth_number],
-                },
-              ]
-              : [],
-          };
-        }
 
-        return acc;
-      }, {} as any)
-    )
+          return acc;
+        }, {} as any)
+      )
     : [];
   console.log(consolidatedProducts, "consolidatedProducts");
+  console.log(caseDetail, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -1682,7 +1689,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <span className="text-xs text-gray-500">INV #:</span>
                     <div
                       className="text-xs font-medium text-primary cursor-pointer"
-                      onClick={() => loadingAgain ? null : setIsPreviewModalOpen(true)}
+                      onClick={() =>
+                        loadingAgain ? null : setIsPreviewModalOpen(true)
+                      }
                     >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
@@ -1718,7 +1727,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         <p>
                           {
                             CASE_STATUS_DESCRIPTIONS[
-                            caseDetail.status as CaseStatus
+                              caseDetail.status as CaseStatus
                             ]
                           }
                         </p>
@@ -1967,8 +1976,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 style={{
                                   backgroundColor:
                                     TYPE_COLORS[
-                                    product?.teethProduct
-                                      ?.type as keyof typeof TYPE_COLORS
+                                      product?.teethProduct
+                                        ?.type as keyof typeof TYPE_COLORS
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
@@ -1985,31 +1994,31 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <div>
                                 {product?.teethProduct?.tooth_number.length >= 1
                                   ? formatTeethRange(
-                                    product.teethProduct.tooth_number
-                                  )
+                                      product.teethProduct.tooth_number
+                                    )
                                   : null}
                                 {product?.teethProduct?.pontic_teeth.length >
                                   0 && (
-                                    <span
-                                      className="ml-2 text-xs"
-                                      style={{
-                                        color:
-                                          TYPE_COLORS[
+                                  <span
+                                    className="ml-2 text-xs"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
                                           product?.teethProduct
                                             ?.type as keyof typeof TYPE_COLORS
-                                          ] || TYPE_COLORS.Other,
-                                      }}
-                                    >
-                                      ({"pontic: "}
-                                      {product?.teethProduct?.pontic_teeth
-                                        .length >= 1
-                                        ? formatTeethRange(
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    ({"pontic: "}
+                                    {product?.teethProduct?.pontic_teeth
+                                      .length >= 1
+                                      ? formatTeethRange(
                                           product.teethProduct.pontic_teeth
                                         )
-                                        : null}
-                                      )
-                                    </span>
-                                  )}
+                                      : null}
+                                    )
+                                  </span>
+                                )}
                               </div>
                             </TableCell>
                             <TableCell className="w-[1px] p-0">
@@ -2030,8 +2039,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
                               <div className="space-y-0">
                                 {product?.teethProduct?.occlusal_shade?.name ||
-                                  product?.teethProduct?.custom_occlusal_shade ||
-                                  product?.teethProduct?.manual_occlusal_shade ? (
+                                product?.teethProduct?.custom_occlusal_shade ||
+                                product?.teethProduct?.manual_occlusal_shade ? (
                                   <p>
                                     <div className="flex gap-2">
                                       <span className="text-gray-500">
@@ -2049,8 +2058,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                           style={{
                                             color:
                                               TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
                                               ] || TYPE_COLORS.Other,
                                           }}
                                         >
@@ -2066,8 +2075,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 ) : null}
                                 {/* Body shade */}
                                 {product?.teethProduct?.body_shade?.name ||
-                                  product?.teethProduct?.custom_body_shade ||
-                                  product?.teethProduct?.manual_body_shade ? (
+                                product?.teethProduct?.custom_body_shade ||
+                                product?.teethProduct?.manual_body_shade ? (
                                   <p>
                                     <div className="flex gap-2">
                                       <span className="text-gray-500">
@@ -2085,8 +2094,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                           style={{
                                             color:
                                               TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
                                               ] || TYPE_COLORS.Other,
                                           }}
                                         >
@@ -2102,8 +2111,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                                 {/* Gingival shade */}
                                 {product?.teethProduct?.gingival_shade?.name ||
-                                  product?.teethProduct?.custom_gingival_shade ||
-                                  product?.teethProduct?.manual_gingival_shade ? (
+                                product?.teethProduct?.custom_gingival_shade ||
+                                product?.teethProduct?.manual_gingival_shade ? (
                                   <p>
                                     <div className="flex gap-2">
                                       <span className="text-gray-500">
@@ -2121,8 +2130,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                           style={{
                                             color:
                                               TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
                                               ] || TYPE_COLORS.Other,
                                           }}
                                         >
@@ -2139,8 +2148,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                                 {/* Stump shade */}
                                 {product?.teethProduct?.custom_stump_shade ||
-                                  product?.teethProduct?.stump_shade ||
-                                  product?.teethProduct?.manual_stump_shade ? (
+                                product?.teethProduct?.stump_shade ||
+                                product?.teethProduct?.manual_stump_shade ? (
                                   <p>
                                     <div className="flex gap-2">
                                       <span className="text-gray-500">
@@ -2158,8 +2167,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                           style={{
                                             color:
                                               TYPE_COLORS[
-                                              product?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
+                                                product?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
                                               ] || TYPE_COLORS.Other,
                                           }}
                                         >
@@ -2331,7 +2340,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const quantity =
                             product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-                          console.log(product, "productproduct");
                           const serviceRow = product.service ? (
                             <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
@@ -2399,10 +2407,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               <TableRow>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                   {product.teethProduct?.tooth_number?.length >
-                                    1
+                                  1
                                     ? formatTeethRange(
-                                      product.teethProduct?.tooth_number
-                                    )
+                                        product.teethProduct?.tooth_number
+                                      )
                                     : product.teethProduct?.tooth_number[0]}
                                 </TableCell>
                                 <TableCell className="w-[1px] p-0">
@@ -2485,108 +2493,108 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const modifiedService =
                             product.services && product.services.length > 0
                               ? product.services.map((productService: any) =>
-                                services
-                                  .filter((service) =>
-                                    productService.includes(service.id)
-                                  )
-                                  .map((service) => ({
-                                    id: service.id,
-                                    name: service.name,
-                                    price: service.price,
-                                  }))
-                              )
+                                  services
+                                    .filter((service) =>
+                                      productService.includes(service.id)
+                                    )
+                                    .map((service) => ({
+                                      id: service.id,
+                                      name: service.name,
+                                      price: service.price,
+                                    }))
+                                )
                               : [];
                           console.log(modifiedService, "modifiedService");
                           const serviceRow = product.teeth
                             ? modifiedService?.map((item: any) => {
-                              return (
-                                <TableRow>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                    Service{" "}
-                                    {product.teeth
-                                      .map((item: number) => item)
-                                      .join(",")}
-                                  </TableCell>
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                    {item
-                                      .map((item: any) => item.name)
-                                      .join(",")}
-                                  </TableCell>
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                return (
+                                  <TableRow>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      Service{" "}
+                                      {product.teeth
+                                        .map((item: number) => item)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      {item
+                                        .map((item: any) => item.name)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 1
                               </TableCell> */}
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                    ${" "}
-                                    {item
-                                      .map((item: any) => item.price)
-                                      .join(",")}
-                                  </TableCell>
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
-                                    {product.discount || 0}%
-                                  </TableCell>
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                    $
-                                    {item
-                                      .map(
-                                        (item: any) =>
-                                          item.price -
-                                          (item.price *
-                                            (product.discount || 0)) /
-                                          100
-                                      )
-                                      .join(",")}
-                                  </TableCell>
-                                  <TableCell className="w-[1px] p-0">
-                                    <Separator
-                                      orientation="vertical"
-                                      className="h-full"
-                                    />
-                                  </TableCell>
-                                  <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                    ${" "}
-                                    {item
-                                      .map(
-                                        (item: any) =>
-                                          item.price -
-                                          (item.price *
-                                            (product.discount || 0)) /
-                                          100
-                                      )
-                                      .join(",")}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      ${" "}
+                                      {item
+                                        .map((item: any) => item.price)
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                                      {product.discount || 0}%
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      $
+                                      {item
+                                        .map(
+                                          (item: any) =>
+                                            item.price -
+                                            (item.price *
+                                              (product.discount || 0)) /
+                                              100
+                                        )
+                                        .join(",")}
+                                    </TableCell>
+                                    <TableCell className="w-[1px] p-0">
+                                      <Separator
+                                        orientation="vertical"
+                                        className="h-full"
+                                      />
+                                    </TableCell>
+                                    <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                      ${" "}
+                                      {item
+                                        .map(
+                                          (item: any) =>
+                                            item.price -
+                                            (item.price *
+                                              (product.discount || 0)) /
+                                              100
+                                        )
+                                        .join(",")}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
                             : null;
 
                           return (
@@ -2817,7 +2825,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusal_type
                                 ? caseDetail?.occlusal_type
                                 : caseDetail.custom_occulusal_details ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2828,7 +2836,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.contact_type
                                 ? caseDetail?.contact_type
                                 : caseDetail?.custom_contact_details ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2837,7 +2845,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.pontic_type
                                 ? caseDetail?.pontic_type
                                 : caseDetail?.custom_pontic_details ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                         </div>{" "}
@@ -2850,7 +2858,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.margin_design_type
                                 ? caseDetail?.margin_design_type
                                 : caseDetail?.custom_margin_design_type ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2861,7 +2869,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.occlusion_design_type
                                 ? caseDetail?.occlusion_design_type
                                 : caseDetail?.custom_occlusion_design_type ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                           <div>
@@ -2870,7 +2878,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               {caseDetail?.alloy_type
                                 ? caseDetail?.alloy_type
                                 : caseDetail?.custon_alloy_type ||
-                                "Not specified"}
+                                  "Not specified"}
                             </p>
                           </div>
                         </div>
@@ -3016,8 +3024,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           ?.map((file, index) => {
                             const fileName = file
                               ? decodeURIComponent(
-                                file.split("/").pop()?.split("?")[0] || ""
-                              )
+                                  file.split("/").pop()?.split("?")[0] || ""
+                                )
                               : "";
                             const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(
                               fileName
@@ -3070,10 +3078,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           })}
                         {(!caseDetail?.attachements ||
                           caseDetail.attachements.length === 0) && (
-                            <p className="text-sm text-gray-500">
-                              No attachments found
-                            </p>
-                          )}
+                          <p className="text-sm text-gray-500">
+                            No attachments found
+                          </p>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>

@@ -256,7 +256,6 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    debugger;
     e.preventDefault();
     try {
       if (!formData) return;
@@ -458,7 +457,6 @@ const EditClientForm: React.FC<EditClientFormProps> = ({
   };
 
   const handleMove = (index: number, direction: "up" | "down") => {
-    debugger;
     if (!formData?.doctors) return;
 
     const newDoctors = [...formData.doctors];
