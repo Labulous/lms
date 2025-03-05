@@ -301,7 +301,7 @@ const Dashboard: React.FC = () => {
         const isDueToday = (dueDate: string) => {
           const due = new Date(dueDate);
           console.log(
-            dueDate?.split("T")?.[0].split("-"),
+            dueDate?.split("T"),
             startOfToday.toDateString().split(" "),
             "dueDate"
           );
@@ -324,18 +324,33 @@ const Dashboard: React.FC = () => {
         // Function to check if a date is due tomorrow
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
+          console.log(
+            dueDate?.split("T")?.[0]?.split("-")[2],
+            Number(today.toDateString().split(" ")?.[2]) + 1,
+            "hiwifh"
+          );
+          console.log(
+            Number(
+              shortMonths.findIndex(
+                (item) =>
+                  item?.toLowerCase() ===
+                  tomorrow?.toDateString().split(" ")?.[1].toLowerCase()
+              )
+            ),
+            "hi2"
+          );
+
           return (
             Number(dueDate?.split("T")?.[0].split("-")?.[2]) ===
-              Number(tomorrow.toDateString().split(" ")?.[2]) &&
+              Number(today.toDateString().split(" ")?.[2]) + 1 &&
             Number(dueDate?.split("T")?.[0].split("-")?.[1]) ===
               Number(
                 shortMonths.findIndex(
                   (item) =>
                     item?.toLowerCase() ===
                     tomorrow?.toDateString().split(" ")?.[1].toLowerCase()
-                )
-              ) +
-                1
+                ) +1
+              )
             // due.getMonth() === tomorrow.getMonth() &&
             // due.getFullYear() === tomorrow.getFullYear()
           );

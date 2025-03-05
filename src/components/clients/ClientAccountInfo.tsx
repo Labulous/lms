@@ -212,7 +212,6 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   };
 
   const handleSave = async () => {
-    debugger;
     if (!editedData) return;
 
     try {
@@ -263,7 +262,6 @@ const ClientAccountInfo: React.FC<ClientAccountInfoProps> = ({
   };
 
   const handleMove = (index: number, direction: "up" | "down") => {
-    debugger;
     if (!editedData?.doctors) return;
 
     const newDoctors = [...editedData.doctors];

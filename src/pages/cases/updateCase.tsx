@@ -332,10 +332,10 @@ const UpdateCase: React.FC = () => {
           .eq("id", caseId)
           .single()
       : null,
-      {
-        revalidateOnFocus: true,
-        revalidateOnReconnect: true,
-      }
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    }
   );
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
@@ -402,6 +402,7 @@ const UpdateCase: React.FC = () => {
         })),
       }
     : null;
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const getCasesLength = async () => {
@@ -430,7 +431,6 @@ const UpdateCase: React.FC = () => {
     getCasesLength();
   }, [user?.id]);
   const handleSubmit = async (e: React.FormEvent) => {
-    debugger;
     e.preventDefault();
     setErrors({});
 
@@ -473,6 +473,14 @@ const UpdateCase: React.FC = () => {
     }
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      setTimeout(() => {
+        if (errorRef.current) {
+          errorRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100);
       return;
     }
     try {
@@ -526,7 +534,8 @@ const UpdateCase: React.FC = () => {
           enclosed_case_id: transformedData.enclosed_case_id,
           attachements: selectedFiles.map((item) => item.url),
           isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
-          isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
+          isDisplayDoctorAcctOnly:
+            transformedData.isDisplayDoctorAcctOnly || false,
           isHidePatientName: transformedData.isHidePatientName || false,
         },
         invoiceId: caseDetailApi?.invoice?.[0].id,
@@ -862,7 +871,7 @@ const UpdateCase: React.FC = () => {
           const updatedProduct = {
             ...product,
             services: servicesForSubRow || [],
-            commonServices:[...product?.services  || [], servicesForSubRow], // Initialize services as an empty array if not already defined
+            commonServices: [...(product?.services || []), servicesForSubRow], // Initialize services as an empty array if not already defined
             subRows: product.subRows?.map((subRow) => ({
               ...subRow,
               ...subRow.shades,

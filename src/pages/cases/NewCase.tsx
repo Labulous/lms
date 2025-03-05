@@ -27,7 +27,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
-  additional_lead_time:string,
+  additional_lead_time: string;
   doctors: {
     id: string;
     name: string;
@@ -189,9 +189,9 @@ const NewCase: React.FC = () => {
   } = useQuery(
     labIdData
       ? supabase
-        .from("clients")
-        .select(
-          `
+          .from("clients")
+          .select(
+            `
              id,
              client_name,
              account_number,
@@ -201,11 +201,11 @@ const NewCase: React.FC = () => {
              name
              )
             `
-        )
-        .eq("lab_id", labIdData.lab_id)
-        .or("isActive.is.null,isActive.eq.true")
-        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-        .order("client_name", { ascending: true })
+          )
+          .eq("lab_id", labIdData.lab_id)
+          .or("isActive.is.null,isActive.eq.true")
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+          .order("client_name", { ascending: true })
       : null,
     {
       revalidateOnFocus: false,
@@ -235,13 +235,13 @@ const NewCase: React.FC = () => {
     console.warn("No lab ID found.");
     return null;
   }
-  console.log(selectedServices, "selectedServices");
+  // Scroll to top when errors are set
+  const errorRef = useRef<HTMLDivElement | null>(null);
 
   // If no match is found, return null
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-    debugger;
 
     // Validation
     const validationErrors: Partial<FormData> = {};
@@ -260,7 +260,7 @@ const NewCase: React.FC = () => {
     if (!formData.status) validationErrors.statusError = "Status is Required";
     if (
       (selectedProducts.length === 1 && selectedProducts[0].id === "") ||
-      selectedProducts[0].type === ""
+      selectedProducts[0]?.type === ""
     )
       validationErrors.itemsError = "Atleast One Item Required";
 
@@ -294,8 +294,18 @@ const NewCase: React.FC = () => {
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+
+      setTimeout(() => {
+        if (errorRef.current) {
+          errorRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100);
       return;
     }
+
     try {
       setLoadingState({ isLoading: true, action: "save" });
       const transformedData = {
@@ -352,12 +362,13 @@ const NewCase: React.FC = () => {
             transformedData.caseDetails?.customOcclusalDesign,
           custon_alloy_type: transformedData.caseDetails?.customAlloy,
           isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
-          isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
+          isDisplayDoctorAcctOnly:
+            transformedData.isDisplayDoctorAcctOnly || false,
           isHidePatientName: transformedData.isHidePatientName || false,
         },
         products: selectedProducts,
         enclosedItems: transformedData.enclosedItems,
-        services: selectedServices
+        services: selectedServices,
       };
 
       // Add case to database
@@ -399,7 +410,6 @@ const NewCase: React.FC = () => {
     setClientSpecialServices(services as any);
   };
 
-  console.log(selectedProducts, "selected");
   return (
     <div
       className="p-6"
@@ -415,11 +425,11 @@ const NewCase: React.FC = () => {
           Create a New Case
         </h1>
 
-        <div className="bg-white shadow">
+        <div className="bg-white shadow" ref={errorRef}>
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>
           </div>
-          <div className="p-6 bg-slate-50">
+          <div className="p-6 bg-slate-50" >
             <OrderDetailsStep
               formData={formData}
               onChange={handleFormChange}

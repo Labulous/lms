@@ -532,7 +532,6 @@ const ProductsServices: React.FC = () => {
 
   // Batch delete function for services
   const handleServiceBatchDelete = async (selectedItems: any[]) => {
-    debugger;
     if (!selectedItems || selectedItems.length === 0) {
       toast.error("No items selected.");
       return;

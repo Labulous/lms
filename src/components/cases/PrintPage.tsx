@@ -6,7 +6,6 @@ interface PrintPageProps {
 }
 
 const PrintPage: React.FC<PrintPageProps> = ({ type }) => {
-  debugger;
   const renderContent = () => {
     switch (type) {
       case 'invoice':

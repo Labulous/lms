@@ -288,7 +288,6 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   };
 
   const handleSubmit = async () => {
-    debugger;
     if (!labId) {
       toast.error("Lab ID not available. Please try again.");
       return;

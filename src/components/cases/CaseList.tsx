@@ -124,7 +124,9 @@ const CaseList: React.FC = () => {
     pageSize: 10,
   });
   const [pageSize, setPageSize] = useState<number>(15);
-  const [selectedOrderCases, setSelectedOrderCases] = useState<ExtendedCase[]>([]);
+  const [selectedOrderCases, setSelectedOrderCases] = useState<ExtendedCase[]>(
+    []
+  );
 
   const pagination = useMemo(
     () => ({
@@ -657,7 +659,7 @@ const CaseList: React.FC = () => {
       ),
       cell: ({ row }) => {
         const dueDate = row.getValue("due_date") as string;
-        const parsedDate = new Date(date);
+        const parsedDate = new Date(dueDate);
         return date ? format(parsedDate, "MMM dd, yyyy") : "TBD";
 
         // const dueDate = row.getValue("due_date") as string;
@@ -680,8 +682,9 @@ const CaseList: React.FC = () => {
 
         return (
           rowDate.getFullYear() === value.getFullYear() &&
-          rowDate.getMonth() === value.getMonth() &&
-          rowDate.getDate() === formatedDate?.getDate()
+          rowDate.getMonth() === value.getMonth()&& 
+          dueDate?.split("T")?.[0].split("-")?.[2] ===
+          formatedDate?.toDateString().split(" ")?.[2]
         );
       },
     },
@@ -736,7 +739,6 @@ const CaseList: React.FC = () => {
               Print
             </DropdownMenuItem> */}
 
-
             <DropdownMenuItem
               onClick={() => {
                 handlePrintOptionSelect("lab-slip", [row.original.id]);
@@ -745,7 +747,6 @@ const CaseList: React.FC = () => {
               <Printer className="h-4 w-4 mr-2" />
               Lab Slip
             </DropdownMenuItem>
-
 
             {/* <DropdownMenuItem
               onClick={() => {
@@ -804,9 +805,9 @@ const CaseList: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-        .from("cases")
-        .select(
-          `
+          .from("cases")
+          .select(
+            `
        id,
         created_at,
         received_date,
@@ -966,10 +967,10 @@ const CaseList: React.FC = () => {
           )
           )
     `
-        )
-        .eq("lab_id", labIdData?.lab_id)
-        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-        .order("created_at", { ascending: false })
+          )
+          .eq("lab_id", labIdData?.lab_id)
+          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+          .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true,
@@ -1358,7 +1359,6 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
-    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1371,24 +1371,6 @@ const CaseList: React.FC = () => {
       caseData:
         selectedCases.length > 0
           ? selectedCases.map((caseItem) => ({
-            id: caseItem.id,
-            patient_name: caseItem.patient_name,
-            case_number: caseItem.case_number,
-            qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-            client: caseItem.client,
-            doctor: caseItem.doctor,
-            created_at: caseItem.created_at,
-            //due_date: caseItem.due_date,
-            due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
-            tag: caseItem.tag,
-          }))
-          : cases
-            .filter((item) =>
-              selectedId && selectedId.length > 0
-                ? selectedId.includes(item.id)
-                : selectedCasesIds.includes(item.id)
-            )
-            .map((caseItem) => ({
               id: caseItem.id,
               patient_name: caseItem.patient_name,
               case_number: caseItem.case_number,
@@ -1397,16 +1379,38 @@ const CaseList: React.FC = () => {
               doctor: caseItem.doctor,
               created_at: caseItem.created_at,
               //due_date: caseItem.due_date,
-              due_date: calculateDueDate(caseItem.due_date, caseItem.client ?? undefined),
+              due_date: calculateDueDate(
+                caseItem.due_date,
+                caseItem.client ?? undefined
+              ),
               tag: caseItem.tag,
-            })),
+            }))
+          : cases
+              .filter((item) =>
+                selectedId && selectedId.length > 0
+                  ? selectedId.includes(item.id)
+                  : selectedCasesIds.includes(item.id)
+              )
+              .map((caseItem) => ({
+                id: caseItem.id,
+                patient_name: caseItem.patient_name,
+                case_number: caseItem.case_number,
+                qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+                client: caseItem.client,
+                doctor: caseItem.doctor,
+                created_at: caseItem.created_at,
+                //due_date: caseItem.due_date,
+                due_date: calculateDueDate(
+                  caseItem.due_date,
+                  caseItem.client ?? undefined
+                ),
+                tag: caseItem.tag,
+              })),
       caseDetails: cases.filter((item) =>
         selectedId && selectedId.length > 0
           ? selectedId.includes(item.id)
           : selectedCasesIds.includes(item.id)
       ),
-
-
     };
 
     // Use a fixed storage key so that the data always overrides the previous entry.
@@ -1418,9 +1422,10 @@ const CaseList: React.FC = () => {
     window.open(previewUrl, "_blank");
   };
 
-
   const handlePrintSelectedOrder = () => {
-    const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
+    const selectedCases = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original);
 
     if (selectedCases.length === 0) {
       alert("Please select at least one case to print.");
@@ -1497,18 +1502,24 @@ const CaseList: React.FC = () => {
           </thead>
           <tbody>
             ${selectedCases
-        .map(
-          (caseItem) => `
+              .map(
+                (caseItem) => `
                 <tr>
                   <td>
-                    <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"};"></span>
+                    <span class="color-box" style="background-color: ${
+                      caseItem.working_pan_color || "white"
+                    };"></span>
                     ${caseItem.working_pan_name || ""}
                   </td>
                   <td>
-                    ${caseItem?.tag?.name
-                      ? `<span class="color-box" style="background-color: ${caseItem.tag.color};"></span>
+                    ${
+                      caseItem?.tag?.name
+                        ? `<span class="color-box" style="background-color: ${
+                            caseItem.tag.color
+                          };"></span>
                         ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
-                      : ""}
+                        : ""
+                    }
                   </td>
                   <td>${caseItem.case_number}</td>
                   <td>${caseItem.patient_name}</td>
@@ -1519,8 +1530,8 @@ const CaseList: React.FC = () => {
                   <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
                 </tr>
               `
-        )
-        .join("")}
+              )
+              .join("")}
           </tbody>
         </table>
   
@@ -1538,8 +1549,6 @@ const CaseList: React.FC = () => {
 
     printWindow.document.close();
   };
-
-
 
   // const handlePrintSelectedOrder = () => {
   //   const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
@@ -1594,7 +1603,7 @@ const CaseList: React.FC = () => {
   //         }
   //       </style>
   //     </head>
-  //     <body>       
+  //     <body>
   //       <table>
   //         <thead>
   //           <tr>
@@ -1642,11 +1651,6 @@ const CaseList: React.FC = () => {
   //   printWindow.document.close();
   // };
 
-
-
-
-
-
   if (!arragedNewCases) {
     return <div>Loading...</div>;
   }
@@ -1654,9 +1658,6 @@ const CaseList: React.FC = () => {
   //   return <div>Error: {error}</div>;
   // }
   const amount = 20133;
-
-
-
 
   return (
     <div className="space-y-6">
@@ -1752,9 +1753,9 @@ const CaseList: React.FC = () => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -1851,7 +1852,6 @@ function getContrastColor(hexcolor: string): string {
   // Return black or white depending on background color luminance
   return luminance > 0.5 ? "#000000" : "#ffffff";
 }
-
 
 // export function calculateDueDate(
 //   dueDate?: string,
