@@ -741,7 +741,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                           ] || TYPE_COLORS.Other,
                                       }}
                                     >
-                                      Bridge:
+                                      Pontic:
                                     </span>
                                     #
                                     {formatTeethRange(
@@ -1518,36 +1518,36 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     //     .join("")}`;
     // };
 
-    const services = teeth?.service
-      ? Object.values(
-          teeth.service.reduce(
-            (
-              acc: Record<string, { name: string; teeth: number[] }>,
-              {
-                service,
-                teeth_number,
-              }: { service: { name: string }; teeth_number: number[] }
-            ) => {
-              const serviceName = service.name;
+    // const services = teeth?.service
+    //   ? Object.values(
+    //       teeth?.service?.reduce(
+    //         (
+    //           acc: Record<string, { name: string; teeth: number[] }>,
+    //           {
+    //             service,
+    //             teeth_number,
+    //           }: { service: { name: string }; teeth_number: number[] }
+    //         ) => {
+    //           const serviceName = service.name;
 
-              if (!acc[serviceName]) {
-                acc[serviceName] = {
-                  name: serviceName,
-                  teeth: [],
-                };
-              }
+    //           if (!acc[serviceName]) {
+    //             acc[serviceName] = {
+    //               name: serviceName,
+    //               teeth: [],
+    //             };
+    //           }
 
-              // Merge teeth numbers and remove duplicates
-              acc[serviceName].teeth = Array.from(
-                new Set([...acc[serviceName].teeth, ...teeth_number])
-              );
+    //           // Merge teeth numbers and remove duplicates
+    //           acc[serviceName].teeth = Array.from(
+    //             new Set([...acc[serviceName].teeth, ...teeth_number])
+    //           );
 
-              return acc;
-            },
-            {} as Record<string, { name: string; teeth: number[] }>
-          )
-        )
-      : [];
+    //           return acc;
+    //         },
+    //         {} as Record<string, { name: string; teeth: number[] }>
+    //       )
+    //     )
+    //   : [];
 
     const groupShades: any = teethproducts
       ? Object.values(
@@ -1726,7 +1726,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
-                                Bridge:
+                                Pontic:
                               </span>
                               #
                               {formatTeethRange(
@@ -2228,7 +2228,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${products?.length} gap-0`}>
+            <div className={`grid grid-cols-${products?.length <6 ? products?.length : 3} gap-0`}>
               {products?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
