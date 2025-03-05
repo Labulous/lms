@@ -21,6 +21,7 @@ import PerformanceMetricsCard from "../components/operations/PerformanceMetricsC
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import CaseList from "@/components/cases/CaseList";
 import moment from "moment";
+import { shortMonths } from "@/lib/months";
 
 interface WorkstationIssue {
   id: string;
@@ -290,24 +291,53 @@ const Dashboard: React.FC = () => {
         // Set the start and end of today to compare full date range
         const startOfToday = new Date(today);
         startOfToday.setHours(0, 0, 0, 0); // Set hours to 12:00 AM (UTC)
-
         // End of today in UTC (11:59:59.999 PM UTC)
         const endOfToday = new Date(today);
+        console.log(startOfToday, "endOfToday");
+        console.log(endOfToday, "endOfToday");
         endOfToday.setHours(23, 59, 59, 999); //
 
         // Function to check if a date is due today
         const isDueToday = (dueDate: string) => {
           const due = new Date(dueDate);
-          return due >= startOfToday && due <= endOfToday;
+          console.log(
+            dueDate?.split("T")?.[0].split("-"),
+            startOfToday.toDateString().split(" "),
+            "dueDate"
+          );
+
+          return (
+            dueDate?.split("T")?.[0].split("-")?.[2] ===
+              startOfToday.toDateString().split(" ")?.[2] &&
+            Number(dueDate?.split("T")?.[0].split("-")?.[1]) ===
+              Number(
+                shortMonths.findIndex(
+                  (item) =>
+                    item.toLowerCase() ===
+                    startOfToday.toDateString().split(" ")?.[1].toLowerCase()
+                )
+              ) +
+                1
+          );
         };
 
         // Function to check if a date is due tomorrow
         const isDueTomorrow = (dueDate: string) => {
           const due = new Date(dueDate);
           return (
-            due.getDay() === tomorrow.getDay() &&
-            due.getMonth() === tomorrow.getMonth() &&
-            due.getFullYear() === tomorrow.getFullYear()
+            Number(dueDate?.split("T")?.[0].split("-")?.[2]) ===
+              Number(tomorrow.toDateString().split(" ")?.[2]) &&
+            Number(dueDate?.split("T")?.[0].split("-")?.[1]) ===
+              Number(
+                shortMonths.findIndex(
+                  (item) =>
+                    item?.toLowerCase() ===
+                    tomorrow?.toDateString().split(" ")?.[1].toLowerCase()
+                )
+              ) +
+                1
+            // due.getMonth() === tomorrow.getMonth() &&
+            // due.getFullYear() === tomorrow.getFullYear()
           );
         };
 
@@ -319,6 +349,7 @@ const Dashboard: React.FC = () => {
             caseItem.status !== "on_hold" &&
             caseItem.status !== "cancelled"
         );
+        console.log(casesList, "casesList");
         const dueToday = casesList.filter(
           //active
           (caseItem) =>
@@ -676,7 +707,15 @@ const Dashboard: React.FC = () => {
               Good {getTimeOfDay()}, {user?.name}!
             </h2>
             <p className="text-gray-500">
-              {`Here is what is happening in your lab on ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.`}
+              {`Here is what is happening in your lab on ${new Date().toLocaleDateString(
+                "en-US",
+                {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                }
+              )}.`}
             </p>
           </div>
         </div>

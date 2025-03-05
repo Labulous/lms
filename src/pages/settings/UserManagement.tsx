@@ -118,6 +118,7 @@ export const UserManagement: React.FC = () => {
     admin: [
       { label: "Admin", role: "admin" },
       { label: "Technician", role: "technician" },
+
     ],
   };
   const navigate = useNavigate();
@@ -135,7 +136,8 @@ export const UserManagement: React.FC = () => {
         .from("users")
         .select("*")
         .eq("lab_id", labData.labId)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .or("is_archive.is.null,is_archive.eq.false");
 
       if (error) throw error;
       setUsers(data || []);
@@ -146,7 +148,7 @@ export const UserManagement: React.FC = () => {
       setLoading(false);
     }
   };
-
+  console.log(users, "users");
   useEffect(() => {
     const fetchCurrentUser = async () => {
       const user = await getCurrentUser();
@@ -360,18 +362,25 @@ export const UserManagement: React.FC = () => {
   };
 
   const handleDeleteClient = async (user: Users) => {
-    if (!window.confirm("Are you sure you want to delete this client?")) {
-      return;
-    }
     console.log(user, "user deleted");
+
     try {
-      await clientsService.deleteClient(user.id);
+      const { error } = await supabase
+        .from("users")
+        .update({ is_archive: true })
+        .eq("id", user.id);
+
+      if (error) {
+        throw error;
+      }
+
       await fetchUsers(); // Refresh the list
       toast.success("Client deleted successfully");
     } catch (err: any) {
       toast.error(err.message || "Failed to delete client");
     }
   };
+
   const handleDoctorChange = (
     index: number,
     field: keyof Doctor,

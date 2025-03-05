@@ -90,7 +90,9 @@ export const LABProfile: React.FC = () => {
         ))
       `
         )
-        .eq("id", user?.id);
+        .eq("id", user?.id)
+        .or("is_archive.is.null,is_archive.eq.false");
+
       console.log(data, "data");
       if (error) {
         throw new Error(error.message);

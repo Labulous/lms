@@ -151,7 +151,9 @@ id
           `
           )
           .eq("lab_id", lab.labId)
-          .eq("role", "technician");
+          .eq("role", "technician")
+          .or("is_archive.is.null,is_archive.eq.false");
+
 
         if (techniciansError) {
           toast.error("faild to fetch Technicians!!!");

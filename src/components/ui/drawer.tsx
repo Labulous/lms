@@ -1,26 +1,26 @@
-import * as React from "react"
-import { Drawer as DrawerPrimitive } from "vaul"
+import * as React from "react";
+import { Drawer as DrawerPrimitive } from "vaul";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const Drawer = ({
   shouldScaleBackground = true,
   ...props
 }: React.ComponentProps<typeof DrawerPrimitive.Root> & {
-  direction?: "bottom" | "right"
+  direction?: "bottom" | "right";
 }) => (
   <DrawerPrimitive.Root
     shouldScaleBackground={shouldScaleBackground}
     {...props}
   />
-)
-Drawer.displayName = "Drawer"
+);
+Drawer.displayName = "Drawer";
 
-const DrawerTrigger = DrawerPrimitive.Trigger
+const DrawerTrigger = DrawerPrimitive.Trigger;
 
-const DrawerPortal = DrawerPrimitive.Portal
+const DrawerPortal = DrawerPrimitive.Portal;
 
-const DrawerClose = DrawerPrimitive.Close
+const DrawerClose = DrawerPrimitive.Close;
 
 const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Overlay>,
@@ -31,13 +31,13 @@ const DrawerOverlay = React.forwardRef<
     className={cn("fixed inset-0 z-50 bg-black/80", className)}
     {...props}
   />
-))
-DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
+));
+DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
 
 const DrawerContent = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
-    direction?: "bottom" | "right"
+    direction?: "bottom" | "right";
   }
 >(({ className, children, direction = "bottom", ...props }, ref) => (
   <DrawerPortal>
@@ -46,18 +46,22 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed z-50 bg-background",
-        direction === "right" 
-          ? "inset-y-0 right-0 h-full flex w-3/4 flex-col border-l translate-x-full data-[state=open]:translate-x-0 transition-transform duration-300" 
+        direction === "right"
+          ? "inset-y-0 right-0 h-full flex w-3/4 flex-col border-l translate-x-full data-[state=open]:translate-x-0 transition-transform duration-300"
           : "inset-x-0 bottom-0 border-t",
         className
       )}
       {...props}
+      onCloseAutoFocus={(event) => {
+        event.preventDefault();
+        document.body.style.pointerEvents = "";
+      }}
     >
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>
-))
-DrawerContent.displayName = DrawerPrimitive.Content.displayName
+));
+DrawerContent.displayName = DrawerPrimitive.Content.displayName;
 
 const DrawerHeader = ({
   className,
@@ -70,8 +74,8 @@ const DrawerHeader = ({
     )}
     {...props}
   />
-)
-DrawerHeader.displayName = "DrawerHeader"
+);
+DrawerHeader.displayName = "DrawerHeader";
 
 const DrawerFooter = ({
   className,
@@ -84,8 +88,8 @@ const DrawerFooter = ({
     )}
     {...props}
   />
-)
-DrawerFooter.displayName = "DrawerFooter"
+);
+DrawerFooter.displayName = "DrawerFooter";
 
 const DrawerTitle = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Title>,
@@ -96,8 +100,8 @@ const DrawerTitle = React.forwardRef<
     className={cn("text-lg font-semibold text-foreground", className)}
     {...props}
   />
-))
-DrawerTitle.displayName = DrawerPrimitive.Title.displayName
+));
+DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
 
 const DrawerDescription = React.forwardRef<
   React.ElementRef<typeof DrawerPrimitive.Description>,
@@ -108,8 +112,8 @@ const DrawerDescription = React.forwardRef<
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
-))
-DrawerDescription.displayName = DrawerPrimitive.Description.displayName
+));
+DrawerDescription.displayName = DrawerPrimitive.Description.displayName;
 
 export {
   Drawer,
@@ -122,4 +126,4 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
-}
+};

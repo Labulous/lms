@@ -1,3 +1,4 @@
+import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { createLogger } from "../utils/logger";
 import { Database, labDetail } from "@/types/supabase";
@@ -277,6 +278,7 @@ export const createUserByAdmins = async (
   email: string,
   phone: string,
   password: string,
+  // user_id: string,
   additionalClientFields?: {
     accountNumber: string;
     clientName: string;
@@ -308,7 +310,7 @@ export const createUserByAdmins = async (
     }
 
     if (authData.length > 0) {
-      throw new Error("User already exists in Supabase Auth.");
+      toast.error("User already exists in Supabase Auth.")
     }
 
     // 2. Sign up the new user in Supabase Auth
@@ -337,19 +339,22 @@ export const createUserByAdmins = async (
     }
 
     // 3. Insert the new user into the 'users' table with the specified role
-    const { error: insertError } = await supabase.from("users").insert([
-      {
-        id: newUserId,
-        name: name,
-        email: email,
-        firstname: firstname,
-        lastname: lastname,
-        lab_id: labId,
-        phone: phone,
-        role: role, // Set the role as provided
-      },
-    ]);
-
+    const { data: insertedData, error: insertError } = await supabase
+      .from("users")
+      .insert([
+        {
+          id: newUserId,
+          name: name,
+          email: email,
+          firstname: firstname,
+          lastname: lastname,
+          lab_id: labId,
+          phone: phone,
+          role: role, // Set the role as provided
+        },
+      ])
+      .select("*");
+    console.log(insertedData, "insertedData");
     if (insertError) {
       console.error("Error inserting user into users table:", insertError);
       throw insertError;
@@ -391,7 +396,6 @@ export const createUserByAdmins = async (
         throw clientInsertError;
       }
     }
-
     // 5. Update the lab table to add the user ID or email to the appropriate field based on the role
     const fieldToUpdate =
       role === "admin"

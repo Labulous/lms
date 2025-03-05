@@ -628,71 +628,44 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts];
 
-      // Initialize services array if it's undefined
-      if (!updatedProducts[index].services) {
-        updatedProducts[index].services = [];
+      // Ensure mainServices array exists
+      if (!updatedProducts[index].commonServices) {
+        updatedProducts[index].commonServices = [];
       }
 
-      // If isServicesAll is true, keep the existing code to add services and subRow services
-      if (updatedProducts[index].isServicesAll === true) {
-        updatedProducts[index] = {
-          ...updatedProducts[index],
-          services: [
-            ...updatedProducts[index].services, // Add existing services
-            {
-              id: service.id as string,
-              name: service.name,
-              price:
-                clientSpecialServices?.filter(
-                  (item) => item.service_id === service.id
-                )?.[0]?.price || service.price,
-              is_taxable: service.is_taxable,
-              discount: service.discount || (0 as number),
-            },
-          ],
-          subRows: updatedProducts?.[index]?.subRows?.map((item) => ({
-            ...item,
-            services: [
-              ...(item?.services || []), // Add existing subRow services if available
-              {
-                id: service.id as string,
-                name: service.name,
-                price:
-                  clientSpecialServices?.filter(
-                    (item) => item.service_id === service.id
-                  )?.[0]?.price || service.price,
-                is_taxable: service.is_taxable,
-                discount: service.discount || (0 as number),
-              },
-            ],
-          })),
-        };
-
-        // Clear the mainServices if isServicesAll is true
-        updatedProducts[index].mainServices = [];
-      } else {
-        // If isServicesAll is false, set mainServices and clear subRow services
-        updatedProducts[index] = {
-          ...updatedProducts[index],
-          mainServices: [
-            ...(updatedProducts[index].mainServices || []), // Keep existing mainServices
-            {
-              id: service.id as string,
-              name: service.name,
-              price:
-                clientSpecialServices?.filter(
-                  (item) => item.service_id === service.id
-                )?.[0]?.price || service.price,
-              is_taxable: service.is_taxable,
-              discount: service.discount || (0 as number),
-            },
-          ],
-          subRows: updatedProducts[index]?.subRows?.map((item) => ({
-            ...item,
-            services: [], // Clear subRow services
-          })),
-        };
-      }
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        commonServices: [
+          ...(updatedProducts[index].commonServices || []), // Keep existing mainServices
+          {
+            id: service.id as string,
+            name: service.name,
+            price:
+              clientSpecialServices?.find(
+                (item) => item.service_id === service.id
+              )?.price || service.price,
+            is_taxable: service.is_taxable,
+            discount: service.discount || 0,
+            add_to_all: false,
+          },
+        ],
+      };
+      updatedProducts[index] = {
+        ...updatedProducts[index],
+        mainServices: [
+          ...(updatedProducts[index].mainServices || []), // Keep existing mainServices
+          {
+            id: service.id as string,
+            name: service.name,
+            price:
+              clientSpecialServices?.find(
+                (item) => item.service_id === service.id
+              )?.price || service.price,
+            is_taxable: service.is_taxable,
+            discount: service.discount || 0,
+          },
+        ],
+      };
 
       return updatedProducts;
     });
@@ -802,24 +775,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
         let updatedProducts = prevSelectedProducts.map((product) => {
           // Remove the service from the main services array
-          console.log(product, "product", id);
-          const updatedMainServices =
-            product.mainServices?.filter((service) => service.id !== id) || [];
-
-          return {
-            ...product,
-            mainServices: updatedMainServices, // Update the main services array
-          };
-        });
-
-        return updatedProducts;
-      });
-    } else {
-      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-        let updatedProducts = prevSelectedProducts.map((product) => {
-          // Remove the service from the main services array
           const updatedServices =
             product.services?.filter((service) => service.id !== id) || [];
+          console.log(updatedServices, "updatedServices");
+          const updatedCommonServices =
+            product.commonServices?.filter((service) => service.id !== id) ||
+            [];
 
           // Remove the service from subRows' services array
           const updatedSubRows = product.subRows?.map((subRow, index) => {
@@ -835,6 +796,38 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
           return {
             ...product,
+            commonServices: updatedCommonServices,
+            services: updatedServices, // Update the main services array
+            subRows: updatedSubRows, // Update the subRows with the modified services
+          };
+        });
+
+        return updatedProducts;
+      });
+    } else {
+      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+        let updatedProducts = prevSelectedProducts.map((product) => {
+          // Remove the service from the main services array
+          const updatedServices =
+            product.services?.filter((service) => service.id !== id) || [];
+          console.log(updatedServices, "updatedServices");
+          const updatedCommonServices =
+            product.commonServices?.filter((service) => service.id !== id) ||
+            [];
+
+          // Remove the service from subRows' services array
+          const updatedSubRows = product.subRows?.map((subRow, index) => {
+            return {
+              ...subRow,
+              services:
+                subRow.services?.filter((service) => service.id !== id) || [],
+            };
+            return subRow; // Keep other subRows unchanged
+          });
+
+          return {
+            ...product,
+            commonServices: updatedCommonServices,
             services: updatedServices, // Update the main services array
             subRows: updatedSubRows, // Update the subRows with the modified services
           };
@@ -852,7 +845,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
-
+console.log(index,SubIndex,"index subIndex")
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
         // Create a copy of the previous selected products to avoid direct mutation
@@ -888,6 +881,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           // Assign the updated subRows back to the selected product
           updatedProducts[index] = {
             ...updatedProducts[index],
+          
             subRows: updatedSubRows,
           };
 
@@ -896,6 +890,20 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
           // If subRows does not exist at all, initialize it with the new item
           updatedProducts[index] = {
             ...updatedProducts[index],
+            commonServices: [
+              ...(updatedProducts[index].commonServices || []), // Ensure it's an array
+              {
+                id: product.id,
+                name: product.name,
+                price:
+                  clientSpecialProducts?.find(
+                    (item) => item.product_id === product.id
+                  )?.price || product.price,
+                add_to_all: false,
+                discount: 0,
+                is_taxable: false,
+              },
+            ],
             subRows: [
               {
                 ...updatedProducts[index],
@@ -1466,9 +1474,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
                     <TableCell className="border-b">
                       <Popover
-                        open={openTeethPopover === row.id+index}
+                        open={openTeethPopover === row.id + index}
                         onOpenChange={(open) => {
-                          setOpenTeethPopover(open ? row.id+index : null);
+                          setOpenTeethPopover(open ? row.id + index : null);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -1559,30 +1567,23 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-7 text-sm w-full justify-start text-left text-xs"
+                            className="h-7 w-full justify-start text-left text-xs"
                             disabled={!row.id && row.type !== "Service"}
                             onClick={() => toggleServicesPopover(index)}
                           >
-                            {row.isServicesAll ? (
-                              row?.services?.length === 0 || !row?.services ? (
-                                "Add Services"
-                              ) : (
-                                <span className="text-blue-600">
-                                  {row?.services?.length} Common Services Added
-                                </span>
-                              )
-                            ) : row?.mainServices?.length === 0 ||
-                              !row?.mainServices ? (
-                              "Add Services"
-                            ) : (
+                            {row?.commonServices &&
+                            row?.commonServices?.length > 0 ? (
                               <span className="text-blue-600">
-                                {row?.mainServices?.length} Services Added
+                                {row?.commonServices?.length} Common Services
+                                Added
                               </span>
+                            ) : (
+                              "Add Services"
                             )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent
-                          className="w-80 p-3"
+                          className="w-[25rem] p-3"
                           onEscapeKeyDown={(e) => {
                             e.preventDefault();
                             setServicesPopoverOpen((prev) => {
@@ -1601,146 +1602,193 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                           }}
                           align="end"
                         >
-                          <div className="space-y-2 w-full">
-                            <div className="flex justify-between w-full">
-                              <Label className="text-xs">Add Services</Label>
-
-                              <div className="flex gap-2">
-                                <span
-                                  className={`text-sm flex justify-center items-center`}
-                                >
-                                  Add to All
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  checked={row.isServicesAll}
-                                  className="  cursor-pointer"
-                                  onClick={
-                                    () => {
-                                      setselectedProducts(
-                                        (products: SavedProduct[]) => {
-                                          // Directly toggle the value of isServicesAll for the product at the specified index
-                                          products[index].isServicesAll =
-                                            !products[index].isServicesAll;
-
-                                          return [...products]; // Return the updated array (even though it's the same array, react needs a new reference)
-                                        }
-                                      );
-                                      setselectedProducts(
+                          <div className="w-full">
+                            <div className="w-full">
+                              <div className="flex justify-between mb-4">
+                                <div>
+                                  <h2>Add Additional Services </h2>
+                                </div>
+                                <div className="flex gap-2">
+                                  <div className="text-blue-600">
+                                    <p className="text-xs">
+                                      <span className="font-bold">
                                         (
-                                          prevSelectedProducts: SavedProduct[]
-                                        ) => {
-                                          let updatedProducts = [
-                                            ...prevSelectedProducts,
-                                          ];
-
-                                          // Initialize services array if it's undefined
-                                          if (
-                                            !updatedProducts[index].services
-                                          ) {
-                                            updatedProducts[index].services =
-                                              [];
-                                          }
-
-                                          updatedProducts[index] = {
-                                            ...updatedProducts[index],
-                                            services: [],
-                                            subRows: updatedProducts?.[
-                                              index
-                                            ]?.subRows?.map((item) => ({
-                                              ...item,
-                                              services: [],
-                                            })),
-                                          };
-
-                                          return updatedProducts;
+                                        {
+                                          row?.commonServices?.filter(
+                                            (item) => !item?.add_to_all
+                                          ).length
                                         }
-                                      );
+                                        )
+                                      </span>
+                                      common Services
+                                    </p>
+                                    <p className="text-xs">
+                                      <span className="font-bold">
+                                        (
+                                        {
+                                          row?.commonServices?.filter(
+                                            (item) => item?.add_to_all
+                                          ).length
+                                        }
+                                        )
+                                      </span>{" "}
+                                      Individual Services
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size={"sm"}
+                                    onClick={() =>
+                                      setServicesPopoverOpen((prev) => {
+                                        const updated = new Map(prev);
+                                        updated.set(index, false);
+                                        return updated;
+                                      })
                                     }
-                                    // setServicesPopoverOpen((prev) => {
-                                    //   const updated = new Map(prev);
-                                    //   updated.set(index, false);
-                                    //   return updated;
-                                    // })
-                                  }
-                                ></input>
-                                <Button
-                                  size="sm"
-                                  onClick={() =>
-                                    setServicesPopoverOpen((prev) => {
-                                      const updated = new Map(prev);
-                                      updated.set(index, false);
-                                      return updated;
-                                    })
-                                  }
-                                >
-                                  Save
-                                </Button>
+                                  >
+                                    Save
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 gap-2 w-full">
+                                {row?.commonServices?.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center gap-1 justify-between"
+                                  >
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={item.add_to_all}
+                                        className="cursor-pointer"
+                                        onChange={() => {
+                                          setselectedProducts(
+                                            (products: SavedProduct[]) => {
+                                              const updatedProducts = [
+                                                ...products,
+                                              ];
+                                              const currentProduct =
+                                                updatedProducts[index];
+
+                                              // Toggle `add_to_all` for this service
+                                              item.add_to_all =
+                                                !item.add_to_all;
+
+                                              if (item.add_to_all) {
+                                                // Move service to `row.services` & `row.subRows.services`
+                                                currentProduct.services = [
+                                                  ...(currentProduct.services ||
+                                                    []),
+                                                  item,
+                                                ].filter(
+                                                  (v, i, a) =>
+                                                    a.findIndex(
+                                                      (t) => t.id === v.id
+                                                    ) === i
+                                                ); // Ensure no duplicates
+
+                                                // Sync subRows services
+                                                currentProduct.subRows =
+                                                  currentProduct.subRows?.map(
+                                                    (subRow) => ({
+                                                      ...subRow,
+                                                      services: [
+                                                        ...(currentProduct?.services ||
+                                                          []),
+                                                      ],
+                                                    })
+                                                  ) || [];
+
+                                                // Remove from mainServices
+                                                currentProduct.mainServices =
+                                                  currentProduct.mainServices?.filter(
+                                                    (service) =>
+                                                      service.id !== item.id
+                                                  ) || [];
+                                              } else {
+                                                // Move service to `row.mainServices` & remove from `services` & `subRows.services`
+                                                currentProduct.mainServices = [
+                                                  ...(currentProduct.mainServices ||
+                                                    []),
+                                                  item,
+                                                ].filter(
+                                                  (v, i, a) =>
+                                                    a.findIndex(
+                                                      (t) => t.id === v.id
+                                                    ) === i
+                                                ); // Ensure no duplicates
+
+                                                // Remove from services
+                                                currentProduct.services =
+                                                  currentProduct.services?.filter(
+                                                    (service) =>
+                                                      service.id !== item.id
+                                                  ) || [];
+
+                                                // Remove from subRows services
+                                                currentProduct.subRows =
+                                                  currentProduct.subRows?.map(
+                                                    (subRow) => ({
+                                                      ...subRow,
+                                                      services:
+                                                        subRow.services?.filter(
+                                                          (service) =>
+                                                            service.id !==
+                                                            item.id
+                                                        ),
+                                                    })
+                                                  ) || [];
+                                              }
+
+                                              return updatedProducts;
+                                            }
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-xs flex justify-center items-center">
+                                        Add to All
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-center items-center">
+                                      <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
+                                        <p>{item.name}</p>
+                                        <p>{item.price}</p>
+                                      </div>
+                                      <X
+                                        onClick={() =>
+                                          handleRemoveServices(
+                                            item.id as string,
+                                            true
+                                          )
+                                        }
+                                        className="w-4 h-4 text-red-500 cursor-pointer"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                            <MultiColumnServiceSelector
-                              materials={MATERIALS}
-                              services={services}
-                              selectedService={{
-                                id: selectedServices?.[index]?.id ?? "",
-                                name:
-                                  selectedServices?.[index]?.name?.length > 0
-                                    ? selectedServices?.[index]?.name
-                                    : "Select a service",
-                                price: selectedServices?.[index]?.price ?? 0,
-                                is_taxable:
-                                  selectedServices?.[index]?.is_taxable,
-                              }}
-                              onServiceSelect={(service) => {
-                                handleServiceSelect(service, index);
-                              }}
-                              disabled={loading || row.teeth.length === 0}
-                              size="xs"
-                              onClick={() => fetchServices()}
-                              clientSpecialServices={clientSpecialServices}
-                            />
-                            <div className="w-full">
-                              <div className="grid grid-cols-1 gap-2 w-full">
-                                {row.isServicesAll
-                                  ? row?.services?.map((item) => {
-                                      return (
-                                        <div className="flex items-center justify-center">
-                                          <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
-                                            <p>{item.name}</p>
-                                            <p>{item.price}</p>
-                                          </div>
-                                          <X
-                                            onClick={() =>
-                                              handleRemoveServices(
-                                                item.id as string,
-                                                true
-                                              )
-                                            }
-                                            className="w-4 h-4 text-red-500 cursor-pointer"
-                                          />
-                                        </div>
-                                      );
-                                    })
-                                  : row?.mainServices?.map((item) => {
-                                      return (
-                                        <div className="flex items-center justify-center">
-                                          <div className="flex justify-between w-full border rounded-sm p-1 text-xs">
-                                            <p>{item.name}</p>
-                                            <p>{item.price}</p>
-                                          </div>
-                                          <X
-                                            onClick={() =>
-                                              handleRemoveServices(
-                                                item.id as string,
-                                                false
-                                              )
-                                            }
-                                            className="w-4 h-4 text-red-500 cursor-pointer"
-                                          />
-                                        </div>
-                                      );
-                                    })}
-                              </div>
+                            <div className="mt-2">
+                              <MultiColumnServiceSelector
+                                materials={MATERIALS}
+                                services={services}
+                                selectedService={{
+                                  id: selectedServices?.[index]?.id ?? "",
+                                  name:
+                                    selectedServices?.[index]?.name?.length > 0
+                                      ? selectedServices?.[index]?.name
+                                      : "Select a service",
+                                  price: selectedServices?.[index]?.price ?? 0,
+                                  is_taxable:
+                                    selectedServices?.[index]?.is_taxable,
+                                }}
+                                onServiceSelect={(service) => {
+                                  handleServiceSelect(service, index);
+                                }}
+                                disabled={loading || row.teeth.length === 0}
+                                size="xs"
+                                onClick={() => fetchServices()}
+                                clientSpecialServices={clientSpecialServices}
+                              />
                             </div>
                           </div>
                         </PopoverContent>
@@ -2997,9 +3045,9 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                       </Button>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.includes(row.id+index) &&
+                  {expandedRows.includes(row.id + index) &&
                     row?.subRows &&
-                    row?.subRows?.length > 1 &&
+                    row?.subRows?.length >= 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
                       let originalIndex = subIndex;
                       subIndex = subIndex + 100;
@@ -3128,13 +3176,13 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               }
                             >
                               <PopoverTrigger asChild>
-                                <Button
+                                {/* <Button
                                   variant="ghost"
                                   size="icon"
                                   className={cn(
                                     "h-6 w-6",
                                     row.notes ? "text-blue-600" : "",
-                                    "hover:text-blue-600"
+                                    "hover:text-blue-600 ml-5"
                                   )}
                                   disabled={!row.id && row.type !== "Service"}
                                   onClick={() =>
@@ -3159,6 +3207,29 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                       )}
                                     </span>
                                   </Button>
+                                </Button> */}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 w-full justify-start text-left text-xs"
+                                  disabled={!row.id && row.type !== "Service"}
+                                  onClick={() => toggleServicesPopover(subIndex + index + 100 + originalIndex)}
+                                >
+                                  {row?.commonServices?.length === 0 ? (
+                                    "Add Services"
+                                  ) : (
+                                    <span className="text-xs">
+                                      {" "}
+                                      {row_sub?.services?.length === 0 ||
+                                      !row.services ? (
+                                        "Add Services"
+                                      ) : (
+                                        <span className="text-blue-600">
+                                          {row_sub?.services?.length} Added
+                                        </span>
+                                      )}
+                                    </span>
+                                  )}
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
@@ -3190,7 +3261,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                 <div className="space-y-2 w-full">
                                   <div className="flex justify-between w-full">
                                     <Label className="text-xs">
-                                      Add Services
+                                      Add Services sub
                                     </Label>
                                     <Button
                                       size="sm"
@@ -3254,7 +3325,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               onClick={() =>
                                                 handleRemoveServices(
                                                   item.id as string,
-                                                  true,
+                                                  false,
                                                   originalIndex
                                                 )
                                               }
@@ -3314,7 +3385,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     row_sub.shades?.stump_shade ? (
                                       <div>
                                         {row_sub.shades?.occlusal_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.occlusal_shade === null
                                           ? row_sub.shades?.manual_occlusal
                                           : shadesItems.filter(
                                               (item) =>
@@ -3330,7 +3402,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                               </span>
                                             )}
                                         /
-                                        {row_sub.shades?.body_shade === "manual"
+                                        {row_sub.shades?.body_shade === null ||
+                                        row_sub.shades?.body_shade === "manual"
                                           ? row_sub.shades?.manual_body
                                           : shadesItems.filter(
                                               (item) =>
@@ -3347,7 +3420,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             )}
                                         /
                                         {row_sub.shades?.gingival_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.gingival_shade === null
                                           ? row_sub.shades?.manual_gingival
                                           : shadesItems.filter(
                                               (item) =>
@@ -3364,7 +3438,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                             )}
                                         /
                                         {row_sub.shades?.stump_shade ===
-                                        "manual"
+                                          "manual" ||
+                                        row_sub.shades?.stump_shade === null
                                           ? row_sub.shades?.manual_stump
                                           : shadesItems.filter(
                                               (item) =>
@@ -3433,7 +3508,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.occlusal_shade || ""
+                                            row_sub.shades?.manual_occlusal ? "manual" :  row_sub.shades?.occlusal_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3619,7 +3694,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="body">Body</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.body_shade || ""
+                                            row_sub.shades?.manual_body ? "manual" :  row_sub.shades?.body_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3806,7 +3881,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.gingival_shade || ""
+                                            row_sub.shades?.manual_gingival ? "manual" :  row_sub.shades?.gingival_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3991,7 +4066,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         <Label htmlFor="stump">Stump</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.stump_shade || ""
+                                            row_sub.shades?.manual_stump ? "manual" : row_sub.shades?.stump_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(

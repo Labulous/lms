@@ -79,6 +79,7 @@ const ProductList: React.FC<ProductListProps> = ({
   // State
   const navigate = useNavigate();
   const [reloadKey, setReloadKey] = useState(0);
+
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [materialFilter, setMaterialFilter] = useState<string[]>([]);

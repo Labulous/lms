@@ -135,7 +135,7 @@ const CaseList: React.FC = () => {
   );
   let date;
   const location = useLocation();
-  const previousPath = location.state?.from || "No previous path available";
+  const previousPath = location?.state?.from || "No previous path available";
   if (typeof dueDateFilter === "string") {
     const [year, month, day] = dueDateFilter.split("-").map(Number);
     date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC

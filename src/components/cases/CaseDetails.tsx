@@ -286,6 +286,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const routeCaseId = params.caseId;
   const activeCaseId = propCaseId || routeCaseId;
 
+  const baseUrl = import.meta.env.VITE_BASE_URL; // ✅ Works in Vite
   const navigate = useNavigate();
   const safeNavigate = (path: string) => {
     if (drawerMode && onNavigate) {
@@ -294,7 +295,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       navigate(path);
     }
   };
-
   const [caseDetail, setCaseDetail] = useState<ExtendedCase | null>(null);
   const [loading, setLoading] = useState(false);
   const [isApiLoad, setIsApiLoad] = useState(true);
@@ -322,6 +322,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   const [isFilePreview, setIsFilePreview] = useState<boolean>(false);
   const [caseRefresh, setCaseRefresh] = useState<boolean>(false);
   const [files, setFiles] = useState<string[]>([]);
+  const [loadingAgain, setLoadingAgain] = useState(true);
   const [workStationTypes, setWorkStationTypes] = useState<
     WorkingStationTypes[] | []
   >([]);
@@ -370,21 +371,25 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         ...detail,
         products: detail?.products
           ? detail.products.map((item: any) => ({
-            ...item,
-            service: item.additional_services_id
-              ? data
-                .filter(
-                  (service) =>
-                    Array.isArray(item.additional_services_id) &&
-                    item.additional_services_id.includes(service.id)
-                )
-                .map((service) => ({
-                  id: service.id,
-                  name: service.name,
-                  price: service.price,
-                }))[0]
-              : [],
-          }))
+              ...item,
+              service: item.teethProduct?.additional_services_id
+                ? data
+                    .filter(
+                      (service) =>
+                        Array.isArray(
+                          item.teethProduct.additional_services_id
+                        ) &&
+                        item.teethProduct.additional_services_id.includes(
+                          service.id
+                        )
+                    )
+                    .map((service) => ({
+                      id: service.id,
+                      name: service.name,
+                      price: service.price,
+                    }))[0]
+                : [],
+            }))
           : [],
       }));
     }
@@ -443,11 +448,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       } else {
         console.log(workStationData, "workStationData");
         fetchServices();
-        const location = useLocation();
-        const previousPath = location.state.from || "No previous path available";
-        if (previousPath === "edit") {
-          fetchCaseData(true);
-        }
+        let previousPath =
+          location?.state?.from || "No previous path available";
+        console.log(previousPath, "previousPath");
         let workStationDataApi: any = workStationData;
         const steps = [
           {
@@ -720,7 +723,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       revalidateOnReconnect: true, // Refetch when the network is reconnected
     }
   );
-
+  console.log(caseDataa, "caseDataaf");
   // Error handling
   if (caseError) {
     return <div>Error fetching case data: {caseError.message}</div>;
@@ -753,54 +756,58 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-      ...caseItem,
-      labDetail: lab,
-      custom_occlusal_details: caseDataa?.custom_occulusal_details,
-      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-        id: tp.product.id,
-        name: tp.product.name,
-        price: tp.product.price,
-        service_price: tp.product.service_price,
-        service_discount: tp.product.service_discount,
-        lead_time: tp.product.lead_time,
-        is_client_visible: tp.product.is_client_visible,
-        is_taxable: tp.product.is_taxable,
-        created_at: tp.product.created_at,
-        updated_at: tp.product.updated_at,
-        requires_shade: tp.product.requires_shade,
-        material: tp.product.material,
-        product_type: tp.product.product_type,
-        common_services: caseItem?.common_services,
-        billing_type: tp.product.billing_type,
-        additional_services_id:
-          caseItem?.teethProduct?.[index].additional_services_id,
-        discounted_price: caseItem?.discounted_price[index],
-        teethProduct: {
-          id: tp.id,
-          is_range: tp.is_range,
-          tooth_number: tp.tooth_number,
-          pontic_teeth: tp.pontic_teeth,
-          product_id: tp.product_id,
-          occlusal_shade: tp.occlusal_shade,
-          body_shade: tp.body_shade,
-          gingival_shade: tp.gingival_shade,
-          stump_shade: tp.stump_shade,
-          manual_occlusal_shade: tp.manual_occlusal_shade,
-          manual_body_shade: tp.manual_body_shade,
-          type: tp.type,
-          manual_gingival_shade: tp.manual_gingival_shade,
-          manual_stump_shade: tp.manual_stump_shade,
-          custom_occlusal_shade: tp.custom_occlusal_shade,
-          custom_body_shade: tp.custom_body_shade,
-          custom_gingival_shade: tp.custom_gingival_shade,
-          custom_stump_shade: tp.custom_stump_shade,
-          custom_occlusal_details: tp.occlusal_shade,
-          notes: tp.notes,
-        },
-      })),
-    }
+        ...caseItem,
+        labDetail: lab,
+        custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          service_price: tp.product.service_price,
+          service_discount: tp.product.service_discount,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          common_services: caseItem?.common_services,
+          billing_type: tp.product.billing_type,
+          additional_services_id:
+            caseItem?.teethProduct?.[index].additional_services_id,
+          discounted_price: caseItem?.discounted_price[index],
+          services: {
+            name: "zahid",
+            price: 12,
+          },
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            pontic_teeth: tp.pontic_teeth,
+            product_id: tp.product_id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            type: tp.type,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+          },
+        })),
+      }
     : null;
-
+  console.log(caseDetailApi, "caseDetailApi");
   const fetchCaseData = async (refetch?: boolean) => {
     try {
       setLoading(refetch ? false : true);
@@ -1030,6 +1037,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 notes,
                 product_id,
                 custom_body_shade,
+                additional_services_id,
                 custom_occlusal_shade,
                 custom_gingival_shade,
                 custom_stump_shade,
@@ -1073,6 +1081,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 ...product,
                 discounted_price: discountedPrice,
                 teethProduct: teeth,
+                additional_service_id: teeth?.additional_services_id,
               };
             });
           });
@@ -1090,6 +1099,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       toast.error("Failed to load case details");
     } finally {
       setLoading(false);
+      setLoadingAgain(false);
       return () => {
         document.body.style.pointerEvents = "auto";
       };
@@ -1116,6 +1126,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
     if (activeCaseId) {
       getWorkStationDetails(caseDataa?.created_at);
+      fetchCaseData(true);
     }
     console.log("use effect run");
     setCaseDetail(caseDetailApi);
@@ -1638,7 +1649,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       }, {} as any)
     )
     : [];
-
   console.log(consolidatedProducts, "consolidatedProducts");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
@@ -1648,7 +1658,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             <div className="flex items-start space-x-4">
               <div className="p-2 bg-white rounded-lg border border-gray-200">
                 <QRCodeSVG
-                  value={`/${location.pathname}`}
+                  value={`${baseUrl}/${location.pathname}`}
                   size={64}
                   level="H"
                   includeMargin={true}
@@ -1672,7 +1682,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <span className="text-xs text-gray-500">INV #:</span>
                     <div
                       className="text-xs font-medium text-primary cursor-pointer"
-                      onClick={() => setIsPreviewModalOpen(true)}
+                      onClick={() => loadingAgain ? null : setIsPreviewModalOpen(true)}
                     >
                       {caseDetail?.invoice.length > 0
                         ? caseDetail.case_number.replace(/^.{3}/, "INV")
@@ -2319,9 +2329,9 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const finalPrice =
                             product?.discounted_price?.final_price || price;
                           const quantity =
-                            product?.discounted_price.quantity || 1;
+                            product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-
+                          console.log(product, "productproduct");
                           const serviceRow = product.service ? (
                             <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
@@ -2388,7 +2398,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             <React.Fragment key={index}>
                               <TableRow>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                  {product.teethProduct.tooth_number?.length > 1
+                                  {product.teethProduct?.tooth_number?.length >
+                                  1
                                     ? formatTeethRange(
                                       product.teethProduct?.tooth_number
                                     )
