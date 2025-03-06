@@ -41,6 +41,9 @@ export interface FormData {
   deliveryMethod: "Pickup" | "Local Delivery" | "Shipping";
   dueDate?: string;
   isDueDateTBD?: boolean;
+  isDisplayAcctOnly?: boolean;
+  isDisplayDoctorAcctOnly?: boolean;
+  isHidePatientName?: boolean;
   appointmentDate?: string;
   appointmentTime?: string;
   assignedTechnicians?: string[];
@@ -57,9 +60,7 @@ export interface FormData {
   };
   otherItems?: string;
   clientName?: string;
-  isDisplayAcctOnly?: boolean;
-  isDisplayDoctorAcctOnly?: boolean;
-  isHidePatientName?: boolean;
+ 
 }
 
 interface CaseWizardProps {
@@ -102,13 +103,13 @@ const CaseWizard: React.FC<CaseWizardProps> = ({
     otherItems: "",
     isDueDateTBD: false,
     is_appointment_TBD: false,
-    notes: {
-      instructionNotes: "",
-      invoiceNotes: "",
-    },
     isDisplayAcctOnly: false,
     isDisplayDoctorAcctOnly: false,
     isHidePatientName: false,
+    notes: {
+      instructionNotes: "",
+      invoiceNotes: "",
+    },    
   });
 
   const [clients, setClients] = useState<Client[]>([]);

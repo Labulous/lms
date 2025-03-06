@@ -247,6 +247,9 @@ const InvoiceList: React.FC = () => {
         received_date,
         invoice_notes,
         isDueDateTBD,
+         isDisplayAcctOnly,
+        isDisplayDoctorAcctOnly,
+        isHidePatientName,
         appointment_date,
         instruction_notes,
         otherItems,
@@ -407,7 +410,7 @@ const InvoiceList: React.FC = () => {
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
-            type:tp.type
+            type: tp.type
           },
         })),
       };
@@ -453,6 +456,9 @@ const InvoiceList: React.FC = () => {
         working_pan_color,
           rx_number,
           isDueDateTBD,
+          isDisplayAcctOnly,
+          isDisplayDoctorAcctOnly,
+          isHidePatientName,
           appointment_date,
           case_number,
           otherItems,
@@ -1005,7 +1011,7 @@ const InvoiceList: React.FC = () => {
       if (sortConfig.key === "tag") {
         const tagA = a.tag?.name || "";
         const tagB = b.tag?.name || "";
-        return sortConfig.direction === "asc" 
+        return sortConfig.direction === "asc"
           ? tagA.localeCompare(tagB)
           : tagB.localeCompare(tagA);
       }
@@ -1215,26 +1221,26 @@ const InvoiceList: React.FC = () => {
     // Apply date range filter
     const dateRangeFiltered = dueDateRange
       ? data.filter((invoice: any) => {
-          if (!invoice.invoice?.[0]?.due_date) return false;
-          const dueDate = new Date(invoice.invoice[0].due_date);
-          
-          if (dueDateRange.from && dueDateRange.to) {
-            // Create a copy of the end date and set it to the end of the day
-            const endDate = new Date(dueDateRange.to);
-            endDate.setHours(23, 59, 59, 999);
-            
-            return dueDate >= dueDateRange.from && dueDate <= endDate;
-          } else if (dueDateRange.from) {
-            return dueDate >= dueDateRange.from;
-          } else if (dueDateRange.to) {
-            // Create a copy of the end date and set it to the end of the day
-            const endDate = new Date(dueDateRange.to);
-            endDate.setHours(23, 59, 59, 999);
-            
-            return dueDate <= endDate;
-          }
-          return true;
-        })
+        if (!invoice.invoice?.[0]?.due_date) return false;
+        const dueDate = new Date(invoice.invoice[0].due_date);
+
+        if (dueDateRange.from && dueDateRange.to) {
+          // Create a copy of the end date and set it to the end of the day
+          const endDate = new Date(dueDateRange.to);
+          endDate.setHours(23, 59, 59, 999);
+
+          return dueDate >= dueDateRange.from && dueDate <= endDate;
+        } else if (dueDateRange.from) {
+          return dueDate >= dueDateRange.from;
+        } else if (dueDateRange.to) {
+          // Create a copy of the end date and set it to the end of the day
+          const endDate = new Date(dueDateRange.to);
+          endDate.setHours(23, 59, 59, 999);
+
+          return dueDate <= endDate;
+        }
+        return true;
+      })
       : data;
 
     // Apply status filter if any
@@ -1293,17 +1299,17 @@ const InvoiceList: React.FC = () => {
         (invoice.date &&
           format(new Date(invoice.date), "yyyy-MM-dd") ===
           format(dateFilter, "yyyy-MM-dd"));
-        
+
       const matchesDueDate = !dueDateRange || !invoice.invoice?.[0]?.due_date
-      ? true
-      : (dueDateRange.from && dueDateRange.to)
-      ? (new Date(invoice.invoice[0].due_date) >= dueDateRange.from &&
-         new Date(invoice.invoice[0].due_date) <= dueDateRange.to)
-      : dueDateRange.from
-      ? new Date(invoice.invoice[0].due_date) >= dueDateRange.from
-      : dueDateRange.to
-      ? new Date(invoice.invoice[0].due_date) <= dueDateRange.to
-      : true;
+        ? true
+        : (dueDateRange.from && dueDateRange.to)
+          ? (new Date(invoice.invoice[0].due_date) >= dueDateRange.from &&
+            new Date(invoice.invoice[0].due_date) <= dueDateRange.to)
+          : dueDateRange.from
+            ? new Date(invoice.invoice[0].due_date) >= dueDateRange.from
+            : dueDateRange.to
+              ? new Date(invoice.invoice[0].due_date) <= dueDateRange.to
+              : true;
 
       return matchesDate && matchesDueDate;
     });
@@ -1493,7 +1499,7 @@ const InvoiceList: React.FC = () => {
         await updateBalanceTracking(insertedPayment[0]?.client_id);
       }
 
-      
+
     } catch (err) {
       console.error("Error handling new payment:", err);
       toast.error("Failed to add payment or update balance tracking.");
@@ -1514,9 +1520,9 @@ const InvoiceList: React.FC = () => {
     const dataToExport = selectedInvoices.length > 0
       ? getSortedAndPaginatedData().filter(invoice => selectedInvoices.includes(invoice.id as string))
       : getSortedAndPaginatedData();
-    
+
     console.log("Data to export:", dataToExport);
-    
+
     if (!dataToExport.length) {
       toast.error("No invoices to export");
       setLoadingState({ action: null, isLoading: false });
@@ -1535,7 +1541,7 @@ const InvoiceList: React.FC = () => {
         "Amount",
         "Due Date"
       ];
-      
+
       // Function to escape CSV values properly
       const escapeCSV = (value: any) => {
         if (value === null || value === undefined) return '';
@@ -1550,29 +1556,29 @@ const InvoiceList: React.FC = () => {
       // Create CSV rows from the data
       const rows = dataToExport.map(invoice => {
         // Format invoice number
-        const invoiceNumber = invoice.case_number 
+        const invoiceNumber = invoice.case_number
           ? `INV-${invoice.case_number.split("-").slice(1).join("-")}`
           : "N/A";
-          
+
         // Format date
         const date = invoice?.received_date
           ? new Date(invoice.received_date).toLocaleDateString()
           : "N/A";
-          
+
         // Get tag
         const tag = invoice.tag?.name || "N/A";
-        
+
         // Get status
         const status = invoice?.invoice?.[0]?.status
           ? `${invoice.invoice[0].status.charAt(0).toUpperCase()}${invoice.invoice[0].status.slice(1)}`
           : "N/A";
-          
+
         // Get client name
         const client = invoice?.client?.client_name || "N/A";
-        
+
         // Get case number
         const caseNumber = invoice.case_number || "N/A";
-        
+
         // Calculate amount
         const amount = (
           (typeof invoice.amount === "number" ? invoice.amount : 0) +
@@ -1587,12 +1593,12 @@ const InvoiceList: React.FC = () => {
         ).toLocaleString("en-US", {
           minimumFractionDigits: 2,
         });
-        
+
         // Format due date
         const dueDate = invoice?.due_date
           ? new Date(invoice.due_date).toLocaleDateString()
           : "N/A";
-          
+
         // Return array of values in the same order as headers
         return [
           escapeCSV(invoiceNumber),
@@ -1605,15 +1611,15 @@ const InvoiceList: React.FC = () => {
           escapeCSV(dueDate)
         ];
       });
-      
+
       // Combine headers and rows into CSV content
       const csvContent = [
         headers.join(','),
         ...rows.map(row => row.join(','))
       ].join('\n');
-      
+
       console.log("CSV Content:", csvContent);
-      
+
       // Create and download the file
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -1624,7 +1630,7 @@ const InvoiceList: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success("CSV exported successfully");
     } catch (error) {
       console.error("Error exporting CSV:", error);
@@ -1753,9 +1759,9 @@ const InvoiceList: React.FC = () => {
                           <span>Change Due Date</span>
                         </DropdownMenuItem>
                       </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-auto p-0" 
-                        align="center" 
+                      <PopoverContent
+                        className="w-auto p-0"
+                        align="center"
                         side="top"
                         sideOffset={5}
                         avoidCollisions={true}
@@ -2043,8 +2049,8 @@ const InvoiceList: React.FC = () => {
                             size="icon"
                             className={cn(
                               "h-8 w-8 p-0",
-                              dueDateRange 
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                              dueDateRange
+                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
                                 : "bg-transparent hover:bg-muted"
                             )}
                             onClick={(e) => {
@@ -2060,9 +2066,9 @@ const InvoiceList: React.FC = () => {
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent 
-                          className="w-auto p-0" 
-                          align="center" 
+                        <PopoverContent
+                          className="w-auto p-0"
+                          align="center"
                           side="top"
                           sideOffset={5}
                           avoidCollisions={true}
