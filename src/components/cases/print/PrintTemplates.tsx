@@ -1549,58 +1549,58 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     //     )
     //   : [];
 
-    const groupShades: any = teethproducts
-      ? Object.values(
-          teethproducts?.reduce((acc: any, product: any) => {
-            // Create a unique key by combining the tooth numbers and relevant shades
-            const shadeKey = [
-              product.body_shade,
-              product.stump_shade,
-              product.gingival_shade,
-              product.occlusal_shade,
-              product.custom_body_shade,
-              product.manual_body_shade,
-              product.custom_stump_shade,
-              product.manual_stump_shade,
-              product.custom_gingival_shade,
-              product.custom_occlusal_shade,
-              product.manual_gingival_shade,
-              product.manual_occlusal_shade,
-            ].join("-");
+    // const groupShades: any = teethproducts
+    //   ? Object.values(
+    //       teethproducts?.reduce((acc: any, product: any) => {
+    //         // Create a unique key by combining the tooth numbers and relevant shades
+    //         const shadeKey = [
+    //           product.body_shade,
+    //           product.stump_shade,
+    //           product.gingival_shade,
+    //           product.occlusal_shade,
+    //           product.custom_body_shade,
+    //           product.manual_body_shade,
+    //           product.custom_stump_shade,
+    //           product.manual_stump_shade,
+    //           product.custom_gingival_shade,
+    //           product.custom_occlusal_shade,
+    //           product.manual_gingival_shade,
+    //           product.manual_occlusal_shade,
+    //         ].join("-");
 
-            // If the product with this combination of shades doesn't exist in the accumulator, create it
-            if (!acc[shadeKey]) {
-              acc[shadeKey] = {
-                tooth_numbers: [...product.tooth_number],
-                product: product.product, // Merge product details (no need to repeat)
-                body_shade: product.body_shade,
-                stump_shade: product.stump_shade,
-                gingival_shade: product.gingival_shade,
-                occlusal_shade: product.occlusal_shade,
-                custom_body_shade: product.custom_body_shade,
-                manual_body_shade: product.manual_body_shade,
-                custom_stump_shade: product.custom_stump_shade,
-                manual_stump_shade: product.manual_stump_shade,
-                custom_gingival_shade: product.custom_gingival_shade,
-                custom_occlusal_shade: product.custom_occlusal_shade,
-                manual_gingival_shade: product.manual_gingival_shade,
-                manual_occlusal_shade: product.manual_occlusal_shade,
-                additional_services_id: product.additional_services_id,
-              };
-            } else {
-              // If the product already exists, merge the tooth numbers without duplication
-              acc[shadeKey].tooth_numbers = [
-                ...new Set([
-                  ...acc[shadeKey].tooth_numbers,
-                  ...product.tooth_number,
-                ]),
-              ];
-            }
+    //         // If the product with this combination of shades doesn't exist in the accumulator, create it
+    //         if (!acc[shadeKey]) {
+    //           acc[shadeKey] = {
+    //             tooth_numbers: [...product.tooth_number],
+    //             product: product.product, // Merge product details (no need to repeat)
+    //             body_shade: product.body_shade,
+    //             stump_shade: product.stump_shade,
+    //             gingival_shade: product.gingival_shade,
+    //             occlusal_shade: product.occlusal_shade,
+    //             custom_body_shade: product.custom_body_shade,
+    //             manual_body_shade: product.manual_body_shade,
+    //             custom_stump_shade: product.custom_stump_shade,
+    //             manual_stump_shade: product.manual_stump_shade,
+    //             custom_gingival_shade: product.custom_gingival_shade,
+    //             custom_occlusal_shade: product.custom_occlusal_shade,
+    //             manual_gingival_shade: product.manual_gingival_shade,
+    //             manual_occlusal_shade: product.manual_occlusal_shade,
+    //             additional_services_id: product.additional_services_id,
+    //           };
+    //         } else {
+    //           // If the product already exists, merge the tooth numbers without duplication
+    //           acc[shadeKey].tooth_numbers = [
+    //             ...new Set([
+    //               ...acc[shadeKey].tooth_numbers,
+    //               ...product.tooth_number,
+    //             ]),
+    //           ];
+    //         }
 
-            return acc;
-          }, {})
-        )
-      : {};
+    //         return acc;
+    //       }, {})
+    //     )
+    //   : {};
 
     const teethItems = teethDetail.products.filter((item: any) => {
       return item.teethProduct.type === teeth.teethProduct.type;
@@ -1747,7 +1747,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                           item?.teethProduct?.manual_occlusal_shade) && (
                           <>
                             <span>
-                              <span className="font-normal">Incisal: </span>
+                              <span className="font-normal">Incisal: </span> 
                               <span className="font-bold">
                                 {item?.teethProduct?.manual_occlusal_shade ||
                                   item?.teethProduct?.occlusal_shade?.name}
@@ -1924,7 +1924,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                         : "scale(1)",
                   }}
                 >
-                  {groupShades.length === 1 && (
+                  {/* {groupShades.length === 1 && (
                     <>
                       <div className="flex">
                         <span className="w-16">Incisal: </span>
@@ -2039,7 +2039,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                         </div>
                       </div>
                     </>
-                  )}
+                  )} */}
                 </div>
               </foreignObject>
 
@@ -2167,7 +2167,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     const mergedMap = new Map();
 
     // Iterate through the products array
-    products.forEach((product: any) => {
+    products?.forEach((product: any) => {
       // Create a key for identifying the product by its properties
       const key = JSON.stringify({
         id: product.id,
@@ -2216,6 +2216,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     return Array.from(mergedMap.values());
   }
   const products = mergeProducts(item?.products);
+  console.log(item?.products,"productsproducts")
   return (
     <div>
       <div
