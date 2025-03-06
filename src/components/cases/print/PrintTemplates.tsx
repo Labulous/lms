@@ -2229,7 +2229,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${products?.length <6 ? products?.length : 3} gap-0`}>
+            <div className={`grid grid-cols-${products?.length <3 ? products?.length : 3} gap-0`}>
               {products?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
