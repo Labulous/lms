@@ -18,42 +18,42 @@ import { ExtendedCase } from "@/components/cases/CaseDetails";
 
 interface PrintTemplateProps {
   caseData:
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }[];
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
   paperSize: keyof typeof PAPER_SIZES;
   ref?: any;
@@ -61,53 +61,53 @@ interface PrintTemplateProps {
 
 interface PrintPreviewState {
   type:
-  | "qr-code"
-  | "lab-slip"
-  | "address-label"
-  | "patient-label"
-  | "invoice_slip"
-  | "payment_receipt"
-  | "adjustment_receipt"
-  | "statement_receipt"
-  | "selected-order";
+    | "qr-code"
+    | "lab-slip"
+    | "address-label"
+    | "patient-label"
+    | "invoice_slip"
+    | "payment_receipt"
+    | "adjustment_receipt"
+    | "statement_receipt"
+    | "selected-order";
   paperSize: keyof typeof PAPER_SIZES;
   caseData:
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }
-  | {
-    id: string;
-    patient_name: string;
-    case_number: string;
-    qr_code?: string;
-    client?: {
-      client_name: string;
-      phone: string;
-    };
-    doctor?: {
-      name: string;
-    };
-    created_at: string;
-    due_date?: string;
-    tag?: {
-      name: string;
-    };
-  }[];
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }
+    | {
+        id: string;
+        patient_name: string;
+        case_number: string;
+        qr_code?: string;
+        client?: {
+          client_name: string;
+          phone: string;
+        };
+        doctor?: {
+          name: string;
+        };
+        created_at: string;
+        due_date?: string;
+        tag?: {
+          name: string;
+        };
+      }[];
   caseDetails?: ExtendedCase[];
 }
 
@@ -155,7 +155,6 @@ const PrintPreview = () => {
   console.log("printing type bgfgfgfgfgffg", type);
   console.log(caseDetails, "caseDetails");
   console.log(caseData, "lab datatat");
-
   const renderTemplate = () => {
     if (Array.isArray(caseData)) {
       if (type === "lab-slip") {
@@ -227,11 +226,11 @@ const PrintPreview = () => {
                   },
                   service: product.service
                     ? [
-                      {
-                        service: product.service,
-                        teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
-                      },
-                    ]
+                        {
+                          service: product.service,
+                          teeth_number: [...product.teethProduct.tooth_number], // Initialize with current teeth_number
+                        },
+                      ]
                     : [], // Initialize with current service in an array
                 };
               }
@@ -245,14 +244,10 @@ const PrintPreview = () => {
             products: consolidatedProducts, // Replace products with the consolidated ones
           };
         });
-        return cases?.map((singleProps, index) => {
-          console.log(singleProps, "singleProps");
+        return caseDetails?.map((singleProps, index) => {
+          console.log(singleProps, "singleProps second");
           return (
-            <LabSlipTemplate
-              paperSize="LETTER"
-              key={index}
-              caseDetails={singleProps}
-            />
+            <>case details</>
           );
         });
       } else {
@@ -335,8 +330,6 @@ const PrintPreview = () => {
             caseDetails={caseDetails}
           />
         );
-
-
 
       default:
         return <div>Invalid template type</div>;

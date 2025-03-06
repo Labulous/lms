@@ -682,9 +682,9 @@ const CaseList: React.FC = () => {
 
         return (
           rowDate.getFullYear() === value.getFullYear() &&
-          rowDate.getMonth() === value.getMonth()&& 
+          rowDate.getMonth() === value.getMonth() &&
           dueDate?.split("T")?.[0].split("-")?.[2] ===
-          formatedDate?.toDateString().split(" ")?.[2]
+            formatedDate?.toDateString().split(" ")?.[2]
         );
       },
     },
@@ -907,7 +907,7 @@ const CaseList: React.FC = () => {
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-
+type,
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -1018,6 +1018,7 @@ const CaseList: React.FC = () => {
             custom_stump_shade: tp.custom_stump_shade,
             custom_occlusal_details: tp.occlusal_shade,
             notes: tp.notes,
+            type: tp.type,
           },
         })),
       };
@@ -1125,7 +1126,7 @@ const CaseList: React.FC = () => {
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-
+type,
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -1215,6 +1216,7 @@ const CaseList: React.FC = () => {
                 id: tp.id,
                 is_range: tp.is_range,
                 tooth_number: tp.tooth_number,
+                pontic_teeth: tp.pontic_teeth,
                 product_id: tp.product_id,
                 occlusal_shade: tp.occlusal_shade,
                 body_shade: tp.body_shade,
@@ -1222,6 +1224,7 @@ const CaseList: React.FC = () => {
                 stump_shade: tp.stump_shade,
                 manual_occlusal_shade: tp.manual_occlusal_shade,
                 manual_body_shade: tp.manual_body_shade,
+                type: tp.type,
                 manual_gingival_shade: tp.manual_gingival_shade,
                 manual_stump_shade: tp.manual_stump_shade,
                 custom_occlusal_shade: tp.custom_occlusal_shade,
@@ -1364,62 +1367,70 @@ const CaseList: React.FC = () => {
       .rows.map((row) => row.original);
 
     if (selectedCases.length === 0 && !selectedId) return;
-
+    console.log(selectedCases, "selectedCases");
     const previewState = {
       type: option,
       paperSize: "LETTER", // Default paper size
-      caseData:
-        selectedCases.length > 0
-          ? selectedCases.map((caseItem) => ({
-              id: caseItem.id,
-              patient_name: caseItem.patient_name,
-              case_number: caseItem.case_number,
-              qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-              client: caseItem.client,
-              doctor: caseItem.doctor,
-              created_at: caseItem.created_at,
-              //due_date: caseItem.due_date,
-              due_date: calculateDueDate(
-                caseItem.due_date,
-                caseItem.client ?? undefined
-              ),
-              tag: caseItem.tag,
-            }))
-          : cases
-              .filter((item) =>
-                selectedId && selectedId.length > 0
-                  ? selectedId.includes(item.id)
-                  : selectedCasesIds.includes(item.id)
-              )
-              .map((caseItem) => ({
-                id: caseItem.id,
-                patient_name: caseItem.patient_name,
-                case_number: caseItem.case_number,
-                qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
-                client: caseItem.client,
-                doctor: caseItem.doctor,
-                created_at: caseItem.created_at,
-                //due_date: caseItem.due_date,
-                due_date: calculateDueDate(
-                  caseItem.due_date,
-                  caseItem.client ?? undefined
-                ),
-                tag: caseItem.tag,
-              })),
+      // caseData:
+      //   selectedCases.length > 0
+      //     ? selectedCases.map((caseItem) => ({
+      //         id: caseItem.id,
+      //         patient_name: caseItem.patient_name,
+      //         case_number: caseItem.case_number,
+      //         qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+      //         client: caseItem.client,
+      //         doctor: caseItem.doctor,
+      //         created_at: caseItem.created_at,
+      //         //due_date: caseItem.due_date,
+      //         due_date: calculateDueDate(
+      //           caseItem.due_date,
+      //           caseItem.client ?? undefined
+      //         ),
+      //         tag: caseItem.tag,
+      //       }))
+      //     : cases
+      //         .filter((item) =>
+      //           selectedId && selectedId.length > 0
+      //             ? selectedId.includes(item.id)
+      //             : selectedCasesIds.includes(item.id)
+      //         )
+      //         .map((caseItem) => ({
+      //           id: caseItem.id,
+      //           patient_name: caseItem.patient_name,
+      //           case_number: caseItem.case_number,
+      //           qr_code: `https://app.labulous.com/cases/${caseItem.id}`,
+      //           client: caseItem.client,
+      //           doctor: caseItem.doctor,
+      //           created_at: caseItem.created_at,
+      //           //due_date: caseItem.due_date,
+      //           due_date: calculateDueDate(
+      //             caseItem.due_date,
+      //             caseItem.client ?? undefined
+      //           ),
+      //           tag: caseItem.tag,
+      //         })),
+      caseData: {},
       caseDetails: cases.filter((item) =>
         selectedId && selectedId.length > 0
           ? selectedId.includes(item.id)
           : selectedCasesIds.includes(item.id)
       ),
     };
-
+    console.log(
+      cases.filter((item) =>
+        selectedId && selectedId.length > 0
+          ? selectedId.includes(item.id)
+          : selectedCasesIds.includes(item.id)
+      ),
+      "hi"
+    );
     // Use a fixed storage key so that the data always overrides the previous entry.
     const storageKey = "printData";
     localStorage.setItem(storageKey, JSON.stringify(previewState));
+    // Store data in localStorage
 
-    // Build the preview URL with the fixed key in the query string.
-    const previewUrl = `${window.location.origin}/print-preview?stateKey=${storageKey}`;
-    window.open(previewUrl, "_blank");
+    // Open the print preview page
+    window.open(`${window.location.origin}/print-preview`, "_blank");
   };
 
   const handlePrintSelectedOrder = () => {

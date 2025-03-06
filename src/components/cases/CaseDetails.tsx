@@ -779,8 +779,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
           services: {
-            name: "zahid",
-            price: 12,
+            name: "",
+            price: 0,
           },
           teethProduct: {
             id: tp.id,

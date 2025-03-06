@@ -754,8 +754,44 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         // Update the product with the new services and subRows
         updatedProducts[index] = {
           ...updatedProducts[index],
-          services: updatedServices, // Update the main product's services array
-          subRows: updatedSubRows, // Update subRows
+          services: updatedServices,
+          commonServices: [
+            ...(updatedProducts?.[index]?.commonServices || []),
+            ...(serviceExistsInMain
+              ? []
+              : [
+                  {
+                    id: service.id,
+                    name: service.name,
+                    price:
+                      clientSpecialServices?.find(
+                        (item) => item.service_id === service.id
+                      )?.price || service.price,
+                    is_taxable: service.is_taxable,
+                    discount: service.discount || 0,
+                    add_to_all: false,
+                  },
+                ]),
+          ],
+          mainServices: [
+            ...(updatedProducts?.[index]?.commonServices || []),
+            ...(serviceExistsInMain
+              ? []
+              : [
+                  {
+                    id: service.id,
+                    name: service.name,
+                    price:
+                      clientSpecialServices?.find(
+                        (item) => item.service_id === service.id
+                      )?.price || service.price,
+                    is_taxable: service.is_taxable,
+                    discount: service.discount || 0,
+                    add_to_all: false,
+                  },
+                ]),
+          ],
+          subRows: updatedSubRows,
         };
 
         return updatedProducts;
@@ -845,7 +881,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   ) => {
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
-console.log(index,SubIndex,"index subIndex")
+    console.log(index, SubIndex, "index subIndex");
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined) {
         // Create a copy of the previous selected products to avoid direct mutation
@@ -881,7 +917,7 @@ console.log(index,SubIndex,"index subIndex")
           // Assign the updated subRows back to the selected product
           updatedProducts[index] = {
             ...updatedProducts[index],
-          
+
             subRows: updatedSubRows,
           };
 
@@ -1382,14 +1418,14 @@ console.log(index,SubIndex,"index subIndex")
                 <React.Fragment key={row.id}>
                   <TableRow key={row.id} className="border ">
                     <TableCell className="border-b w-[20px] cursor-pointer top-0 ">
-                      {expandedRows.includes(row.id + index) ? (
+                      {expandedRows.includes(index.toString()) ? (
                         <Minus
-                          onClick={() => toggleRowExpansion(row.id + index)}
+                          onClick={() => toggleRowExpansion(index.toString())}
                           className="h-6 w-6"
                         />
                       ) : (
                         <Plus
-                          onClick={() => toggleRowExpansion(row.id + index)}
+                          onClick={() => toggleRowExpansion(index.toString())}
                           className="h-6 w-6"
                         />
                       )}
@@ -1399,7 +1435,7 @@ console.log(index,SubIndex,"index subIndex")
                         open={openTypePopover === row.id + index}
                         onOpenChange={(open) => {
                           setOpenTypePopover(open ? row.id + index : null);
-                          setExpandedRows([row.id + index]);
+                          setExpandedRows([index.toString()]);
                         }}
                       >
                         <PopoverTrigger asChild>
@@ -3045,7 +3081,7 @@ console.log(index,SubIndex,"index subIndex")
                       </Button>
                     </TableCell>
                   </TableRow>
-                  {expandedRows.includes(row.id + index) &&
+                  {expandedRows.includes(index.toString()) &&
                     row?.subRows &&
                     row?.subRows?.length >= 1 &&
                     row?.subRows?.map((row_sub, subIndex) => {
@@ -3213,23 +3249,30 @@ console.log(index,SubIndex,"index subIndex")
                                   size="sm"
                                   className="h-7 w-full justify-start text-left text-xs"
                                   disabled={!row.id && row.type !== "Service"}
-                                  onClick={() => toggleServicesPopover(subIndex + index + 100 + originalIndex)}
+                                  onClick={() =>
+                                    toggleServicesPopover(
+                                      subIndex + index + 100 + originalIndex
+                                    )
+                                  }
                                 >
-                                  {row?.commonServices?.length === 0 ? (
-                                    "Add Services"
-                                  ) : (
+                                  {
                                     <span className="text-xs">
-                                      {" "}
-                                      {row_sub?.services?.length === 0 ||
-                                      !row.services ? (
+                                      {row?.subRows?.[originalIndex]?.services
+                                        ?.length === 0 ||
+                                      !row?.subRows?.[originalIndex]
+                                        ?.services ? (
                                         "Add Services"
                                       ) : (
                                         <span className="text-blue-600">
-                                          {row_sub?.services?.length} Added
+                                          {
+                                            row?.subRows?.[originalIndex]
+                                              ?.services?.length
+                                          }{" "}
+                                          Added
                                         </span>
                                       )}
                                     </span>
-                                  )}
+                                  }
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent
@@ -3508,7 +3551,10 @@ console.log(index,SubIndex,"index subIndex")
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.manual_occlusal ? "manual" :  row_sub.shades?.occlusal_shade || ""
+                                            row_sub.shades?.manual_occlusal
+                                              ? "manual"
+                                              : row_sub.shades
+                                                  ?.occlusal_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3694,7 +3740,9 @@ console.log(index,SubIndex,"index subIndex")
                                         <Label htmlFor="body">Body</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.manual_body ? "manual" :  row_sub.shades?.body_shade || ""
+                                            row_sub.shades?.manual_body
+                                              ? "manual"
+                                              : row_sub.shades?.body_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -3881,7 +3929,10 @@ console.log(index,SubIndex,"index subIndex")
                                         </Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.manual_gingival ? "manual" :  row_sub.shades?.gingival_shade || ""
+                                            row_sub.shades?.manual_gingival
+                                              ? "manual"
+                                              : row_sub.shades
+                                                  ?.gingival_shade || ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
@@ -4066,7 +4117,10 @@ console.log(index,SubIndex,"index subIndex")
                                         <Label htmlFor="stump">Stump</Label>
                                         <Select
                                           value={
-                                            row_sub.shades?.manual_stump ? "manual" : row_sub.shades?.stump_shade || ""
+                                            row_sub.shades?.manual_stump
+                                              ? "manual"
+                                              : row_sub.shades?.stump_shade ||
+                                                ""
                                           }
                                           onValueChange={(value) => {
                                             setselectedProducts(
