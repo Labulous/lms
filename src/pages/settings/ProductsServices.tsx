@@ -79,6 +79,7 @@ type ServiceBase = {
   is_taxable: boolean;
   material_id?: string;
   lab_id: string;
+  product_code?: string;
   material?: { name: string } | null;
 };
 
@@ -141,18 +142,18 @@ const ProductsServices: React.FC = () => {
   const { data: products1, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("products")
-          .select(
-            `
+        .from("products")
+        .select(
+          `
     *,
     material:materials(name),
     product_type:product_types(name),
     billing_type:billing_types(name, label)
   `
-          )
-          .order("name")
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        )
+        .order("name")
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -166,14 +167,14 @@ const ProductsServices: React.FC = () => {
   const { data: productTypes1, error: productTypesError } = useQuery(
     products1 && labIdData?.lab_id
       ? supabase
-          .from("product_types")
-          .select(
-            `
+        .from("product_types")
+        .select(
+          `
 *
       `
-          )
-          .order("name")
-          .eq("lab_id", labIdData?.lab_id)
+        )
+        .order("name")
+        .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -187,16 +188,16 @@ const ProductsServices: React.FC = () => {
   const { data: servicesApi, error: servicesApiError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-          .from("services")
-          .select(
-            `
+        .from("services")
+        .select(
+          `
         *,
         material:materials(name)
       `
-          )
+        )
 
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -207,14 +208,14 @@ const ProductsServices: React.FC = () => {
   const { data: materialsApi, error: materialsError } = useQuery(
     productTypes1 && labIdData?.lab_id
       ? supabase
-          .from("materials")
-          .select(
-            `
+        .from("materials")
+        .select(
+          `
            *
           `
-          )
+        )
 
-          .eq("lab_id", labIdData?.lab_id)
+        .eq("lab_id", labIdData?.lab_id)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
@@ -708,8 +709,8 @@ const ProductsServices: React.FC = () => {
           aValue.toLowerCase() < bValue.toLowerCase()
             ? -1
             : aValue.toLowerCase() > bValue.toLowerCase()
-            ? 1
-            : 0;
+              ? 1
+              : 0;
         return sortConfig.direction === "asc" ? comparison : -comparison;
       }
 
@@ -726,13 +727,13 @@ const ProductsServices: React.FC = () => {
           ? aValue === bValue
             ? 0
             : aValue
-            ? -1
-            : 1
+              ? -1
+              : 1
           : aValue === bValue
-          ? 0
-          : aValue
-          ? 1
-          : -1;
+            ? 0
+            : aValue
+              ? 1
+              : -1;
       }
 
       // Handle string/number values
@@ -740,8 +741,8 @@ const ProductsServices: React.FC = () => {
         String(aValue).toLowerCase() < String(bValue).toLowerCase()
           ? -1
           : String(aValue).toLowerCase() > String(bValue).toLowerCase()
-          ? 1
-          : 0;
+            ? 1
+            : 0;
       return sortConfig.direction === "asc" ? comparison : -comparison;
     });
   };
@@ -939,7 +940,7 @@ const ProductsServices: React.FC = () => {
                       />
                     </TableHead>
                     <TableHead
-                      className="cursor-pointer w-[560px]"
+                      className="cursor-pointer w-[250px]"
                       onClick={() => handleSort("name")}
                     >
                       <div className="flex items-center">
@@ -947,14 +948,13 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("name")}
                       </div>
                     </TableHead>
-
                     <TableHead
-                      className="cursor-pointer w-[560px]"
-                      onClick={() => handleSort("name")}
+                      className="cursor-pointer"
+                      onClick={() => handleSort("product_code")}
                     >
                       <div className="flex items-center">
-                        Code
-                        {getSortIcon("name")}
+                        Service Code
+                        {getSortIcon("product_code")}
                       </div>
                     </TableHead>
 
@@ -967,6 +967,7 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("material_id")}
                       </div>
                     </TableHead>
+
                     <TableHead
                       className="cursor-pointer text-right"
                       onClick={() => handleSort("price")}
@@ -1030,24 +1031,16 @@ const ProductsServices: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {service.name}
+                        {service?.name}
                       </TableCell>
-
                       <TableCell>
-                        {materialsData && materialsData.length > 0
-                          ? (
-                              materialsData.find(
-                                (mat) => mat.id === service.material_id
-                              ) as any
-                            )?.code ?? "N/A"
-                          : "N/A"}
+                        {service?.product_code}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {service?.material?.name}
                         </Badge>
                       </TableCell>
-
                       <TableCell className="text-right">
                         ${service.price}
                       </TableCell>
@@ -1126,11 +1119,10 @@ const ProductsServices: React.FC = () => {
           setItemsToDelete([]);
         }}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${
-          itemsToDelete[0] && "lead_time" in itemsToDelete[0]
-            ? "Product"
-            : "Service"
-        }`}
+        title={`Delete ${itemsToDelete[0] && "lead_time" in itemsToDelete[0]
+          ? "Product"
+          : "Service"
+          }`}
         message={
           itemsToDelete.length === 1
             ? "Are you sure you want to delete this item? This action cannot be undone."

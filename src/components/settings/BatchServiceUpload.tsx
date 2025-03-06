@@ -51,6 +51,7 @@ const emptyService = (): ServiceInput => ({
   material_id: "",
   description: "",
   lab_id: "",
+  product_code: "",
 });
 
 const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
@@ -268,7 +269,6 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
   };
 
   const handleSubmit = async () => {
-    debugger;
     try {
       if (!labId) {
         toast.error("Lab ID not available. Please try again.");
@@ -295,15 +295,39 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
       //   lab_id: labId,
       // }));
 
-      const servicesWithLabId = services.map(service => {
+      // Map services and generate product_code dynamically
+      const { data: servicesData, error } = await supabase
+        .from("services")
+        .select("*")
+        .eq("lab_id", labId)
+      if (error) {
+        console.error("Error fetching services:", error);
+        return;
+      }
+
+      const servicesWithLabId = services.map((service) => {
         const selectedMaterial = materials.find(mat => mat.id === service.material_id);
+        if (!selectedMaterial) {
+          return {
+            ...service,
+            lab_id: labId,
+            product_code: "",
+          };
+        }
+        const existingServices = servicesData.filter(s => s.material_id === service.material_id);
+        const highestServiceCode = existingServices.length > 0
+          ? Math.max(...existingServices.map(s => Number(s?.product_code) || 0))
+          : 0;
+        const newServiceCode = highestServiceCode > 0
+          ? (Number(highestServiceCode) + 1).toString()
+          : (Number(selectedMaterial.code) + 1).toString();
+
         return {
           ...service,
           lab_id: labId,
-          product_code: selectedMaterial ? selectedMaterial?.code : null,
+          product_code: newServiceCode,
         };
       });
-
 
       await onUpload(servicesWithLabId);
       console.log(servicesWithLabId, "servicesWithLabId");

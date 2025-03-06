@@ -42,6 +42,7 @@ export interface ServiceInput {
   is_taxable: boolean;
   material_id: string;
   lab_id: string;
+  product_code:string;
 }
 
 export type Service = ServiceRow;
@@ -442,6 +443,7 @@ class ProductsService {
   }
 
   async addService(input: ServiceInput): Promise<Service> {
+    debugger;
     try {
       logger.debug("Adding new service", input);
 
