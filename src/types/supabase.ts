@@ -763,6 +763,7 @@ export interface Database {
           material_id: string;
           product_type_id: string;
           billing_type_id: string;
+          product_code: string;
           material: {
             name: string;
             id?: string;
@@ -952,6 +953,9 @@ export interface FormData {
   instructionNotes?: string;
   dueDate?: string;
   isDueDateTBD?: boolean;
+  isDisplayAcctOnly?: boolean,
+  isDisplayDoctorAcctOnly?: boolean,
+  isHidePatientName?: boolean,
   appointmentDate?: string;
   appointmentTime?: string;
   assignedTechnicians?: string[];
@@ -991,9 +995,7 @@ export interface FormData {
     invoiceNotes?: string;
   };
   itemsError?: string;
-  isDisplayAcctOnly?: boolean,
-  isDisplayDoctorAcctOnly?: boolean,
-  isHidePatientName?: boolean,
+  
 
 }
 

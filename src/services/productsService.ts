@@ -20,7 +20,7 @@ export interface ProductInput {
   billing_type_id: string;
   requires_shade?: boolean;
   lab_id: string;
-  product_code:string;
+  product_code: string;
 }
 
 export interface ProductTypes {
@@ -42,6 +42,7 @@ export interface ServiceInput {
   is_taxable: boolean;
   material_id: string;
   lab_id: string;
+  product_code: string;
 }
 
 export type Service = ServiceRow;
@@ -121,6 +122,7 @@ class ProductsService {
           material_id: input.material_id,
           product_type_id: input.product_type_id || null, // Allow null for product_type_id
           lab_id: input.lab_id,
+          product_code: input.product_code,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -442,6 +444,7 @@ class ProductsService {
   }
 
   async addService(input: ServiceInput): Promise<Service> {
+    debugger;
     try {
       logger.debug("Adding new service", input);
 

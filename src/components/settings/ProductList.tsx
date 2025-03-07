@@ -373,12 +373,12 @@ const ProductList: React.FC<ProductListProps> = ({
                 </div>
               </TableHead>
               <TableHead
-                onClick={() => handleSort("name")}
+                onClick={() => handleSort("product_code")}
                 className="cursor-pointer"
               >
                 <div className="flex items-center">
                   Code
-                  {getSortIcon("name")}
+                  {getSortIcon("product_code")}
                 </div>
               </TableHead>
               <TableHead
@@ -509,13 +509,7 @@ const ProductList: React.FC<ProductListProps> = ({
                     <ChevronRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </TableCell>
-                <TableCell>
-                  {materialsData && materialsData.length > 0
-                    ? materialsData.find(
-                        (mat) => mat.id === product.material_id
-                      )?.code ?? "N/A"
-                    : "N/A"}
-                </TableCell>
+                <TableCell>{product.product_code}</TableCell>
                 <TableCell>{product.material?.name}</TableCell>
 
                 <TableCell className="text-right">

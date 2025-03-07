@@ -505,7 +505,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <Checkbox
                     id="isDisplayDoctorAcctOnly"
                     name="isDisplayDoctorAcctOnly"
-                    checked={formData.isDisplayDoctorAcctOnly}
+                    checked={Boolean(formData.isDisplayDoctorAcctOnly)}
                     onCheckedChange={(checked) => {
                       onChange("isDisplayDoctorAcctOnly", checked);
                     }}
@@ -562,7 +562,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <Checkbox
                     id="isHidePatientName"
                     name="isHidePatientName"
-                    checked={formData.isHidePatientName}
+                    checked={Boolean(formData.isHidePatientName)}
                     onCheckedChange={(checked) => {
                       onChange("isHidePatientName", checked);
                     }}
