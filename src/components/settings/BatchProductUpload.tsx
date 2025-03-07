@@ -81,18 +81,23 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
 
   useEffect(() => {
+    if (!user?.id) return;   
     const fetchLabId = async () => {
-      if (user?.id) {
+      try {
         const data = await getLabIdByUserId(user.id);
         if (data?.labId) {
           setLabId(data.labId);
-          // Initialize products with lab_id
           setProducts([{ ...emptyProduct(), lab_id: data.labId }]);
+        } else {
+          console.warn("Lab ID not found.");
         }
+      } catch (error) {
+        console.error("Error fetching labId:", error);
       }
-    };
+    };  
     fetchLabId();
   }, [user]);
+  
 
   const addProduct = () => {
     if (!labId) {
@@ -106,18 +111,60 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
     setProducts(products.filter((_, i) => i !== index));
   };
 
-  const updateProduct = (
+  // const updateProduct = (
+  //   index: number,
+  //   field: keyof ProductInput,
+  //   value: any
+  // ) => {
+  //   const updatedProducts = [...products];
+  //   updatedProducts[index] = {
+  //     ...updatedProducts[index],
+  //     [field]: value,
+  //   };
+  //   setProducts(updatedProducts);
+  // };
+
+  const updateProduct = async (
     index: number,
     field: keyof ProductInput,
     value: any
   ) => {
     const updatedProducts = [...products];
-    updatedProducts[index] = {
-      ...updatedProducts[index],
-      [field]: value,
-    };
+    updatedProducts[index] = { ...updatedProducts[index], [field]: value };
+    if (field === "material_id") {
+      const selectedMaterial = materials.find((mat) => mat.id === value);
+      if (selectedMaterial) {
+        try {
+          const { data: productData, error } = await supabase
+            .from("products")
+            .select("product_code")
+            .eq("lab_id", labId)
+            .eq("material_id", value);
+
+          if (error) {
+            console.error("Error fetching product codes:", error);
+            return;
+          }
+          const highestProductCode =
+            productData.length > 0
+              ? Math.max(...productData.map((p) => Number(p?.product_code) || 0))
+              : 0;
+
+          const newProductCode =
+            highestProductCode > 0
+              ? (highestProductCode + 1).toString()
+              : (Number(selectedMaterial.code) + 1).toString();
+
+          updatedProducts[index].product_code = newProductCode;
+        } catch (err) {
+          console.error("Error generating product code:", err);
+        }
+      }
+    }
+
     setProducts(updatedProducts);
   };
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -288,15 +335,14 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
   };
 
   const handleSubmit = async () => {
-    debugger;
     if (!labId) {
       toast.error("Lab ID not available. Please try again.");
       return;
     }
-
+  
     setIsSubmitting(true);
     const errors = validateProducts(products);
-
+  
     if (errors.length > 0) {
       toast.error(
         <div>
@@ -311,63 +357,48 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       setIsSubmitting(false);
       return;
     }
-
+  
     try {
-      // Ensure all products have the lab_id
-      // const productsWithLabId = products.map(product => ({
-      //   ...product,
-      //   lab_id: labId,
-      //   code: product.material_id,
-      // }));
-
-      // const productsWithLabId = products.map(product => {
-      //   const selectedMaterial = materials.find(mat => mat.id === product.material_id);
-      //   return {
-      //     ...product,
-      //     lab_id: labId,
-      //     code: selectedMaterial ? selectedMaterial?.code : null,
-      //   };
-      // });
-
-      const { data: productData, error } = await supabase
+      const { data: existingProducts, error } = await supabase
         .from("products")
-        .select("*")
-        .eq("lab_id", labId)
+        .select("material_id, product_code")
+        .eq("lab_id", labId);
+  
       if (error) {
-        console.error("Error fetching services:", error);
-        return;
+        console.error("Error fetching existing products:", error);
+        throw error;
       }
-
-      const productsWithLabId = products.map(product => {
-        const selectedMaterial = materials.find(mat => mat.id === product.material_id);
-        if (!selectedMaterial) {
-          return {
-            ...product,
-            lab_id: labId,
-            product_code: "",
-          };
+  
+      const materialCodeTracker: Record<string, number> = {};
+  
+      const productsWithLabId = products.map((product) => {
+        const selectedMaterial = materials.find((mat) => mat.id === product.material_id);
+        if (!selectedMaterial) return { ...product, lab_id: labId, product_code: "" };
+  
+         if (product.product_code) return { ...product, lab_id: labId };
+  
+        const materialKey = String(product.material_id);
+  
+        const existingMaterialProducts = existingProducts.filter(
+          (p) => p.material_id === product.material_id
+        );
+  
+       const highestProductCode =
+          existingMaterialProducts.length > 0
+            ? Math.max(...existingMaterialProducts.map((p) => Number(p?.product_code) || 0))
+            : Number(selectedMaterial.code);
+  
+        if (!materialCodeTracker[materialKey]) {
+          materialCodeTracker[materialKey] = highestProductCode;
         }
-
-        const existingproducts = productData.filter(p => p.material_id === product.material_id);
-        const highestProductCode = existingproducts.length > 0
-          ? Math.max(...existingproducts.map(p => Number(p?.product_code) || 0))
-          : 0;
-        const newProductCode = highestProductCode > 0
-          ? (Number(highestProductCode) + 1).toString()
-          : (Number(selectedMaterial.code) + 1).toString();
-
-
-        return {
-          ...product,
-          lab_id: labId,
-          product_code: newProductCode,
-        };
+  
+        materialCodeTracker[materialKey] += 1;
+        const newProductCode = materialCodeTracker[materialKey].toString();
+  
+        return { ...product, lab_id: labId, product_code: newProductCode };
       });
-
-
-
+  
       await onUpload(productsWithLabId);
-      // toast.success("Products added successfully!");
       setIsOpen(false);
       setProducts([{ ...emptyProduct(), lab_id: labId }]);
     } catch (error) {
@@ -377,6 +408,7 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
       setIsSubmitting(false);
     }
   };
+  
 
   useEffect(() => {
     const fetchReferenceData = async () => {
@@ -458,7 +490,23 @@ const BatchProductUpload: React.FC<BatchProductUploadProps> = ({
                   className="p-4 border rounded-lg space-y-4 bg-[#f1f5f9]"
                 >
                   <div className="grid grid-cols-12 gap-4 items-end">
-                    <div className="col-span-5 space-y-2">
+
+                    <div className="col-span-1 space-y-2">
+                      <Label htmlFor={`product_code-${index}`} className="text-xs">
+                        Code
+                      </Label>
+                      <Input
+                        id={`name-${index}`}
+                        value={product.product_code}
+                        onChange={(e) =>
+                          updateProduct(index, "product_code", e.target.value)
+                        }
+                        className="bg-white"
+                        disabled={true}
+                      />
+                    </div>
+
+                    <div className="col-span-4 space-y-2">
                       <Label htmlFor={`name-${index}`} className="text-xs">
                         Name
                       </Label>

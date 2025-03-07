@@ -95,7 +95,7 @@ interface SortConfig {
 }
 
 const ProductsServices: React.FC = () => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -127,7 +127,7 @@ const ProductsServices: React.FC = () => {
     direction: "asc",
   });
 
-  const { user } = useAuth();
+
   const {
     data: labIdData,
     error: labError,
@@ -330,18 +330,62 @@ const ProductsServices: React.FC = () => {
   };
 
   const handleEditProduct = async (product: Product) => {
+    debugger;
+
     console.log(product, "ProductList");
 
-    // Fetch the material code based on material_id
-    const { data: materialData, error: materialError } = await supabase
-      .from("materials")
-      .select("code")
-      .eq("id", product.material_id)
+    const lab = await getLabIdByUserId(user?.id as string);
+    if (!lab?.labId) {
+      console.error("Lab ID not found.");
+      return;
+    }
+    // Fetch existing product by ID
+    const { data: existingProduct, error: existingProductError } = await supabase
+      .from("products")
+      .select("id, material_id, product_code")
+      .eq("id", product.id)
       .single();
 
-    if (materialError) {
-      throw new Error("Failed to fetch material code");
+    if (existingProductError) {
+      console.error("Error fetching existing product:", existingProductError);
+      throw existingProductError;
     }
+
+    let newProductCode = product.product_code; // Default to the current product code
+    // Check if the material_id has changed
+    if (existingProduct?.material_id !== product.material_id) {
+      // Fetch the material code
+      const { data: materialData, error: materialError } = await supabase
+        .from("materials")
+        .select("code")
+        .eq("id", product.material_id)
+        .single();
+
+      if (materialError || !materialData) {
+        throw new Error("Failed to fetch material code");
+      }
+
+      // Fetch existing products for the lab with the new material_id
+      const { data: existingProducts, error: fetchError } = await supabase
+        .from("products")
+        .select("id, product_code")
+        .eq("lab_id", lab?.labId)
+        .eq("material_id", product.material_id);
+
+      if (fetchError) {
+        console.error("Error fetching existing products:", fetchError);
+        throw fetchError;
+      }
+
+      // Generate new product code
+      const highestProductCode =
+        existingProducts.length > 0
+          ? Math.max(...existingProducts.map((p) => Number(p?.product_code) || 0))
+          : Number(materialData.code);
+
+      newProductCode = (highestProductCode + 1).toString();
+    }
+
 
     const { data, error } = await supabase
       .from("products")
@@ -355,7 +399,7 @@ const ProductsServices: React.FC = () => {
         material_id: product.material_id,
         billing_type_id: product.billing_type_id,
         requires_shade: product.requires_shade,
-        product_code: materialData?.code,
+        product_code: newProductCode,
       })
       .eq("id", product.id)
       .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
@@ -479,10 +523,12 @@ const ProductsServices: React.FC = () => {
 
       const urlParams = location.pathname + location.search; // Get full URL path + query
 
-      navigate("/material-selection", { replace: true });
+      //navigate("/material-selection", { replace: true });
+      setLoading(true)
       setTimeout(() => {
-        navigate(urlParams, { replace: true });
+        window.location.href = window.location.href;
       }, 100);
+      setLoading(false)
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("An error occurred.");
@@ -519,11 +565,9 @@ const ProductsServices: React.FC = () => {
         toast.error("Failed to archive the items.");
       } else {
         toast.success("Items successfully archived.");
-        const urlParams = location.pathname + location.search; // Get full URL path + query
-        navigate("/material-selection", { replace: true });
         setTimeout(() => {
-          navigate(urlParams, { replace: true });
-        }, 100);
+          window.location.href = window.location.href;
+        }, 500);
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -563,11 +607,11 @@ const ProductsServices: React.FC = () => {
         toast.success("Items successfully archived.");
 
         fetchServices();
-        const urlParams = location.pathname + location.search; // Get full URL path + query
-        navigate("/material-selection", { replace: true });
+        setLoading(true)
         setTimeout(() => {
-          navigate(urlParams, { replace: true });
+          window.location.href = window.location.href;
         }, 100);
+        setLoading(false)
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -940,6 +984,15 @@ const ProductsServices: React.FC = () => {
                       />
                     </TableHead>
                     <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("product_code")}
+                    >
+                      <div className="flex items-center">
+                        Code
+                        {getSortIcon("product_code")}
+                      </div>
+                    </TableHead>
+                    <TableHead
                       className="cursor-pointer w-[250px]"
                       onClick={() => handleSort("name")}
                     >
@@ -948,15 +1001,7 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("name")}
                       </div>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("product_code")}
-                    >
-                      <div className="flex items-center">
-                        Service Code
-                        {getSortIcon("product_code")}
-                      </div>
-                    </TableHead>
+
 
                     <TableHead
                       className="cursor-pointer"
@@ -1030,12 +1075,13 @@ const ProductsServices: React.FC = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {service?.name}
-                      </TableCell>
                       <TableCell>
                         {service?.product_code}
                       </TableCell>
+                      <TableCell className="font-medium">
+                        {service?.name}
+                      </TableCell>
+
                       <TableCell>
                         <Badge variant="outline">
                           {service?.material?.name}

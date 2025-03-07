@@ -364,15 +364,6 @@ const ProductList: React.FC<ProductListProps> = ({
                 />
               </TableHead>
               <TableHead
-                onClick={() => handleSort("name")}
-                className="cursor-pointer"
-              >
-                <div className="flex items-center">
-                  Name
-                  {getSortIcon("name")}
-                </div>
-              </TableHead>
-              <TableHead
                 onClick={() => handleSort("product_code")}
                 className="cursor-pointer"
               >
@@ -381,6 +372,16 @@ const ProductList: React.FC<ProductListProps> = ({
                   {getSortIcon("product_code")}
                 </div>
               </TableHead>
+              <TableHead
+                onClick={() => handleSort("name")}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center">
+                  Name
+                  {getSortIcon("name")}
+                </div>
+              </TableHead>
+              
               <TableHead
                 onClick={() => handleSort("material")}
                 className="cursor-pointer"
@@ -497,6 +498,7 @@ const ProductList: React.FC<ProductListProps> = ({
                     onClick={(e) => e.stopPropagation()}
                   />
                 </TableCell>
+                <TableCell>{product.product_code}</TableCell>
                 <TableCell
                   className="font-medium"
                   onClick={(e) => {
@@ -508,8 +510,7 @@ const ProductList: React.FC<ProductListProps> = ({
                     {product.name}
                     <ChevronRight className="h-4 w-4 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                </TableCell>
-                <TableCell>{product.product_code}</TableCell>
+                </TableCell>                
                 <TableCell>{product.material?.name}</TableCell>
 
                 <TableCell className="text-right">

@@ -115,18 +115,62 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
     setServices(services.filter((_, i) => i !== index));
   };
 
-  const updateService = (
+  // const updateService = (
+  //   index: number,
+  //   field: keyof ServiceInput,
+  //   value: any
+  // ) => {
+  //   const updatedServices = [...services];
+  //   updatedServices[index] = {
+  //     ...updatedServices[index],
+  //     [field]: value,
+  //   };
+  //   setServices(updatedServices);
+  // };
+
+  const updateService = async (
     index: number,
     field: keyof ServiceInput,
     value: any
   ) => {
     const updatedServices = [...services];
-    updatedServices[index] = {
-      ...updatedServices[index],
-      [field]: value,
-    };
+    updatedServices[index] = { ...updatedServices[index], [field]: value };
+
+    if (field === "material_id") {
+      const selectedMaterial = materials.find((mat) => mat.id === value);
+      if (selectedMaterial) {
+        try {
+          const { data: serviceData, error } = await supabase
+            .from("services")
+            .select("product_code")
+            .eq("lab_id", labId)
+            .eq("material_id", value);
+
+          if (error) {
+            console.error("Error fetching product codes:", error);
+            return;
+          }
+          const highestServiceCode =
+            serviceData.length > 0
+              ? Math.max(...serviceData.map((p) => Number(p?.product_code) || 0))
+              : 0;
+
+          const newServiceCode =
+            highestServiceCode > 0
+              ? (highestServiceCode + 1).toString()
+              : (Number(selectedMaterial.code) + 1).toString();
+
+          updatedServices[index].product_code = newServiceCode;
+        } catch (err) {
+          console.error("Error generating product code:", err);
+        }
+      }
+    }
+
     setServices(updatedServices);
   };
+
+
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -268,81 +312,154 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
     return errors;
   };
 
+  // const handleSubmit = async () => {
+  //   try {
+  //     if (!labId) {
+  //       toast.error("Lab ID not available. Please try again.");
+  //       return;
+  //     }
+
+  //     // Validate services before submitting
+  //     const invalidServices = services.filter(
+  //       (service) => !service.name || !service.material_id || service.price < 0
+  //     );
+
+  //     if (invalidServices.length > 0) {
+  //       toast.error(
+  //         "Please fill in all required fields (Name, Material, Price) for all services."
+  //       );
+  //       return;
+  //     }
+
+  //     setIsSubmitting(true);
+
+  //     // Ensure all services have lab_id
+  //     // const servicesWithLabId = services.map((service) => ({
+  //     //   ...service,
+  //     //   lab_id: labId,
+  //     // }));
+
+  //     // Map services and generate product_code dynamically
+  //     const { data: servicesData, error } = await supabase
+  //       .from("services")
+  //       .select("*")
+  //       .eq("lab_id", labId)
+  //     if (error) {
+  //       console.error("Error fetching services:", error);
+  //       return;
+  //     }
+
+  //     const servicesWithLabId = services.map((service) => {
+  //       const selectedMaterial = materials.find(mat => mat.id === service.material_id);
+  //       if (!selectedMaterial) {
+  //         return {
+  //           ...service,
+  //           lab_id: labId,
+  //           product_code: "",
+  //         };
+  //       }
+  //       const existingServices = servicesData.filter(s => s.material_id === service.material_id);
+  //       const highestServiceCode = existingServices.length > 0
+  //         ? Math.max(...existingServices.map(s => Number(s?.product_code) || 0))
+  //         : 0;
+  //       const newServiceCode = highestServiceCode > 0
+  //         ? (Number(highestServiceCode) + 1).toString()
+  //         : (Number(selectedMaterial.code) + 1).toString();
+
+  //       return {
+  //         ...service,
+  //         lab_id: labId,
+  //         product_code: newServiceCode,
+  //       };
+  //     });
+
+  //     await onUpload(servicesWithLabId);
+  //     console.log(servicesWithLabId, "servicesWithLabId");
+  //     setIsOpen(false);
+  //     // setServices([{ ...emptyService(), lab_id: labId }]);
+  //     // setActiveTab("manual");
+  //   } catch (error: any) {
+  //     console.error("Error uploading services:", error);
+  //     toast.error(
+  //       error?.message || "Failed to add services. Please try again."
+  //     );
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
   const handleSubmit = async () => {
     try {
       if (!labId) {
         toast.error("Lab ID not available. Please try again.");
         return;
       }
-
-      // Validate services before submitting
+  
       const invalidServices = services.filter(
         (service) => !service.name || !service.material_id || service.price < 0
       );
-
+  
       if (invalidServices.length > 0) {
         toast.error(
           "Please fill in all required fields (Name, Material, Price) for all services."
         );
         return;
       }
-
+  
       setIsSubmitting(true);
 
-      // Ensure all services have lab_id
-      // const servicesWithLabId = services.map((service) => ({
-      //   ...service,
-      //   lab_id: labId,
-      // }));
-
-      // Map services and generate product_code dynamically
-      const { data: servicesData, error } = await supabase
+      const { data: existingServices, error } = await supabase
         .from("services")
-        .select("*")
-        .eq("lab_id", labId)
+        .select("material_id, product_code")
+        .eq("lab_id", labId);
+  
       if (error) {
-        console.error("Error fetching services:", error);
-        return;
+        console.error("Error fetching existing services:", error);
+        throw error;
       }
-
+  
+      const materialCodeTracker: Record<string, number> = {};
+  
       const servicesWithLabId = services.map((service) => {
-        const selectedMaterial = materials.find(mat => mat.id === service.material_id);
-        if (!selectedMaterial) {
-          return {
-            ...service,
-            lab_id: labId,
-            product_code: "",
-          };
+        const selectedMaterial = materials.find((mat) => mat.id === service.material_id);
+        if (!selectedMaterial) return { ...service, lab_id: labId, product_code: "" };
+  
+        if (service.product_code) return { ...service, lab_id: labId };
+  
+        const materialKey = String(service.material_id);
+  
+        const existingMaterialServices = existingServices.filter(
+          (s) => s.material_id === service.material_id
+        );
+  
+        const highestServiceCode =
+          existingMaterialServices.length > 0
+            ? Math.max(...existingMaterialServices.map((s) => Number(s?.product_code) || 0))
+            : Number(selectedMaterial.code);
+  
+        if (!materialCodeTracker[materialKey]) {
+          materialCodeTracker[materialKey] = highestServiceCode;
         }
-        const existingServices = servicesData.filter(s => s.material_id === service.material_id);
-        const highestServiceCode = existingServices.length > 0
-          ? Math.max(...existingServices.map(s => Number(s?.product_code) || 0))
-          : 0;
-        const newServiceCode = highestServiceCode > 0
-          ? (Number(highestServiceCode) + 1).toString()
-          : (Number(selectedMaterial.code) + 1).toString();
-
-        return {
-          ...service,
-          lab_id: labId,
-          product_code: newServiceCode,
-        };
+  
+        materialCodeTracker[materialKey] += 1;
+        const newServiceCode = materialCodeTracker[materialKey].toString();
+  
+        return { ...service, lab_id: labId, product_code: newServiceCode };
       });
-
+  
       await onUpload(servicesWithLabId);
       console.log(servicesWithLabId, "servicesWithLabId");
       setIsOpen(false);
-      // setServices([{ ...emptyService(), lab_id: labId }]);
-      // setActiveTab("manual");
+      setServices([{ ...emptyService(), lab_id: labId }]);
     } catch (error: any) {
       console.error("Error uploading services:", error);
-      toast.error(
-        error?.message || "Failed to add services. Please try again."
-      );
+      toast.error(error?.message || "Failed to add services. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+ 
 
   return (
     <Dialog
@@ -396,7 +513,8 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[600px]">Name</TableHead>
+                      <TableHead className="w-[100px]">Code</TableHead>
+                      <TableHead className="w-[500px]">Name</TableHead>
                       <TableHead className="w-[180px]">Price</TableHead>
                       <TableHead>Material</TableHead>
                       <TableHead className="w-[300px]">Description</TableHead>
@@ -407,6 +525,18 @@ const BatchServiceUpload: React.FC<BatchServiceUploadProps> = ({
                   <TableBody>
                     {services.map((service, index) => (
                       <TableRow key={index}>
+                        <TableCell>
+                          <Input
+                            id={`name-${index}`}
+                            value={service.product_code}
+                            onChange={(e) =>
+                              updateService(index, "product_code", e.target.value)
+                            }
+                            className="bg-white"
+                            disabled={true}
+                          />
+                        </TableCell>
+
                         <TableCell>
                           <Input
                             value={service.name}
