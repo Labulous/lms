@@ -819,6 +819,231 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
       setLab(lab);
 
+      const handleFetchData = async () => {
+        try {
+          const { data: query, error } = await supabase
+            .from("cases")
+            .select(
+              `
+                     id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            attachements,
+            case_number,
+            isDisplayAcctOnly,
+            isDisplayDoctorAcctOnly,
+            isHidePatientName,
+            invoice:invoices!case_id (
+              id,
+              case_id,
+              amount,
+              status,
+              due_amount,
+              due_date
+            ),
+            client:clients!client_id (
+              id,
+              client_name,
+              phone,
+              street,
+              city,
+              state,
+              zip_code,
+              account_number
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+            working_pan_name,
+            working_pan_color,
+            rx_number,
+            received_date,
+            invoice_notes,
+            isDueDateTBD,
+            appointment_date,
+            instruction_notes,
+            otherItems,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            qr_code,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            created_by:users!created_by (
+              name,
+              id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            ),
+             margin_design_type,
+            occlusion_design_type,
+            alloy_type,
+            custom_margin_design_type,
+            custom_occlusion_design_type,
+            custon_alloy_type,
+          discounted_price:discounted_price!id (
+                    id,
+                    product_id,
+                    discount,
+                    final_price,
+                    price,
+                    quantity,
+                    total
+              ),
+            teethProduct: case_product_teeth!id (
+              id,
+              is_range,
+              type,
+              tooth_number,
+              pontic_teeth,
+              product_id,
+              occlusal_shade:shade_options!occlusal_shade_id (
+              name,
+              category,
+              is_active
+              ),
+               body_shade:shade_options!body_shade_id (
+               name,
+               category,
+                is_active
+                ),
+                gingival_shade:shade_options!gingival_shade_id (
+                name,
+                category,
+                 is_active
+                 ),
+                 stump_shade:shade_options!stump_shade_id (
+                   name,
+                  category,
+                  is_active
+                        ),
+                      pontic_teeth,
+                      notes,
+                      product_id,
+                      custom_body_shade,
+                      custom_occlusal_shade,
+                      custom_gingival_shade,
+                      custom_stump_shade,
+                      type,
+              product:products!product_id (
+                        id,
+                        name,
+                        price,
+                        lead_time,
+                        is_client_visible,
+                        is_taxable,
+                        created_at,
+                        updated_at,
+                        requires_shade,
+                        material:materials!material_id (
+                          name,
+                          description,
+                          is_active
+                        ),
+                        product_type:product_types!product_type_id (
+                          name,
+                          description,
+                          is_active
+                        ),
+                        billing_type:billing_types!billing_type_id (
+                          name,
+                          label,
+                          description,
+                          is_active
+                        )
+              )
+              )
+              `
+            )
+            .eq("lab_id", lab?.id)
+            .eq("id", activeCaseId)
+            .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+            .order("created_at", { ascending: false });
+
+          if (error) {
+            console.log("failed to fetch cases");
+          }
+          const arragedNewCases: ExtendedCase[] =
+            query?.map((item: any) => {
+              return {
+                ...item,
+                products: item.teethProduct.map((tp: any, index: number) => ({
+                  id: tp.product.id,
+                  name: tp.product.name,
+                  price: tp.product.price,
+                  lead_time: tp.product.lead_time,
+                  is_client_visible: tp.product.is_client_visible,
+                  is_taxable: tp.product.is_taxable,
+                  created_at: tp.product.created_at,
+                  updated_at: tp.product.updated_at,
+                  requires_shade: tp.product.requires_shade,
+                  material: tp.product.material,
+                  product_type: tp.product.product_type,
+                  billing_type: tp.product.billing_type,
+                  discounted_price: item?.discounted_price?.[index],
+                  teethProduct: {
+                    id: tp.id,
+                    is_range: tp.is_range,
+                    tooth_number: tp.tooth_number,
+                    pontic_teeth: tp.pontic_teeth,
+                    product_id: tp.product_id,
+                    occlusal_shade: tp.occlusal_shade,
+                    body_shade: tp.body_shade,
+                    gingival_shade: tp.gingival_shade,
+                    stump_shade: tp.stump_shade,
+                    manual_occlusal_shade: tp.manual_occlusal_shade,
+                    manual_body_shade: tp.manual_body_shade,
+                    type: tp.type,
+                    manual_gingival_shade: tp.manual_gingival_shade,
+                    manual_stump_shade: tp.manual_stump_shade,
+                    custom_occlusal_shade: tp.custom_occlusal_shade,
+                    custom_body_shade: tp.custom_body_shade,
+                    custom_gingival_shade: tp.custom_gingival_shade,
+                    custom_stump_shade: tp.custom_stump_shade,
+                    custom_occlusal_details: tp.occlusal_shade,
+                    notes: tp.notes,
+                  },
+                })),
+              };
+            }) || [];
+          if (arragedNewCases) {
+            setCaseDetail(arragedNewCases?.[0]);
+            console.log(arragedNewCases, "arragedNewCases");
+          }
+        } catch (err) {
+          console.log("err");
+        }
+      };
+      handleFetchData();
       const { data: caseData, error } = await supabase
         .from("cases")
         .select(
@@ -1073,7 +1298,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             );
             console.log(relevantTeethProducts, "relevantTeethProducts");
             // Map each teeth product to a corresponding discounted price
-            return teethProducts.map((teeth: any, index: number) => {
+            return relevantTeethProducts.map((teeth: any, index: number) => {
               // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
               const discountedPrice =
                 relevantDiscounts[index % relevantDiscounts.length] || null;
@@ -1086,12 +1311,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             });
           });
 
-          setCaseDetail({
-            ...(caseData as any),
-            products: productsWithDiscounts,
-            labDetail: lab,
-            discounted_price: discountedPriceData,
-          });
+          // setCaseDetail({
+          //   ...(caseData as any),
+          //   products: productsWithDiscounts,
+          //   labDetail: lab,
+          //   discounted_price: discountedPriceData,
+          // });
         }
       }
     } catch (error) {
@@ -1635,7 +1860,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 tooth_number: [...tooth_number],
                 pontic_teeth: [...pontic_teeth],
               },
-              service: product.service
+              service: product.service?.[0]?.name
                 ? [
                     {
                       service: product.service,
@@ -1651,7 +1876,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       )
     : [];
   console.log(consolidatedProducts, "consolidatedProducts");
-  console.log(caseDetail, "consolidatedProducts");
+  console.log(caseDetail, "caseDetails");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -2335,7 +2560,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const quantity =
                             product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-                          const serviceRow = product.service ? (
+                          const serviceRow = product.service?.name ? (
                             <TableRow>
                               <TableCell className="text-xs py-1.5 pl-4 pr-0">
                                 Service
@@ -2505,7 +2730,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 return (
                                   <TableRow>
                                     <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                      Service{" "}
+                                      Service{"  "}
                                       {product.teeth
                                         .map((item: number) => item)
                                         .join(",")}
@@ -2817,7 +3042,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Incisal Type
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.occlusal_type
+                              {caseDetail?.occlusal_type !== "custom"
                                 ? caseDetail?.occlusal_type
                                 : caseDetail.custom_occulusal_details ||
                                   "Not specified"}
@@ -2828,7 +3053,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Contact Type
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.contact_type
+                              {caseDetail?.contact_type !== "custom"
                                 ? caseDetail?.contact_type
                                 : caseDetail?.custom_contact_details ||
                                   "Not specified"}
@@ -2837,7 +3062,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <div>
                             <p className="text-sm text-gray-500">Pontic Type</p>
                             <p className="font-medium">
-                              {caseDetail?.pontic_type
+                              {caseDetail?.pontic_type !== "custom"
                                 ? caseDetail?.pontic_type
                                 : caseDetail?.custom_pontic_details ||
                                   "Not specified"}
@@ -2850,7 +3075,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Margin Design
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.margin_design_type
+                              {caseDetail?.margin_design_type !== "custom"
                                 ? caseDetail?.margin_design_type
                                 : caseDetail?.custom_margin_design_type ||
                                   "Not specified"}
@@ -2861,7 +3086,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Incisal Design
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.occlusion_design_type
+                              {caseDetail?.occlusion_design_type !== "custom"
                                 ? caseDetail?.occlusion_design_type
                                 : caseDetail?.custom_occlusion_design_type ||
                                   "Not specified"}
@@ -2870,7 +3095,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <div>
                             <p className="text-sm text-gray-500">Alloy</p>
                             <p className="font-medium">
-                              {caseDetail?.alloy_type
+                              {caseDetail?.alloy_type !== "custom"
                                 ? caseDetail?.alloy_type
                                 : caseDetail?.custon_alloy_type ||
                                   "Not specified"}

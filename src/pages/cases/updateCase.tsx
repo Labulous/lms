@@ -374,6 +374,7 @@ const UpdateCase: React.FC = () => {
           material: tp.product.material,
           product_type: tp.product.product_type,
           billing_type: tp.product.billing_type,
+          pontic_teeth: caseDataa?.teethProduct?.[index].pontic_teeth,
           discounted_price: caseItem?.discounted_price[index],
           teethProduct: {
             id: tp.id,
@@ -779,6 +780,7 @@ const UpdateCase: React.FC = () => {
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
+            console.log(item.teethProduct,"item.teethProduct")
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
               console.log(item, "itemitem");
@@ -794,9 +796,7 @@ const UpdateCase: React.FC = () => {
                 discounted_price_id: item.discounted_price?.id,
                 case_product_id: item.teethProduct.case_product_id,
                 teeth: [tooth], // Single tooth per subRow
-                pontic_teeth: item.teethProduct?.pontic_teeth?.includes(tooth)
-                  ? [tooth]
-                  : [],
+                pontic_teeth: item?.pontic_teeth,
                 notes: item?.teethProduct?.notes || "",
                 shades: {
                   body_shade: item.teethProduct?.body_shade?.id || null,
@@ -933,7 +933,7 @@ const UpdateCase: React.FC = () => {
         }
       }}
     >
-      <div className="space-y-4">
+      <div className="space-y-4" ref={errorRef}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold text-gray-800">
             Update a Case{" "}
