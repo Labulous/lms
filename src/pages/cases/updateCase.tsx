@@ -361,51 +361,52 @@ const UpdateCase: React.FC = () => {
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-      ...caseItem,
-      labDetail: lab,
-      custom_occlusal_details: caseDataa?.custom_occulusal_details,
-      common_services: caseDataa?.common_services,
-      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-        id: tp.product.id,
-        name: tp.product.name,
-        price: tp.product.price,
-        lead_time: tp.product.lead_time,
-        is_client_visible: tp.product.is_client_visible,
-        is_taxable: tp.product.is_taxable,
-        created_at: tp.product.created_at,
-        updated_at: tp.product.updated_at,
-        requires_shade: tp.product.requires_shade,
-        material: tp.product.material,
-        product_type: tp.product.product_type,
-        billing_type: tp.product.billing_type,
-        discounted_price: caseItem?.discounted_price[index],
-        teethProduct: {
-          id: tp.id,
-          is_range: tp.is_range,
-          tooth_number: tp.tooth_number,
-          product_id: tp.product_id,
-          case_product_id: tp.id,
-          occlusal_shade: tp.occlusal_shade,
-          body_shade: tp.body_shade,
-          gingival_shade: tp.gingival_shade,
-          additional_services_id: tp.additional_services_id,
-          type: tp.type,
-          stump_shade: tp.stump_shade,
-          manual_occlusal_shade: tp.manual_occlusal_shade,
-          manual_body_shade: tp.manual_body_shade,
-          manual_gingival_shade: tp.manual_gingival_shade,
-          manual_stump_shade: tp.manual_stump_shade,
-          custom_occlusal_shade: tp.custom_occlusal_shade,
-          custom_body_shade: tp.custom_body_shade,
-          custom_gingival_shade: tp.custom_gingival_shade,
-          custom_stump_shade: tp.custom_stump_shade,
-          custom_occlusal_details: tp.occlusal_shade,
-          notes: tp.notes,
-          service: tp.service,
-          quantity: tp.quantity,
-        },
-      })),
-    }
+        ...caseItem,
+        labDetail: lab,
+        custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        common_services: caseDataa?.common_services,
+        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          billing_type: tp.product.billing_type,
+          pontic_teeth: caseDataa?.teethProduct?.[index].pontic_teeth,
+          discounted_price: caseItem?.discounted_price[index],
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            product_id: tp.product_id,
+            case_product_id: tp.id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            additional_services_id: tp.additional_services_id,
+            type: tp.type,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+            service: tp.service,
+            quantity: tp.quantity,
+          },
+        })),
+      }
     : null;
 
   useEffect(() => {
@@ -787,6 +788,7 @@ const UpdateCase: React.FC = () => {
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
+            console.log(item.teethProduct,"item.teethProduct")
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
               console.log(item, "itemitem");
@@ -802,9 +804,7 @@ const UpdateCase: React.FC = () => {
                 discounted_price_id: item.discounted_price?.id,
                 case_product_id: item.teethProduct.case_product_id,
                 teeth: [tooth], // Single tooth per subRow
-                pontic_teeth: item.teethProduct?.pontic_teeth?.includes(tooth)
-                  ? [tooth]
-                  : [],
+                pontic_teeth: item?.pontic_teeth,
                 notes: item?.teethProduct?.notes || "",
                 shades: {
                   body_shade: item.teethProduct?.body_shade?.id || null,
@@ -941,7 +941,7 @@ const UpdateCase: React.FC = () => {
         }
       }}
     >
-      <div className="space-y-4">
+      <div className="space-y-4" ref={errorRef}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold text-gray-800">
             Update a Case{" "}

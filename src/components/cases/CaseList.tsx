@@ -1009,6 +1009,7 @@ type,
             product_id: tp.product_id,
             occlusal_shade: tp.occlusal_shade,
             body_shade: tp.body_shade,
+            pontic_teeth:tp.pontic_teeth,
             gingival_shade: tp.gingival_shade,
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
@@ -1060,7 +1061,8 @@ type,
           street,
           city,
           state,
-          zip_code
+          zip_code,
+          account_number
         ),
         doctor:doctors!doctor_id (
           id,
@@ -1133,8 +1135,9 @@ type,
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-type,
+          type,
           tooth_number,
+          pontic_teeth,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,

@@ -631,7 +631,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
 
               <ul>
                 {mergedProducts.map((item: any, index) => {
-                  const serviceRow = item.service ? (
+                  const serviceRow = item.service?.name ? (
                     <div
                       className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
                       style={{ lineHeight: "1.1" }}
@@ -1400,12 +1400,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
   {
     /* Item Table - Details */
   }
-  const TeetDetail = ({
-    teeth,
-    teethDetail,
-    itemsLength,
-    teethproducts,
-  }: any) => {
+  const TeetDetail = ({ teeth, products, itemsLength, teethproducts }: any) => {
     const TYPE_FILL_CLASSES = {
       [DefaultProductType.Crown]: "fill-blue-500",
       [DefaultProductType.Bridge]: "fill-purple-500",
@@ -1414,15 +1409,19 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       [DefaultProductType.Coping]: "fill-rose-900",
       [DefaultProductType.Appliance]: "fill-stone-500",
     } as const;
-    const selectedTeeth = teeth.teethProduct.tooth_number;
+    const selectedTeeth = products.flatMap(
+      (product: any) => product.teethProduct?.tooth_number || []
+    );
     const getToothColor = (toothNumber: number): string => {
-      const type = teeth.teethProduct?.type;
-      console.log(teeth, "teethx");
+      const type = teeth?.type;
       // Highlight selected teeth
-      if (teeth?.teethProduct?.pontic_teeth?.length > 0) {
+      const pontic_teeth = products?.flatMap(
+        (item:any) => item?.teethProduct?.pontic_teeth
+      );
+      if (pontic_teeth && pontic_teeth?.length > 0) {
         if (
           selectedTeeth.includes(toothNumber) &&
-          !teeth?.teethProduct.pontic_teeth.includes(toothNumber)
+          !pontic_teeth?.includes(toothNumber)
         ) {
           if (type && type in TYPE_FILL_CLASSES) {
             return "fill-purple-300";
@@ -1431,7 +1430,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
         }
 
         // Highlight pontic teeth with red
-        if (teeth?.teethProduct.pontic_teeth.includes(toothNumber)) {
+        if (pontic_teeth?.includes(toothNumber)) {
           return "fill-purple-600"; // red for pontic teeth
         }
       }
@@ -1447,7 +1446,6 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     };
 
     const addedTeethMap = new Map();
-
     const formatTeethRange = (teeth: number[]): string => {
       if (!teeth.length) return "";
 
@@ -1602,13 +1600,13 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     //     )
     //   : {};
 
-    const teethItems = teethDetail.products.filter((item: any) => {
-      return item.teethProduct.type === teeth.teethProduct.type;
-    });
-    const allToothNumbers = teethItems.flatMap(
+    // const teethItems = teethDetail.filter((item: any) => {
+    //   return item.teethProduct.type === teeth.teethProduct.type;
+    // });
+    const allToothNumbers = products.flatMap(
       (product: any) => product.teethProduct?.tooth_number || []
     );
-    const allToothPonticNumbers = teethItems.flatMap(
+    const allToothPonticNumbers = products.flatMap(
       (product: any) => product.teethProduct?.pontic_teeth || []
     );
     return (
@@ -1618,21 +1616,20 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       >
         <div className="flex justify-start flex-col  mb-2">
           <div className="flex">
-            <h3 className="font-bold text-sm ">{teeth.teethProduct.type}</h3>
+            <h3 className="font-bold text-sm ">{teeth.type}</h3>
             <p
               className="text-sm pl-2 font-extrabold mt-1"
               style={{ lineHeight: "1.15" }}
             >
-              {teeth.teethProduct.type !== "Bridge" ? (
+              {teeth.type !== "Bridge" ? (
                 <># {allToothNumbers.join(",#")}</>
               ) : (
                 <>
                   <span
                     style={{
                       color:
-                        TYPE_COLORS[
-                          teeth.teethProduct.type as keyof typeof TYPE_COLORS
-                        ] || TYPE_COLORS.Other,
+                        TYPE_COLORS[teeth.type as keyof typeof TYPE_COLORS] ||
+                        TYPE_COLORS.Other,
                     }}
                   ></span>
                   #{formatTeethRange(allToothNumbers)}
@@ -1644,7 +1641,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                 className="text-sm pl-2 font-extrabold mt-1"
                 style={{ lineHeight: "1.15" }}
               >
-                {teeth.teethProduct.type !== "Bridge" ? (
+                {teeth.type !== "Bridge" ? (
                   <></>
                 ) : (
                   <>
@@ -1665,7 +1662,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           </div>
 
           <div>
-            {teethItems.map((item: any) => {
+            {products.map((item: any) => {
               return (
                 <div>
                   <div className="space-y-1 font-medium col-span-5 pl-2">
@@ -1747,7 +1744,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                           item?.teethProduct?.manual_occlusal_shade) && (
                           <>
                             <span>
-                              <span className="font-normal">Incisal: </span> 
+                              <span className="font-normal">Incisal: </span>
                               <span className="font-bold">
                                 {item?.teethProduct?.manual_occlusal_shade ||
                                   item?.teethProduct?.occlusal_shade?.name}
@@ -2155,68 +2152,45 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
     );
   };
 
-  let productsConsolidate = item?.products;
-  const upperTeeth = new Set([
-    18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
-  ]);
-  const lowerTeeth = new Set([
-    38, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 48,
-  ]);
-
   function mergeProducts(products: any) {
     const mergedMap = new Map();
 
     // Iterate through the products array
     products?.forEach((product: any) => {
-      // Create a key for identifying the product by its properties
-      const key = JSON.stringify({
-        id: product.id,
-        shades: {
-          occlusal: product.teethProduct.occlusal_shade,
-          body: product.teethProduct.body_shade,
-          gingival: product.teethProduct.gingival_shade,
-          stump: product.teethProduct.stump_shade,
-        },
-        service: product.service?.id,
-      });
+      const type = product.teethProduct?.type;
 
-      // Check if this product has already been merged
-      if (mergedMap.has(key)) {
-        const existingProduct = mergedMap.get(key);
+      if (!type) return; // Skip if type is undefined
 
-        // Merge the tooth_number array, ensuring no duplicates
-        const mergedToothNumbers = [
-          ...new Set([
-            ...existingProduct.teethProduct.tooth_number,
-            ...product.teethProduct.tooth_number,
-          ]),
-        ];
-        existingProduct.teethProduct.tooth_number = mergedToothNumbers;
-
-        // Sum up price, final_price, and total for merged products
-        if (existingProduct.discounted_price && product.discounted_price) {
-          existingProduct.discounted_price.price +=
-            product.discounted_price.price;
-          existingProduct.discounted_price.final_price +=
-            product.discounted_price.final_price;
-          existingProduct.discounted_price.total +=
-            product.discounted_price.total;
-        }
-      } else {
-        // For the first occurrence, create a shallow copy to prevent modifying the original data
-        mergedMap.set(key, {
-          ...product,
-          discounted_price: { ...product.discounted_price },
-          teethProduct: { ...product.teethProduct },
+      if (!mergedMap.has(type)) {
+        mergedMap.set(type, {
+          type,
+          teeth: [],
+          products: [],
         });
       }
+
+      const existingGroup = mergedMap.get(type);
+
+      // Merge the tooth_number array, ensuring no duplicates
+      existingGroup.teeth = [
+        ...new Set([
+          ...existingGroup.teeth,
+          ...product.teethProduct.tooth_number,
+        ]),
+      ];
+
+      // Push the product into the products array
+      existingGroup.products.push(product);
     });
 
-    // Return the merged products as a new array (does not affect the original `products` array)
+    // Convert the Map to an array and return
     return Array.from(mergedMap.values());
   }
+
+  // Example usage
   const products = mergeProducts(item?.products);
-  console.log(item?.products,"productsproducts")
+  console.log(products, "productsproducts");
+
   return (
     <div>
       <div
@@ -2229,7 +2203,11 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
           <div className="p-5">
             <Header caseDetail={item} />
 
-            <div className={`grid grid-cols-${products?.length <3 ? products?.length : 3} gap-0`}>
+            <div
+              className={`grid grid-cols-${
+                products?.length < 3 ? products?.length : 3
+              } gap-0`}
+            >
               {products?.map((teeth: any, index: number) => {
                 return (
                   <div key={index}>
@@ -2251,7 +2229,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                       >
                         <TeetDetail
                           teeth={teeth}
-                          teethDetail={item}
+                          products={teeth.products}
                           itemsLength={products.length}
                           teethproducts={item.teethProduct}
                         />
@@ -2284,7 +2262,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     <div className="text-xs text-gray-600">Contact Type</div>
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.contact_type === "not_applicable"
-                        ? ""
+                        ? "not_applicable"
                         : item.contact_type !== "custom"
                         ? item.contact_type?.split("_")?.join(" ")
                         : item.custom_contact_details || ""}
@@ -2294,7 +2272,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     <div className="text-xs text-gray-600">Pontic Type</div>
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.pontic_type === "not_applicable"
-                        ? ""
+                        ? "not_applicable"
                         : item.pontic_type !== "custom"
                         ? item.pontic_type?.split("_")?.join(" ")
                         : item.custom_pontic_details || ""}
@@ -2304,7 +2282,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     <div className="text-xs text-gray-600">Margin Design</div>
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.margin_design_type === "not_applicable"
-                        ? ""
+                        ? "not_applicable"
                         : item.margin_design_type !== "custom"
                         ? item.margin_design_type?.split("_")?.join(" ")
                         : item.custom_margin_design_type || ""}
@@ -2316,7 +2294,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     </div>
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.occlusion_design_type === "not_applicable"
-                        ? ""
+                        ? "not_applicable"
                         : item.occlusion_design_type !== "custom"
                         ? item.occlusion_design_type?.split("_")?.join(" ")
                         : item.custom_margin_design_type || ""}
@@ -2326,7 +2304,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     <div className="text-xs text-gray-600">Alloy</div>
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.alloy_type === "not_applicable"
-                        ? ""
+                        ? "not_applicable"
                         : item.alloy_type !== "custom"
                         ? item.alloy_type
                             ?.split("_")
