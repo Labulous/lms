@@ -444,7 +444,6 @@ class ProductsService {
   }
 
   async addService(input: ServiceInput): Promise<Service> {
-    debugger;
     try {
       logger.debug("Adding new service", input);
 

@@ -330,7 +330,6 @@ const ProductsServices: React.FC = () => {
   };
 
   const handleEditProduct = async (product: Product) => {
-    debugger;
 
     console.log(product, "ProductList");
 
