@@ -341,13 +341,32 @@ const NewCase: React.FC = () => {
           custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
           custom_pontic_details: transformedData.caseDetails?.customPontic,
           common_services:
-            selectedProducts.map((product) => ({
-              teeth: product.teeth,
-              services:
-                product?.commonServices
-                  ?.filter((item) => !item.add_to_all && item.id)
-                  ?.map((item) => item.id) || [],
-            })) || [],
+            selectedProducts.flatMap((product) => {
+              // Flatten all subRow services
+              const subRowServices =
+                product.subRows?.flatMap(
+                  (subRow) =>
+                    subRow?.services &&
+                    subRow?.services?.map((service) => service.id)
+                ) || [];
+
+              // Filter common services not present in any subRow services
+              const filteredCommonServices =
+                product.commonServices?.filter(
+                  (item) =>
+                    !item.add_to_all &&
+                    item.id &&
+                    !subRowServices.includes(item.id)
+                ) || [];
+
+              return filteredCommonServices.length > 0
+                ? {
+                    teeth: product.teeth,
+                    services: filteredCommonServices.map((item) => item.id),
+                  }
+                : []; // Return an empty array if no valid services found
+            }) || [],
+
           lab_id: labIdData?.lab_id,
           attachements: selectedFiles.map((item) => item.url),
           working_pan_name: transformedData.workingPanName,
@@ -370,7 +389,7 @@ const NewCase: React.FC = () => {
         enclosedItems: transformedData.enclosedItems,
         services: selectedServices,
       };
-
+      console.log(newCase, "newCasenewCase");
       // Add case to database
       await addCase(newCase, navigate, setLoadingState);
     } catch (error) {
@@ -429,7 +448,7 @@ const NewCase: React.FC = () => {
           <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
             <h2 className="text-sm font-medium text-white">Order Details</h2>
           </div>
-          <div className="p-6 bg-slate-50" >
+          <div className="p-6 bg-slate-50">
             <OrderDetailsStep
               formData={formData}
               onChange={handleFormChange}

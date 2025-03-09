@@ -20,7 +20,7 @@ export const CASE_STATUSES = [
   "on_hold",
   "completed",
   "cancelled",
-  "shipped"
+  "shipped",
 ] as const;
 
 export type CaseStatus = (typeof CASE_STATUSES)[number];
@@ -158,6 +158,7 @@ const saveCaseProduct = async (
             type: product.type || "",
             additional_services_id:
               product?.services?.map((item: { id: string }) => item.id) || [],
+            services_discount: product?.services?.[0]?.discount || 0,
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:
@@ -684,6 +685,7 @@ const updateCases = async (
             type: product.type || "",
             additional_services_id:
               product?.services?.map((item: { id: string }) => item.id) || [],
+              services_discount: product?.services?.[0]?.discount || 0,
             lab_id: cases.overview.lab_id || "",
             quantity: product.quantity || 1, // Ensure at least 1
             occlusal_shade_id:

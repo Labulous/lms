@@ -656,6 +656,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           pontic_teeth,
           product_id,
           additional_services_id,
+          services_discount,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -778,13 +779,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           product_type: tp.product.product_type,
           common_services: caseItem?.common_services,
           billing_type: tp.product.billing_type,
+          services_discount: caseItem?.teethProduct?.[index].services_discount,
           additional_services_id:
             caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
-          services: {
-            name: "",
-            price: 0,
-          },
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -836,6 +834,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             patient_name,
             due_date,
             attachements,
+            common_services,
             case_number,
             isDisplayAcctOnly,
             isDisplayDoctorAcctOnly,
@@ -925,6 +924,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             teethProduct: case_product_teeth!id (
               id,
               is_range,
+              additional_services_id,
+              services_discount,
               type,
               tooth_number,
               pontic_teeth,
@@ -1001,6 +1002,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 ...item,
                 products: item.teethProduct.map((tp: any, index: number) => ({
                   id: tp.product.id,
+                  additional_services_id: tp.additional_services_id,
+                  services_discount: tp.services_discount,
                   name: tp.product.name,
                   price: tp.product.price,
                   lead_time: tp.product.lead_time,
@@ -1040,6 +1043,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             }) || [];
           if (arragedNewCases) {
             setCaseDetail(arragedNewCases?.[0]);
+            getWorkStationDetails(arragedNewCases?.[0]?.created_at);
+            setFiles(arragedNewCases?.[0]?.attachements);
             console.log(arragedNewCases, "arragedNewCases");
           }
         } catch (err) {
@@ -1047,284 +1052,6 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         }
       };
       handleFetchData();
-      const { data: caseData, error } = await supabase
-        .from("cases")
-        .select(
-          `
-          id,
-          created_at,
-          received_date,
-          ship_date,
-          status,
-          patient_name,
-          due_date,
-          attachements,
-          case_number,
-          common_services,
-          isDisplayAcctOnly,
-          isDisplayDoctorAcctOnly,
-          isHidePatientName,
-          invoice:invoices!case_id (
-            id,
-            case_id,
-            amount,
-            status,
-            due_amount,
-            due_date
-          ),
-          client:clients!client_id (
-            id,
-            client_name,
-            phone,
-            street,
-            city,
-            state,
-            zip_code,
-            additional_lead_time,
-            account_number
-          ),
-          doctor:doctors!doctor_id (
-            id,
-            name,
-            order,
-            client:clients!client_id (
-              id,
-              client_name,
-              phone
-            )
-          ),
-          tag:working_tags!working_tag_id (
-            name,
-            color
-          ),
-          working_pan_name,
-          working_pan_color,
-          rx_number,
-          received_date,
-          invoice_notes,
-          isDueDateTBD,
-          isDisplayAcctOnly,
-          isDisplayDoctorAcctOnly,
-          isHidePatientName,
-          appointment_date,
-          instruction_notes,
-          otherItems,
-          occlusal_type,
-          contact_type,
-          pontic_type,
-          qr_code,
-          custom_contact_details,
-          custom_occulusal_details,
-          custom_pontic_details,
-          enclosed_items:enclosed_case!enclosed_case_id (
-            impression,
-            biteRegistration,
-            photos,
-            jig,
-            opposingModel,
-            articulator,
-            returnArticulator,
-            cadcamFiles,
-            consultRequested,
-            user_id
-          ),
-          created_by:users!created_by (
-            name,
-            id
-          ),
-          product_ids:case_products!id (
-            products_id,
-            id
-          ),
-            margin_design_type,
-          occlusion_design_type,
-          alloy_type,
-          custom_margin_design_type,
-          custom_occlusion_design_type,
-          custon_alloy_type
-        `
-        )
-        .eq("id", activeCaseId)
-        .single();
-
-      if (error) {
-        console.error("Supabase error:", error);
-        setError(error.message);
-        return;
-      }
-
-      if (!caseData) {
-        console.error("No case data found");
-        setError("Case not found");
-        return;
-      }
-      let caseDataApi: any = caseData;
-      setCaseDetail(caseDataApi);
-      getWorkStationDetails(caseData?.created_at);
-      setFiles(caseData.attachements);
-      if (caseData.product_ids?.[0]?.products_id) {
-        const productsIdArray = caseData.product_ids[0].products_id;
-        const caseProductId = caseData.product_ids[0].id;
-
-        // Fetch products
-        if (productsIdArray?.length > 0) {
-          const { data: productData, error: productsError } = await supabase
-            .from("products")
-            .select(
-              `
-              id,
-              name,
-              price,
-              lead_time,
-              is_client_visible,
-              is_taxable,
-              created_at,
-              updated_at,
-              requires_shade,
-              material:materials!material_id (
-                name,
-                description,
-                is_active
-              ),
-              product_type:product_types!product_type_id (
-                name,
-                description,
-                is_active
-              ),
-              billing_type:billing_types!billing_type_id (
-                name,
-                label,
-                description,
-                is_active
-              )
-            `
-            )
-            .in("id", productsIdArray)
-            .eq("lab_id", lab.id);
-
-          if (productsError) {
-            setError(productsError.message);
-            return;
-          }
-
-          // Fetch discounted prices
-          const { data: discountedPriceData, error: discountedPriceError } =
-            await supabase
-              .from("discounted_price")
-              .select(
-                `
-              id,
-              product_id,
-              discount,
-              final_price,
-              price,
-              quantity,
-              total
-            `
-              )
-              .in("product_id", productsIdArray)
-              .eq("case_id", activeCaseId);
-
-          if (discountedPriceError) {
-            console.error(
-              "Error fetching discounted prices:",
-              discountedPriceError
-            );
-            setError(discountedPriceError.message);
-            return;
-          }
-
-          // Fetch teeth products if case product ID exists
-          let teethProducts: any = [];
-          if (caseProductId) {
-            const { data: teethProductData, error: teethProductsError } =
-              await supabase
-                .from("case_product_teeth")
-                .select(
-                  `
-                is_range,
-                occlusal_shade:shade_options!occlusal_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                body_shade:shade_options!body_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                gingival_shade:shade_options!gingival_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                stump_shade_id:shade_options!stump_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                tooth_number,
-                pontic_teeth,
-                notes,
-                product_id,
-                custom_body_shade,
-                additional_services_id,
-                custom_occlusal_shade,
-                custom_gingival_shade,
-                custom_stump_shade,
-                manual_body_shade,
-                manual_occlusal_shade,
-                manual_gingival_shade,
-                manual_stump_shade,
-                type,
-                id
-              `
-                )
-                .eq("case_product_id", caseProductId)
-                .eq("case_id", caseData.id);
-
-            if (teethProductsError) {
-              setError(teethProductsError.message);
-              return;
-            }
-            teethProducts = teethProductData;
-          }
-          // Combine all product data
-          console.log(teethProducts, "teethProductData");
-          const productsWithDiscounts = productData.flatMap((product: any) => {
-            // Find all the discounted prices for this product
-            const relevantDiscounts = discountedPriceData.filter(
-              (discount: { product_id: string }) =>
-                discount.product_id === product.id
-            );
-
-            // Find all the teeth products for this product
-            const relevantTeethProducts = teethProducts.filter(
-              (teeth: any) => teeth.product_id === product.id
-            );
-            console.log(relevantTeethProducts, "relevantTeethProducts");
-            // Map each teeth product to a corresponding discounted price
-            return relevantTeethProducts.map((teeth: any, index: number) => {
-              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
-              const discountedPrice =
-                relevantDiscounts[index % relevantDiscounts.length] || null;
-              return {
-                ...product,
-                discounted_price: discountedPrice,
-                teethProduct: teeth,
-                additional_service_id: teeth?.additional_services_id,
-              };
-            });
-          });
-
-          // setCaseDetail({
-          //   ...(caseData as any),
-          //   products: productsWithDiscounts,
-          //   labDetail: lab,
-          //   discounted_price: discountedPriceData,
-          // });
-        }
-      }
     } catch (error) {
       console.error("Error fetching case data:", error);
       toast.error("Failed to load case details");
@@ -2566,67 +2293,87 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const quantity =
                             product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-                          const serviceRow = product.service?.name ? (
-                            <TableRow>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                Service
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.service.name}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                1
-                              </TableCell> */}
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
-                                0%
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                            </TableRow>
-                          ) : null;
+                          const additionalServices = services.filter((item) =>
+                            product.additional_services_id.includes(item.id)
+                          );
+                         
+                          const serviceRow =
+                            additionalServices.length > 0
+                              ? additionalServices.map((item, index) => {
+                                  return (
+                                    <TableRow key={index}>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        Service
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        {item.name}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  1
+                                </TableCell> */}
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        ${item.price}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                                        {product.services_discount}%
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        $
+                                        {product.services_discount > 0
+                                          ? item.price -
+                                            (item.price *
+                                              product.services_discount) /
+                                              100
+                                          : item.price}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        $ {product.services_discount > 0
+                                          ? item.price -
+                                            (item.price *
+                                              product.services_discount) /
+                                              100
+                                          : item.price}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })
+                              : null;
 
                           return (
                             <React.Fragment key={index}>
@@ -2655,8 +2402,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   />
                                 </TableCell>
                                 {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                  {product?.discounted_price?.quantity || "-"}
-                                </TableCell> */}
+                                    {product?.discounted_price?.quantity || "-"}
+                                  </TableCell> */}
                                 <TableCell className="w-[1px] p-0">
                                   <Separator
                                     orientation="vertical"

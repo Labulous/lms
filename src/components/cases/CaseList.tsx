@@ -811,6 +811,7 @@ const CaseList: React.FC = () => {
        id,
         created_at,
         received_date,
+        common_services,
         ship_date,
         status,
         patient_name,
@@ -910,7 +911,8 @@ const CaseList: React.FC = () => {
         teethProduct: case_product_teeth!id (
           id,
           is_range,
-type,
+          additional_services_id,
+          type,
           tooth_number,
           product_id,
           occlusal_shade:shade_options!occlusal_shade_id (

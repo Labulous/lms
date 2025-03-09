@@ -512,7 +512,88 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       );
     };
 
-    return (
+    const additionalServices = services.filter((item) =>
+      product.additional_services_id.includes(item.id)
+    );
+   
+    const serviceRow =
+      additionalServices.length > 0
+        ? additionalServices.map((item, index) => {
+            return (
+              <TableRow key={index}>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                  Service
+                </TableCell>
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                  {item.name}
+                </TableCell>
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+            1
+          </TableCell> */}
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                  ${item.price}
+                </TableCell>
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                  {product.services_discount}%
+                </TableCell>
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                  $
+                  {product.services_discount > 0
+                    ? item.price -
+                      (item.price *
+                        product.services_discount) /
+                        100
+                    : item.price}
+                </TableCell>
+                <TableCell className="w-[1px] p-0">
+                  <Separator
+                    orientation="vertical"
+                    className="h-full"
+                  />
+                </TableCell>
+                <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                  $ {product.services_discount > 0
+                    ? item.price -
+                      (item.price *
+                        product.services_discount) /
+                        100
+                    : item.price}
+                </TableCell>
+              </TableRow>
+            );
+          })
+        : null;
+            return (
       <div>
         {Object.keys(groups)?.map((type) => {
           const product = groups[type]; // Get the array of products for this type
@@ -1185,7 +1266,15 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       </div>
 
                       {/* Footer */}
-
+                      {invoice?.invoice_notes && (
+                        <div className="text-start mt-4 font-medium">
+                          <h3 className="text-sm font-bold">Inovice Note</h3>
+                          <p className="p-1 rounded-md text-xs">
+                            {invoice?.invoice_notes}
+                          </p>
+                        </div>
+                      )}
+                      <hr className="mt-4" />
                       <div className="text-center mt-4 font-medium">
                         <p className="text-sm">Thank you for your business!</p>
                       </div>
@@ -1416,7 +1505,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
       const type = teeth?.type;
       // Highlight selected teeth
       const pontic_teeth = products?.flatMap(
-        (item:any) => item?.teethProduct?.pontic_teeth
+        (item: any) => item?.teethProduct?.pontic_teeth
       );
       if (pontic_teeth && pontic_teeth?.length > 0) {
         if (
@@ -1882,12 +1971,20 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                           </span>
                         )}
                       </p>
+                      <p className="mb-2 mt-0.5">
+                        <span className="font-bold">Notes:&nbsp;</span>
+                        {item?.teethProduct?.notes}
+                      </p>
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+          {/* <p className="mb-2 mt-0.5 flex flex-col">
+            <span className="font-bold text-sm">Instruction Notes&nbsp;</span>
+            {item?.instruction_notes}
+          </p> */}
         </div>
         {/* Selected teeth */}
         <div>
@@ -2189,7 +2286,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
 
   // Example usage
   const products = mergeProducts(item?.products);
-  console.log(products, "productsproducts");
+  console.log(item, "caseDetails");
 
   return (
     <div>

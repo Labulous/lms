@@ -266,6 +266,7 @@ const UpdateCase: React.FC = () => {
           tooth_number,
           product_id,
           additional_services_id,
+          services_discount,
           quantity,
           type,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -750,45 +751,75 @@ const UpdateCase: React.FC = () => {
                   });
                 })
                 .flat() || []; // Flatten the array of arrays into a single array
+            groupedProducts[productId].commonServices =
+              caseDataApi?.common_services
+                ?.filter(
+                  (service: { teeth: number[]; services: string[] }) =>
+                    // Check if service.teeth is an array or a single tooth value
+                    Array.isArray(service.teeth)
+                      ? service.teeth.some((tooth: number) =>
+                          Array.from(groupedProducts[productId].teeth).includes(
+                            tooth
+                          )
+                        ) // Convert Set to Array and check
+                      : Array.from(groupedProducts[productId].teeth).includes(
+                          service.teeth
+                        ) // Convert Set to Array for a single value
+                )
+                .map((service: { teeth: number[]; services: string[] }) => {
+                  // Map through the service.services array and find the corresponding service data from servicesData
+                  return service.services.map((serviceId: string) => {
+                    const serviceData = servicesData?.find(
+                      (item) => item.id === serviceId
+                    );
+                    return {
+                      id: serviceData?.id,
+                      name: serviceData?.name,
+                      is_taxable: serviceData?.is_taxable,
+                      price: serviceData?.price,
+                    };
+                  });
+                })
+                .flat() || []; // Flatten the array of arrays into a single array
 
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
-            groupedProducts[productId].commonServices =
-              caseDataApi?.common_services
-                ?.filter((service: { teeth: number[]; services: string[] }) =>
-                  Array.isArray(service.teeth)
-                    ? service.teeth.some((tooth: number) =>
-                        Array.from(groupedProducts[productId].teeth).includes(
-                          tooth
-                        )
-                      )
-                    : Array.from(groupedProducts[productId].teeth).includes(
-                        service.teeth
-                      )
-                )
-                .map(
-                  (service: { teeth: number[]; services: string[] }) =>
-                    service.services
-                      .map((serviceId: string) => {
-                        const serviceData = servicesData?.find(
-                          (item) => item.id === serviceId
-                        );
-                        return serviceData
-                          ? {
-                              id: serviceData.id,
-                              name: serviceData.name,
-                              is_taxable: serviceData.is_taxable,
-                              price: serviceData.price,
-                              add_to_all: false,
-                            }
-                          : null;
-                      })
-                      .filter(Boolean) // Remove null values
-                )
-                .filter((subArray: any) => subArray.length > 0) // Remove empty arrays
-                .flat() || []; // Flatten final result
-            //  Flatten the array of arrays into a single array
+            // groupedProducts[productId].commonServices =
+            //   caseDataApi?.common_services
+            //     ?.filter((service: { teeth: number[]; services: string[] }) =>
+            //       Array.isArray(service.teeth)
+            //         ? service.teeth.some((tooth: number) =>
+            //             Array.from(groupedProducts[productId].teeth).includes(
+            //               tooth
+            //             )
+            //           )
+            //         : Array.from(groupedProducts[productId].teeth).includes(
+            //             service.teeth
+            //           )
+            //     )
+            //     .map(
+            //       (service: { teeth: number[]; services: string[] }) =>
+            //         service.services
+            //           .map((serviceId: string) => {
+            //             const serviceData = servicesData?.find(
+            //               (item) => item.id === serviceId
+            //             );
+            //             return serviceData
+            //               ? {
+            //                   id: serviceData.id,
+            //                   name: serviceData.name,
+            //                   is_taxable: serviceData.is_taxable,
+            //                   price: serviceData.price,
+            //                   add_to_all: false,
+            //                 }
+            //               : null;
+            //           })
+            //           .filter(Boolean) // Remove null values
+            //     )
+            //     .filter((subArray: any) => subArray.length > 0) // Remove empty arrays
+            //     .flat() || []; // Flatten final result
+            // //  Flatten the array of arrays into a single array
 
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
@@ -804,6 +835,7 @@ const UpdateCase: React.FC = () => {
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.teethProduct.additional_services_id,
+                services_discount:item.teethProduct.services_discount,
                 quantity: item.discounted_price.quantity,
                 discount: item?.discounted_price?.discount || 0,
                 discounted_price_id: item.discounted_price?.id,
@@ -870,6 +902,7 @@ const UpdateCase: React.FC = () => {
         return prevSelectedProducts.map((product) => {
           // Ensure services array exists as an empty array if it doesn't exist
           console.log(prevSelectedProducts, "prevSelectedProducts");
+          console.log(servicesData,"servicesDataservicesData")
           const servicesForSubRow = servicesData
             .filter((service) =>
               product.additional_service_id.includes(service.id)
@@ -885,10 +918,10 @@ const UpdateCase: React.FC = () => {
           const updatedProduct = {
             ...product,
             services: servicesForSubRow || [],
-            commonServices: [
-              ...(product?.services || []),
-              ...(servicesForSubRow.length > 0 ? servicesForSubRow : []),
-            ],
+            // commonServices: [
+            //   ...(product?.services || []),
+            //   ...(servicesForSubRow.length > 0 ? servicesForSubRow : []),
+            // ],
             subRows: product.subRows?.map((subRow) => ({
               ...subRow,
               ...subRow.shades,
