@@ -512,87 +512,87 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       );
     };
 
-    const additionalServices = services.filter((item) =>
-      product.additional_services_id.includes(item.id)
-    );
+    // const additionalServices = services.filter((item) =>
+    //   product.additional_services_id.includes(item.id)
+    // );
    
-    const serviceRow =
-      additionalServices.length > 0
-        ? additionalServices.map((item, index) => {
-            return (
-              <TableRow key={index}>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                  Service
-                </TableCell>
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                  {item.name}
-                </TableCell>
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-            1
-          </TableCell> */}
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                  ${item.price}
-                </TableCell>
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
-                  {product.services_discount}%
-                </TableCell>
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                  $
-                  {product.services_discount > 0
-                    ? item.price -
-                      (item.price *
-                        product.services_discount) /
-                        100
-                    : item.price}
-                </TableCell>
-                <TableCell className="w-[1px] p-0">
-                  <Separator
-                    orientation="vertical"
-                    className="h-full"
-                  />
-                </TableCell>
-                <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                  $ {product.services_discount > 0
-                    ? item.price -
-                      (item.price *
-                        product.services_discount) /
-                        100
-                    : item.price}
-                </TableCell>
-              </TableRow>
-            );
-          })
-        : null;
+    // const serviceRow =
+    //   additionalServices.length > 0
+    //     ? additionalServices.map((item, index) => {
+    //         return (
+    //           <TableRow key={index}>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //               Service
+    //             </TableCell>
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //               {item.name}
+    //             </TableCell>
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //         1
+    //       </TableCell> */}
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //               ${item.price}
+    //             </TableCell>
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+    //               {product.services_discount}%
+    //             </TableCell>
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //               $
+    //               {product.services_discount > 0
+    //                 ? item.price -
+    //                   (item.price *
+    //                     product.services_discount) /
+    //                     100
+    //                 : item.price}
+    //             </TableCell>
+    //             <TableCell className="w-[1px] p-0">
+    //               <Separator
+    //                 orientation="vertical"
+    //                 className="h-full"
+    //               />
+    //             </TableCell>
+    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
+    //               $ {product.services_discount > 0
+    //                 ? item.price -
+    //                   (item.price *
+    //                     product.services_discount) /
+    //                     100
+    //                 : item.price}
+    //             </TableCell>
+    //           </TableRow>
+    //         );
+    //       })
+    //     : null;
             return (
       <div>
         {Object.keys(groups)?.map((type) => {
