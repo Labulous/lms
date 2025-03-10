@@ -457,7 +457,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       return (
         <>
           {Object.entries(groupedServicesByName)?.length > 0 && (
-            <h3 className="font-bold text-[14px] mb-2">Additional Services</h3>
+            <h3 className="font-bold text-[14px] mb-2">Common Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
@@ -512,88 +512,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       );
     };
 
-    // const additionalServices = services.filter((item) =>
-    //   product.additional_services_id.includes(item.id)
-    // );
-   
-    // const serviceRow =
-    //   additionalServices.length > 0
-    //     ? additionalServices.map((item, index) => {
-    //         return (
-    //           <TableRow key={index}>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //               Service
-    //             </TableCell>
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //               {item.name}
-    //             </TableCell>
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //         1
-    //       </TableCell> */}
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //               ${item.price}
-    //             </TableCell>
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
-    //               {product.services_discount}%
-    //             </TableCell>
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //               $
-    //               {product.services_discount > 0
-    //                 ? item.price -
-    //                   (item.price *
-    //                     product.services_discount) /
-    //                     100
-    //                 : item.price}
-    //             </TableCell>
-    //             <TableCell className="w-[1px] p-0">
-    //               <Separator
-    //                 orientation="vertical"
-    //                 className="h-full"
-    //               />
-    //             </TableCell>
-    //             <TableCell className="text-xs py-1.5 pl-4 pr-0">
-    //               $ {product.services_discount > 0
-    //                 ? item.price -
-    //                   (item.price *
-    //                     product.services_discount) /
-    //                     100
-    //                 : item.price}
-    //             </TableCell>
-    //           </TableRow>
-    //         );
-    //       })
-    //     : null;
-            return (
+    return (
       <div>
         {Object.keys(groups)?.map((type) => {
           const product = groups[type]; // Get the array of products for this type
@@ -659,7 +578,79 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           const allToothPonticNumbers = products.flatMap(
             (product) => product.teethProduct?.pontic_teeth || []
           );
+          console.log(products, "merge Products");
+          const IndivitualServices = () => {
+            const additional_services_id = products
+              .filter((item) => item.teethProduct.type === type)
+              .flatMap((item) => item.additional_services_id);
+            const teeth = products
+              .filter((item) => item.teethProduct.type === type)
+              .map((item) => item.teethProduct.tooth_number);
+            const additionalDiscount = products
+              .filter((item) => item.teethProduct.type === type)
+              .map((item) => item.services_discount);
 
+            const additionalServices = services.filter((service) =>
+              additional_services_id?.includes(service.id)
+            );
+            console.log(details, additionalDiscount, "details here");
+            return (
+              <div>
+                {additionalServices.map((item, index) => {
+                  console.log(additionalServices, "additional services");
+                  return (
+                    <div
+                      className={`grid grid-cols-12 text-sm border-gray-300`}
+                      style={{ lineHeight: "1.1" }}
+                    >
+                      <div className="space-y-1 font-medium col-span-5 pl-2">
+                        <div className="">
+                          <p className="font-bold text-xs">{item.name}</p>
+                          <p className="font-bold ml-3 text-xs">
+                             (#{teeth[index]})
+                          </p>
+                        </div>
+                      </div>
+                      <p
+                        className="text-right col-span-2 pr-2 font-bold"
+                        style={{ lineHeight: "1.15" }}
+                      >
+                        ${item.price}
+                      </p>
+                      <p
+                        className="text-right col-span-1 pr-2"
+                        style={{ lineHeight: "1.15" }}
+                      >
+                        {additionalDiscount[index] ?? 0}%
+                      </p>
+                      <p
+                        className="text-right col-span-2 pr-2 font-bold"
+                        style={{ lineHeight: "1.15" }}
+                      >
+                        $
+                        {additionalDiscount[index] > 0
+                          ? (
+                              item.price - additionalDiscount[index]
+                            )?.toLocaleString()
+                          : item.price?.toLocaleString()}
+                      </p>
+                      <p
+                        className="text-right col-span-2 pr-2 font-bold"
+                        style={{ lineHeight: "1.15" }}
+                      >
+                        $
+                        {additionalDiscount[index] > 0
+                          ? (
+                              item.price - additionalDiscount[index]
+                            )?.toLocaleString()
+                          : item.price?.toLocaleString()}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          };
           return (
             <div key={type} style={{ marginBottom: "20px" }}>
               {/* Display the type as the title */}
@@ -712,42 +703,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
 
               <ul>
                 {mergedProducts.map((item: any, index) => {
-                  const serviceRow = item.service?.name ? (
-                    <div
-                      className={`grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300`}
-                      style={{ lineHeight: "1.1" }}
-                    >
-                      <div className="space-y-1 font-medium col-span-5 pl-2">
-                        <div>
-                          <p>{item.service.name}</p>
-                          <p className="font-bold">Service</p>
-                        </div>
-                      </div>
-                      <p
-                        className="text-right col-span-2 pr-2 font-bold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        ${item.service.price}
-                      </p>
-                      <p
-                        className="text-right col-span-1 pr-2 font-bold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        $0
-                      </p>
-                      <p
-                        className="text-right col-span-2 pr-2 font-bold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        ${item.service.price?.toLocaleString()}
-                      </p>
-                      <p
-                        className="text-right col-span-2 pr-2 font-bold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        ${item.service.price?.toLocaleString()}
-                      </p>
-                    </div>
+                  const serviceRow = item.additional_services_id ? (
+                    <IndivitualServices />
                   ) : (
                     <></>
                   );
