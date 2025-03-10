@@ -159,7 +159,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       setLoading(false);
     }
   };
-
+console.log(formData,"formData")
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {

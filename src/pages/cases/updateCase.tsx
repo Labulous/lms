@@ -608,7 +608,7 @@ const UpdateCase: React.FC = () => {
             : new Date().toISOString(),
           dueDate: caseDataApi?.due_date
             ? new Date(caseDataApi.due_date).toISOString() // Keep ISO format
-            : new Date("2025-01-11").toISOString(),
+            : undefined,
           status: caseDataApi.status,
           deliveryMethod:
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),

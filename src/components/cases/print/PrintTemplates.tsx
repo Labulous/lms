@@ -519,7 +519,6 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           function mergeProducts(products: any) {
             const mergedMap = new Map();
 
-            // Iterate through the products array
             products.forEach((product: any) => {
               // Create a key for identifying the product by its properties
               const key = JSON.stringify({
