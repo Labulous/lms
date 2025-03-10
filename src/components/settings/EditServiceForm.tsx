@@ -32,95 +32,131 @@ import { Database } from "@/types/supabase";
 import { supabase } from "@/lib/supabase";
 import { toast } from "react-hot-toast";
 
-type Product = Database["public"]["Tables"]["products"]["Row"];
+type Service = Database["public"]["Tables"]["services"]["Row"];
 type Material = Database["public"]["Tables"]["materials"]["Row"];
 type BillingType = Database["public"]["Tables"]["billing_types"]["Row"];
 
-const productSchema = z.object({
-  name: z.string().min(1, "Product name is required"),
-  price: z.coerce.number().min(0, "Price must be 0 or greater"),
+const serviceSchema = z.object({
+  name: z.string(),
+  price: z.coerce.number(),
   description: z.string().optional(),
-  lead_time: z.coerce.number().optional(),
-  is_client_visible: z.boolean().default(true),
-  is_taxable: z.boolean().default(true),
-  material_id: z.string().min(1, "Material is required"),
-  billing_type_id: z.string().min(1, "Billing type is required"),
-  requires_shade: z.boolean().default(false),
+  is_client_visible: z.boolean(),
+  is_taxable: z.boolean(),
+  material_id: z.string(),
+  billing_type_id: z.string(),
 });
 
-interface EditProductFormProps {
-  product?: Product;
+
+interface EditServiceFormProps {
+  service?: {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    is_client_visible: boolean;
+    is_taxable: boolean;
+    material_id?: string;  // Make it optional
+    lab_id: string;
+    created_at: string;
+    updated_at: string;
+  };
   isOpen: boolean;
   onClose: () => void;
-  onSave: (product: z.infer<typeof productSchema>) => void;
+  onSave: (service: z.infer<typeof serviceSchema>) => void;
 }
 
-export function EditProductForm({
-  product,
+export function EditServiceForm({
+  service,
   isOpen,
   onClose,
   onSave,
-}: EditProductFormProps) {
+}: EditServiceFormProps) {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [billingTypes, setBillingTypes] = useState<BillingType[]>([]);
 
   useEffect(() => {
     const fetchReferenceData = async () => {
+      if (!service?.lab_id) return; // Ensure lab_id exists before fetching
+  
       try {
         const [materialsData, billingTypesData] = await Promise.all([
-          supabase.from("materials").select("*").order("name"),
+          supabase
+            .from("materials")
+            .select("*")
+            .eq("lab_id", service.lab_id) // Filter by lab_id
+            .order("name"),
           supabase.from("billing_types").select("*").order("name"),
         ]);
-
+  
         if (materialsData.error || billingTypesData.error) {
           toast.error("Failed to fetch reference data");
         }
-
+  
         setMaterials(materialsData.data || []);
         setBillingTypes(billingTypesData.data || []);
       } catch (error) {
         toast.error("Error fetching data");
       }
     };
-
+  
     fetchReferenceData();
-  }, []);
+  }, [service?.lab_id]); // Runs when service.lab_id changes
 
-  const form = useForm<z.infer<typeof productSchema>>({
-    resolver: zodResolver(productSchema),
+  
+
+
+  const form = useForm<z.infer<typeof serviceSchema>>({
+    resolver: zodResolver(serviceSchema),
     defaultValues: {
       name: "",
       description: "",
       material_id: "",
       billing_type_id: "",
       price: 0,
-      lead_time: 0,
       is_client_visible: true,
       is_taxable: true,
-      requires_shade: false,
     },
-    values: {
-      name: product?.name || "",
-      description: product?.description || "",
-      material_id: product?.material_id || "",
-      billing_type_id: product?.billing_type_id || "",
-      price: product?.price || 0,
-      lead_time: product?.lead_time || 0,
-      is_client_visible: product?.is_client_visible ?? true,
-      is_taxable: product?.is_taxable ?? true,
-      requires_shade: product?.requires_shade ?? false,
-    },
+    mode: "onChange", // Optional: Ensures validation runs on change
   });
 
-  async function onSubmit(values: z.infer<typeof productSchema>) {
+  const { setValue, watch } = form;
+  const formData = watch(); // Watches form values in real time
+
+  // Function to handle onChange and update form state
+  const handleChange =
+    (field: keyof typeof formData) =>
+      (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const value =
+          event.target.type === "checkbox"
+            ? (event.target as HTMLInputElement).checked
+            : event.target.value;
+
+        setValue(field, value, { shouldValidate: true, shouldDirty: true });
+      };
+
+
+
+      useEffect(() => {
+        if (service) {
+          form.reset({
+            name: service.name ?? "",
+            description: service.description ?? "",
+            material_id: service.material_id ?? "",
+            billing_type_id: "",
+            price: service.price ?? 0,
+            is_client_visible: service.is_client_visible ?? true,
+            is_taxable: service.is_taxable ?? true,
+          }, { keepDirtyValues: true }); // Keeps user-modified values
+        }
+      }, [service]); // No need to add form.reset in dependencies
+      
+
+  async function onSubmit(values: z.infer<typeof serviceSchema>) {
     try {
-      console.log("Submitting values:", values);
-      await onSave(values); 
-      toast.success("Product saved successfully!");
+      await onSave(values);
       onClose();
     } catch (error) {
-      console.error("Error saving product:", error);
-      toast.error("Failed to save product");
+      toast.error("Failed to save service");
     }
   }
 
@@ -128,9 +164,9 @@ export function EditProductForm({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{product ? "Edit Product" : "New Product"}</DialogTitle>
+          <DialogTitle>{service ? "Edit Service" : "New Service"}</DialogTitle>
           <DialogDescription>
-            Make changes to the product details here.
+            Make changes to the service details here.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -144,7 +180,15 @@ export function EditProductForm({
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Product name" {...field} />
+                        <Input
+                          placeholder="Service Name"
+                          {...field}
+                          value={field.value} // Ensure input reflects the value
+                          onChange={(e) => {
+                            field.onChange(e); // React Hook Form handles this
+                            handleChange("name")(e); // Additional update logic
+                          }}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -158,13 +202,30 @@ export function EditProductForm({
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input placeholder="Product description" {...field} />
+                        <Input placeholder="Service description" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+
+              </div>
+
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Price</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" step="0.01" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={form.control}
                   name="material_id"
@@ -190,61 +251,6 @@ export function EditProductForm({
                   )}
                 />
               </div>
-
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" step="0.01" placeholder="0.00" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="billing_type_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Billing Type</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select billing type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {billingTypes.map((type) => (
-                            <SelectItem key={type.id} value={type.id}>
-                              {type.label || type.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lead_time"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lead Time (days)</FormLabel>
-                      <FormControl>
-                        <Input type="number" min="0" placeholder="0" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </div>
 
             <div className="flex flex-wrap gap-6">
@@ -252,11 +258,11 @@ export function EditProductForm({
                 control={form.control}
                 name="is_client_visible"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2">
+                  <FormItem className="flex items-center space-x-2">
                     <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange as (value: boolean) => void} />
                     </FormControl>
-                    <FormLabel className="!mt-0">Visible to Clients</FormLabel>
+                    <FormLabel>Visible to Clients</FormLabel>
                   </FormItem>
                 )}
               />
@@ -265,24 +271,11 @@ export function EditProductForm({
                 control={form.control}
                 name="is_taxable"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2">
+                  <FormItem className="flex items-center space-x-2">
                     <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange as (value: boolean) => void} />
                     </FormControl>
-                    <FormLabel className="!mt-0">Taxable</FormLabel>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="requires_shade"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-x-2">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="!mt-0">Requires Shade</FormLabel>
+                    <FormLabel>Taxable</FormLabel>
                   </FormItem>
                 )}
               />
@@ -295,7 +288,6 @@ export function EditProductForm({
               <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </form>
-
         </Form>
       </DialogContent>
     </Dialog>

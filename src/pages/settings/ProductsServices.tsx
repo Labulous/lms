@@ -49,6 +49,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { EditServiceForm } from "@/components/settings/EditServiceForm";
+import { buffer } from "stream/consumers";
 
 export interface ServicesFormData {
   categories: string[];
@@ -70,6 +72,20 @@ type Product = Database["public"]["Tables"]["products"]["Row"] & {
 };
 
 type ProductType = Database["public"]["Tables"]["product_types"]["Row"];
+
+const defaultService: Service = {
+  id: "",
+  name: "",
+  description: "",
+  price: 0,
+  is_client_visible: true,
+  is_taxable: true,
+  material_id: "",  // Ensure it's a string, not undefined
+  lab_id: "",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 
 type ServiceBase = {
   name: string;
@@ -127,6 +143,13 @@ const ProductsServices: React.FC = () => {
     direction: "asc",
   });
 
+  // const [editingService, setEditingService] = useState<
+  //   Database["public"]["Tables"]["services"]["Row"] | null
+  // >(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingOpen, setEditingOpen] = useState(false);
 
   const {
     data: labIdData,
@@ -534,11 +557,18 @@ const ProductsServices: React.FC = () => {
     }
   };
 
-  const handleEditClick = async (item: Product | Service) => {
-    // setItemsToDelete([item]);
-    // setIsDeleteModalOpen(true);
-    toast.error("Feature under development hi");
+  const handleEditClick = (service: Service) => {
+    setEditingService(service);
+    setEditingOpen(true);
   };
+
+  // const handleEditClick = async (item: Product | Service) => {
+  //   debugger;
+  //   serEditingOpen(true);
+  //   // setItemsToDelete([item]);
+  //   // setIsDeleteModalOpen(true);
+  //   //toast.error("Feature under development hi");
+  // };
 
   // Batch delete function for services
   const handleBatchDelete = async (selectedItems: (Product | Service)[]) => {
@@ -846,6 +876,100 @@ const ProductsServices: React.FC = () => {
     }
   }, [location, materialFilter]);
 
+  async function onEdit(arg0: {
+    name: string;
+    price: number;
+    is_client_visible: boolean;
+    is_taxable: boolean;
+    material_id: string;
+    billing_type_id: string;
+    description: string;
+    id: string;
+    lab_id: string;
+    created_at: string;
+    updated_at: string;
+    requires_shade?: boolean;
+    lead_time?: number;
+  }) {
+    const lab = await getLabIdByUserId(user?.id as string);
+    if (!lab?.labId) {
+      console.error("Lab ID not found.");
+      return;
+    }
+
+    const { data: existingService, error: existingServiceError } = await supabase
+      .from("services")
+      .select("id, material_id, product_code")
+      .eq("id", arg0.id)
+      .single();
+
+    if (existingServiceError) {
+      console.error("Error fetching existing service:", existingServiceError);
+      throw existingServiceError;
+    }
+
+    let newServiceCode = existingService.product_code; 
+
+    if (existingService?.material_id !== arg0.material_id) {
+     const { data: materialData, error: materialError } = await supabase
+        .from("materials")
+        .select("code")
+        .eq("id", arg0.material_id)
+        .single();
+
+      if (materialError || !materialData) {
+        throw new Error("Failed to fetch material code");
+      }
+
+      const { data: existingServices, error: fetchError } = await supabase
+        .from("services")
+        .select("id, product_code")
+        .eq("lab_id", lab?.labId)
+        .eq("material_id", arg0.material_id);
+
+      if (fetchError) {
+        console.error("Error fetching existing services:", fetchError);
+        throw fetchError;
+      }
+
+       const highestServiceCode =
+        existingServices.length > 0
+          ? Math.max(...existingServices.map((s) => Number(s?.product_code) || 0))
+          : Number(materialData.code);
+
+      newServiceCode = (highestServiceCode + 1).toString();
+    }
+
+    // Update the service
+    const { data, error } = await supabase
+      .from("services")
+      .update({
+        name: arg0.name,
+        price: arg0.price,
+        description: arg0.description,
+        is_client_visible: arg0.is_client_visible,
+        is_taxable: arg0.is_taxable,
+        material_id: arg0.material_id,
+        product_code: newServiceCode,
+      })
+      .eq("id", arg0.id)
+      .or("is_archive.is.null,is_archive.eq.false") 
+      .select();
+
+    if (error) {
+      toast.error("Error updating service:");
+    } else if (data) {
+      toast.success("Service updated successfully:");
+      fetchServices();
+      setLoading(true)
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 100);
+      setLoading(false)
+    }
+  }
+
+
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader
@@ -1139,6 +1263,22 @@ const ProductsServices: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Edit Product Dialog */}
+            <EditServiceForm
+              service={editingService ? { ...defaultService, ...editingService } : undefined}
+              isOpen={editingOpen}
+              onClose={() => {
+                setEditingOpen(false);
+                setEditingService(null);
+              }}
+              onSave={(values) => {
+                onEdit?.({ ...editingService!, ...values });
+                setEditingOpen(false);
+              }}
+            />
+
+
           </div>
         </TabsContent>
       </Tabs>
