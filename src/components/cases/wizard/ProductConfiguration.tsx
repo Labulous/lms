@@ -1669,7 +1669,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                             {row?.commonServices &&
                               row?.commonServices?.length > 0 ? (
                               <span className="text-blue-600">
-                                {row?.commonServices?.length} Common Services
+                                {row?.commonServices?.length} row Services
                                 Added
                               </span>
                             ) : (
@@ -3215,8 +3215,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     "text-muted-foreground"
                                   )}
                                 >
-                                  {row_sub.teeth[0]}{" "}
-                                  {ponticTeeth.has(row_sub.teeth[0]) ? (
+                                  {row_sub.teeth[0]}
+                                  {row_sub?.pontic_teeth?.includes(row_sub.teeth[0]) ? (
                                     <span className="ml-2 text-primary text-xs">
                                       (Pontic)
                                     </span>

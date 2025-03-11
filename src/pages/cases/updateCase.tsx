@@ -159,9 +159,9 @@ const UpdateCase: React.FC = () => {
   const { data: caseDataa, error: caseError } = useQuery(
     caseId
       ? supabase
-        .from("cases")
-        .select(
-          `
+          .from("cases")
+          .select(
+            `
         id,
         created_at,
         received_date,
@@ -266,6 +266,7 @@ const UpdateCase: React.FC = () => {
           tooth_number,
           product_id,
           additional_services_id,
+          services_discount,
           quantity,
           type,
           occlusal_shade:shade_options!occlusal_shade_id (
@@ -333,9 +334,9 @@ const UpdateCase: React.FC = () => {
           )
           )
       `
-        )
-        .eq("id", caseId)
-        .single()
+          )
+          .eq("id", caseId)
+          .single()
       : null,
     {
       revalidateOnFocus: true,
@@ -345,67 +346,69 @@ const UpdateCase: React.FC = () => {
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
       ? supabase
-        .from("services")
-        .select(
-          `
+          .from("services")
+          .select(
+            `
        id,name,price,is_taxable
       `
-        )
-        .eq("lab_id", lab.labId)
+          )
+          .eq("lab_id", lab.labId)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
     }
   );
+  console.log(caseDetail, "caseDetail");
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-      ...caseItem,
-      labDetail: lab,
-      custom_occlusal_details: caseDataa?.custom_occulusal_details,
-      common_services: caseDataa?.common_services,
-      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-        id: tp.product.id,
-        name: tp.product.name,
-        price: tp.product.price,
-        lead_time: tp.product.lead_time,
-        is_client_visible: tp.product.is_client_visible,
-        is_taxable: tp.product.is_taxable,
-        created_at: tp.product.created_at,
-        updated_at: tp.product.updated_at,
-        requires_shade: tp.product.requires_shade,
-        material: tp.product.material,
-        product_type: tp.product.product_type,
-        billing_type: tp.product.billing_type,
-        discounted_price: caseItem?.discounted_price[index],
-        teethProduct: {
-          id: tp.id,
-          is_range: tp.is_range,
-          tooth_number: tp.tooth_number,
-          product_id: tp.product_id,
-          case_product_id: tp.id,
-          occlusal_shade: tp.occlusal_shade,
-          body_shade: tp.body_shade,
-          gingival_shade: tp.gingival_shade,
-          additional_services_id: tp.additional_services_id,
-          type: tp.type,
-          stump_shade: tp.stump_shade,
-          manual_occlusal_shade: tp.manual_occlusal_shade,
-          manual_body_shade: tp.manual_body_shade,
-          manual_gingival_shade: tp.manual_gingival_shade,
-          manual_stump_shade: tp.manual_stump_shade,
-          custom_occlusal_shade: tp.custom_occlusal_shade,
-          custom_body_shade: tp.custom_body_shade,
-          custom_gingival_shade: tp.custom_gingival_shade,
-          custom_stump_shade: tp.custom_stump_shade,
-          custom_occlusal_details: tp.occlusal_shade,
-          notes: tp.notes,
-          service: tp.service,
-          quantity: tp.quantity,
-        },
-      })),
-    }
+        ...caseItem,
+        labDetail: lab,
+        custom_occlusal_details: caseDataa?.custom_occulusal_details,
+        common_services: caseDataa?.common_services,
+        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+          id: tp.product.id,
+          name: tp.product.name,
+          price: tp.product.price,
+          lead_time: tp.product.lead_time,
+          is_client_visible: tp.product.is_client_visible,
+          is_taxable: tp.product.is_taxable,
+          created_at: tp.product.created_at,
+          updated_at: tp.product.updated_at,
+          requires_shade: tp.product.requires_shade,
+          material: tp.product.material,
+          product_type: tp.product.product_type,
+          billing_type: tp.product.billing_type,
+          pontic_teeth: caseDataa?.teethProduct?.[index].pontic_teeth,
+          discounted_price: caseItem?.discounted_price[index],
+          teethProduct: {
+            id: tp.id,
+            is_range: tp.is_range,
+            tooth_number: tp.tooth_number,
+            product_id: tp.product_id,
+            case_product_id: tp.id,
+            occlusal_shade: tp.occlusal_shade,
+            body_shade: tp.body_shade,
+            gingival_shade: tp.gingival_shade,
+            additional_services_id: tp.additional_services_id,
+            type: tp.type,
+            stump_shade: tp.stump_shade,
+            manual_occlusal_shade: tp.manual_occlusal_shade,
+            manual_body_shade: tp.manual_body_shade,
+            manual_gingival_shade: tp.manual_gingival_shade,
+            manual_stump_shade: tp.manual_stump_shade,
+            custom_occlusal_shade: tp.custom_occlusal_shade,
+            custom_body_shade: tp.custom_body_shade,
+            custom_gingival_shade: tp.custom_gingival_shade,
+            custom_stump_shade: tp.custom_stump_shade,
+            custom_occlusal_details: tp.occlusal_shade,
+            notes: tp.notes,
+            service: tp.service,
+            quantity: tp.quantity,
+          },
+        })),
+      }
     : null;
 
   useEffect(() => {
@@ -565,7 +568,7 @@ const UpdateCase: React.FC = () => {
     }
   };
 
-  console.log(caseDetailApi, "caseDetailApicaseDetailApi");
+  console.log(caseDataa, "caseDetailApicaseDetailApi");
 
   useEffect(() => {
     if (!caseId) {
@@ -583,8 +586,8 @@ const UpdateCase: React.FC = () => {
         const caseDetails: any = caseDetailApi;
         const files = caseDetails?.attachements
           ? caseDetails.attachements.map((item: any) => {
-            return { url: item as string }; // Explicitly return an object with the `url`
-          })
+              return { url: item as string }; // Explicitly return an object with the `url`
+            })
           : [];
         setSelectedFiles(files);
         const productsIdArray = caseDetails?.product_ids[0].products_id;
@@ -725,13 +728,13 @@ const UpdateCase: React.FC = () => {
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
                       ? service.teeth.some((tooth: number) =>
-                        Array.from(groupedProducts[productId].teeth).includes(
-                          tooth
-                        )
-                      ) // Convert Set to Array and check
+                          Array.from(groupedProducts[productId].teeth).includes(
+                            tooth
+                          )
+                        ) // Convert Set to Array and check
                       : Array.from(groupedProducts[productId].teeth).includes(
-                        service.teeth
-                      ) // Convert Set to Array for a single value
+                          service.teeth
+                        ) // Convert Set to Array for a single value
                 )
                 .map((service: { teeth: number[]; services: string[] }) => {
                   // Map through the service.services array and find the corresponding service data from servicesData
@@ -748,10 +751,6 @@ const UpdateCase: React.FC = () => {
                   });
                 })
                 .flat() || []; // Flatten the array of arrays into a single array
-
-            item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
-              groupedProducts[productId].pontic_teeth.add(tooth)
-            );
             groupedProducts[productId].commonServices =
               caseDataApi?.common_services
                 ?.filter(
@@ -759,13 +758,13 @@ const UpdateCase: React.FC = () => {
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
                       ? service.teeth.some((tooth: number) =>
-                        Array.from(groupedProducts[productId].teeth).includes(
-                          tooth
-                        )
-                      ) // Convert Set to Array and check
+                          Array.from(groupedProducts[productId].teeth).includes(
+                            tooth
+                          )
+                        ) // Convert Set to Array and check
                       : Array.from(groupedProducts[productId].teeth).includes(
-                        service.teeth
-                      ) // Convert Set to Array for a single value
+                          service.teeth
+                        ) // Convert Set to Array for a single value
                 )
                 .map((service: { teeth: number[]; services: string[] }) => {
                   // Map through the service.services array and find the corresponding service data from servicesData
@@ -778,7 +777,6 @@ const UpdateCase: React.FC = () => {
                       name: serviceData?.name,
                       is_taxable: serviceData?.is_taxable,
                       price: serviceData?.price,
-                      add_to_all: false,
                     };
                   });
                 })
@@ -787,6 +785,46 @@ const UpdateCase: React.FC = () => {
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
+            // groupedProducts[productId].commonServices =
+            //   caseDataApi?.common_services
+            //     ?.filter((service: { teeth: number[]; services: string[] }) =>
+            //       Array.isArray(service.teeth)
+            //         ? service.teeth.some((tooth: number) =>
+            //             Array.from(groupedProducts[productId].teeth).includes(
+            //               tooth
+            //             )
+            //           )
+            //         : Array.from(groupedProducts[productId].teeth).includes(
+            //             service.teeth
+            //           )
+            //     )
+            //     .map(
+            //       (service: { teeth: number[]; services: string[] }) =>
+            //         service.services
+            //           .map((serviceId: string) => {
+            //             const serviceData = servicesData?.find(
+            //               (item) => item.id === serviceId
+            //             );
+            //             return serviceData
+            //               ? {
+            //                   id: serviceData.id,
+            //                   name: serviceData.name,
+            //                   is_taxable: serviceData.is_taxable,
+            //                   price: serviceData.price,
+            //                   add_to_all: false,
+            //                 }
+            //               : null;
+            //           })
+            //           .filter(Boolean) // Remove null values
+            //     )
+            //     .filter((subArray: any) => subArray.length > 0) // Remove empty arrays
+            //     .flat() || []; // Flatten final result
+            // //  Flatten the array of arrays into a single array
+
+            item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
+              groupedProducts[productId].pontic_teeth.add(tooth)
+            );
+            console.log(item.teethProduct, "item.teethProduct");
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
               console.log(item, "itemitem");
@@ -797,14 +835,13 @@ const UpdateCase: React.FC = () => {
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.teethProduct.additional_services_id,
+                services_discount:item.teethProduct.services_discount,
                 quantity: item.discounted_price.quantity,
                 discount: item?.discounted_price?.discount || 0,
                 discounted_price_id: item.discounted_price?.id,
                 case_product_id: item.teethProduct.case_product_id,
                 teeth: [tooth], // Single tooth per subRow
-                pontic_teeth: item.teethProduct?.pontic_teeth?.includes(tooth)
-                  ? [tooth]
-                  : [],
+                pontic_teeth: item?.pontic_teeth,
                 notes: item?.teethProduct?.notes || "",
                 shades: {
                   body_shade: item.teethProduct?.body_shade?.id || null,
@@ -865,6 +902,7 @@ const UpdateCase: React.FC = () => {
         return prevSelectedProducts.map((product) => {
           // Ensure services array exists as an empty array if it doesn't exist
           console.log(prevSelectedProducts, "prevSelectedProducts");
+          console.log(servicesData,"servicesDataservicesData")
           const servicesForSubRow = servicesData
             .filter((service) =>
               product.additional_service_id.includes(service.id)
@@ -874,12 +912,16 @@ const UpdateCase: React.FC = () => {
               name: service.name,
               price: service.price,
               is_taxable: service.is_taxable,
+              add_to_all:true
             }));
 
           const updatedProduct = {
             ...product,
             services: servicesForSubRow || [],
-            commonServices: [...(product?.services || []), servicesForSubRow], // Initialize services as an empty array if not already defined
+            // commonServices: [
+            //   ...(product?.services || []),
+            //   ...(servicesForSubRow.length > 0 ? servicesForSubRow : []),
+            // ],
             subRows: product.subRows?.map((subRow) => ({
               ...subRow,
               ...subRow.shades,
@@ -941,7 +983,7 @@ const UpdateCase: React.FC = () => {
         }
       }}
     >
-      <div className="space-y-4">
+      <div className="space-y-4" ref={errorRef}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-semibold text-gray-800">
             Update a Case{" "}

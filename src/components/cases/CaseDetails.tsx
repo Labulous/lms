@@ -656,6 +656,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           pontic_teeth,
           product_id,
           additional_services_id,
+          services_discount,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -778,13 +779,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
           product_type: tp.product.product_type,
           common_services: caseItem?.common_services,
           billing_type: tp.product.billing_type,
+          services_discount: caseItem?.teethProduct?.[index].services_discount,
           additional_services_id:
             caseItem?.teethProduct?.[index].additional_services_id,
           discounted_price: caseItem?.discounted_price[index],
-          services: {
-            name: "",
-            price: 0,
-          },
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -822,284 +820,238 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
       setLab(lab);
 
-      const { data: caseData, error } = await supabase
-        .from("cases")
-        .select(
-          `
-          id,
-          created_at,
-          received_date,
-          ship_date,
-          status,
-          patient_name,
-          due_date,
-          attachements,
-          case_number,
-          common_services,
-          isDisplayAcctOnly,
-          isDisplayDoctorAcctOnly,
-          isHidePatientName,
-          invoice:invoices!case_id (
-            id,
-            case_id,
-            amount,
+      const handleFetchData = async () => {
+        try {
+          const { data: query, error } = await supabase
+            .from("cases")
+            .select(
+              `
+                     id,
+            created_at,
+            received_date,
+            ship_date,
             status,
-            due_amount,
-            due_date
-          ),
-          client:clients!client_id (
-            id,
-            client_name,
-            phone,
-            street,
-            city,
-            state,
-            zip_code,
-            additional_lead_time,
-            account_number
-          ),
-          doctor:doctors!doctor_id (
-            id,
-            name,
-            order,
+            patient_name,
+            due_date,
+            attachements,
+            common_services,
+            case_number,
+            isDisplayAcctOnly,
+            isDisplayDoctorAcctOnly,
+            isHidePatientName,
+            invoice:invoices!case_id (
+              id,
+              case_id,
+              amount,
+              status,
+              due_amount,
+              due_date
+            ),
             client:clients!client_id (
               id,
               client_name,
-              phone
-            )
-          ),
-          tag:working_tags!working_tag_id (
-            name,
-            color
-          ),
-          working_pan_name,
-          working_pan_color,
-          rx_number,
-          received_date,
-          invoice_notes,
-          isDueDateTBD,
-          isDisplayAcctOnly,
-          isDisplayDoctorAcctOnly,
-          isHidePatientName,
-          appointment_date,
-          instruction_notes,
-          otherItems,
-          occlusal_type,
-          contact_type,
-          pontic_type,
-          qr_code,
-          custom_contact_details,
-          custom_occulusal_details,
-          custom_pontic_details,
-          enclosed_items:enclosed_case!enclosed_case_id (
-            impression,
-            biteRegistration,
-            photos,
-            jig,
-            opposingModel,
-            articulator,
-            returnArticulator,
-            cadcamFiles,
-            consultRequested,
-            user_id
-          ),
-          created_by:users!created_by (
-            name,
-            id
-          ),
-          product_ids:case_products!id (
-            products_id,
-            id
-          ),
-            margin_design_type,
-          occlusion_design_type,
-          alloy_type,
-          custom_margin_design_type,
-          custom_occlusion_design_type,
-          custon_alloy_type
-        `
-        )
-        .eq("id", activeCaseId)
-        .single();
-
-      if (error) {
-        console.error("Supabase error:", error);
-        setError(error.message);
-        return;
-      }
-
-      if (!caseData) {
-        console.error("No case data found");
-        setError("Case not found");
-        return;
-      }
-      let caseDataApi: any = caseData;
-      setCaseDetail(caseDataApi);
-      getWorkStationDetails(caseData?.created_at);
-      setFiles(caseData.attachements);
-      if (caseData.product_ids?.[0]?.products_id) {
-        const productsIdArray = caseData.product_ids[0].products_id;
-        const caseProductId = caseData.product_ids[0].id;
-
-        // Fetch products
-        if (productsIdArray?.length > 0) {
-          const { data: productData, error: productsError } = await supabase
-            .from("products")
-            .select(
-              `
+              phone,
+              street,
+              city,
+              state,
+              zip_code,
+              account_number
+            ),
+            doctor:doctors!doctor_id (
               id,
               name,
-              price,
-              lead_time,
-              is_client_visible,
-              is_taxable,
-              created_at,
-              updated_at,
-              requires_shade,
-              material:materials!material_id (
-                name,
-                description,
-                is_active
-              ),
-              product_type:product_types!product_type_id (
-                name,
-                description,
-                is_active
-              ),
-              billing_type:billing_types!billing_type_id (
-                name,
-                label,
-                description,
-                is_active
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
               )
-            `
-            )
-            .in("id", productsIdArray)
-            .eq("lab_id", lab.id);
-
-          if (productsError) {
-            setError(productsError.message);
-            return;
-          }
-
-          // Fetch discounted prices
-          const { data: discountedPriceData, error: discountedPriceError } =
-            await supabase
-              .from("discounted_price")
-              .select(
-                `
+            ),
+            tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+            working_pan_name,
+            working_pan_color,
+            rx_number,
+            received_date,
+            invoice_notes,
+            isDueDateTBD,
+            appointment_date,
+            instruction_notes,
+            otherItems,
+            occlusal_type,
+            contact_type,
+            pontic_type,
+            qr_code,
+            custom_contact_details,
+            custom_occulusal_details,
+            custom_pontic_details,
+            enclosed_items:enclosed_case!enclosed_case_id (
+              impression,
+              biteRegistration,
+              photos,
+              jig,
+              opposingModel,
+              articulator,
+              returnArticulator,
+              cadcamFiles,
+              consultRequested,
+              user_id
+            ),
+            created_by:users!created_by (
+              name,
+              id
+            ),
+            product_ids:case_products!id (
+              products_id,
+              id
+            ),
+             margin_design_type,
+            occlusion_design_type,
+            alloy_type,
+            custom_margin_design_type,
+            custom_occlusion_design_type,
+            custon_alloy_type,
+          discounted_price:discounted_price!id (
+                    id,
+                    product_id,
+                    discount,
+                    final_price,
+                    price,
+                    quantity,
+                    total
+              ),
+            teethProduct: case_product_teeth!id (
               id,
+              is_range,
+              additional_services_id,
+              services_discount,
+              type,
+              tooth_number,
+              pontic_teeth,
               product_id,
-              discount,
-              final_price,
-              price,
-              quantity,
-              total
-            `
-              )
-              .in("product_id", productsIdArray)
-              .eq("case_id", activeCaseId);
-
-          if (discountedPriceError) {
-            console.error(
-              "Error fetching discounted prices:",
-              discountedPriceError
-            );
-            setError(discountedPriceError.message);
-            return;
-          }
-
-          // Fetch teeth products if case product ID exists
-          let teethProducts: any = [];
-          if (caseProductId) {
-            const { data: teethProductData, error: teethProductsError } =
-              await supabase
-                .from("case_product_teeth")
-                .select(
-                  `
-                is_range,
-                occlusal_shade:shade_options!occlusal_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                body_shade:shade_options!body_shade_id (
-                  name,
-                  category,
-                  is_active
+              occlusal_shade:shade_options!occlusal_shade_id (
+              name,
+              category,
+              is_active
+              ),
+               body_shade:shade_options!body_shade_id (
+               name,
+               category,
+                is_active
                 ),
                 gingival_shade:shade_options!gingival_shade_id (
-                  name,
+                name,
+                category,
+                 is_active
+                 ),
+                 stump_shade:shade_options!stump_shade_id (
+                   name,
                   category,
                   is_active
-                ),
-                stump_shade_id:shade_options!stump_shade_id (
-                  name,
-                  category,
-                  is_active
-                ),
-                tooth_number,
-                pontic_teeth,
-                notes,
-                product_id,
-                custom_body_shade,
-                additional_services_id,
-                custom_occlusal_shade,
-                custom_gingival_shade,
-                custom_stump_shade,
-                manual_body_shade,
-                manual_occlusal_shade,
-                manual_gingival_shade,
-                manual_stump_shade,
-                type,
-                id
+                        ),
+                      pontic_teeth,
+                      notes,
+                      product_id,
+                      custom_body_shade,
+                      custom_occlusal_shade,
+                      custom_gingival_shade,
+                      custom_stump_shade,
+                      type,
+              product:products!product_id (
+                        id,
+                        name,
+                        price,
+                        lead_time,
+                        is_client_visible,
+                        is_taxable,
+                        created_at,
+                        updated_at,
+                        requires_shade,
+                        material:materials!material_id (
+                          name,
+                          description,
+                          is_active
+                        ),
+                        product_type:product_types!product_type_id (
+                          name,
+                          description,
+                          is_active
+                        ),
+                        billing_type:billing_types!billing_type_id (
+                          name,
+                          label,
+                          description,
+                          is_active
+                        )
+              )
+              )
               `
-                )
-                .eq("case_product_id", caseProductId)
-                .eq("case_id", caseData.id);
+            )
+            .eq("lab_id", lab?.id)
+            .eq("id", activeCaseId)
+            .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+            .order("created_at", { ascending: false });
 
-            if (teethProductsError) {
-              setError(teethProductsError.message);
-              return;
-            }
-            teethProducts = teethProductData;
+          if (error) {
+            console.log("failed to fetch cases");
           }
-          // Combine all product data
-          console.log(teethProducts, "teethProductData");
-          const productsWithDiscounts = productData.flatMap((product: any) => {
-            // Find all the discounted prices for this product
-            const relevantDiscounts = discountedPriceData.filter(
-              (discount: { product_id: string }) =>
-                discount.product_id === product.id
-            );
-
-            // Find all the teeth products for this product
-            const relevantTeethProducts = teethProducts.filter(
-              (teeth: any) => teeth.product_id === product.id
-            );
-            console.log(relevantTeethProducts, "relevantTeethProducts");
-            // Map each teeth product to a corresponding discounted price
-            return teethProducts.map((teeth: any, index: number) => {
-              // Ensure a one-to-one mapping by cycling through the discounts if there are more teeth than discounts
-              const discountedPrice =
-                relevantDiscounts[index % relevantDiscounts.length] || null;
+          const arragedNewCases: ExtendedCase[] =
+            query?.map((item: any) => {
               return {
-                ...product,
-                discounted_price: discountedPrice,
-                teethProduct: teeth,
-                additional_service_id: teeth?.additional_services_id,
+                ...item,
+                products: item.teethProduct.map((tp: any, index: number) => ({
+                  id: tp.product.id,
+                  additional_services_id: tp.additional_services_id,
+                  services_discount: tp.services_discount,
+                  name: tp.product.name,
+                  price: tp.product.price,
+                  lead_time: tp.product.lead_time,
+                  is_client_visible: tp.product.is_client_visible,
+                  is_taxable: tp.product.is_taxable,
+                  created_at: tp.product.created_at,
+                  updated_at: tp.product.updated_at,
+                  requires_shade: tp.product.requires_shade,
+                  material: tp.product.material,
+                  product_type: tp.product.product_type,
+                  billing_type: tp.product.billing_type,
+                  discounted_price: item?.discounted_price?.[index],
+                  teethProduct: {
+                    id: tp.id,
+                    is_range: tp.is_range,
+                    tooth_number: tp.tooth_number,
+                    pontic_teeth: tp.pontic_teeth,
+                    product_id: tp.product_id,
+                    occlusal_shade: tp.occlusal_shade,
+                    body_shade: tp.body_shade,
+                    gingival_shade: tp.gingival_shade,
+                    stump_shade: tp.stump_shade,
+                    manual_occlusal_shade: tp.manual_occlusal_shade,
+                    manual_body_shade: tp.manual_body_shade,
+                    type: tp.type,
+                    manual_gingival_shade: tp.manual_gingival_shade,
+                    manual_stump_shade: tp.manual_stump_shade,
+                    custom_occlusal_shade: tp.custom_occlusal_shade,
+                    custom_body_shade: tp.custom_body_shade,
+                    custom_gingival_shade: tp.custom_gingival_shade,
+                    custom_stump_shade: tp.custom_stump_shade,
+                    custom_occlusal_details: tp.occlusal_shade,
+                    notes: tp.notes,
+                  },
+                })),
               };
-            });
-          });
-
-          setCaseDetail({
-            ...(caseData as any),
-            products: productsWithDiscounts,
-            labDetail: lab,
-            discounted_price: discountedPriceData,
-          });
+            }) || [];
+          if (arragedNewCases) {
+            setCaseDetail(arragedNewCases?.[0]);
+            getWorkStationDetails(arragedNewCases?.[0]?.created_at);
+            setFiles(arragedNewCases?.[0]?.attachements);
+            console.log(arragedNewCases, "arragedNewCases");
+          }
+        } catch (err) {
+          console.log("err");
         }
-      }
+      };
+      handleFetchData();
     } catch (error) {
       console.error("Error fetching case data:", error);
       toast.error("Failed to load case details");
@@ -1641,7 +1593,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                 tooth_number: [...tooth_number],
                 pontic_teeth: [...pontic_teeth],
               },
-              service: product.service
+              service: product.service?.[0]?.name
                 ? [
                     {
                       service: product.service,
@@ -1657,7 +1609,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
       )
     : [];
   console.log(consolidatedProducts, "consolidatedProducts");
-  console.log(caseDetail, "consolidatedProducts");
+  console.log(caseDetail, "caseDetails");
   return (
     <div className={`flex flex-col ${drawerMode ? "h-full" : "min-h-screen"}`}>
       <div className="w-full bg-white border-b border-gray-200">
@@ -2341,67 +2293,87 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const quantity =
                             product?.discounted_price?.quantity || 1;
                           const subtotal = finalPrice * quantity;
-                          const serviceRow = product.service ? (
-                            <TableRow>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                Service
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                {product.service.name}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                1
-                              </TableCell> */}
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
-                                0%
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                              <TableCell className="w-[1px] p-0">
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-full"
-                                />
-                              </TableCell>
-                              <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                ${product.service.price}
-                              </TableCell>
-                            </TableRow>
-                          ) : null;
+                          const additionalServices = services.filter((item) =>
+                            product.additional_services_id.includes(item.id)
+                          );
+                         
+                          const serviceRow =
+                            additionalServices.length > 0
+                              ? additionalServices.map((item, index) => {
+                                  return (
+                                    <TableRow key={index}>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        Service
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        {item.name}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                  1
+                                </TableCell> */}
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        ${item.price}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0 text-gray-400">
+                                        {product.services_discount}%
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        $
+                                        {product.services_discount > 0
+                                          ? item.price -
+                                            (item.price *
+                                              product.services_discount) /
+                                              100
+                                          : item.price}
+                                      </TableCell>
+                                      <TableCell className="w-[1px] p-0">
+                                        <Separator
+                                          orientation="vertical"
+                                          className="h-full"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-xs py-1.5 pl-4 pr-0">
+                                        $ {product.services_discount > 0
+                                          ? item.price -
+                                            (item.price *
+                                              product.services_discount) /
+                                              100
+                                          : item.price}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })
+                              : null;
 
                           return (
                             <React.Fragment key={index}>
@@ -2430,8 +2402,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                   />
                                 </TableCell>
                                 {/* <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                  {product?.discounted_price?.quantity || "-"}
-                                </TableCell> */}
+                                    {product?.discounted_price?.quantity || "-"}
+                                  </TableCell> */}
                                 <TableCell className="w-[1px] p-0">
                                   <Separator
                                     orientation="vertical"
@@ -2511,7 +2483,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 return (
                                   <TableRow>
                                     <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                      Service{" "}
+                                      Service{"  "}
                                       {product.teeth
                                         .map((item: number) => item)
                                         .join(",")}
@@ -2823,7 +2795,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Incisal Type
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.occlusal_type
+                              {caseDetail?.occlusal_type !== "custom"
                                 ? caseDetail?.occlusal_type
                                 : caseDetail.custom_occulusal_details ||
                                   "Not specified"}
@@ -2834,7 +2806,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Contact Type
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.contact_type
+                              {caseDetail?.contact_type !== "custom"
                                 ? caseDetail?.contact_type
                                 : caseDetail?.custom_contact_details ||
                                   "Not specified"}
@@ -2843,7 +2815,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <div>
                             <p className="text-sm text-gray-500">Pontic Type</p>
                             <p className="font-medium">
-                              {caseDetail?.pontic_type
+                              {caseDetail?.pontic_type !== "custom"
                                 ? caseDetail?.pontic_type
                                 : caseDetail?.custom_pontic_details ||
                                   "Not specified"}
@@ -2856,7 +2828,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Margin Design
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.margin_design_type
+                              {caseDetail?.margin_design_type !== "custom"
                                 ? caseDetail?.margin_design_type
                                 : caseDetail?.custom_margin_design_type ||
                                   "Not specified"}
@@ -2867,7 +2839,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                               Incisal Design
                             </p>
                             <p className="font-medium">
-                              {caseDetail?.occlusion_design_type
+                              {caseDetail?.occlusion_design_type !== "custom"
                                 ? caseDetail?.occlusion_design_type
                                 : caseDetail?.custom_occlusion_design_type ||
                                   "Not specified"}
@@ -2876,7 +2848,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           <div>
                             <p className="text-sm text-gray-500">Alloy</p>
                             <p className="font-medium">
-                              {caseDetail?.alloy_type
+                              {caseDetail?.alloy_type !== "custom"
                                 ? caseDetail?.alloy_type
                                 : caseDetail?.custon_alloy_type ||
                                   "Not specified"}
