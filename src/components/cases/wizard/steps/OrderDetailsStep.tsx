@@ -183,16 +183,14 @@ console.log(formData,"formData")
     if (client && formData.orderDate) {
       let newDueDate = new Date(formData.orderDate);
       const leadTime = client.additional_lead_time ? Number(client.additional_lead_time) : 0;
-  
       if (leadTime > 0) {
         newDueDate.setDate(newDueDate.getDate() + leadTime);
       }  
-      onChange("dueDate", newDueDate.toISOString()); 
+      // onChange("dueDate", newDueDate.toISOString()); 
     }  
     return client;
   }, [clients, formData.clientId, formData.orderDate]);
-  
-  
+
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

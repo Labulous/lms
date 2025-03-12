@@ -389,7 +389,6 @@ const NewCase: React.FC = () => {
         enclosedItems: transformedData.enclosedItems,
         services: selectedServices,
       };
-      console.log(newCase, "newCasenewCase");
       // Add case to database
       await addCase(newCase, navigate, setLoadingState);
     } catch (error) {
@@ -397,7 +396,6 @@ const NewCase: React.FC = () => {
       toast.error("Failed to create case");
     }
   };
-  console.log(formData, "formdata");
   const handleClientChange = async (clientId: string) => {
     const { data: products, error: productError } = await supabase
       .from("special_product_prices")
@@ -428,7 +426,7 @@ const NewCase: React.FC = () => {
     }
     setClientSpecialServices(services as any);
   };
-
+console.log(formData,"form data")
   return (
     <div
       className="p-6"
