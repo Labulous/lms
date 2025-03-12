@@ -119,6 +119,8 @@ const UpdateCase: React.FC = () => {
   };
 
   const handleFormChange = (field: keyof FormData, value: any) => {
+    console.log(field, value, "datadata");
+
     setFormData((prevData) => {
       if (prevData[field] === value) {
         return prevData;
@@ -136,6 +138,7 @@ const UpdateCase: React.FC = () => {
         [field]: value,
       };
     });
+    return;
   };
 
   const handleStepChange = (data: Partial<FormData>) => {
@@ -155,7 +158,7 @@ const UpdateCase: React.FC = () => {
       return newData;
     });
   };
-
+  console.log(formData, "form data");
   const { data: caseDataa, error: caseError } = useQuery(
     caseId
       ? supabase
@@ -359,7 +362,6 @@ const UpdateCase: React.FC = () => {
       revalidateOnReconnect: false,
     }
   );
-  console.log(caseDetail, "caseDetail");
   let caseItem: any = caseDataa;
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
@@ -442,7 +444,6 @@ const UpdateCase: React.FC = () => {
     e.preventDefault();
     setErrors({});
 
-    // Validation
     const validationErrors: Partial<FormData> = {};
     if (!formData.clientId) validationErrors.clientId = "Client is required";
     if (!formData.patientFirstName)
@@ -568,8 +569,6 @@ const UpdateCase: React.FC = () => {
     }
   };
 
-  console.log(caseDataa, "caseDetailApicaseDetailApi");
-
   useEffect(() => {
     if (!caseId) {
       setError("No case ID provided");
@@ -608,7 +607,7 @@ const UpdateCase: React.FC = () => {
             : new Date().toISOString(),
           dueDate: caseDataApi?.due_date
             ? new Date(caseDataApi.due_date).toISOString() // Keep ISO format
-            : new Date("2025-01-11").toISOString(),
+            : undefined,
           status: caseDataApi.status,
           deliveryMethod:
             caseDataApi.delivery_method || ("Pickup" as DeliveryMethod),
@@ -677,11 +676,9 @@ const UpdateCase: React.FC = () => {
 
           return services;
         });
-        console.log(caseDataApi, "api");
         setSelectedProducts(() => {
           const groupedProducts: any = {};
           caseDataApi.products.forEach((item: any, index: number) => {
-            console.log(item, "itemitem");
             const productId = item?.id || "";
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
@@ -824,10 +821,8 @@ const UpdateCase: React.FC = () => {
             item.teethProduct?.pontic_teeth?.forEach((tooth: number) =>
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
-            console.log(item.teethProduct, "item.teethProduct");
             // Create subRow for individual tooth
             item.teethProduct?.tooth_number?.forEach((tooth: number) => {
-              console.log(item, "itemitem");
               groupedProducts[productId].subRows.push({
                 id: productId,
                 name: item?.name || "",
@@ -835,7 +830,7 @@ const UpdateCase: React.FC = () => {
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
                 additional_service_id: item.teethProduct.additional_services_id,
-                services_discount:item.teethProduct.services_discount,
+                services_discount: item.teethProduct.services_discount,
                 quantity: item.discounted_price.quantity,
                 discount: item?.discounted_price?.discount || 0,
                 discounted_price_id: item.discounted_price?.id,
@@ -895,14 +890,11 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, clients, servicesData]);
-  console.log(selectedProducts, "selected products!!");
   useEffect(() => {
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
         return prevSelectedProducts.map((product) => {
           // Ensure services array exists as an empty array if it doesn't exist
-          console.log(prevSelectedProducts, "prevSelectedProducts");
-          console.log(servicesData,"servicesDataservicesData")
           const servicesForSubRow = servicesData
             .filter((service) =>
               product.additional_service_id.includes(service.id)
@@ -912,7 +904,7 @@ const UpdateCase: React.FC = () => {
               name: service.name,
               price: service.price,
               is_taxable: service.is_taxable,
-              add_to_all:true
+              add_to_all: true,
             }));
 
           const updatedProduct = {

@@ -519,7 +519,6 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           function mergeProducts(products: any) {
             const mergedMap = new Map();
 
-            // Iterate through the products array
             products.forEach((product: any) => {
               // Create a key for identifying the product by its properties
               const key = JSON.stringify({
@@ -572,7 +571,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             return Array.from(mergedMap.values());
           }
           const mergedProducts = mergeProducts(product);
-          const allToothNumbers = products.flatMap(
+          const allToothNumbers = products.filter((item)=> item?.teethProduct.type===type).flatMap(
             (product) => product.teethProduct?.tooth_number || []
           );
           const allToothPonticNumbers = products.flatMap(
@@ -1162,7 +1161,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           return <DisplayGroupedProducts groups={group} />;
                         })} */}
                         {/* Total and Total Due Section */}
-                        <div className="flex justify-end pt-4 mt-4 border-t border-gray-800">
+                        <div className="flex justify-end pt-4 mt-4">
                           <div className="w-64">
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-sm font-medium">
@@ -1225,7 +1224,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                       {/* Footer */}
                       {invoice?.invoice_notes && (
                         <div className="text-start mt-4 font-medium">
-                          <h3 className="text-sm font-bold">Inovice Note</h3>
+                          <h3 className="text-sm font-bold">Invoice Note</h3>
                           <p className="p-1 rounded-md text-xs">
                             {invoice?.invoice_notes}
                           </p>
@@ -1928,7 +1927,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                           </span>
                         )}
                       </p>
-                      <p className="mb-2 mt-0.5">
+                      <p className="mb-2 mt-0.5 ml-6">
                         <span className="font-bold">Notes:&nbsp;</span>
                         {item?.teethProduct?.notes}
                       </p>
@@ -2309,7 +2308,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                     <div className="font-bold text-xs w-32 min-h-[14px]">
                       {item.occlusal_type !== "custom"
                         ? item.occlusal_type?.split("_")?.join(" ")
-                        : item.custom_occlusal_details || ""}
+                        : item.custom_occulusal_details || ""}
                     </div>
                   </div>
                   <div>
@@ -2351,7 +2350,7 @@ export const LabSlipTemplate: React.FC<any> = ({ caseDetails: item }) => {
                         ? "not_applicable"
                         : item.occlusion_design_type !== "custom"
                         ? item.occlusion_design_type?.split("_")?.join(" ")
-                        : item.custom_margin_design_type || ""}
+                        : item.custom_occlusion_design_type || ""}
                     </div>
                   </div>
                   <div>

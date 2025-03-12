@@ -957,6 +957,10 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       custom_occlusal_shade,
                       custom_gingival_shade,
                       custom_stump_shade,
+                       manual_body_shade,
+                  manual_occlusal_shade,
+                  manual_gingival_shade,
+                  manual_stump_shade,
                       type,
               product:products!product_id (
                         id,

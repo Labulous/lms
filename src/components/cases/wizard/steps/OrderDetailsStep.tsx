@@ -159,7 +159,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       setLoading(false);
     }
   };
-
+console.log(formData,"formData")
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -183,16 +183,14 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     if (client && formData.orderDate) {
       let newDueDate = new Date(formData.orderDate);
       const leadTime = client.additional_lead_time ? Number(client.additional_lead_time) : 0;
-  
       if (leadTime > 0) {
         newDueDate.setDate(newDueDate.getDate() + leadTime);
       }  
-      onChange("dueDate", newDueDate.toISOString()); 
+      // onChange("dueDate", newDueDate.toISOString()); 
     }  
     return client;
   }, [clients, formData.clientId, formData.orderDate]);
-  
-  
+
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
