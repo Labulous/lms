@@ -7,6 +7,7 @@ import {
   PatientLabelTemplate,
   SelectedOrderTemplate,
 } from "./PrintTemplates";
+import CaseDetails from "../CaseDetails";
 
 // Paper sizes in points (1 inch = 72 points)
 export const PAPER_SIZES = {
@@ -16,7 +17,12 @@ export const PAPER_SIZES = {
 } as const;
 
 interface PrintHandlerProps {
-  type: "qr-code" | "lab-slip" | "address-label" | "patient-label" | "selected-order";
+  type:
+    | "qr-code"
+    | "lab-slip"
+    | "address-label"
+    | "patient-label"
+    | "selected-order";
   paperSize?: keyof typeof PAPER_SIZES;
   caseData: {
     id: string;

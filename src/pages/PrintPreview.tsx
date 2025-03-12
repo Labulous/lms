@@ -294,6 +294,7 @@ const PrintPreview = () => {
               paperSize="LETTER"
               key={index}
               caseDetails={singleProps}
+              caseData={caseDetails}
             />
           );
         });
