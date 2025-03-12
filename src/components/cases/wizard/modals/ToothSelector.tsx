@@ -631,65 +631,57 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled) return;
-
+  
+    // If in pontic mode, handle pontic selection separately.
     if (ponticMode) {
       handlePonticSelect(toothNumber);
       return;
     }
-
-    // Single tooth selection with Cmd (Mac) or Ctrl (Windows/Linux)
-    // && billingType === "perTooth"
-    if ((event.metaKey || event.ctrlKey) ) {
+  
+    // Ctrl/Cmd-click: Toggle the clicked tooth, preserving previous selections.
+    if (event.metaKey || event.ctrlKey) {
       const newIndividualSelections = new Set(individualSelections);
-
       if (newIndividualSelections.has(toothNumber)) {
-        newIndividualSelections.delete(toothNumber); // Deselect the tooth
+        newIndividualSelections.delete(toothNumber); // Deselect the tooth.
       } else {
-        newIndividualSelections.add(toothNumber); // Select the tooth
+        newIndividualSelections.add(toothNumber); // Select the tooth.
       }
-
       setIndividualSelections(newIndividualSelections);
-      setPonticMode(false); // Reset pontic mode
-      setPonticTeeth(new Set()); // Clear pontic teeth
+      setPonticMode(false); // Reset pontic mode.
+      setPonticTeeth(new Set()); // Clear pontic teeth.
+      // Also update the starting tooth for any future range selection.
       setRangeStartTooth(toothNumber);
-
-      onSelectionChange(Array.from(newIndividualSelections)); // Trigger callback
+      onSelectionChange(Array.from(newIndividualSelections));
       return;
     }
-
-    // Shift-click for range selection
-    if (event.shiftKey ) {
-      if (selectedTeeth.length === 0) {
-        // If no teeth are selected, set the starting tooth
-        setRangeStartTooth(toothNumber);
-        setRangeSelections(new Set([toothNumber]));
-        onSelectionChange([toothNumber]);
-        return;
-      }
-
-      // Select a range of teeth from the last selected tooth to the clicked tooth
-      const lastSelectedTooth = selectedTeeth[selectedTeeth.length - 1];
-      const teethInRange = getTeethInVisualRange(
-        lastSelectedTooth,
-        toothNumber
-      );
-
+  
+    // Shift-click: Add a range of teeth from the starting tooth to the clicked tooth.
+    if (event.shiftKey) {
+      // If no starting tooth is set, use the clicked tooth as start.
+      const start = rangeStartTooth !== null ? rangeStartTooth : toothNumber;
+      const teethInRange = getTeethInVisualRange(start, toothNumber);
       if (teethInRange.length > 0) {
-        const newRangeSelections = new Set(teethInRange);
-        setRangeSelections(newRangeSelections);
-        resetSelectionStates();
-        onSelectionChange(teethInRange);
+        // Instead of replacing, add the range to the previous selections.
+        const combinedSelections = new Set(individualSelections);
+        teethInRange.forEach((t) => combinedSelections.add(t));
+        setRangeSelections(combinedSelections);
+        onSelectionChange(Array.from(combinedSelections));
       }
       return;
     }
-
-    // Regular click (no modifier keys)
-    if (!event.shiftKey && !event.metaKey && !event.ctrlKey) {
-      resetSelectionStates(); // Clear previous selections
-      setIndividualSelections(new Set([toothNumber])); // Select the single tooth
-      onSelectionChange([toothNumber]); // Trigger callback
+  
+    // Regular click (no modifier keys): Toggle the clicked tooth while preserving previous data.
+    // Instead of clearing everything, we check the current selection:
+    const currentSelection = new Set(individualSelections);
+    if (currentSelection.has(toothNumber)) {
+      currentSelection.delete(toothNumber); // Deselect if already selected.
+    } else {
+      currentSelection.add(toothNumber); // Add to the selection.
     }
+    setIndividualSelections(currentSelection);
+    onSelectionChange(Array.from(currentSelection));
   };
+  
 
   const getArchSelectionText = () => {
     if (billingType !== "perArch") return "";

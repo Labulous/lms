@@ -1093,7 +1093,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 {invoice.client.client_name}
                               </p>
                               <p className="text-sm">
-                                Dr. {invoice.doctor.name}
+                               {invoice.doctor.name}
                               </p>
                               <p className="text-sm">{invoice.client.street}</p>
                               <p className="text-sm">

@@ -49,6 +49,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { EditServiceForm } from "@/components/settings/EditServiceForm";
+import { buffer } from "stream/consumers";
 
 export interface ServicesFormData {
   categories: string[];
@@ -70,6 +72,20 @@ type Product = Database["public"]["Tables"]["products"]["Row"] & {
 };
 
 type ProductType = Database["public"]["Tables"]["product_types"]["Row"];
+
+const defaultService: Service = {
+  id: "",
+  name: "",
+  description: "",
+  price: 0,
+  is_client_visible: true,
+  is_taxable: true,
+  material_id: "",  // Ensure it's a string, not undefined
+  lab_id: "",
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 
 type ServiceBase = {
   name: string;
@@ -95,7 +111,7 @@ interface SortConfig {
 }
 
 const ProductsServices: React.FC = () => {
-  const navigate = useNavigate();
+  const { user } = useAuth();
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -127,7 +143,14 @@ const ProductsServices: React.FC = () => {
     direction: "asc",
   });
 
-  const { user } = useAuth();
+  // const [editingService, setEditingService] = useState<
+  //   Database["public"]["Tables"]["services"]["Row"] | null
+  // >(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingOpen, setEditingOpen] = useState(false);
+
   const {
     data: labIdData,
     error: labError,
@@ -330,18 +353,61 @@ const ProductsServices: React.FC = () => {
   };
 
   const handleEditProduct = async (product: Product) => {
+
     console.log(product, "ProductList");
 
-    // Fetch the material code based on material_id
-    const { data: materialData, error: materialError } = await supabase
-      .from("materials")
-      .select("code")
-      .eq("id", product.material_id)
+    const lab = await getLabIdByUserId(user?.id as string);
+    if (!lab?.labId) {
+      console.error("Lab ID not found.");
+      return;
+    }
+    // Fetch existing product by ID
+    const { data: existingProduct, error: existingProductError } = await supabase
+      .from("products")
+      .select("id, material_id, product_code")
+      .eq("id", product.id)
       .single();
 
-    if (materialError) {
-      throw new Error("Failed to fetch material code");
+    if (existingProductError) {
+      console.error("Error fetching existing product:", existingProductError);
+      throw existingProductError;
     }
+
+    let newProductCode = product.product_code; // Default to the current product code
+    // Check if the material_id has changed
+    if (existingProduct?.material_id !== product.material_id) {
+      // Fetch the material code
+      const { data: materialData, error: materialError } = await supabase
+        .from("materials")
+        .select("code")
+        .eq("id", product.material_id)
+        .single();
+
+      if (materialError || !materialData) {
+        throw new Error("Failed to fetch material code");
+      }
+
+      // Fetch existing products for the lab with the new material_id
+      const { data: existingProducts, error: fetchError } = await supabase
+        .from("products")
+        .select("id, product_code")
+        .eq("lab_id", lab?.labId)
+        .eq("material_id", product.material_id);
+
+      if (fetchError) {
+        console.error("Error fetching existing products:", fetchError);
+        throw fetchError;
+      }
+
+      // Generate new product code
+      const highestProductCode =
+        existingProducts.length > 0
+          ? Math.max(...existingProducts.map((p) => Number(p?.product_code) || 0))
+          : Number(materialData.code);
+
+      newProductCode = (highestProductCode + 1).toString();
+    }
+
 
     const { data, error } = await supabase
       .from("products")
@@ -355,7 +421,7 @@ const ProductsServices: React.FC = () => {
         material_id: product.material_id,
         billing_type_id: product.billing_type_id,
         requires_shade: product.requires_shade,
-        product_code: materialData?.code,
+        product_code: newProductCode,
       })
       .eq("id", product.id)
       .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
@@ -479,21 +545,30 @@ const ProductsServices: React.FC = () => {
 
       const urlParams = location.pathname + location.search; // Get full URL path + query
 
-      navigate("/material-selection", { replace: true });
+      //navigate("/material-selection", { replace: true });
+      setLoading(true)
       setTimeout(() => {
-        navigate(urlParams, { replace: true });
+        window.location.href = window.location.href;
       }, 100);
+      setLoading(false)
     } catch (err) {
       console.error("Unexpected error:", err);
       toast.error("An error occurred.");
     }
   };
 
-  const handleEditClick = async (item: Product | Service) => {
-    // setItemsToDelete([item]);
-    // setIsDeleteModalOpen(true);
-    toast.error("Feature under development hi");
+  const handleEditClick = (service: Service) => {
+    setEditingService(service);
+    setEditingOpen(true);
   };
+
+  // const handleEditClick = async (item: Product | Service) => {
+  //   debugger;
+  //   serEditingOpen(true);
+  //   // setItemsToDelete([item]);
+  //   // setIsDeleteModalOpen(true);
+  //   //toast.error("Feature under development hi");
+  // };
 
   // Batch delete function for services
   const handleBatchDelete = async (selectedItems: (Product | Service)[]) => {
@@ -519,11 +594,9 @@ const ProductsServices: React.FC = () => {
         toast.error("Failed to archive the items.");
       } else {
         toast.success("Items successfully archived.");
-        const urlParams = location.pathname + location.search; // Get full URL path + query
-        navigate("/material-selection", { replace: true });
         setTimeout(() => {
-          navigate(urlParams, { replace: true });
-        }, 100);
+          window.location.href = window.location.href;
+        }, 500);
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -563,11 +636,11 @@ const ProductsServices: React.FC = () => {
         toast.success("Items successfully archived.");
 
         fetchServices();
-        const urlParams = location.pathname + location.search; // Get full URL path + query
-        navigate("/material-selection", { replace: true });
+        setLoading(true)
         setTimeout(() => {
-          navigate(urlParams, { replace: true });
+          window.location.href = window.location.href;
         }, 100);
+        setLoading(false)
       }
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -803,6 +876,100 @@ const ProductsServices: React.FC = () => {
     }
   }, [location, materialFilter]);
 
+  async function onEdit(arg0: {
+    name: string;
+    price: number;
+    is_client_visible: boolean;
+    is_taxable: boolean;
+    material_id: string;
+    billing_type_id: string;
+    description: string;
+    id: string;
+    lab_id: string;
+    created_at: string;
+    updated_at: string;
+    requires_shade?: boolean;
+    lead_time?: number;
+  }) {
+    const lab = await getLabIdByUserId(user?.id as string);
+    if (!lab?.labId) {
+      console.error("Lab ID not found.");
+      return;
+    }
+
+    const { data: existingService, error: existingServiceError } = await supabase
+      .from("services")
+      .select("id, material_id, product_code")
+      .eq("id", arg0.id)
+      .single();
+
+    if (existingServiceError) {
+      console.error("Error fetching existing service:", existingServiceError);
+      throw existingServiceError;
+    }
+
+    let newServiceCode = existingService.product_code; 
+
+    if (existingService?.material_id !== arg0.material_id) {
+     const { data: materialData, error: materialError } = await supabase
+        .from("materials")
+        .select("code")
+        .eq("id", arg0.material_id)
+        .single();
+
+      if (materialError || !materialData) {
+        throw new Error("Failed to fetch material code");
+      }
+
+      const { data: existingServices, error: fetchError } = await supabase
+        .from("services")
+        .select("id, product_code")
+        .eq("lab_id", lab?.labId)
+        .eq("material_id", arg0.material_id);
+
+      if (fetchError) {
+        console.error("Error fetching existing services:", fetchError);
+        throw fetchError;
+      }
+
+       const highestServiceCode =
+        existingServices.length > 0
+          ? Math.max(...existingServices.map((s) => Number(s?.product_code) || 0))
+          : Number(materialData.code);
+
+      newServiceCode = (highestServiceCode + 1).toString();
+    }
+
+    // Update the service
+    const { data, error } = await supabase
+      .from("services")
+      .update({
+        name: arg0.name,
+        price: arg0.price,
+        description: arg0.description,
+        is_client_visible: arg0.is_client_visible,
+        is_taxable: arg0.is_taxable,
+        material_id: arg0.material_id,
+        product_code: newServiceCode,
+      })
+      .eq("id", arg0.id)
+      .or("is_archive.is.null,is_archive.eq.false") 
+      .select();
+
+    if (error) {
+      toast.error("Error updating service:");
+    } else if (data) {
+      toast.success("Service updated successfully:");
+      fetchServices();
+      setLoading(true)
+      setTimeout(() => {
+        window.location.href = window.location.href;
+      }, 100);
+      setLoading(false)
+    }
+  }
+
+
   return (
     <div className="container mx-auto px-4 py-4">
       <PageHeader
@@ -940,6 +1107,15 @@ const ProductsServices: React.FC = () => {
                       />
                     </TableHead>
                     <TableHead
+                      className="cursor-pointer"
+                      onClick={() => handleSort("product_code")}
+                    >
+                      <div className="flex items-center">
+                        Code
+                        {getSortIcon("product_code")}
+                      </div>
+                    </TableHead>
+                    <TableHead
                       className="cursor-pointer w-[250px]"
                       onClick={() => handleSort("name")}
                     >
@@ -948,15 +1124,7 @@ const ProductsServices: React.FC = () => {
                         {getSortIcon("name")}
                       </div>
                     </TableHead>
-                    <TableHead
-                      className="cursor-pointer"
-                      onClick={() => handleSort("product_code")}
-                    >
-                      <div className="flex items-center">
-                        Service Code
-                        {getSortIcon("product_code")}
-                      </div>
-                    </TableHead>
+
 
                     <TableHead
                       className="cursor-pointer"
@@ -1030,12 +1198,13 @@ const ProductsServices: React.FC = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {service?.name}
-                      </TableCell>
                       <TableCell>
                         {service?.product_code}
                       </TableCell>
+                      <TableCell className="font-medium">
+                        {service?.name}
+                      </TableCell>
+
                       <TableCell>
                         <Badge variant="outline">
                           {service?.material?.name}
@@ -1094,6 +1263,22 @@ const ProductsServices: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Edit Product Dialog */}
+            <EditServiceForm
+              service={editingService ? { ...defaultService, ...editingService } : undefined}
+              isOpen={editingOpen}
+              onClose={() => {
+                setEditingOpen(false);
+                setEditingService(null);
+              }}
+              onSave={(values) => {
+                onEdit?.({ ...editingService!, ...values });
+                setEditingOpen(false);
+              }}
+            />
+
+
           </div>
         </TabsContent>
       </Tabs>
