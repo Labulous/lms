@@ -672,10 +672,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
                                   <div className="ml-5">
                                     <p className="font-bold text-xs">
-                                      {item.name}
-                                    </p>
-                                    <p className="font-bold ml-3 text-xs">
-                                      (#{teeth[0]})
+                                      (#{teeth[0]}) {item.name}
                                     </p>
                                   </div>
                                 </div>
@@ -738,12 +735,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 className="font-extrabold text-xs"
                                 style={{ lineHeight: "1.15" }}
                               >
-                                {item.name}
-                              </p>
-                              <p
-                                className="text-xs pl-6 font-extrabold"
-                                style={{ lineHeight: "1.15" }}
-                              >
+                                {/* Display tooth numbers before product name */}
                                 (#
                                 {item.teethProduct.type ? (
                                   item.teethProduct?.tooth_number
@@ -768,7 +760,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     )}
                                   </>
                                 )}
-                                )
+                                ) {item.name}
                               </p>
                             </div>
 
@@ -1871,9 +1863,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                           >
                             <div className="space-y-1 font-medium col-span-10 pl-6">
                               <div className="ml-5">
-                                <p className="font-bold text-xs">{item.name}</p>
-                                <p className="font-bold ml-3 text-xs">
-                                  (#{teeth[0]})
+                                <p className="font-bold text-xs">
+                                  (#{teeth[0]}) {item.name}
                                 </p>
                               </div>
                             </div>
@@ -1897,12 +1888,7 @@ export const LabSlipTemplate: React.FC<any> = ({
                         className="font-extrabold"
                         style={{ lineHeight: "1.15" }}
                       >
-                        {item.name}
-                      </p>
-                      <p
-                        className="text-xs pl-6 font-extrabold"
-                        style={{ lineHeight: "1.15" }}
-                      >
+                        {/* Display tooth numbers before product name */}
                         (#
                         {item.teethProduct.type ? (
                           item.teethProduct?.tooth_number
@@ -1924,7 +1910,7 @@ export const LabSlipTemplate: React.FC<any> = ({
                             #{formatTeethRange(item.teethProduct?.tooth_number)}
                           </>
                         )}
-                        )
+                        ) {item.name}
                       </p>
 
                       {item.teethProduct?.pontic_teeth?.length > 0 && (
