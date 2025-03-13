@@ -990,7 +990,7 @@ const CaseList: React.FC = () => {
     (item: any) => {
       return {
         ...item,
-        products: item.teethProduct.map((tp: any) => ({
+        products: item.teethProduct.map((tp: any, index: number) => ({
           id: tp.product.id,
           name: tp.product.name,
           price: tp.product.price,
@@ -1004,6 +1004,8 @@ const CaseList: React.FC = () => {
           product_type: tp.product.product_type,
           billing_type: tp.product.billing_type,
           discounted_price: tp.product.discounted_price,
+          additional_services_id:
+            item?.teethProduct?.[index].additional_services_id,
           teethProduct: {
             id: tp.id,
             is_range: tp.is_range,
@@ -1011,7 +1013,7 @@ const CaseList: React.FC = () => {
             product_id: tp.product_id,
             occlusal_shade: tp.occlusal_shade,
             body_shade: tp.body_shade,
-            pontic_teeth:tp.pontic_teeth,
+            pontic_teeth: tp.pontic_teeth,
             gingival_shade: tp.gingival_shade,
             stump_shade: tp.stump_shade,
             manual_occlusal_shade: tp.manual_occlusal_shade,
@@ -1030,6 +1032,8 @@ const CaseList: React.FC = () => {
       };
     }
   );
+  console.log(arragedNewCases,"arragedNewCases")
+
   const handleFetchData = async () => {
     try {
       const { data: query, error } = await supabase
@@ -1141,6 +1145,7 @@ const CaseList: React.FC = () => {
           tooth_number,
           pontic_teeth,
           product_id,
+          additional_services_id,
           occlusal_shade:shade_options!occlusal_shade_id (
           name,
           category,
@@ -1207,7 +1212,7 @@ const CaseList: React.FC = () => {
         console.log("failed to fetch cases");
       }
       const arragedNewCases: ExtendedCase[] =
-        query?.map((item: any) => {
+        query?.map((item: any, index:number) => {
           return {
             ...item,
             products: item.teethProduct.map((tp: any) => ({
@@ -1224,6 +1229,8 @@ const CaseList: React.FC = () => {
               product_type: tp.product.product_type,
               billing_type: tp.product.billing_type,
               discounted_price: tp.product.discounted_price,
+              additional_services_id:
+              item?.teethProduct?.[index].additional_services_id,
               teethProduct: {
                 id: tp.id,
                 is_range: tp.is_range,
