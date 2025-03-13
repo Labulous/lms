@@ -464,21 +464,19 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             ([serviceName, serviceDetails]) => (
               <div
                 key={serviceDetails.id}
-                className="grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300"
+                className="grid grid-cols-12 text-xs mb-6 pb-2 border-b border-gray-300"
                 style={{ lineHeight: "1.1" }}
               >
-                <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
+                <div className="space-y-0 font-medium col-span-5 flex flex-col justify-center items-start pl-4">
                   <h3 className="text-xs font-bold">{serviceName}</h3>
                   <p
-                    className="text-xs font-extrabold"
-                    style={{ lineHeight: "1.15" }}
+                    className="text-xs font-extrabold "
                   >
                     <>(#{serviceDetails.teeth.join(",#")})</>
                   </p>
                 </div>
                 <p
                   className="text-right col-span-2 pr-2 font-bold"
-                  style={{ lineHeight: "1.15" }}
                 >
                   ${serviceDetails.price}
                 </p>
