@@ -458,7 +458,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       return (
         <>
           {Object.entries(groupedServicesByName)?.length > 0 && (
-            <h3 className="font-bold text-[14px] mb-2">Common Services</h3>
+            <h3 className="font-bold text-xs">Common Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
@@ -468,9 +468,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                 style={{ lineHeight: "1.1" }}
               >
                 <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
-                  <h3 className="text-sm font-bold">{serviceName}</h3>
+                  <h3 className="text-xs font-bold">{serviceName}</h3>
                   <p
-                    className="text-xs pl-2 font-extrabold mt-1"
+                    className="text-xs font-extrabold"
                     style={{ lineHeight: "1.15" }}
                   >
                     <>(#{serviceDetails.teeth.join(",#")})</>
@@ -579,14 +579,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
             (product) => product.teethProduct?.pontic_teeth || []
           );
           console.log(products, "merge Products", mergedProducts);
-
           return (
-            <div key={type} style={{ marginBottom: "20px" }}>
+            <div key={type} style={{ marginBottom: "10px" }}>
               {/* Display the type as the title */}
               <div className="flex justify-start text-center items-center mb-2">
-                <h2 className="font-bold text-sm ">{type}</h2>
+                <h2 className="font-bold text-xs ">{type}</h2>
                 <p
-                  className="text-xs pl-2 font-extrabold mt-1"
+                  className="text-xs ml-1 font-extrabold mt-0.5"
                   style={{ lineHeight: "1.15" }}
                 >
                   {type !== "Bridge" ? (
@@ -604,9 +603,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     </>
                   )}
                 </p>
-                {allToothPonticNumbers.length > 0 && (
+                {/* {allToothPonticNumbers.length > 0 && (
                   <p
-                    className="text-sm pl-2 font-extrabold mt-1"
+                    className="text-sm pl-2 font-extrabold mt-1 flex"
                     style={{ lineHeight: "1.15" }}
                   >
                     {type !== "Bridge" ? (
@@ -621,13 +620,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           }}
                           className="text-xs"
                         >
-                          Pontic (#
+                          Pontic(#
                           {allToothPonticNumbers.join(",#")})
                         </span>
                       </>
                     )}
                   </p>
-                )}
+                )} */}
               </div>
 
               <ul>
@@ -636,7 +635,11 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     console.log(item, "itemitem");
 
                     const Services = products
-                      .filter((product) => product.teethProduct.type === type && product.id===item.id)
+                      .filter(
+                        (product) =>
+                          product.teethProduct.type === type &&
+                          product.id === item.id
+                      )
                       .map((item) => {
                         const additional_services_id =
                           item.additional_services_id;
@@ -660,25 +663,19 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                         );
                         return (
                           <div>
-                            {additionalServices.length > 0 && (
-                              <h2 className="font-bold text-xs py-0 ml-5 leading-0">
-                                Additonal Services
-                              </h2>
-                            )}
-
                             {additionalServices.map((item, index) => {
                               if (additionalServices) {
                                 return (
                                   <div
-                                    className={`grid grid-cols-12 text-xs border-gray-300`}
+                                    className={`grid grid-cols-12 text-xs -mt-0.5 border-gray-300`}
                                     style={{ lineHeight: "1.1" }}
                                   >
                                     <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
-                                      <div className="ml-5">
+                                      <div className="ml-5 flex gap-0">
                                         <p className="font-bold text-xs">
                                           {item.name}
                                         </p>
-                                        <p className="font-bold ml-3 text-xs">
+                                        <p className="font-bold ml-1 text-xs">
                                           (#{item.teeth})
                                         </p>
                                       </div>
@@ -736,16 +733,15 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                   return (
                     <React.Fragment key={index}>
                       <div
-                        className={`grid grid-cols-12 text-xs pb-2 border-gray-300`}
+                        className={`grid grid-cols-12 text-xs border-gray-300`}
                         style={{ lineHeight: "1.1" }}
                       >
                         <div className="space-y-1 font-medium col-span-5 pl-2">
                           <div className="">
                             <div className="">
-                              <p
-                                className="font-extrabold text-xs"
-                                style={{ lineHeight: "1.15" }}
-                              >
+                              <span className="mr-1">{item.name}</span>
+
+                              <p className="font-extrabold text-start text-xs">
                                 {/* Display tooth numbers before product name */}
                                 (#
                                 {item.teethProduct.type ? (
@@ -771,13 +767,13 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     )}
                                   </>
                                 )}
-                                ) {item.name}
+                                )
                               </p>
                             </div>
 
                             {item.teethProduct?.pontic_teeth?.length > 0 && (
                               <p
-                                className="text-xs pl-6 font-extrabold"
+                                className="text-[10px] pl-6 font-extrabold"
                                 style={{ lineHeight: "1.15" }}
                               >
                                 <span className="font-normal"></span>
@@ -802,9 +798,12 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       Pontic:
                                     </span>
                                     #
-                                    {formatTeethRange(
-                                      item.teethProduct?.pontic_teeth
-                                    )}
+                                    <span className="text-[10px]">
+                                      {" "}
+                                      {formatTeethRange(
+                                        item.teethProduct?.pontic_teeth
+                                      )}
+                                    </span>
                                   </>
                                 )}
                               </p>
@@ -813,7 +812,11 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               className="text-xs flex gap-0 flex-wrap pl-6 mt-1"
                               style={{ lineHeight: "1.15" }}
                             >
-                              <span className="font-xs">Shade:&nbsp;</span>
+                              {(item?.teethProduct?.occlusal_shade?.name ||
+                                item?.teethProduct?.custom_occlusal_shade ||
+                                item?.teethProduct?.manual_occlusal_shade) && (
+                                <span className="font-xs">Shade:&nbsp;</span>
+                              )}
                               {/* Occlusal Shade */}
                               {(item?.teethProduct?.occlusal_shade?.name ||
                                 item?.teethProduct?.custom_occlusal_shade ||
@@ -1681,7 +1684,6 @@ export const LabSlipTemplate: React.FC<any> = ({
     // const [services, setLabServices] = useState<any[]>([]);
     const { user } = useAuth();
 
-
     const {
       data: labIdData,
       error: labError,
@@ -1708,7 +1710,6 @@ export const LabSlipTemplate: React.FC<any> = ({
         revalidateOnReconnect: true, // Refetch when the network is reconnected
       }
     );
-
 
     const groupedServicesByName: {
       [serviceName: string]: {
@@ -1849,7 +1850,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                 const teeth = item.teethProduct.tooth_number;
                 const additionalDiscount = item?.services_discount ?? 0;
 
-                const additionalServices = services?.filter((service) =>
+                const additionalServices = services
+                  ?.filter((service) =>
                     additional_services_id?.includes(service.id)
                   )
                   .map((service) => ({ ...service, type: "type" }));
