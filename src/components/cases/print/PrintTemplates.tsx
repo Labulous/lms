@@ -636,7 +636,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     console.log(item, "itemitem");
 
                     const Services = products
-                      .filter((item) => item.teethProduct.type === type)
+                      .filter((product) => product.teethProduct.type === type && product.id===item.id)
                       .map((item) => {
                         const additional_services_id =
                           item.additional_services_id;
