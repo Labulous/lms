@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { getLabDataByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { calculateDueDate } from "@/lib/calculateDueDate";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 const TYPE_COLORS = {
   Crown: "rgb(59 130 246)", // blue-500
@@ -1677,38 +1678,37 @@ export const LabSlipTemplate: React.FC<any> = ({
     const allToothPonticNumbers = products.flatMap(
       (product: any) => product.teethProduct?.pontic_teeth || []
     );
-    const [services, setLabServices] = useState<any[]>([]);
+    // const [services, setLabServices] = useState<any[]>([]);
     const { user } = useAuth();
 
-    useEffect(() => {
-      const fetchServices = async () => {
-        if (!user?.id) return; // Ensure user ID exists
 
-        try {
-          const lab = await getLabDataByUserId(user.id);
-          if (!lab?.id) {
-            console.error("Lab ID not found.");
-            return;
-          }
-
-          const { data, error } = await supabase
+    const {
+      data: labIdData,
+      error: labError,
+      isLoading: isLabLoading,
+    } = useQuery(
+      supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      }
+    );
+    const { data: services, error: caseError } = useQuery(
+      labIdData?.lab_id
+        ? supabase
             .from("services")
-            .select("id, name, price, is_taxable")
-            .eq("lab_id", lab.id);
+            .select(
+              ` *
+        `
+            )
+            .eq("lab_id", labIdData.lab_id)
+        : null, // Fetching a single record based on `activeCaseId`
+      {
+        revalidateOnFocus: true, // Refetch when the window is focused
+        revalidateOnReconnect: true, // Refetch when the network is reconnected
+      }
+    );
 
-          if (error) {
-            throw error;
-          }
-
-          console.log(data, "lab services data");
-          setLabServices(data || []);
-        } catch (err) {
-          console.error("Failed to fetch services:", err);
-        }
-      };
-
-      fetchServices();
-    }, []); // Empty dependency array ensures it runs only once
 
     const groupedServicesByName: {
       [serviceName: string]: {
@@ -1849,18 +1849,17 @@ export const LabSlipTemplate: React.FC<any> = ({
                 const teeth = item.teethProduct.tooth_number;
                 const additionalDiscount = item?.services_discount ?? 0;
 
-                const additionalServices = services
-                  .filter((service) =>
+                const additionalServices = services?.filter((service) =>
                     additional_services_id?.includes(service.id)
                   )
                   .map((service) => ({ ...service, type: "type" }));
-
+                console.log(additionalServices, "additionalServices");
                 return (
                   <div>
-                    {additionalServices.map((item, index) => {
+                    {additionalServices?.map((item, index) => {
                       console.log(
                         additionalServices,
-                        "type",
+                        "type hi",
                         "additional services"
                       );
                       if (additionalServices) {
