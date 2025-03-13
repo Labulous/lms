@@ -1731,7 +1731,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     <DropdownMenuItem onSelect={() => handlePrint("qr-code")}>
                       QR Code Label
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handlePrint("lab-slip")}>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        loadingAgain ? null : handlePrint("lab-slip")
+                      }
+                    >
                       Lab Slip
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -2300,7 +2304,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                           const additionalServices = services.filter((item) =>
                             product.additional_services_id.includes(item.id)
                           );
-                         
+
                           const serviceRow =
                             additionalServices.length > 0
                               ? additionalServices.map((item, index) => {
@@ -2367,7 +2371,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                         />
                                       </TableCell>
                                       <TableCell className="text-xs py-1.5 pl-4 pr-0">
-                                        $ {product.services_discount > 0
+                                        ${" "}
+                                        {product.services_discount > 0
                                           ? item.price -
                                             (item.price *
                                               product.services_discount) /
