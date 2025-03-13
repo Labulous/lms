@@ -745,12 +745,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 className="font-extrabold text-xs"
                                 style={{ lineHeight: "1.15" }}
                               >
-                                {item.name}
-                              </p>
-                              <p
-                                className="text-xs pl-6 font-extrabold"
-                                style={{ lineHeight: "1.15" }}
-                              >
+                                {/* Display tooth numbers before product name */}
                                 (#
                                 {item.teethProduct.type ? (
                                   item.teethProduct?.tooth_number
@@ -775,7 +770,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                     )}
                                   </>
                                 )}
-                                )
+                                ) {item.name}
                               </p>
                             </div>
 
