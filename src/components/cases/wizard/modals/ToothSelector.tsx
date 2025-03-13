@@ -655,31 +655,34 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       return;
     }
   
-    // Shift-click: Add a range of teeth from the starting tooth to the clicked tooth.
+    // Shift-click: Select a range of teeth from the starting tooth to the clicked tooth.
     if (event.shiftKey) {
-      // If no starting tooth is set, use the clicked tooth as start.
-      const start = rangeStartTooth !== null ? rangeStartTooth : toothNumber;
-      const teethInRange = getTeethInVisualRange(start, toothNumber);
+      // If no starting tooth is set or no teeth are selected, use the clicked tooth as start
+      if (rangeStartTooth === null || selectedTeeth.length === 0) {
+        setRangeStartTooth(toothNumber);
+        setIndividualSelections(new Set([toothNumber]));
+        onSelectionChange([toothNumber]);
+        return;
+      }
+      
+      // Get teeth in the visual range between the start tooth and the clicked tooth
+      const teethInRange = getTeethInVisualRange(rangeStartTooth, toothNumber);
+      
       if (teethInRange.length > 0) {
-        // Instead of replacing, add the range to the previous selections.
-        const combinedSelections = new Set(individualSelections);
-        teethInRange.forEach((t) => combinedSelections.add(t));
-        setRangeSelections(combinedSelections);
-        onSelectionChange(Array.from(combinedSelections));
+        // Create a new selection with the range
+        const newRangeSelections = new Set(teethInRange);
+        setRangeSelections(newRangeSelections);
+        setIndividualSelections(newRangeSelections);
+        onSelectionChange(Array.from(newRangeSelections));
       }
       return;
     }
   
-    // Regular click (no modifier keys): Toggle the clicked tooth while preserving previous data.
-    // Instead of clearing everything, we check the current selection:
-    const currentSelection = new Set(individualSelections);
-    if (currentSelection.has(toothNumber)) {
-      currentSelection.delete(toothNumber); // Deselect if already selected.
-    } else {
-      currentSelection.add(toothNumber); // Add to the selection.
-    }
-    setIndividualSelections(currentSelection);
-    onSelectionChange(Array.from(currentSelection));
+    // Regular click (no modifier keys): Select just the clicked tooth
+    const newSelection = new Set([toothNumber]);
+    setIndividualSelections(newSelection);
+    setRangeStartTooth(toothNumber); // Set this tooth as the start for potential future range selections
+    onSelectionChange(Array.from(newSelection));
   };
   
 
