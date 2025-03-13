@@ -577,7 +577,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           const allToothPonticNumbers = products.flatMap(
             (product) => product.teethProduct?.pontic_teeth || []
           );
-          console.log(products, "merge Products");
+          console.log(products, "merge Products", mergedProducts);
 
           return (
             <div key={type} style={{ marginBottom: "20px" }}>
@@ -633,92 +633,99 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                 {mergedProducts.map((item: any, index) => {
                   const IndivitualServices = () => {
                     console.log(item, "itemitem");
-                    const additional_services_id = item.additional_services_id;
 
-                    const teeth = item.teethProduct.tooth_number;
-                    const additionalDiscount = item?.services_discount ?? 0;
+                    const Services = products
+                      .filter((item) => item.teethProduct.type === type)
+                      .map((item) => {
+                        const additional_services_id =
+                          item.additional_services_id;
 
-                    const additionalServices = services
-                      .filter((service) =>
-                        additional_services_id?.includes(service.id)
-                      )
-                      .map((service) => ({ ...service, type: type }));
+                        const teeth = item.teethProduct.tooth_number;
+                        const additionalDiscount = item?.services_discount ?? 0;
 
-                    console.log(
-                      details,
-                      additionalServices,
-                      "additionalServices here"
-                    );
-                    return (
-                      <div>
-                        {additionalServices.length > 0 && (
-                          <h2 className="font-bold text-xs py-0 ml-5 leading-0">
-                            Additonal Services
-                          </h2>
-                        )}
+                        const additionalServices = services
+                          .filter((service) =>
+                            additional_services_id?.includes(service.id)
+                          )
+                          .map((service) => ({
+                            ...service,
+                            teeth: item.teethProduct.tooth_number,
+                          }));
 
-                        {additionalServices.map((item, index) => {
-                          console.log(
-                            additionalServices,
-                            type,
-                            "additional services"
-                          );
-                          if (additionalServices) {
-                            return (
-                              <div
-                                className={`grid grid-cols-12 text-xs border-gray-300`}
-                                style={{ lineHeight: "1.1" }}
-                              >
-                                <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
-                                  <div className="ml-5">
-                                    <p className="font-bold text-xs">
-                                      {item.name}
+                        console.log(
+                          details,
+                          additionalServices,
+                          "additionalServices here"
+                        );
+                        return (
+                          <div>
+                            {additionalServices.length > 0 && (
+                              <h2 className="font-bold text-xs py-0 ml-5 leading-0">
+                                Additonal Services
+                              </h2>
+                            )}
+
+                            {additionalServices.map((item, index) => {
+                              if (additionalServices) {
+                                return (
+                                  <div
+                                    className={`grid grid-cols-12 text-xs border-gray-300`}
+                                    style={{ lineHeight: "1.1" }}
+                                  >
+                                    <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
+                                      <div className="ml-5">
+                                        <p className="font-bold text-xs">
+                                          {item.name}
+                                        </p>
+                                        <p className="font-bold ml-3 text-xs">
+                                          (#{item.teeth})
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p
+                                      className="text-right text-xs col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      ${item.price}
                                     </p>
-                                    <p className="font-bold ml-3 text-xs">
-                                      (#{teeth[0]})
+                                    <p
+                                      className="text-right col-span-1 pr-2"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      {additionalDiscount[index] ?? 0}%
+                                    </p>
+                                    <p
+                                      className="text-right col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      $
+                                      {additionalDiscount[index] > 0
+                                        ? (
+                                            item.price -
+                                            additionalDiscount[index]
+                                          )?.toLocaleString()
+                                        : item.price?.toLocaleString()}
+                                    </p>
+                                    <p
+                                      className="text-right col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      $
+                                      {additionalDiscount[index] > 0
+                                        ? (
+                                            item.price -
+                                            additionalDiscount[index]
+                                          )?.toLocaleString()
+                                        : item.price?.toLocaleString()}
                                     </p>
                                   </div>
-                                </div>
-                                <p
-                                  className="text-right text-xs col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  ${item.price}
-                                </p>
-                                <p
-                                  className="text-right col-span-1 pr-2"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  {additionalDiscount[index] ?? 0}%
-                                </p>
-                                <p
-                                  className="text-right col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  $
-                                  {additionalDiscount[index] > 0
-                                    ? (
-                                        item.price - additionalDiscount[index]
-                                      )?.toLocaleString()
-                                    : item.price?.toLocaleString()}
-                                </p>
-                                <p
-                                  className="text-right col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  $
-                                  {additionalDiscount[index] > 0
-                                    ? (
-                                        item.price - additionalDiscount[index]
-                                      )?.toLocaleString()
-                                    : item.price?.toLocaleString()}
-                                </p>
-                              </div>
-                            );
-                          } else return null;
-                        })}
-                      </div>
-                    );
+                                );
+                              } else return null;
+                            })}
+                          </div>
+                        );
+                      });
+                    return Services;
                   };
                   const serviceRow = item.additional_services_id ? (
                     <IndivitualServices />
@@ -1758,19 +1765,19 @@ export const LabSlipTemplate: React.FC<any> = ({
       return (
         <>
           {Object.entries(groupedServicesByName)?.length > 0 && (
-            <h3 className="font-bold text-[14px] mb-2">Common Services</h3>
+            <h3 className="font-bold text-sm">Common Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
               <div
                 key={serviceDetails.id}
-                className="grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300"
+                className="grid grid-cols-12 text-xs mb-6 pb-2 border-b border-gray-300"
                 style={{ lineHeight: "1.1" }}
               >
-                <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
-                  <h3 className="text-sm font-bold">{serviceName}</h3>
+                <div className="space-y-1 font-medium col-span-10 pl-2 flex justify-center items-center">
+                  <h3 className="text-xs font-bold">{serviceName}</h3>
                   <p
-                    className="text-xs pl-2 font-extrabold mt-1"
+                    className="text-xs pl-2 font-extrabold mt-0"
                     style={{ lineHeight: "1.15" }}
                   >
                     <>(#{serviceDetails.teeth.join(",#")})</>
@@ -1782,6 +1789,8 @@ export const LabSlipTemplate: React.FC<any> = ({
         </>
       );
     };
+    console.log("additionalServices products", products);
+
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1837,6 +1846,7 @@ export const LabSlipTemplate: React.FC<any> = ({
           <div>
             {products.map((item: any) => {
               console.log(products, "products tlt");
+
               const IndivitualServices = () => {
                 console.log(item, "itemitem");
                 const additional_services_id = item.additional_services_id;
@@ -1850,13 +1860,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                   )
                   .map((service) => ({ ...service, type: "type" }));
 
-                console.log(additionalServices, "additionalServices here");
                 return (
                   <div>
-                    <h2 className="font-bold text-xs py-0 ml-5 leading-0">
-                      Additonal Services
-                    </h2>
-
                     {additionalServices.map((item, index) => {
                       console.log(
                         additionalServices,
@@ -1869,12 +1874,19 @@ export const LabSlipTemplate: React.FC<any> = ({
                             className={`grid grid-cols-12 text-sm border-gray-300`}
                             style={{ lineHeight: "1.1" }}
                           >
-                            <div className="space-y-1 font-medium col-span-10 pl-6">
-                              <div className="ml-5">
-                                <p className="font-bold text-xs">{item.name}</p>
-                                <p className="font-bold ml-3 text-xs">
-                                  (#{teeth[0]})
-                                </p>
+                            <div className="col-span-10">
+                              <h2 className="font-bold  text-xs py-0 leading-0 ml-8">
+                                Additonal Services
+                              </h2>
+                              <div className="space-y-1 font-medium  pl-10">
+                                <div className="flex gap-1">
+                                  <p className="font-bold text-xs">
+                                    {item.name}
+                                  </p>
+                                  <p className="font-bold text-xs">
+                                    (#{teeth[0]})
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1893,39 +1905,44 @@ export const LabSlipTemplate: React.FC<any> = ({
                 <div>
                   <div className="space-y-1 font-medium col-span-5 pl-2">
                     <div>
-                      <p
-                        className="font-extrabold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        {item.name}
-                      </p>
-                      <p
-                        className="text-xs pl-6 font-extrabold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        (#
-                        {item.teethProduct.type ? (
-                          item.teethProduct?.tooth_number
-                            .map((item: number) => `${item}`)
-                            .join(",#")
-                        ) : (
-                          <>
-                            <span
-                              style={{
-                                color:
-                                  TYPE_COLORS[
-                                    item?.teethProduct
-                                      .type as keyof typeof TYPE_COLORS
-                                  ] || TYPE_COLORS.Other,
-                              }}
-                            >
-                              Bridge:
-                            </span>
-                            #{formatTeethRange(item.teethProduct?.tooth_number)}
-                          </>
-                        )}
-                        )
-                      </p>
+                      <div className="flex gap-1">
+                        <p
+                          className="font-extrabold"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          {item.name}
+                        </p>
+                        <p
+                          className="text-xs font-extrabold"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          (#
+                          {item.teethProduct.type ? (
+                            item.teethProduct?.tooth_number
+                              .map((item: number) => `${item}`)
+                              .join(",#")
+                          ) : (
+                            <>
+                              <span
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      item?.teethProduct
+                                        .type as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                Bridge:
+                              </span>
+                              #
+                              {formatTeethRange(
+                                item.teethProduct?.tooth_number
+                              )}
+                            </>
+                          )}
+                          )
+                        </p>
+                      </div>
 
                       {item.teethProduct?.pontic_teeth?.length > 0 && (
                         <p
