@@ -860,6 +860,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
             doctor:doctors!doctor_id (
               id,
               name,
+              order,
               client:clients!client_id (
                 id,
                 client_name,
@@ -2440,7 +2441,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 </TableCell>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
                                   $
-                                  {product?.discounted_price?.final_price.toLocaleString()}
+                                  {product?.discounted_price?.final_price?.toLocaleString()}
                                 </TableCell>
                                 <TableCell className="w-[1px] p-0">
                                   <Separator
@@ -2450,7 +2451,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 </TableCell>
                                 <TableCell className="text-xs py-1.5 pl-4 pr-0 font-medium">
                                   $
-                                  {product?.discounted_price?.total.toLocaleString()}
+                                  {product?.discounted_price?.total?.toLocaleString()}
                                 </TableCell>
                               </TableRow>
                               {serviceRow}

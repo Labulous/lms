@@ -162,9 +162,9 @@ const UpdateCase: React.FC = () => {
   const { data: caseDataa, error: caseError } = useQuery(
     caseId
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
         id,
         created_at,
         received_date,
@@ -266,6 +266,7 @@ const UpdateCase: React.FC = () => {
           id,
           is_range,
           case_product_id,
+          case_prodcut_no,
           tooth_number,
           product_id,
           additional_services_id,
@@ -337,9 +338,9 @@ const UpdateCase: React.FC = () => {
           )
           )
       `
-          )
-          .eq("id", caseId)
-          .single()
+        )
+        .eq("id", caseId)
+        .single()
       : null,
     {
       revalidateOnFocus: true,
@@ -349,68 +350,74 @@ const UpdateCase: React.FC = () => {
   const { data: servicesData, error: servicesError } = useQuery(
     caseId && lab?.labId
       ? supabase
-          .from("services")
-          .select(
-            `
+        .from("services")
+        .select(
+          `
        id,name,price,is_taxable
       `
-          )
-          .eq("lab_id", lab.labId)
+        )
+        .eq("lab_id", lab.labId)
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
     }
   );
+
+  //debugger;
   let caseItem: any = caseDataa;
+
   const caseDetailApi: ExtendedCase | null = caseItem
     ? {
-        ...caseItem,
-        labDetail: lab,
-        custom_occlusal_details: caseDataa?.custom_occulusal_details,
-        common_services: caseDataa?.common_services,
-        products: caseItem?.teethProduct.map((tp: any, index: number) => ({
-          id: tp.product.id,
-          name: tp.product.name,
-          price: tp.product.price,
-          lead_time: tp.product.lead_time,
-          is_client_visible: tp.product.is_client_visible,
-          is_taxable: tp.product.is_taxable,
-          created_at: tp.product.created_at,
-          updated_at: tp.product.updated_at,
-          requires_shade: tp.product.requires_shade,
-          material: tp.product.material,
-          product_type: tp.product.product_type,
-          billing_type: tp.product.billing_type,
-          pontic_teeth: caseDataa?.teethProduct?.[index].pontic_teeth,
-          discounted_price: caseItem?.discounted_price[index],
-          teethProduct: {
-            id: tp.id,
-            is_range: tp.is_range,
-            tooth_number: tp.tooth_number,
-            product_id: tp.product_id,
-            case_product_id: tp.id,
-            occlusal_shade: tp.occlusal_shade,
-            body_shade: tp.body_shade,
-            gingival_shade: tp.gingival_shade,
-            additional_services_id: tp.additional_services_id,
-            type: tp.type,
-            stump_shade: tp.stump_shade,
-            manual_occlusal_shade: tp.manual_occlusal_shade,
-            manual_body_shade: tp.manual_body_shade,
-            manual_gingival_shade: tp.manual_gingival_shade,
-            manual_stump_shade: tp.manual_stump_shade,
-            custom_occlusal_shade: tp.custom_occlusal_shade,
-            custom_body_shade: tp.custom_body_shade,
-            custom_gingival_shade: tp.custom_gingival_shade,
-            custom_stump_shade: tp.custom_stump_shade,
-            custom_occlusal_details: tp.occlusal_shade,
-            notes: tp.notes,
-            service: tp.service,
-            quantity: tp.quantity,
-          },
-        })),
-      }
+      ...caseItem,
+      labDetail: lab,
+      custom_occlusal_details: caseDataa?.custom_occulusal_details,
+      common_services: caseDataa?.common_services,
+      products: caseItem?.teethProduct.map((tp: any, index: number) => ({
+        id: tp.product.id,
+        case_product_id: tp.case_product_id,
+        case_prodcut_no: tp.case_prodcut_no,
+        name: tp.product.name,
+        price: tp.product.price,
+        lead_time: tp.product.lead_time,
+        is_client_visible: tp.product.is_client_visible,
+        is_taxable: tp.product.is_taxable,
+        created_at: tp.product.created_at,
+        updated_at: tp.product.updated_at,
+        requires_shade: tp.product.requires_shade,
+        material: tp.product.material,
+        product_type: tp.product.product_type,
+        billing_type: tp.product.billing_type,
+        pontic_teeth: caseDataa?.teethProduct?.[index].pontic_teeth,
+        discounted_price: caseItem?.discounted_price[index],
+        teethProduct: {
+          id: tp.id,
+          is_range: tp.is_range,
+          tooth_number: tp.tooth_number,
+          product_id: tp.product_id,
+          case_product_id: tp.id,
+          case_prodcut_no: tp.case_prodcut_no,
+          occlusal_shade: tp.occlusal_shade,
+          body_shade: tp.body_shade,
+          gingival_shade: tp.gingival_shade,
+          additional_services_id: tp.additional_services_id,
+          type: tp.type,
+          stump_shade: tp.stump_shade,
+          manual_occlusal_shade: tp.manual_occlusal_shade,
+          manual_body_shade: tp.manual_body_shade,
+          manual_gingival_shade: tp.manual_gingival_shade,
+          manual_stump_shade: tp.manual_stump_shade,
+          custom_occlusal_shade: tp.custom_occlusal_shade,
+          custom_body_shade: tp.custom_body_shade,
+          custom_gingival_shade: tp.custom_gingival_shade,
+          custom_stump_shade: tp.custom_stump_shade,
+          custom_occlusal_details: tp.occlusal_shade,
+          notes: tp.notes,
+          service: tp.service,
+          quantity: tp.quantity,
+        },
+      })),
+    }
     : null;
 
   useEffect(() => {
@@ -441,6 +448,7 @@ const UpdateCase: React.FC = () => {
   }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    debugger;
     e.preventDefault();
     setErrors({});
 
@@ -536,6 +544,7 @@ const UpdateCase: React.FC = () => {
           custom_occlusion_design_type:
             transformedData.caseDetails?.customOcclusalDesign,
           custon_alloy_type: transformedData.caseDetails?.customAlloy,
+
           lab_id: lab?.labId,
           working_tag_id: formData.workingTagName,
           working_pan_name: formData.workingPanName,
@@ -576,6 +585,7 @@ const UpdateCase: React.FC = () => {
       return;
     }
     const fetchCaseData = async () => {
+      debugger;
       const lab = await getLabIdByUserId(user?.id as string);
 
       if (!lab?.labId) {
@@ -585,8 +595,8 @@ const UpdateCase: React.FC = () => {
         const caseDetails: any = caseDetailApi;
         const files = caseDetails?.attachements
           ? caseDetails.attachements.map((item: any) => {
-              return { url: item as string }; // Explicitly return an object with the `url`
-            })
+            return { url: item as string }; // Explicitly return an object with the `url`
+          })
           : [];
         setSelectedFiles(files);
         const productsIdArray = caseDetails?.product_ids[0].products_id;
@@ -679,10 +689,11 @@ const UpdateCase: React.FC = () => {
         setSelectedProducts(() => {
           const groupedProducts: any = {};
           caseDataApi.products.forEach((item: any, index: number) => {
-            const productId = item?.id || "";
+            const matchingProducts = caseDataApi.products.filter((l: any) => l.case_prodcut_no === item?.case_prodcut_no);
+            const productId = item?.case_prodcut_no || "";
             if (!groupedProducts[productId]) {
               groupedProducts[productId] = {
-                id: productId,
+                id: item.id,
                 name: item?.name || "",
                 type: item?.teethProduct?.type || "",
                 price: item?.discounted_price?.price || 0,
@@ -725,13 +736,13 @@ const UpdateCase: React.FC = () => {
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
                       ? service.teeth.some((tooth: number) =>
-                          Array.from(groupedProducts[productId].teeth).includes(
-                            tooth
-                          )
-                        ) // Convert Set to Array and check
+                        Array.from(groupedProducts[productId].teeth).includes(
+                          tooth
+                        )
+                      ) // Convert Set to Array and check
                       : Array.from(groupedProducts[productId].teeth).includes(
-                          service.teeth
-                        ) // Convert Set to Array for a single value
+                        service.teeth
+                      ) // Convert Set to Array for a single value
                 )
                 .map((service: { teeth: number[]; services: string[] }) => {
                   // Map through the service.services array and find the corresponding service data from servicesData
@@ -755,13 +766,13 @@ const UpdateCase: React.FC = () => {
                     // Check if service.teeth is an array or a single tooth value
                     Array.isArray(service.teeth)
                       ? service.teeth.some((tooth: number) =>
-                          Array.from(groupedProducts[productId].teeth).includes(
-                            tooth
-                          )
-                        ) // Convert Set to Array and check
+                        Array.from(groupedProducts[productId].teeth).includes(
+                          tooth
+                        )
+                      ) // Convert Set to Array and check
                       : Array.from(groupedProducts[productId].teeth).includes(
-                          service.teeth
-                        ) // Convert Set to Array for a single value
+                        service.teeth
+                      ) // Convert Set to Array for a single value
                 )
                 .map((service: { teeth: number[]; services: string[] }) => {
                   // Map through the service.services array and find the corresponding service data from servicesData
@@ -822,44 +833,47 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
             // Create subRow for individual tooth
-            item.teethProduct?.tooth_number?.forEach((tooth: number) => {
-              groupedProducts[productId].subRows.push({
-                id: productId,
-                name: item?.name || "",
-                // Map to only return the service id
-                type: item?.teethProduct?.type || "",
-                price: item?.discounted_price?.price || 0,
-                additional_service_id: item.teethProduct.additional_services_id,
-                services_discount: item.teethProduct.services_discount,
-                quantity: item.discounted_price.quantity,
-                discount: item?.discounted_price?.discount || 0,
-                discounted_price_id: item.discounted_price?.id,
-                case_product_id: item.teethProduct.case_product_id,
-                teeth: [tooth], // Single tooth per subRow
-                pontic_teeth: item?.pontic_teeth,
-                notes: item?.teethProduct?.notes || "",
-                shades: {
-                  body_shade: item.teethProduct?.body_shade?.id || null,
-                  gingival_shade:
-                    item?.teethProduct?.gingival_shade?.id || null,
-                  occlusal_shade:
-                    item?.teethProduct?.occlusal_shade?.id || null,
-                  stump_shade: item.teethProduct?.stump_shade?.id || null,
-                  custom_body: item.teethProduct?.custom_body_shade || null,
-                  custom_occlusal:
-                    item.teethProduct?.custom_occlusal_shade || null,
-                  custom_gingival:
-                    item.teethProduct?.custom_gingival_shade || null,
-                  custom_stump: item.teethProduct?.custom_stump_shade || null,
-                  manual_body: item.teethProduct?.manual_body_shade || null,
-                  manual_occlusal:
-                    item.teethProduct?.manual_occlusal_shade || null,
-                  manual_gingival:
-                    item.teethProduct?.manual_gingival_shade || null,
-                  manual_stump: item.teethProduct?.manual_stump_shade || null,
-                },
+            if (matchingProducts.length > 1) {
+              item.teethProduct?.tooth_number?.forEach((tooth: number) => {
+                groupedProducts[productId].subRows.push({
+                  id: item?.teethProduct?.product_id,//productId,
+                  name: item?.name || "",
+                  // Map to only return the service id
+                  type: item?.teethProduct?.type || "",
+                  price: item?.discounted_price?.price || 0,
+                  additional_service_id: item.teethProduct.additional_services_id,
+                  services_discount: item.teethProduct?.services_discount,
+                  quantity: item.discounted_price?.quantity,
+                  discount: item?.discounted_price?.discount || 0,
+                  discounted_price_id: item.discounted_price?.id,
+                  case_product_id: item.teethProduct.case_product_id,
+                  case_prodcut_no: item.teethProduct.case_prodcut_no,
+                  teeth: [tooth], // Single tooth per subRow
+                  pontic_teeth: item?.pontic_teeth,
+                  notes: item?.teethProduct?.notes || "",
+                  shades: {
+                    body_shade: item.teethProduct?.body_shade?.id || null,
+                    gingival_shade:
+                      item?.teethProduct?.gingival_shade?.id || null,
+                    occlusal_shade:
+                      item?.teethProduct?.occlusal_shade?.id || null,
+                    stump_shade: item.teethProduct?.stump_shade?.id || null,
+                    custom_body: item.teethProduct?.custom_body_shade || null,
+                    custom_occlusal:
+                      item.teethProduct?.custom_occlusal_shade || null,
+                    custom_gingival:
+                      item.teethProduct?.custom_gingival_shade || null,
+                    custom_stump: item.teethProduct?.custom_stump_shade || null,
+                    manual_body: item.teethProduct?.manual_body_shade || null,
+                    manual_occlusal:
+                      item.teethProduct?.manual_occlusal_shade || null,
+                    manual_gingival:
+                      item.teethProduct?.manual_gingival_shade || null,
+                    manual_stump: item.teethProduct?.manual_stump_shade || null,
+                  },
+                });
               });
-            });
+            }
           });
 
           // Convert Set back to array for each main product row
@@ -890,7 +904,10 @@ const UpdateCase: React.FC = () => {
       null;
     };
   }, [caseId, clients, servicesData]);
+
+
   useEffect(() => {
+    debugger;
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
         return prevSelectedProducts.map((product) => {

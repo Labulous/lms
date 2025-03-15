@@ -579,6 +579,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     keepTeeth = false,
     index?: number
   ) => {
+
+   
     const product = products.find((p) => p.id === value.id) || null;
 
     if (!product) return;
@@ -676,6 +678,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index: number | undefined,
     SubIndex: number = 0
   ) => {
+    
+    debugger;
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
 
@@ -879,6 +883,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number,
     SubIndex: number = 0
   ) => {
+   
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
     console.log(index, SubIndex, "index subIndex");
@@ -980,6 +985,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     type: { name: string; id: string },
     index: number
   ) => {
+    
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
@@ -1047,7 +1053,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return groups; // Optional, for debugging or testing
   };
 
- 
+
 
   // const handleTeethSelectionChange = (
   //   teeth: number[],
@@ -1073,7 +1079,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   //         ...updatedProducts[index],
   //         teeth,
   //         pontic_teeth,
-  //        // subRows, // Updated subRows with unique teeth and pontic_teeth
+  //         subRows, // Updated subRows with unique teeth and pontic_teeth
   //       };
 
   //       return updatedProducts;
@@ -1085,57 +1091,45 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   //   groupSelectedTeeth(teeth);
   // };
 
-
   const handleTeethSelectionChange = (
-    teeth: number[],  
+    teeth: number[],
     pontic_teeth: number[],
     index: number
   ) => {
+    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      const updatedProducts = prevSelectedProducts.map((product, i) => {
-        // For the current row, update teeth and pontic_teeth
-        if (i === index) {
-          const updatedProduct = {
-            ...product,
-            teeth,
-            pontic_teeth,
-          };
-          // For Bridge type, generate subRows: one per selected tooth
-          if (updatedProduct.type === "Bridge") {
-            updatedProduct.subRows = teeth.map((tooth) => ({
-              ...updatedProduct,
-              teeth: [tooth],
-              pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
-            }));
-          } else {
-            updatedProduct.subRows = [];
-          }
-          return updatedProduct;
-        } else if (product.type === "Bridge") {
-          const newPontic = (product.pontic_teeth || []).filter(
-            (tooth) => !pontic_teeth.includes(tooth)
-          );
-          const updatedProduct = {
-            ...product,
-            pontic_teeth: newPontic,
-          };
-          if (updatedProduct.teeth && Array.isArray(updatedProduct.teeth)) {
-            updatedProduct.subRows = updatedProduct.teeth.map((tooth) => ({
-              ...updatedProduct,
-              teeth: [tooth],
-              pontic_teeth: newPontic.includes(tooth) ? [tooth] : [],
-            }));
-          }
-          return updatedProduct;
-        }
-        return product;
-      });
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        let updatedProducts = [...prevSelectedProducts];
 
-      return updatedProducts;
+        // Combine teeth and pontic_teeth without duplicates
+        const uniqueTeeth = Array.from(new Set([...teeth, ...pontic_teeth]));
+
+        // Only generate subRows if more than one tooth is selected
+        const subRows =
+          uniqueTeeth.length > 1
+            ? uniqueTeeth.map((tooth) => ({
+              ...updatedProducts[index],
+              teeth: [tooth], // Assigning a single tooth
+              pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
+            }))
+            : [];
+
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          teeth,
+          pontic_teeth,
+          subRows, // Only add subRows if there are multiple teeth
+        };
+
+        return updatedProducts;
+      } else {
+        return prevSelectedProducts;
+      }
     });
 
     groupSelectedTeeth(teeth);
   };
+
 
 
 
@@ -1326,6 +1320,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     if (isUpdate) {
+      debugger;
       console.log(selectedProducts, "selectedProductsselectedProducts updated");
       if (selectedProducts.length > 0) {
         const shades: ShadeData[] = selectedProducts.map((item) => {
@@ -1898,11 +1893,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                               variant="outline"
                               size="sm"
                               className={`h-7 text-xs ${row.shades?.body_shade ||
-                                  row.shades?.gingival_shade ||
-                                  row.shades?.occlusal_shade ||
-                                  row.shades?.stump_shade
-                                  ? "text-blue-600"
-                                  : ""
+                                row.shades?.gingival_shade ||
+                                row.shades?.occlusal_shade ||
+                                row.shades?.stump_shade
+                                ? "text-blue-600"
+                                : ""
                                 }`}
                               disabled={
                                 row.teeth.length === 0 && row.type !== "Service"
@@ -3456,11 +3451,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     variant="outline"
                                     size="sm"
                                     className={`h-7 text-sm ${row_sub.shades?.body_shade ||
-                                        row_sub.shades?.gingival_shade ||
-                                        row_sub.shades?.occlusal_shade ||
-                                        row_sub.shades?.stump_shade
-                                        ? "text-blue-600"
-                                        : ""
+                                      row_sub.shades?.gingival_shade ||
+                                      row_sub.shades?.occlusal_shade ||
+                                      row_sub.shades?.stump_shade
+                                      ? "text-blue-600"
+                                      : ""
                                       }`}
                                     disabled={row_sub.teeth.length === 0}
                                     onClick={() =>

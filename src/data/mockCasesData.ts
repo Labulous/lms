@@ -131,6 +131,7 @@ const saveCaseProduct = async (
   savedCaseId?: string
 ) => {
   // Step 1: Create a row in the enclosed_case table
+  debugger;
   try {
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
@@ -146,63 +147,124 @@ const saveCaseProduct = async (
     const caseProductId = caseProductData[0].id; // Assuming `id` is the `case_product_id`
 
     // Step 3: Map cases.products and create rows for case_product_teeth
-    const caseProductTeethRows = cases.products.flatMap(
-      (main: any, index: number) => {
-        return main.subRows.map((product: any) => {
-          return {
-            case_product_id: caseProductId, // Replace with the actual dynamic ID
-            is_range: cases.products.length > 0,
-            tooth_number: product.teeth || "",
-            pontic_teeth: product.pontic_teeth || [],
-            product_id: product.id,
-            type: product.type || "",
-            additional_services_id:
-              product?.services?.map((item: { id: string }) => item.id) || [],
-            services_discount: product?.services?.[0]?.discount || 0,
-            lab_id: cases.overview.lab_id || "",
-            quantity: product.quantity || 1, // Ensure at least 1
-            occlusal_shade_id:
-              product?.shades?.occlusal_shade !== "manual" &&
-              product?.shades?.custom_occlusal_shade !== ""
-                ? product?.shades?.occlusal_shade !== ""
-                  ? product?.shades?.occlusal_shade
-                  : null
-                : null,
-            body_shade_id:
-              product.shades.body_shade !== "manual" &&
-              product?.shades?.custom_body_shade !== ""
-                ? product.shades.body_shade !== ""
-                  ? product.shades.body_shade
-                  : null
-                : null,
-            gingival_shade_id:
-              product.shades.gingival_shade !== "manual" &&
-              product.shades.custom_gingival_shade !== ""
-                ? product.shades.gingival_shade !== ""
-                  ? product.shades.gingival_shade
-                  : null
-                : null,
-            stump_shade_id:
-              product.shades.stump_shade !== "manual" &&
-              product.shades.custom_stump_shade !== ""
-                ? product.shades.stump_shade !== ""
-                  ? product.shades.stump_shade
-                  : null
-                : null,
-            manual_body_shade: product?.shades.manual_body || null,
-            manual_occlusal_shade: product?.shades.manual_occlusal || null,
-            manual_gingival_shade: product?.shades.manual_gingival || null,
-            manual_stump_shade: product?.shades.manual_stump || null,
-            custom_body_shade: product?.shades.custom_body || null,
-            custom_occlusal_shade: product?.shades.custom_occlusal || null,
-            custom_gingival_shade: product?.shades.custom_gingival || null,
-            custom_stump_shade: product?.shades.custom_stump || null,
-            notes: product.notes || "",
-            case_id: savedCaseId,
-          };
-        });
-      }
-    );
+
+    // const caseProductTeethRows = cases.products.flatMap(
+    //   (main: any, index: number) => {
+    //     return main.subRows.map((product: any) => {
+    //       return {
+    //         case_product_id: caseProductId, // Replace with the actual dynamic ID
+    //         is_range: cases.products.length > 0,
+    //         tooth_number: product.teeth || "",
+    //         pontic_teeth: product.pontic_teeth || [],
+    //         product_id: product.id,
+    //         type: product.type || "",
+    //         additional_services_id:
+    //           product?.services?.map((item: { id: string }) => item.id) || [],
+    //         services_discount: product?.services?.[0]?.discount || 0,
+    //         lab_id: cases.overview.lab_id || "",
+    //         quantity: product.quantity || 1, // Ensure at least 1
+    //         occlusal_shade_id:
+    //           product?.shades?.occlusal_shade !== "manual" &&
+    //           product?.shades?.custom_occlusal_shade !== ""
+    //             ? product?.shades?.occlusal_shade !== ""
+    //               ? product?.shades?.occlusal_shade
+    //               : null
+    //             : null,
+    //         body_shade_id:
+    //           product.shades.body_shade !== "manual" &&
+    //           product?.shades?.custom_body_shade !== ""
+    //             ? product.shades.body_shade !== ""
+    //               ? product.shades.body_shade
+    //               : null
+    //             : null,
+    //         gingival_shade_id:
+    //           product.shades.gingival_shade !== "manual" &&
+    //           product.shades.custom_gingival_shade !== ""
+    //             ? product.shades.gingival_shade !== ""
+    //               ? product.shades.gingival_shade
+    //               : null
+    //             : null,
+    //         stump_shade_id:
+    //           product.shades.stump_shade !== "manual" &&
+    //           product.shades.custom_stump_shade !== ""
+    //             ? product.shades.stump_shade !== ""
+    //               ? product.shades.stump_shade
+    //               : null
+    //             : null,
+    //         manual_body_shade: product?.shades.manual_body || null,
+    //         manual_occlusal_shade: product?.shades.manual_occlusal || null,
+    //         manual_gingival_shade: product?.shades.manual_gingival || null,
+    //         manual_stump_shade: product?.shades.manual_stump || null,
+    //         custom_body_shade: product?.shades.custom_body || null,
+    //         custom_occlusal_shade: product?.shades.custom_occlusal || null,
+    //         custom_gingival_shade: product?.shades.custom_gingival || null,
+    //         custom_stump_shade: product?.shades.custom_stump || null,
+    //         notes: product.notes || "",
+    //         case_id: savedCaseId,
+    //       };
+    //     });
+    //   }
+    // );
+
+    let rowCounter = 1;
+    const caseProductTeethRows = cases.products.flatMap((main: any, mainIndex: number) => {
+      const products = Array.isArray(main.subRows) && main.subRows.length > 0 ? main.subRows : [main];
+      const mainRowNumber = rowCounter++;
+      return products.map((product: any) => ({
+        case_prodcut_no: mainRowNumber, // Assign row number only for main rows
+        case_product_id: caseProductId, // Replace with actual dynamic ID
+        is_range: cases.products.length > 0,
+        tooth_number: product.teeth || "",
+        pontic_teeth: product.pontic_teeth || [],
+        product_id: product.id,
+        type: product.type || "",
+        additional_services_id:
+          product?.services?.map((item: { id: string }) => item.id) || [],
+        services_discount: product?.services?.[0]?.discount || 0,
+        lab_id: cases.overview.lab_id || "",
+        quantity: product.quantity || 1, // Ensure at least 1
+        occlusal_shade_id:
+          product?.shades?.occlusal_shade !== "manual" &&
+            product?.shades?.custom_occlusal_shade !== ""
+            ? product?.shades?.occlusal_shade !== ""
+              ? product?.shades?.occlusal_shade
+              : null
+            : null,
+        body_shade_id:
+          product.shades?.body_shade !== "manual" &&
+            product?.shades?.custom_body_shade !== ""
+            ? product.shades.body_shade !== ""
+              ? product.shades.body_shade
+              : null
+            : null,
+        gingival_shade_id:
+          product.shades?.gingival_shade !== "manual" &&
+            product.shades?.custom_gingival_shade !== ""
+            ? product.shades.gingival_shade !== ""
+              ? product.shades.gingival_shade
+              : null
+            : null,
+        stump_shade_id:
+          product.shades?.stump_shade !== "manual" &&
+            product.shades?.custom_stump_shade !== ""
+            ? product.shades.stump_shade !== ""
+              ? product.shades.stump_shade
+              : null
+            : null,
+        manual_body_shade: product?.shades?.manual_body || null,
+        manual_occlusal_shade: product?.shades?.manual_occlusal || null,
+        manual_gingival_shade: product?.shades?.manual_gingival || null,
+        manual_stump_shade: product?.shades?.manual_stump || null,
+        custom_body_shade: product?.shades?.custom_body || null,
+        custom_occlusal_shade: product?.shades?.custom_occlusal || null,
+        custom_gingival_shade: product?.shades?.custom_gingival || null,
+        custom_stump_shade: product?.shades?.custom_stump || null,
+        notes: product.notes || "",
+        case_id: savedCaseId,
+      }));
+    });
+
+
 
     console.log("api calling");
     console.log(caseProductTeethRows, "caseProductTeethRows");
@@ -673,63 +735,121 @@ const updateCases = async (
     }
 
     // Step 4: Update case_product_teeth (mapping products and creating/creating updated rows)
-    const caseProductTeethRows = cases.products.flatMap(
-      (main: any, index: number) => {
-        return main.subRows.map((product: any) => {
-          return {
-            case_product_id: caseProductData?.[0]?.id, // Replace with the actual dynamic ID
-            is_range: cases.products.length > 0,
-            tooth_number: product.teeth || "",
-            pontic_teeth: product.pontic_teeth || [],
-            product_id: product.id,
-            type: product.type || "",
-            additional_services_id:
-              product?.services?.map((item: { id: string }) => item.id) || [],
-              services_discount: product?.services?.[0]?.discount || 0,
-            lab_id: cases.overview.lab_id || "",
-            quantity: product.quantity || 1, // Ensure at least 1
-            occlusal_shade_id:
-              product?.shades?.occlusal_shade !== "manual" &&
-              product?.shades?.custom_occlusal_shade !== ""
-                ? product?.shades?.occlusal_shade !== ""
-                  ? product?.shades?.occlusal_shade
-                  : null
-                : null,
-            body_shade_id:
-              product?.shades?.body_shade !== "manual" &&
-              product?.shades?.custom_body_shade !== ""
-                ? product?.shades?.body_shade !== ""
-                  ? product?.shades?.body_shade
-                  : null
-                : null,
-            gingival_shade_id:
-              product?.shades?.gingival_shade !== "manual" &&
-              product?.shades?.custom_gingival_shade !== ""
-                ? product?.shades?.gingival_shade != ""
-                  ? product?.shades?.gingival_shade
-                  : null
-                : null,
-            stump_shade_id:
-              product.shades?.stump_shade !== "manual" &&
-              product.shades?.custom_stump_shade !== ""
-                ? product?.shades?.stump_shade !== ""
-                  ? product?.shades?.stump_shade
-                  : null
-                : null,
-            manual_body_shade: product?.shades?.manual_body || null,
-            manual_occlusal_shade: product?.shades?.manual_occlusal || null,
-            manual_gingival_shade: product?.shades?.manual_gingival || null,
-            manual_stump_shade: product?.shades?.manual_stump || null,
-            custom_body_shade: product?.shades?.custom_body || null,
-            custom_occlusal_shade: product?.shades?.custom_occlusal || null,
-            custom_gingival_shade: product?.shades?.custom_gingival || null,
-            custom_stump_shade: product?.shades?.custom_stump || null,
-            notes: product.notes || "",
-            case_id: caseId,
-          };
-        });
-      }
-    );
+    // const caseProductTeethRows = cases.products.flatMap(
+    //   (main: any, index: number) => {
+    //     return main.subRows.map((product: any) => {
+    //       return {
+    //         case_product_id: caseProductData?.[0]?.id, // Replace with the actual dynamic ID
+    //         is_range: cases.products.length > 0,
+    //         tooth_number: product.teeth || "",
+    //         pontic_teeth: product.pontic_teeth || [],
+    //         product_id: product.id,
+    //         type: product.type || "",
+    //         additional_services_id:
+    //           product?.services?.map((item: { id: string }) => item.id) || [],
+    //           services_discount: product?.services?.[0]?.discount || 0,
+    //         lab_id: cases.overview.lab_id || "",
+    //         quantity: product.quantity || 1, // Ensure at least 1
+    //         occlusal_shade_id:
+    //           product?.shades?.occlusal_shade !== "manual" &&
+    //           product?.shades?.custom_occlusal_shade !== ""
+    //             ? product?.shades?.occlusal_shade !== ""
+    //               ? product?.shades?.occlusal_shade
+    //               : null
+    //             : null,
+    //         body_shade_id:
+    //           product?.shades?.body_shade !== "manual" &&
+    //           product?.shades?.custom_body_shade !== ""
+    //             ? product?.shades?.body_shade !== ""
+    //               ? product?.shades?.body_shade
+    //               : null
+    //             : null,
+    //         gingival_shade_id:
+    //           product?.shades?.gingival_shade !== "manual" &&
+    //           product?.shades?.custom_gingival_shade !== ""
+    //             ? product?.shades?.gingival_shade != ""
+    //               ? product?.shades?.gingival_shade
+    //               : null
+    //             : null,
+    //         stump_shade_id:
+    //           product.shades?.stump_shade !== "manual" &&
+    //           product.shades?.custom_stump_shade !== ""
+    //             ? product?.shades?.stump_shade !== ""
+    //               ? product?.shades?.stump_shade
+    //               : null
+    //             : null,
+    //         manual_body_shade: product?.shades?.manual_body || null,
+    //         manual_occlusal_shade: product?.shades?.manual_occlusal || null,
+    //         manual_gingival_shade: product?.shades?.manual_gingival || null,
+    //         manual_stump_shade: product?.shades?.manual_stump || null,
+    //         custom_body_shade: product?.shades?.custom_body || null,
+    //         custom_occlusal_shade: product?.shades?.custom_occlusal || null,
+    //         custom_gingival_shade: product?.shades?.custom_gingival || null,
+    //         custom_stump_shade: product?.shades?.custom_stump || null,
+    //         notes: product.notes || "",
+    //         case_id: caseId,
+    //       };
+    //     });
+    //   }
+    // );
+    let rowCounter = 1;
+    const caseProductTeethRows = cases.products.flatMap((main: any, index: number) => {
+      const products = Array.isArray(main.subRows) && main.subRows.length > 0 ? main.subRows : [main];
+      const mainRowNumber = rowCounter++;
+      return products.map((product: any) => ({
+        case_prodcut_no: mainRowNumber,
+        case_product_id: caseProductData?.[0]?.id, // Replace with actual dynamic ID
+        is_range: cases.products.length > 0,
+        tooth_number: product.teeth || "",
+        pontic_teeth: product.pontic_teeth || [],
+        product_id: product.id,
+        type: product.type || "",
+        additional_services_id:
+          product?.services?.map((item: { id: string }) => item.id) || [],
+        services_discount: product?.services?.[0]?.discount || 0,
+        lab_id: cases.overview.lab_id || "",
+        quantity: product.quantity || 1, // Ensure at least 1
+        occlusal_shade_id:
+          product?.shades?.occlusal_shade !== "manual" &&
+            product?.shades?.custom_occlusal_shade !== ""
+            ? product?.shades?.occlusal_shade !== ""
+              ? product?.shades?.occlusal_shade
+              : null
+            : null,
+        body_shade_id:
+          product?.shades?.body_shade !== "manual" &&
+            product?.shades?.custom_body_shade !== ""
+            ? product?.shades?.body_shade !== ""
+              ? product?.shades?.body_shade
+              : null
+            : null,
+        gingival_shade_id:
+          product?.shades?.gingival_shade !== "manual" &&
+            product?.shades?.custom_gingival_shade !== ""
+            ? product?.shades?.gingival_shade !== ""
+              ? product?.shades?.gingival_shade
+              : null
+            : null,
+        stump_shade_id:
+          product?.shades?.stump_shade !== "manual" &&
+            product?.shades?.custom_stump_shade !== ""
+            ? product?.shades?.stump_shade !== ""
+              ? product?.shades?.stump_shade
+              : null
+            : null,
+        manual_body_shade: product?.shades?.manual_body || null,
+        manual_occlusal_shade: product?.shades?.manual_occlusal || null,
+        manual_gingival_shade: product?.shades?.manual_gingival || null,
+        manual_stump_shade: product?.shades?.manual_stump || null,
+        custom_body_shade: product?.shades?.custom_body || null,
+        custom_occlusal_shade: product?.shades?.custom_occlusal || null,
+        custom_gingival_shade: product?.shades?.custom_gingival || null,
+        custom_stump_shade: product?.shades?.custom_stump || null,
+        notes: product.notes || "",
+        case_id: caseId,
+      }));
+    });
+
 
     console.log(caseProductTeethRows, "caseProductTeethRows");
     // Calculate discounted prices for products
@@ -792,6 +912,9 @@ const updateCases = async (
       });
     });
 
+
+    
+    
     // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
       .from("case_product_teeth")
@@ -922,85 +1045,160 @@ const updateCases = async (
       toast.error("failed to update Invoice Data");
       return;
     }
+
+    // cases.products.flatMap((main: any) => {
+    //   return main.subRows.map((product: any) => {
+    //     // Calculate the final discount
+
+    //     // Calculate the price after final discount
+    //     const priceAfterDiscount =
+    //       product.price - (product.price * product.discount) / 100;
+
+    //     // Calculate the total quantity based on main.quantity and product.quantity
+
+    //     // Calculate final price (after discount) for the given quantity
+    //     const final_price = priceAfterDiscount * product.quantity;
+
+    //     // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
+    //     const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
+
+    //     // Step 4: Insert discount price rows
+    //     const updatedData = {
+    //       product_id: product.id,
+    //       price: product.price,
+    //       discount: product.discount, // use the final discount
+    //       quantity: product.quantity, // final quantity after adding main.quantity
+    //       final_price: final_price, // price after final discount
+    //       total: amount, // final price * total quantity * teeth length
+    //       case_id: caseId as string,
+    //       user_id: cases.overview.created_by,
+    //     };
+    //     const handleUpdateDiscountedPrice = async () => {
+    //       if (product.discounted_price_id) {
+    //         // Update the existing row if discounted_price_id exists
+    //         const { error: discountPriceError } = await supabase
+    //           .from("discounted_price")
+    //           .update(updatedData)
+    //           .eq("id", product.discounted_price_id)
+    //           .select("*");
+
+    //         if (discountPriceError) {
+    //           console.error(
+    //             "Error updating discount prices:",
+    //             discountPriceError
+    //           );
+    //           return;
+    //         }
+
+    //         console.log("Discount prices updated successfully!");
+    //         if (navigate && caseId) {
+    //           navigate(`/cases/${caseId}`, {
+    //             state: { scrollToTop: true, from: "edit" },
+    //           });
+    //         }
+    //       } else {
+    //         // Insert a new row if discounted_price_id does not exist
+    //         const newData = {
+    //           ...updatedData, // Include existing data
+    //           product_id: product.id, // Ensure product ID is included
+    //         };
+
+    //         const { error: insertError } = await supabase
+    //           .from("discounted_price")
+    //           .insert([newData])
+    //           .select("*");
+
+    //         if (insertError) {
+    //           console.error("Error inserting new discount price:", insertError);
+    //           return;
+    //         }
+
+    //         console.log("New discount price inserted successfully!");
+    //         if (navigate && caseId) {
+    //           navigate(`/cases/${caseId}`, {
+    //             state: { scrollToTop: true, from: "edit" },
+    //           });
+    //         }
+    //       }
+    //     };
+
+    //     handleUpdateDiscountedPrice();
+    //   });
+    // });
+
     cases.products.flatMap((main: any) => {
-      return main.subRows.map((product: any) => {
-        // Calculate the final discount
-
-        // Calculate the price after final discount
-        const priceAfterDiscount =
-          product.price - (product.price * product.discount) / 100;
-
-        // Calculate the total quantity based on main.quantity and product.quantity
-
-        // Calculate final price (after discount) for the given quantity
+      const products = Array.isArray(main.subRows) && main.subRows.length > 0 ? main.subRows : [main];
+      return products.map((product: any) => {
+        const priceAfterDiscount = product.price - (product.price * product.discount) / 100;
         const final_price = priceAfterDiscount * product.quantity;
+        const amount = final_price * (product.teeth?.length || 1);
 
-        // Calculate amount by multiplying final_price by teeth length (or 1 if teeth is empty)
-        const amount = final_price * (product.teeth?.length || 1); // default to 1 if teeth is empty
-
-        // Step 4: Insert discount price rows
+        // Prepare data for insert/update
         const updatedData = {
           product_id: product.id,
           price: product.price,
-          discount: product.discount, // use the final discount
-          quantity: product.quantity, // final quantity after adding main.quantity
-          final_price: final_price, // price after final discount
-          total: amount, // final price * total quantity * teeth length
+          discount: product.discount,
+          quantity: product.quantity,
+          final_price: final_price,
+          total: amount,
           case_id: caseId as string,
           user_id: cases.overview.created_by,
         };
+
         const handleUpdateDiscountedPrice = async () => {
-          if (product.discounted_price_id) {
-            // Update the existing row if discounted_price_id exists
-            const { error: discountPriceError } = await supabase
-              .from("discounted_price")
-              .update(updatedData)
-              .eq("id", product.discounted_price_id)
-              .select("*");
+          try {
+            if (product.discounted_price_id) {
+              // Update the existing row if discounted_price_id exists
+              const { error: discountPriceError } = await supabase
+                .from("discounted_price")
+                .update(updatedData)
+                .eq("id", product.discounted_price_id)
+                .select("*");
 
-            if (discountPriceError) {
-              console.error(
-                "Error updating discount prices:",
-                discountPriceError
-              );
-              return;
+              if (discountPriceError) {
+                throw new Error(`Error updating discount price: ${discountPriceError.message}`);
+              }
+
+              console.log("Discount prices updated successfully!");
+            } else {
+              // Insert a new row if discounted_price_id does not exist
+              const newData = { ...updatedData, product_id: product.id };
+
+              const { error: insertError } = await supabase
+                .from("discounted_price")
+                .insert([newData])
+                .select("*");
+
+              if (insertError) {
+                throw new Error(`Error inserting new discount price: ${insertError.message}`);
+              }
+
+              console.log("New discount price inserted successfully!");
             }
 
-            console.log("Discount prices updated successfully!");
+            // Navigate after the update or insert is successful
             if (navigate && caseId) {
               navigate(`/cases/${caseId}`, {
                 state: { scrollToTop: true, from: "edit" },
               });
             }
-          } else {
-            // Insert a new row if discounted_price_id does not exist
-            const newData = {
-              ...updatedData, // Include existing data
-              product_id: product.id, // Ensure product ID is included
-            };
-
-            const { error: insertError } = await supabase
-              .from("discounted_price")
-              .insert([newData])
-              .select("*");
-
-            if (insertError) {
-              console.error("Error inserting new discount price:", insertError);
-              return;
-            }
-
-            console.log("New discount price inserted successfully!");
-            if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, {
-                state: { scrollToTop: true, from: "edit" },
-              });
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              console.error(error.message);
+            } else {
+              console.error("An unexpected error occurred", error);
             }
           }
         };
 
+
         handleUpdateDiscountedPrice();
       });
     });
+
+
+
+
   } catch (error) {
     console.error("Error in updateCases function:", error);
     toast.error("Failed to update case");
