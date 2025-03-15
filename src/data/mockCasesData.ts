@@ -913,8 +913,8 @@ const updateCases = async (
     });
 
 
-    
-    
+
+
     // Insert case_product_teeth rows
     const { error: caseProductTeethError } = await supabase
       .from("case_product_teeth")
@@ -1126,75 +1126,83 @@ const updateCases = async (
     //   });
     // });
 
-    cases.products.flatMap((main: any) => {
-      const products = Array.isArray(main.subRows) && main.subRows.length > 0 ? main.subRows : [main];
-      return products.map((product: any) => {
-        const priceAfterDiscount = product.price - (product.price * product.discount) / 100;
-        const final_price = priceAfterDiscount * product.quantity;
-        const amount = final_price * (product.teeth?.length || 1);
+    if (!cases.products || cases.products.length === 0) {
+      if (navigate && caseId) {
+        navigate(`/cases/${caseId}`, {
+          state: { scrollToTop: true, from: "edit" },
+        });
+      }
+    } else {
+      cases.products.flatMap((main: any) => {
+        const products = Array.isArray(main.subRows) && main.subRows.length > 0 ? main.subRows : [main];
+        return products.map((product: any) => {
+          const priceAfterDiscount = product.price - (product.price * product.discount) / 100;
+          const final_price = priceAfterDiscount * product.quantity;
+          const amount = final_price * (product.teeth?.length || 1);
 
-        // Prepare data for insert/update
-        const updatedData = {
-          product_id: product.id,
-          price: product.price,
-          discount: product.discount,
-          quantity: product.quantity,
-          final_price: final_price,
-          total: amount,
-          case_id: caseId as string,
-          user_id: cases.overview.created_by,
-        };
+          // Prepare data for insert/update
+          const updatedData = {
+            product_id: product.id,
+            price: product.price,
+            discount: product.discount,
+            quantity: product.quantity,
+            final_price: final_price,
+            total: amount,
+            case_id: caseId as string,
+            user_id: cases.overview.created_by,
+          };
 
-        const handleUpdateDiscountedPrice = async () => {
-          try {
-            if (product.discounted_price_id) {
-              // Update the existing row if discounted_price_id exists
-              const { error: discountPriceError } = await supabase
-                .from("discounted_price")
-                .update(updatedData)
-                .eq("id", product.discounted_price_id)
-                .select("*");
+          const handleUpdateDiscountedPrice = async () => {
+            try {
+              if (product.discounted_price_id) {
+                // Update the existing row if discounted_price_id exists
+                const { error: discountPriceError } = await supabase
+                  .from("discounted_price")
+                  .update(updatedData)
+                  .eq("id", product.discounted_price_id)
+                  .select("*");
 
-              if (discountPriceError) {
-                throw new Error(`Error updating discount price: ${discountPriceError.message}`);
+                if (discountPriceError) {
+                  throw new Error(`Error updating discount price: ${discountPriceError.message}`);
+                }
+
+                console.log("Discount prices updated successfully!");
+              } else {
+                // Insert a new row if discounted_price_id does not exist
+                const newData = { ...updatedData, product_id: product.id };
+
+                const { error: insertError } = await supabase
+                  .from("discounted_price")
+                  .insert([newData])
+                  .select("*");
+
+                if (insertError) {
+                  throw new Error(`Error inserting new discount price: ${insertError.message}`);
+                }
+
+                console.log("New discount price inserted successfully!");
               }
 
-              console.log("Discount prices updated successfully!");
-            } else {
-              // Insert a new row if discounted_price_id does not exist
-              const newData = { ...updatedData, product_id: product.id };
-
-              const { error: insertError } = await supabase
-                .from("discounted_price")
-                .insert([newData])
-                .select("*");
-
-              if (insertError) {
-                throw new Error(`Error inserting new discount price: ${insertError.message}`);
+              // Navigate after the update or insert is successful
+              if (navigate && caseId) {
+                navigate(`/cases/${caseId}`, {
+                  state: { scrollToTop: true, from: "edit" },
+                });
               }
-
-              console.log("New discount price inserted successfully!");
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                console.error(error.message);
+              } else {
+                console.error("An unexpected error occurred", error);
+              }
             }
-
-            // Navigate after the update or insert is successful
-            if (navigate && caseId) {
-              navigate(`/cases/${caseId}`, {
-                state: { scrollToTop: true, from: "edit" },
-              });
-            }
-          } catch (error: unknown) {
-            if (error instanceof Error) {
-              console.error(error.message);
-            } else {
-              console.error("An unexpected error occurred", error);
-            }
-          }
-        };
+          };
 
 
-        handleUpdateDiscountedPrice();
+          handleUpdateDiscountedPrice();
+        });
       });
-    });
+    }
 
 
 

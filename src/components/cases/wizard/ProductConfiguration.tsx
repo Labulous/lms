@@ -366,6 +366,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setOpenEditDialog(type);
   };
   const toggleRowExpansion = (rowId: string) => {
+    debugger;
     setExpandedRows((prev) => {
       const newArray = [...prev];
       // Check if the length is 1 and the value is an empty string
@@ -574,57 +575,41 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return groupedTeeth.join(", ");
   };
 
-  const handleProductSelect = (
-    value: any,
-    keepTeeth = false,
-    index?: number
-  ) => {
-
-   
-    const product = products.find((p) => p.id === value.id) || null;
-
+  const handleProductSelect = (value: any, keepTeeth = false, index?: number) => {
+    debugger;
+  
+    const product = products.find((p) => p.id === value.id);
     if (!product) return;
-    if (!index) {
+  
+    if (index === undefined || index === null) {
       toggleRowExpansion(product.id);
     }
+  
     setSelectedProduct(product);
+  
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
-      if (index !== undefined) {
+      if (index !== undefined && index >= 0 && index < prevSelectedProducts.length) {
+        // Clone previous state to avoid direct mutation
         let updatedProducts = [...prevSelectedProducts];
-
-        // Update the subRows' product name
+  
+        // Update only the existing row at `index`
         updatedProducts[index] = {
           ...updatedProducts[index],
           name: product.name,
           id: product.id,
           price:
-            clientSpecialProducts?.filter(
-              (item) => item.product_id === product.id
-            )?.[0]?.price || product.price,
-          subRows: updatedProducts?.[index]?.subRows?.map((subRow) => ({
-            ...subRow,
-            name: product.name,
-            id: product.id,
-            price:
-              clientSpecialProducts?.filter(
-                (item) => item.product_id === product.id
-              )?.[0]?.price || product.price,
-            is_taxable: product.is_taxable,
-          })),
+            clientSpecialProducts?.find((item) => item.product_id === product.id)?.price ||
+            product.price,
+          is_taxable: product.is_taxable,
         };
-
+  
         return updatedProducts;
-      } else {
-        return [
-          ...prevSelectedProducts,
-          {
-            id: product.id,
-            name: product.name,
-          },
-        ];
       }
+  
+      return prevSelectedProducts; // No new row is added, only updating the existing one
     });
   };
+  
 
   const handleServiceSelect = (service: Service, index: number) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
@@ -985,6 +970,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     type: { name: string; id: string },
     index: number
   ) => {
+    debugger;
     
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
