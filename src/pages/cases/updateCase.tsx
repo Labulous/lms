@@ -558,6 +558,32 @@ const UpdateCase: React.FC = () => {
           // isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
           // isHidePatientName: transformedData.isHidePatientName || false,
         },
+        common_services:
+          selectedProducts.flatMap((product) => {
+            // Flatten all subRow services
+            const subRowServices =
+              product.subRows?.flatMap(
+                (subRow) =>
+                  subRow?.services &&
+                  subRow?.services?.map((service) => service.id)
+              ) || [];
+
+            // Filter common services not present in any subRow services
+            const filteredCommonServices =
+              product.commonServices?.filter(
+                (item) =>
+                  !item.add_to_all &&
+                  item.id &&
+                  !subRowServices.includes(item.id)
+              ) || [];
+
+            return filteredCommonServices.length > 0
+              ? {
+                  teeth: product.teeth,
+                  services: filteredCommonServices.map((item) => item.id),
+                }
+              : []; // Return an empty array if no valid services found
+          }) || [],
         invoiceId: caseDetailApi?.invoice?.[0].id,
         products: selectedProducts.filter((item) => item.id && item.type),
         enclosedItems: transformedData.enclosedItems,

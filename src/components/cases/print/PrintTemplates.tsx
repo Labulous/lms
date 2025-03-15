@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { getLabDataByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
 import { calculateDueDate } from "@/lib/calculateDueDate";
+import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 
 const TYPE_COLORS = {
   Crown: "rgb(59 130 246)", // blue-500
@@ -457,27 +458,25 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
       return (
         <>
           {Object.entries(groupedServicesByName)?.length > 0 && (
-            <h3 className="font-bold text-[14px] mb-2">Common Services</h3>
+            <h3 className="font-bold text-xs">Common Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
               <div
                 key={serviceDetails.id}
-                className="grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300"
+                className="grid grid-cols-12 text-xs mb-6 pb-2 border-b border-gray-300"
                 style={{ lineHeight: "1.1" }}
               >
-                <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
-                  <h3 className="text-sm font-bold">{serviceName}</h3>
+                <div className="space-y-0 font-medium col-span-5 flex flex-col justify-center items-start pl-4">
+                  <h3 className="text-xs font-bold">{serviceName}</h3>
                   <p
-                    className="text-xs pl-2 font-extrabold mt-1"
-                    style={{ lineHeight: "1.15" }}
+                    className="text-xs font-extrabold "
                   >
                     <>(#{serviceDetails.teeth.join(",#")})</>
                   </p>
                 </div>
                 <p
                   className="text-right col-span-2 pr-2 font-bold"
-                  style={{ lineHeight: "1.15" }}
                 >
                   ${serviceDetails.price}
                 </p>
@@ -577,15 +576,14 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
           const allToothPonticNumbers = products.flatMap(
             (product) => product.teethProduct?.pontic_teeth || []
           );
-          console.log(products, "merge Products");
-
+          console.log(products, "merge Products", mergedProducts);
           return (
-            <div key={type} style={{ marginBottom: "20px" }}>
+            <div key={type} style={{ marginBottom: "10px" }}>
               {/* Display the type as the title */}
               <div className="flex justify-start text-center items-center mb-2">
-                <h2 className="font-bold text-sm ">{type}</h2>
+                <h2 className="font-bold text-xs ">{type}</h2>
                 <p
-                  className="text-xs pl-2 font-extrabold mt-1"
+                  className="text-xs ml-1 font-extrabold mt-0.5"
                   style={{ lineHeight: "1.15" }}
                 >
                   {type !== "Bridge" ? (
@@ -603,9 +601,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                     </>
                   )}
                 </p>
-                {allToothPonticNumbers.length > 0 && (
+                {/* {allToothPonticNumbers.length > 0 && (
                   <p
-                    className="text-sm pl-2 font-extrabold mt-1"
+                    className="text-sm pl-2 font-extrabold mt-1 flex"
                     style={{ lineHeight: "1.15" }}
                   >
                     {type !== "Bridge" ? (
@@ -620,105 +618,110 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           }}
                           className="text-xs"
                         >
-                          Pontic (#
+                          Pontic(#
                           {allToothPonticNumbers.join(",#")})
                         </span>
                       </>
                     )}
                   </p>
-                )}
+                )} */}
               </div>
 
               <ul>
                 {mergedProducts.map((item: any, index) => {
                   const IndivitualServices = () => {
                     console.log(item, "itemitem");
-                    const additional_services_id = item.additional_services_id;
 
-                    const teeth = item.teethProduct.tooth_number;
-                    const additionalDiscount = item?.services_discount ?? 0;
-
-                    const additionalServices = services
-                      .filter((service) =>
-                        additional_services_id?.includes(service.id)
+                    const Services = products
+                      .filter(
+                        (product) =>
+                          product.teethProduct.type === type &&
+                          product.id === item.id
                       )
-                      .map((service) => ({ ...service, type: type }));
+                      .map((item) => {
+                        const additional_services_id =
+                          item.additional_services_id;
 
-                    console.log(
-                      details,
-                      additionalServices,
-                      "additionalServices here"
-                    );
-                    return (
-                      <div>
-                        {additionalServices.length > 0 && (
-                          <h2 className="font-bold text-xs py-0 ml-5 leading-0">
-                            Additonal Services
-                          </h2>
-                        )}
+                        const teeth = item.teethProduct.tooth_number;
+                        const additionalDiscount = item?.services_discount ?? 0;
 
-                        {additionalServices.map((item, index) => {
-                          console.log(
-                            additionalServices,
-                            type,
-                            "additional services"
-                          );
-                          if (additionalServices) {
-                            return (
-                              <div
-                                className={`grid grid-cols-12 text-xs border-gray-300`}
-                                style={{ lineHeight: "1.1" }}
-                              >
-                                <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
-                                  <div className="ml-5">
-                                    <p className="font-bold text-xs">
-                                      {item.name}
+                        const additionalServices = services
+                          .filter((service) =>
+                            additional_services_id?.includes(service.id)
+                          )
+                          .map((service) => ({
+                            ...service,
+                            teeth: item.teethProduct.tooth_number,
+                          }));
+
+                        console.log(
+                          details,
+                          additionalServices,
+                          "additionalServices here"
+                        );
+                        return (
+                          <div>
+                            {additionalServices.map((item, index) => {
+                              if (additionalServices) {
+                                return (
+                                  <div
+                                    className={`grid grid-cols-12 text-xs -mt-0.5 border-gray-300`}
+                                    style={{ lineHeight: "1.1" }}
+                                  >
+                                    <div className="space-y-1 font-medium text-xs col-span-5 pl-6">
+                                      <div className="ml-5 flex gap-0">
+                                        <p className="font-bold text-xs">
+                                          {item.name}
+                                        </p>
+                                        <p className="font-bold ml-1 text-xs">
+                                          (#{item.teeth})
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p
+                                      className="text-right text-xs col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      ${item.price}
                                     </p>
-                                    <p className="font-bold ml-3 text-xs">
-                                      (#{teeth[0]})
+                                    <p
+                                      className="text-right col-span-1 pr-2"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      {additionalDiscount[index] ?? 0}%
+                                    </p>
+                                    <p
+                                      className="text-right col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      $
+                                      {additionalDiscount[index] > 0
+                                        ? (
+                                            item.price -
+                                            additionalDiscount[index]
+                                          )?.toLocaleString()
+                                        : item.price?.toLocaleString()}
+                                    </p>
+                                    <p
+                                      className="text-right col-span-2 pr-2 font-bold"
+                                      style={{ lineHeight: "1.15" }}
+                                    >
+                                      $
+                                      {additionalDiscount[index] > 0
+                                        ? (
+                                            item.price -
+                                            additionalDiscount[index]
+                                          )?.toLocaleString()
+                                        : item.price?.toLocaleString()}
                                     </p>
                                   </div>
-                                </div>
-                                <p
-                                  className="text-right text-xs col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  ${item.price}
-                                </p>
-                                <p
-                                  className="text-right col-span-1 pr-2"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  {additionalDiscount[index] ?? 0}%
-                                </p>
-                                <p
-                                  className="text-right col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  $
-                                  {additionalDiscount[index] > 0
-                                    ? (
-                                        item.price - additionalDiscount[index]
-                                      )?.toLocaleString()
-                                    : item.price?.toLocaleString()}
-                                </p>
-                                <p
-                                  className="text-right col-span-2 pr-2 font-bold"
-                                  style={{ lineHeight: "1.15" }}
-                                >
-                                  $
-                                  {additionalDiscount[index] > 0
-                                    ? (
-                                        item.price - additionalDiscount[index]
-                                      )?.toLocaleString()
-                                    : item.price?.toLocaleString()}
-                                </p>
-                              </div>
-                            );
-                          } else return null;
-                        })}
-                      </div>
-                    );
+                                );
+                              } else return null;
+                            })}
+                          </div>
+                        );
+                      });
+                    return Services;
                   };
                   const serviceRow = item.additional_services_id ? (
                     <IndivitualServices />
@@ -728,22 +731,16 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                   return (
                     <React.Fragment key={index}>
                       <div
-                        className={`grid grid-cols-12 text-xs pb-2 border-gray-300`}
+                        className={`grid grid-cols-12 text-xs border-gray-300`}
                         style={{ lineHeight: "1.1" }}
                       >
                         <div className="space-y-1 font-medium col-span-5 pl-2">
                           <div className="">
                             <div className="">
-                              <p
-                                className="font-extrabold text-xs"
-                                style={{ lineHeight: "1.15" }}
-                              >
-                                {item.name}
-                              </p>
-                              <p
-                                className="text-xs pl-6 font-extrabold"
-                                style={{ lineHeight: "1.15" }}
-                              >
+                              <span className="mr-1">{item.name}</span>
+
+                              <p className="font-extrabold text-start text-xs">
+                                {/* Display tooth numbers before product name */}
                                 (#
                                 {item.teethProduct.type ? (
                                   item.teethProduct?.tooth_number
@@ -774,7 +771,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
 
                             {item.teethProduct?.pontic_teeth?.length > 0 && (
                               <p
-                                className="text-xs pl-6 font-extrabold"
+                                className="text-[10px] pl-6 font-extrabold"
                                 style={{ lineHeight: "1.15" }}
                               >
                                 <span className="font-normal"></span>
@@ -799,9 +796,12 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       Pontic:
                                     </span>
                                     #
-                                    {formatTeethRange(
-                                      item.teethProduct?.pontic_teeth
-                                    )}
+                                    <span className="text-[10px]">
+                                      {" "}
+                                      {formatTeethRange(
+                                        item.teethProduct?.pontic_teeth
+                                      )}
+                                    </span>
                                   </>
                                 )}
                               </p>
@@ -810,7 +810,11 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               className="text-xs flex gap-0 flex-wrap pl-6 mt-1"
                               style={{ lineHeight: "1.15" }}
                             >
-                              <span className="font-xs">Shade:&nbsp;</span>
+                              {(item?.teethProduct?.occlusal_shade?.name ||
+                                item?.teethProduct?.custom_occlusal_shade ||
+                                item?.teethProduct?.manual_occlusal_shade) && (
+                                <span className="font-xs">Shade:&nbsp;</span>
+                              )}
                               {/* Occlusal Shade */}
                               {(item?.teethProduct?.occlusal_shade?.name ||
                                 item?.teethProduct?.custom_occlusal_shade ||
@@ -1675,38 +1679,35 @@ export const LabSlipTemplate: React.FC<any> = ({
     const allToothPonticNumbers = products.flatMap(
       (product: any) => product.teethProduct?.pontic_teeth || []
     );
-    const [services, setLabServices] = useState<any[]>([]);
+    // const [services, setLabServices] = useState<any[]>([]);
     const { user } = useAuth();
 
-    useEffect(() => {
-      const fetchServices = async () => {
-        if (!user?.id) return; // Ensure user ID exists
-
-        try {
-          const lab = await getLabDataByUserId(user.id);
-          if (!lab?.id) {
-            console.error("Lab ID not found.");
-            return;
-          }
-
-          const { data, error } = await supabase
+    const {
+      data: labIdData,
+      error: labError,
+      isLoading: isLabLoading,
+    } = useQuery(
+      supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+      {
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+      }
+    );
+    const { data: services, error: caseError } = useQuery(
+      labIdData?.lab_id
+        ? supabase
             .from("services")
-            .select("id, name, price, is_taxable")
-            .eq("lab_id", lab.id);
-
-          if (error) {
-            throw error;
-          }
-
-          console.log(data, "lab services data");
-          setLabServices(data || []);
-        } catch (err) {
-          console.error("Failed to fetch services:", err);
-        }
-      };
-
-      fetchServices();
-    }, []); // Empty dependency array ensures it runs only once
+            .select(
+              ` *
+        `
+            )
+            .eq("lab_id", labIdData.lab_id)
+        : null, // Fetching a single record based on `activeCaseId`
+      {
+        revalidateOnFocus: true, // Refetch when the window is focused
+        revalidateOnReconnect: true, // Refetch when the network is reconnected
+      }
+    );
 
     const groupedServicesByName: {
       [serviceName: string]: {
@@ -1758,19 +1759,19 @@ export const LabSlipTemplate: React.FC<any> = ({
       return (
         <>
           {Object.entries(groupedServicesByName)?.length > 0 && (
-            <h3 className="font-bold text-[14px] mb-2">Common Services</h3>
+            <h3 className="font-bold text-sm">Common Services</h3>
           )}
           {Object.entries(groupedServicesByName).map(
             ([serviceName, serviceDetails]) => (
               <div
                 key={serviceDetails.id}
-                className="grid grid-cols-12 text-sm mb-6 pb-2 border-b border-gray-300"
+                className="grid grid-cols-12 text-xs mb-6 pb-2 border-b border-gray-300"
                 style={{ lineHeight: "1.1" }}
               >
-                <div className="space-y-1 font-medium col-span-5 pl-2 flex flex-col justify-center items-center">
-                  <h3 className="text-sm font-bold">{serviceName}</h3>
+                <div className="space-y-1 font-medium col-span-10 pl-2 flex justify-center items-center">
+                  <h3 className="text-xs font-bold">{serviceName}</h3>
                   <p
-                    className="text-xs pl-2 font-extrabold mt-1"
+                    className="text-xs pl-2 font-extrabold mt-0"
                     style={{ lineHeight: "1.15" }}
                   >
                     <>(#{serviceDetails.teeth.join(",#")})</>
@@ -1782,6 +1783,8 @@ export const LabSlipTemplate: React.FC<any> = ({
         </>
       );
     };
+    console.log("additionalServices products", products);
+
     return (
       <div
         className={`grid grid-cols-${itemsLength >= 2 ? 1 : 2} gap-1 text-xs`}
@@ -1837,6 +1840,7 @@ export const LabSlipTemplate: React.FC<any> = ({
           <div>
             {products.map((item: any) => {
               console.log(products, "products tlt");
+
               const IndivitualServices = () => {
                 console.log(item, "itemitem");
                 const additional_services_id = item.additional_services_id;
@@ -1845,22 +1849,17 @@ export const LabSlipTemplate: React.FC<any> = ({
                 const additionalDiscount = item?.services_discount ?? 0;
 
                 const additionalServices = services
-                  .filter((service) =>
+                  ?.filter((service) =>
                     additional_services_id?.includes(service.id)
                   )
                   .map((service) => ({ ...service, type: "type" }));
-
-                console.log(additionalServices, "additionalServices here");
+                console.log(additionalServices, "additionalServices");
                 return (
                   <div>
-                    <h2 className="font-bold text-xs py-0 ml-5 leading-0">
-                      Additonal Services
-                    </h2>
-
-                    {additionalServices.map((item, index) => {
+                    {additionalServices?.map((item, index) => {
                       console.log(
                         additionalServices,
-                        "type",
+                        "type hi",
                         "additional services"
                       );
                       if (additionalServices) {
@@ -1869,12 +1868,19 @@ export const LabSlipTemplate: React.FC<any> = ({
                             className={`grid grid-cols-12 text-sm border-gray-300`}
                             style={{ lineHeight: "1.1" }}
                           >
-                            <div className="space-y-1 font-medium col-span-10 pl-6">
-                              <div className="ml-5">
-                                <p className="font-bold text-xs">{item.name}</p>
-                                <p className="font-bold ml-3 text-xs">
-                                  (#{teeth[0]})
-                                </p>
+                            <div className="col-span-10">
+                              <h2 className="font-bold  text-xs py-0 leading-0 ml-8">
+                                Additonal Services
+                              </h2>
+                              <div className="space-y-1 font-medium  pl-10">
+                                <div className="flex gap-1">
+                                  <p className="font-bold text-xs">
+                                    {item.name}
+                                  </p>
+                                  <p className="font-bold text-xs">
+                                    (#{teeth[0]})
+                                  </p>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1893,39 +1899,44 @@ export const LabSlipTemplate: React.FC<any> = ({
                 <div>
                   <div className="space-y-1 font-medium col-span-5 pl-2">
                     <div>
-                      <p
-                        className="font-extrabold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        {item.name}
-                      </p>
-                      <p
-                        className="text-xs pl-6 font-extrabold"
-                        style={{ lineHeight: "1.15" }}
-                      >
-                        (#
-                        {item.teethProduct.type ? (
-                          item.teethProduct?.tooth_number
-                            .map((item: number) => `${item}`)
-                            .join(",#")
-                        ) : (
-                          <>
-                            <span
-                              style={{
-                                color:
-                                  TYPE_COLORS[
-                                    item?.teethProduct
-                                      .type as keyof typeof TYPE_COLORS
-                                  ] || TYPE_COLORS.Other,
-                              }}
-                            >
-                              Bridge:
-                            </span>
-                            #{formatTeethRange(item.teethProduct?.tooth_number)}
-                          </>
-                        )}
-                        )
-                      </p>
+                      <div className="flex gap-1">
+                        <p
+                          className="font-extrabold"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          {item.name}
+                        </p>
+                        <p
+                          className="text-xs font-extrabold"
+                          style={{ lineHeight: "1.15" }}
+                        >
+                          (#
+                          {item.teethProduct.type ? (
+                            item.teethProduct?.tooth_number
+                              .map((item: number) => `${item}`)
+                              .join(",#")
+                          ) : (
+                            <>
+                              <span
+                                style={{
+                                  color:
+                                    TYPE_COLORS[
+                                      item?.teethProduct
+                                        .type as keyof typeof TYPE_COLORS
+                                    ] || TYPE_COLORS.Other,
+                                }}
+                              >
+                                Bridge:
+                              </span>
+                              #
+                              {formatTeethRange(
+                                item.teethProduct?.tooth_number
+                              )}
+                            </>
+                          )}
+                          )
+                        </p>
+                      </div>
 
                       {item.teethProduct?.pontic_teeth?.length > 0 && (
                         <p
