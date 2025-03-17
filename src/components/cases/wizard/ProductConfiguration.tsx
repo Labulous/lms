@@ -1089,7 +1089,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   //   groupSelectedTeeth(teeth);
   // };
 
-  const handleTeethSelectionChange = (
+  const handleTeethSelectionChange1 = (
     teeth: number[],
     pontic_teeth: number[],
     index: number
@@ -1127,6 +1127,43 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     groupSelectedTeeth(teeth);
   };
+
+  const handleTeethSelectionChange = (
+    teeth: number[],
+    pontic_teeth: number[],
+    index: number
+  ) => {
+    debugger;
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        let updatedProducts = [...prevSelectedProducts];
+  
+        // Combine teeth and pontic_teeth without duplicates
+        const uniqueTeeth = Array.from(new Set([...teeth, ...pontic_teeth]));
+  
+        // Always generate subRows, even if only one tooth is selected
+        const subRows = uniqueTeeth.map((tooth) => ({
+          ...updatedProducts[index],
+          teeth: [tooth], // Assigning a single tooth
+          pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
+        }));
+  
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          teeth,
+          pontic_teeth,
+          subRows, // Now subRows are always generated
+        };
+  
+        return updatedProducts;
+      } else {
+        return prevSelectedProducts;
+      }
+    });
+  
+    groupSelectedTeeth(teeth);
+  };
+  
 
 
 

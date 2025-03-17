@@ -857,7 +857,7 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
             // Create subRow for individual tooth
-            if (matchingProducts.length > 1) {
+            //if (matchingProducts.length > 1) {
               item.teethProduct?.tooth_number?.forEach((tooth: number) => {
                 groupedProducts[productId].subRows.push({
                   id: item?.teethProduct?.product_id,//productId,
@@ -897,7 +897,7 @@ const UpdateCase: React.FC = () => {
                   },
                 });
               });
-            }
+           // }
           });
 
           // Convert Set back to array for each main product row
