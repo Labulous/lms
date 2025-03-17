@@ -615,7 +615,7 @@ const updateCases = async (
       returnArticulator: cases.enclosedItems?.returnArticulator || 0,
       cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
       consultRequested: cases.enclosedItems?.consultRequested || 0,
-      user_id: cases.overview.created_by,
+      user_id: cases.overview.created_by,      
     };
 
     const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
@@ -637,6 +637,7 @@ const updateCases = async (
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
       common_services: cases.common_services,
+      received_date: new Date(cases.overview.received_date).toISOString(),
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase

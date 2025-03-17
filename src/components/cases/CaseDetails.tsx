@@ -1911,7 +1911,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-sm font-medium">
                     {caseDetail?.received_date &&
-                      formatDate(caseDetail?.received_date)}
+                       formatDate(new Date(caseDetail.received_date).toISOString())}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />

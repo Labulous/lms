@@ -195,6 +195,7 @@ console.log(formData,"formData")
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
+    debugger;
     const { name, value, type } = event.target;
     if (type === "checkbox") {
       const checkbox = event.target as HTMLInputElement;
@@ -704,9 +705,9 @@ console.log(formData,"formData")
                     checked={formData.is_appointment_TBD}
                     onCheckedChange={(checked) => {
                       onChange("is_appointment_TBD", checked);
-                      if (checked) {
-                        onChange("dueDate", undefined);
-                      }
+                      // if (checked) {
+                      //   onChange("dueDate", undefined);
+                      // }
                     }}
                   />
                 </div>
