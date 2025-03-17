@@ -131,8 +131,7 @@ const saveCaseProduct = async (
   savedCaseId?: string
 ) => {
   // Step 1: Create a row in the enclosed_case table
-  debugger;
-  try {
+ try {
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
       .insert(overview)
@@ -598,7 +597,6 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
-  debugger;
   console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });

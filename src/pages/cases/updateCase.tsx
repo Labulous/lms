@@ -448,7 +448,6 @@ const UpdateCase: React.FC = () => {
   }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    debugger;
     e.preventDefault();
     setErrors({});
 
@@ -609,7 +608,6 @@ const UpdateCase: React.FC = () => {
       return;
     }
     const fetchCaseData = async () => {
-      debugger;
       const lab = await getLabIdByUserId(user?.id as string);
 
       if (!lab?.labId) {
@@ -931,7 +929,6 @@ const UpdateCase: React.FC = () => {
 
 
   useEffect(() => {
-    debugger;
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
         return prevSelectedProducts.map((product) => {

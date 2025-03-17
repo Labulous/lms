@@ -366,7 +366,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setOpenEditDialog(type);
   };
   const toggleRowExpansion = (rowId: string) => {
-    debugger;
     setExpandedRows((prev) => {
       const newArray = [...prev];
       // Check if the length is 1 and the value is an empty string
@@ -622,7 +621,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   
 
   const handleServiceSelect = (service: Service, index: number) => {
-    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts];
 
@@ -675,7 +673,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     SubIndex: number = 0
   ) => {
     
-    debugger;
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
 
@@ -982,7 +979,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     type: { name: string; id: string },
     index: number
   ) => {
-    debugger;
     
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
@@ -1094,7 +1090,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     pontic_teeth: number[],
     index: number
   ) => {
-    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
@@ -1133,7 +1128,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     pontic_teeth: number[],
     index: number
   ) => {
-    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
