@@ -576,8 +576,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleProductSelect = (value: any, keepTeeth = false, index?: number) => {
-    debugger;
-  
+   
     const product = products.find((p) => p.id === value.id);
     if (!product) return;
   
@@ -592,7 +591,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         // Clone previous state to avoid direct mutation
         let updatedProducts = [...prevSelectedProducts];
   
-        // Update only the existing row at `index`
+        // Update the main row product details
         updatedProducts[index] = {
           ...updatedProducts[index],
           name: product.name,
@@ -601,6 +600,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             clientSpecialProducts?.find((item) => item.product_id === product.id)?.price ||
             product.price,
           is_taxable: product.is_taxable,
+          // Also update subRows
+          subRows: updatedProducts[index]?.subRows?.map((subRow) => ({
+            ...subRow,
+            name: product.name,
+            id: product.id,
+            price:
+              clientSpecialProducts?.find((item) => item.product_id === product.id)?.price ||
+              product.price,
+            is_taxable: product.is_taxable,
+          })) || [], // Ensure subRows are updated or set to an empty array if not present
         };
   
         return updatedProducts;
@@ -609,6 +618,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return prevSelectedProducts; // No new row is added, only updating the existing one
     });
   };
+  
   
 
   const handleServiceSelect = (service: Service, index: number) => {
@@ -966,6 +976,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return updated;
     });
   };
+
   const handleProductTypeChange = (
     type: { name: string; id: string },
     index: number
