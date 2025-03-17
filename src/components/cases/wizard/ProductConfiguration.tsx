@@ -622,6 +622,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   
 
   const handleServiceSelect = (service: Service, index: number) => {
+    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       let updatedProducts = [...prevSelectedProducts];
 
@@ -1316,8 +1317,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   useEffect(() => {
-    if (isUpdate) {
-      debugger;
+    if (isUpdate) {     
       console.log(selectedProducts, "selectedProductsselectedProducts updated");
       if (selectedProducts.length > 0) {
         const shades: ShadeData[] = selectedProducts.map((item) => {

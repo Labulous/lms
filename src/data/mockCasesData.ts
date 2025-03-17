@@ -589,6 +589,7 @@ const saveCases = async (
     console.error("Error in saveCases function:", error);
   }
 };
+
 const updateCases = async (
   cases: any,
   navigate?: any,
@@ -597,6 +598,7 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
+  debugger;
   console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
@@ -636,6 +638,7 @@ const updateCases = async (
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
+      common_services: cases.common_services,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase
