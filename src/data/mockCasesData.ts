@@ -131,7 +131,7 @@ const saveCaseProduct = async (
   savedCaseId?: string
 ) => {
   // Step 1: Create a row in the enclosed_case table
- try {
+  try {
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
       .insert(overview)
@@ -597,6 +597,8 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
+
+  debugger;
   console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
@@ -615,7 +617,7 @@ const updateCases = async (
       returnArticulator: cases.enclosedItems?.returnArticulator || 0,
       cadcamFiles: cases.enclosedItems?.cadcamFiles || 0,
       consultRequested: cases.enclosedItems?.consultRequested || 0,
-      user_id: cases.overview.created_by,      
+      user_id: cases.overview.created_by,
     };
 
     const { data: enclosedCaseData, error: enclosedCaseError } = await supabase
@@ -632,12 +634,21 @@ const updateCases = async (
 
     console.log("Enclosed case updated successfully:", enclosedCaseData);
 
+    function convertToUTCWithOffset(dateString: string) {
+      const localDate = new Date(dateString);
+      const offsetMinutes = localDate.getTimezoneOffset();
+      const utcDate = new Date(localDate.getTime() - offsetMinutes * 60000);
+      return utcDate.toISOString();
+    }
+
     // Step 2: Update cases overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
       common_services: cases.common_services,
-      received_date: new Date(cases.overview.received_date).toISOString(),
+      // received_date: cases.overview.received_date
+      //   ? convertToUTCWithOffset(cases.overview.received_date)
+      //   : null,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase

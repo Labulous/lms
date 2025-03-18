@@ -74,7 +74,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
-  additional_lead_time?:string;
+  additional_lead_time?: string;
   doctors: {
     id: string;
     name: string;
@@ -159,7 +159,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       setLoading(false);
     }
   };
-console.log(formData,"formData")
+  console.log(formData, "formData")
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -179,15 +179,15 @@ console.log(formData,"formData")
   // );
 
   const selectedClient = useMemo(() => {
-    const client = (clients || []).find((client) => client.id === formData.clientId);  
+    const client = (clients || []).find((client) => client.id === formData.clientId);
     if (client && formData.orderDate) {
       let newDueDate = new Date(formData.orderDate);
       const leadTime = client.additional_lead_time ? Number(client.additional_lead_time) : 0;
       if (leadTime > 0) {
         newDueDate.setDate(newDueDate.getDate() + leadTime);
-      }  
+      }
       // onChange("dueDate", newDueDate.toISOString()); 
-    }  
+    }
     return client;
   }, [clients, formData.clientId, formData.orderDate]);
 
@@ -621,7 +621,7 @@ console.log(formData,"formData")
               <Label htmlFor="orderDate" className="text-xs">
                 Received Date *
               </Label>
-              <DatePicker
+              {/* <DatePicker
                 date={
                   formData.orderDate ? new Date(formData.orderDate) : undefined
                 }
@@ -634,6 +634,21 @@ console.log(formData,"formData")
                 updatedDate={
                   formData.dueDate ? new Date(formData.orderDate) : new Date()
                 }
+              /> */}
+              <DatePicker
+                date={formData.orderDate ? new Date(formData.orderDate) : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    const localDateString = date.toISOString().split("T")[0]; // Get YYYY-MM-DD
+                    onChange("orderDate", localDateString);
+                  }
+                }}
+                className={cn(errors.orderDate ? "border-red-500" : "")}
+                minDate={new Date(2020, 0, 1)}
+                maxDate={new Date()}
+                dateFormat="MM/dd/yyyy"
+                placeholder="Select order date"
+                updatedDate={formData.dueDate ? new Date(formData.orderDate) : new Date()}
               />
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
