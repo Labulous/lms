@@ -646,9 +646,9 @@ const updateCases = async (
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
       common_services: cases.common_services,
-      // received_date: cases.overview.received_date
-      //   ? convertToUTCWithOffset(cases.overview.received_date)
-      //   : null,
+      received_date: cases.overview.received_date
+        ? convertToUTCWithOffset(cases.overview.received_date)
+        : null,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase
