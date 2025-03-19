@@ -83,6 +83,7 @@ import { Service } from "@/data/mockServiceData";
 import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
 import { AddProductValuesDialog } from "@/components/settings/AddProductValuesDialog";
 import EditProductValuesDialog from "@/components/settings/EditProductValuesDialog";
+
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -316,6 +317,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
     null
   );
+  const hasExpandedRow = useRef(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,6 +367,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setOpenDialog(null); // Close add dialog if open
     setOpenEditDialog(type);
   };
+
   const toggleRowExpansion = (rowId: string) => {
     setExpandedRows((prev) => {
       const newArray = [...prev];
@@ -1461,7 +1464,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
+
+
   console.log(shadeData, "Shades data");
+
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
     if (a.name === "Custom") return 1; // "Custom" should go to the bottom
@@ -1469,6 +1475,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
   console.log(selectedProducts, "selectedProducts");
+
+
+  
+  useEffect(() => {
+    if (selectedProducts.length > 0 && !hasExpandedRow.current) {
+      selectedProducts.forEach((_, index) => {
+        toggleRowExpansion(index.toString());
+      });
+      hasExpandedRow.current = true;
+    }
+  }, [isUpdate, selectedProducts]);
+  
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">

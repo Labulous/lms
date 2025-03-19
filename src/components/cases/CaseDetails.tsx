@@ -1506,6 +1506,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     // If there's only one group, return it
     return groupedTeeth.join(", ");
   };
+
+  const formatTeethNumbers = (teeth: number[]): string => {
+    if (!teeth || teeth.length === 0) return "";
+    return teeth.join(", "); // Simply join the numbers with a comma
+  };
+
   console.log(caseDetail);
   let productsConsolidate = caseDetail?.products;
   const upperTeeth = new Set([
@@ -2062,7 +2068,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
 
                             <div>
                                 {product?.teethProduct?.tooth_number.length >= 1
-                                  ? formatTeethRange(
+                                  ? formatTeethNumbers(
                                       product.teethProduct.tooth_number
                                     )
                                   : null}
