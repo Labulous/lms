@@ -634,21 +634,13 @@ const updateCases = async (
 
     console.log("Enclosed case updated successfully:", enclosedCaseData);
 
-    function convertToUTCWithOffset(dateString: string) {
-      const localDate = new Date(dateString);
-      const offsetMinutes = localDate.getTimezoneOffset();
-      const utcDate = new Date(localDate.getTime() - offsetMinutes * 60000);
-      return utcDate.toISOString();
-    }
+    
 
     // Step 2: Update cases overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
       common_services: cases.common_services,
-      received_date: cases.overview.received_date
-        ? convertToUTCWithOffset(cases.overview.received_date)
-        : null,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase

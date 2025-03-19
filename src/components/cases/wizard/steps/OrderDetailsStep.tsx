@@ -395,6 +395,8 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
     );
   }, [clients, searchTerm]);
 
+  console.log("Order Date on render:", formData.orderDate);
+
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -621,7 +623,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
               <Label htmlFor="orderDate" className="text-xs">
                 Received Date *
               </Label>
-              {/* <DatePicker
+              <DatePicker
                 date={
                   formData.orderDate ? new Date(formData.orderDate) : undefined
                 }
@@ -632,24 +634,16 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
                 updatedDate={
-                  formData.dueDate ? new Date(formData.orderDate) : new Date()
+                  formData.dueDate ?  new Date(formData.orderDate.split("T")[0] + "T00:00:00") : new Date()
                 }
-              /> */}
-              <DatePicker
-                date={formData.orderDate ? new Date(formData.orderDate) : undefined}
-                onSelect={(date) => {
-                  if (date) {
-                    const localDateString = date.toISOString().split("T")[0]; // Get YYYY-MM-DD
-                    onChange("orderDate", localDateString);
-                  }
-                }}
-                className={cn(errors.orderDate ? "border-red-500" : "")}
-                minDate={new Date(2020, 0, 1)}
-                maxDate={new Date()}
-                dateFormat="MM/dd/yyyy"
-                placeholder="Select order date"
-                updatedDate={formData.dueDate ? new Date(formData.orderDate) : new Date()}
               />
+
+
+
+
+
+
+
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
               )}
