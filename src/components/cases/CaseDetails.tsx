@@ -71,7 +71,7 @@ import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatDate, formatDateWithTime } from "@/lib/formatedDate";
+import { formatDate, formatDateWithTime,formatDateWithTime_appt } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
 import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
@@ -1941,7 +1941,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   <span className="text-sm font-medium">
                     {caseDetail.is_appointment_TBD
                       ? "TBD"
-                      : formatDateWithTime(caseDetail.appointment_date)}
+                      : formatDateWithTime_appt(caseDetail.appointment_date)}
                   </span>
                 </div>
               </div>

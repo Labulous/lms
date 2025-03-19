@@ -448,6 +448,7 @@ const UpdateCase: React.FC = () => {
   }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+   
     e.preventDefault();
     setErrors({});
 

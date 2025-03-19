@@ -397,6 +397,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
 
   console.log("Order Date on render:", formData.orderDate);
 
+
   return (
     <div>
       <div className="grid grid-cols-12 gap-6 relative">
@@ -634,16 +635,9 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
                 updatedDate={
-                  formData.dueDate ?  new Date(formData.orderDate.split("T")[0] + "T00:00:00") : new Date()
+                  formData.dueDate ? new Date(formData.orderDate.split("T")[0] + "T00:00:00") : new Date()
                 }
               />
-
-
-
-
-
-
-
               {errors.orderDate && (
                 <p className="mt-1 text-sm text-red-600">{errors.orderDate}</p>
               )}
@@ -726,28 +720,25 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <DateTimePicker
                     date={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate)
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
                         : undefined
                     }
                     onSelect={(date) =>
-                      onChange("appointmentDate", date?.toISOString())
+                      onChange("appointmentDate", date ? date.toISOString() : undefined) 
                     }
-                    className={cn(
-                      errors.appointmentDate ? "border-red-500" : ""
-                    )}
+                    className={cn(errors.appointmentDate ? "border-red-500" : "")}
                     minDate={
-                      formData.orderDate
-                        ? new Date(formData.orderDate)
-                        : undefined
+                      formData.orderDate ? new Date(formData.orderDate) : undefined
                     }
                     dateFormat="MM/dd/yyyy h:mm aa"
                     placeholder="Select appointment date & time"
                     updatedDate={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate)
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
                         : undefined
                     }
                   />
+
                   {errors.appointmentDate && (
                     <p className="mt-1 text-sm text-red-600">
                       {errors.appointmentDate}
