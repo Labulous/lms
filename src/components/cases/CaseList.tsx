@@ -80,6 +80,9 @@ import toast from "react-hot-toast";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useLocation } from "react-router-dom";
 import { calculateDueDate } from "@/lib/calculateDueDate";
+import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
+import { HoverCard } from "../ui/hover-card";
+import { HoverCardTrigger } from "@radix-ui/react-hover-card";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -87,6 +90,7 @@ const CaseList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState<ExtendedCase[]>([]);
+  const [selectedCase, setSelectedCase] = useState<ExtendedCase | null>(null);
   const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState<string | null>(null);
@@ -110,6 +114,9 @@ const CaseList: React.FC = () => {
       return dueDateParam ? new Date() : undefined;
     }
   );
+
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
@@ -394,13 +401,32 @@ const CaseList: React.FC = () => {
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      // cell: ({ row }) => (
+      //   <Link
+      //     to={`/cases/${row.original.id}`}
+      //     className="font-medium text-primary hover:underline"
+      //   >
+      //     {row.getValue("case_number")}
+      //   </Link>
+      // ),
       cell: ({ row }) => (
-        <Link
-          to={`/cases/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
+        <HoverCard
+          onOpenChange={(open) => {
+            if (open) {
+              setSelectedCase(row.original); // Set selected invoice
+             setIsPreviewModalOpen(true); // Open preview modal
+            }
+          }}
         >
-          {row.getValue("case_number")}
-        </Link>
+          <HoverCardTrigger asChild>
+            <Link
+              to={`/cases/${row.original.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {row.getValue("case_number")}
+            </Link>
+          </HoverCardTrigger>
+        </HoverCard>
       ),
     },
     {
@@ -684,7 +710,7 @@ const CaseList: React.FC = () => {
           rowDate.getFullYear() === value.getFullYear() &&
           rowDate.getMonth() === value.getMonth() &&
           dueDate?.split("T")?.[0].split("-")?.[2] ===
-            formatedDate?.toDateString().split(" ")?.[2]
+          formatedDate?.toDateString().split(" ")?.[2]
         );
       },
     },
@@ -805,9 +831,9 @@ const CaseList: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
        id,
         created_at,
         received_date,
@@ -972,10 +998,10 @@ const CaseList: React.FC = () => {
           )
           )
     `
-          )
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-          .order("created_at", { ascending: false })
+        )
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true,
@@ -1032,7 +1058,7 @@ const CaseList: React.FC = () => {
       };
     }
   );
-  console.log(arragedNewCases,"arragedNewCases")
+  console.log(arragedNewCases, "arragedNewCases")
 
   const handleFetchData = async () => {
     try {
@@ -1212,7 +1238,7 @@ const CaseList: React.FC = () => {
         console.log("failed to fetch cases");
       }
       const arragedNewCases: ExtendedCase[] =
-        query?.map((item: any, index:number) => {
+        query?.map((item: any, index: number) => {
           return {
             ...item,
             products: item.teethProduct.map((tp: any) => ({
@@ -1230,7 +1256,7 @@ const CaseList: React.FC = () => {
               billing_type: tp.product.billing_type,
               discounted_price: tp.product.discounted_price,
               additional_services_id:
-              item?.teethProduct?.[index].additional_services_id,
+                item?.teethProduct?.[index].additional_services_id,
               teethProduct: {
                 id: tp.id,
                 is_range: tp.is_range,
@@ -1532,24 +1558,21 @@ const CaseList: React.FC = () => {
           </thead>
           <tbody>
             ${selectedCases
-              .map(
-                (caseItem) => `
+        .map(
+          (caseItem) => `
                 <tr>
                   <td>
-                    <span class="color-box" style="background-color: ${
-                      caseItem.working_pan_color || "white"
-                    };"></span>
+                    <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"
+            };"></span>
                     ${caseItem.working_pan_name || ""}
                   </td>
                   <td>
-                    ${
-                      caseItem?.tag?.name
-                        ? `<span class="color-box" style="background-color: ${
-                            caseItem.tag.color
-                          };"></span>
+                    ${caseItem?.tag?.name
+              ? `<span class="color-box" style="background-color: ${caseItem.tag.color
+              };"></span>
                         ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
-                        : ""
-                    }
+              : ""
+            }
                   </td>
                   <td>${caseItem.case_number}</td>
                   <td>${caseItem.patient_name}</td>
@@ -1560,8 +1583,8 @@ const CaseList: React.FC = () => {
                   <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
                 </tr>
               `
-              )
-              .join("")}
+        )
+        .join("")}
           </tbody>
         </table>
   
@@ -1783,9 +1806,9 @@ const CaseList: React.FC = () => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -1863,6 +1886,30 @@ const CaseList: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Invoice Preview Modal */}
+      {isPreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setIsLoadingPreview(false);
+          }}
+          formData={{
+            clientId: selectedCase?.client?.id || "", 
+            items: selectedCase?.invoice?.[0]?.items || [], 
+            discount: selectedCase?.invoice?.[0]?.discount || 0, 
+            discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage", 
+            tax: selectedCase?.invoice?.[0]?.tax || 0, 
+            notes: selectedCase?.invoice?.[0]?.notes || "", 
+          }}
+          caseDetails={[
+            selectedCase
+              ? { ...selectedCase, labDetail: selectedCase.labDetail as labDetail }
+              : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail }, 
+          ]}
+        />
+      )}
     </div>
   );
 };
