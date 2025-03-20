@@ -1537,7 +1537,7 @@ const InvoiceList: React.FC = () => {
         "Tag",
         "Status",
         "Client",
-        "Case #",
+        "INV #",
         "Amount",
         "Due Date"
       ];
@@ -2025,7 +2025,7 @@ const InvoiceList: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
-                    <div className="flex items-center">Case #</div>
+                    <div className="flex items-center">INV #</div>
                   </TableHead>
                   <TableHead
                     onClick={() => handleSort("amount")}
@@ -2196,12 +2196,15 @@ const InvoiceList: React.FC = () => {
                                   setIsPreviewModalOpen(true);
                                 }}
                               >
-                                {invoice.case_number
+                                {/* {invoice.case_number
                                   ? `INV-${invoice.case_number
                                     .split("-")
                                     .slice(1)
                                     .join("-")}`
-                                  : "No Invoice #"}
+                                  : "No Invoice #"} */}
+                                {invoice.case_number && /^\d{4}-\d+$/.test(invoice.case_number)
+                                  ? `INV-${invoice.case_number}`
+                                  : invoice.case_number || "No Invoice #"}
                               </button>
                             </HoverCardTrigger>
                             <HoverCardContent

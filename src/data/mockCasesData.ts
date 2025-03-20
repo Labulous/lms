@@ -416,11 +416,14 @@ const saveCases = async (
     const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
     const currentYear = new Date().getFullYear().toString().slice(-2);
     const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
-    const sequentialNumber = String(caseCount + 1).padStart(5, "0");
+    const sequentialNumber = String(caseCount + 1);//.padStart(5, "0");
 
-    const case_number = `${labData?.name
-      .substring(0, 3)
-      .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    // const case_number = `${labData?.name
+    //   .substring(0, 3)
+    //   .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
+
+    const case_number = `${currentYear}${currentMonth}-${sequentialNumber}`;
+
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,

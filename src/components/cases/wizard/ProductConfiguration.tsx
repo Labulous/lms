@@ -578,21 +578,21 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleProductSelect = (value: any, keepTeeth = false, index?: number) => {
-   
+
     const product = products.find((p) => p.id === value.id);
     if (!product) return;
-  
+
     if (index === undefined || index === null) {
       toggleRowExpansion(product.id);
     }
-  
+
     setSelectedProduct(product);
-  
+
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined && index >= 0 && index < prevSelectedProducts.length) {
         // Clone previous state to avoid direct mutation
         let updatedProducts = [...prevSelectedProducts];
-  
+
         // Update the main row product details
         updatedProducts[index] = {
           ...updatedProducts[index],
@@ -613,15 +613,15 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             is_taxable: product.is_taxable,
           })) || [], // Ensure subRows are updated or set to an empty array if not present
         };
-  
+
         return updatedProducts;
       }
-  
+
       return prevSelectedProducts; // No new row is added, only updating the existing one
     });
   };
-  
-  
+
+
 
   const handleServiceSelect = (service: Service, index: number) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
@@ -675,7 +675,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index: number | undefined,
     SubIndex: number = 0
   ) => {
-    
+
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
 
@@ -879,7 +879,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number,
     SubIndex: number = 0
   ) => {
-   
+
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
     console.log(index, SubIndex, "index subIndex");
@@ -982,7 +982,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     type: { name: string; id: string },
     index: number
   ) => {
-    
+
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
@@ -1134,33 +1134,33 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
-  
+
         // Combine teeth and pontic_teeth without duplicates
         const uniqueTeeth = Array.from(new Set([...teeth, ...pontic_teeth]));
-  
+
         // Always generate subRows, even if only one tooth is selected
         const subRows = uniqueTeeth.map((tooth) => ({
           ...updatedProducts[index],
           teeth: [tooth], // Assigning a single tooth
           pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
         }));
-  
+
         updatedProducts[index] = {
           ...updatedProducts[index],
           teeth,
           pontic_teeth,
           subRows, // Now subRows are always generated
         };
-  
+
         return updatedProducts;
       } else {
         return prevSelectedProducts;
       }
     });
-  
+
     groupSelectedTeeth(teeth);
   };
-  
+
 
 
 
@@ -1351,7 +1351,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   useEffect(() => {
-    if (isUpdate) {     
+    if (isUpdate) {
       console.log(selectedProducts, "selectedProductsselectedProducts updated");
       if (selectedProducts.length > 0) {
         const shades: ShadeData[] = selectedProducts.map((item) => {
@@ -1477,7 +1477,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   console.log(selectedProducts, "selectedProducts");
 
 
-  
+
   useEffect(() => {
     if (selectedProducts.length > 0 && !hasExpandedRow.current) {
       selectedProducts.forEach((_, index) => {
@@ -1486,7 +1486,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       hasExpandedRow.current = true;
     }
   }, [isUpdate, selectedProducts]);
-  
+
 
   return (
     <div className="w-full">
@@ -2972,9 +2972,37 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   <Label className="text-xs text-gray-500">
                                     Price
                                   </Label>
-                                  <p className="text-sm font-medium">
+                                  {/* <p className="text-sm font-medium">
                                     ${row.price.toFixed(2)}
-                                  </p>
+                                  </p> */}
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={selectedProducts[index]?.price ?? ""}
+                                    onChange={(e) => {
+                                      const newPrice = Number(e.target.value) || 0; 
+
+                                      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+                                        const updatedProducts = [...prevSelectedProducts];
+
+                                        if (index >= 0 && index < updatedProducts.length) {
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            price: newPrice, 
+                                            subRows: updatedProducts[index]?.subRows?.map((subRow) => ({
+                                              ...subRow,
+                                              price: newPrice, 
+                                            })) ?? [], 
+                                          };
+                                        }
+
+                                        return updatedProducts;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+
                                 </div>
                                 <Separator
                                   orientation="vertical"

@@ -71,7 +71,7 @@ import InvoiceActions from "@/components/cases/InvoiceActions";
 import InvoicePreviewModal from "@/components/invoices/InvoicePreviewModal";
 import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatDate, formatDateWithTime,formatDateWithTime_appt } from "@/lib/formatedDate";
+import { formatDate, formatDateWithTime, formatDateWithTime_appt } from "@/lib/formatedDate";
 import { FileWithStatus } from "./wizard/steps/FilesStep";
 import PrintHandler from "./print/PrintHandler";
 import { PAPER_SIZES } from "./print/PrintHandler";
@@ -1620,7 +1620,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
   //   : [];
 
   const consolidatedProducts: any = productsConsolidate
-  ? Object.values(
+    ? Object.values(
       caseDetail?.products?.reduce((acc: any, product: any) => {
         const productId = product.id;
 
@@ -1647,11 +1647,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               },
               service: product.service
                 ? [
-                    {
-                      service: product.service,
-                      teeth_number: [...tooth_number],
-                    },
-                  ]
+                  {
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  },
+                ]
                 : [],
             };
           } else {
@@ -1693,11 +1693,11 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
               },
               service: product.service?.[0]?.name
                 ? [
-                    {
-                      service: product.service,
-                      teeth_number: [...tooth_number],
-                    },
-                  ]
+                  {
+                    service: product.service,
+                    teeth_number: [...tooth_number],
+                  },
+                ]
                 : [],
             };
           } else {
@@ -1722,13 +1722,13 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
         return acc;
       }, {} as any)
     )
-  : [];
+    : [];
 
-  
+
   console.log(consolidatedProducts, "consolidatedProducts");
   console.log(caseDetail, "caseDetails");
 
- 
+
 
 
   return (
@@ -1752,12 +1752,12 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     : "Unknown Patient"}
                 </h1>
                 <div className="flex items-center space-x-2">
-                  <div className="flex items-center gap-2">
+                  {/* <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">Case #:</span>
                     <span className="text-xs font-medium text-primary">
                       {caseDetail?.case_number || "N/A"}
                     </span>
-                  </div>
+                  </div> */}
                   <Separator orientation="vertical" className="h-4" />
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">INV #:</span>
@@ -1768,7 +1768,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                       }
                     >
                       {caseDetail?.invoice.length > 0
-                        ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                        // ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                        ? caseDetail.case_number
                         : "N/A"}
                     </div>
                   </div>
@@ -1917,7 +1918,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   <span className="text-xs text-gray-500">Received Date</span>
                   <span className="text-sm font-medium">
                     {caseDetail?.received_date &&
-                       formatDate(new Date(caseDetail.received_date).toISOString())}
+                      formatDate(new Date(caseDetail.received_date).toISOString())}
                   </span>
                 </div>
                 <Separator orientation="vertical" className="h-6" />
@@ -2066,34 +2067,34 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                             </TableCell>
                             <TableCell className="text-xs py-1.5 pl-4 pr-0">
 
-                            <div>
+                              <div>
                                 {product?.teethProduct?.tooth_number.length >= 1
                                   ? formatTeethNumbers(
-                                      product.teethProduct.tooth_number
-                                    )
+                                    product.teethProduct.tooth_number
+                                  )
                                   : null}
                                 {product?.teethProduct?.pontic_teeth.length >
                                   0 && (
-                                  <span
-                                    className="ml-2 text-xs"
-                                    style={{
-                                      color:
-                                        TYPE_COLORS[
+                                    <span
+                                      className="ml-2 text-xs"
+                                      style={{
+                                        color:
+                                          TYPE_COLORS[
                                           product?.teethProduct
                                             ?.type as keyof typeof TYPE_COLORS
-                                        ] || TYPE_COLORS.Other,
-                                    }}
-                                  >
-                                    ({"pontic: "}
-                                    {product?.teethProduct?.pontic_teeth
-                                      .length >= 1
-                                      ? formatTeethRange(
+                                          ] || TYPE_COLORS.Other,
+                                      }}
+                                    >
+                                      ({"pontic: "}
+                                      {product?.teethProduct?.pontic_teeth
+                                        .length >= 1
+                                        ? formatTeethRange(
                                           product.teethProduct.pontic_teeth
                                         )
-                                      : null}
-                                    )
-                                  </span>
-                                )}
+                                        : null}
+                                      )
+                                    </span>
+                                  )}
                               </div>
 
                               {/* <div>

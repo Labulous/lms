@@ -390,7 +390,7 @@ const CaseList: React.FC = () => {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="p-0 hover:bg-transparent"
         >
-          Case #
+          Inv #
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
@@ -1521,7 +1521,7 @@ const CaseList: React.FC = () => {
             <tr>
               <th>Pan</th>
               <th>Tag</th>
-              <th>Case #</th>
+              <th>Inv #</th>
               <th>Patient Name</th>
               <th>Status</th>
               <th>Doctor</th>
