@@ -99,6 +99,7 @@ interface Shipment {
   notes: string;
   clientId: string;
   clientAccountNumber: string;
+  delivery: string;
 }
 
 const ShippingList: React.FC = () => {
@@ -156,16 +157,7 @@ const ShippingList: React.FC = () => {
             status,
             received_date,
             ship_date,
-            client:client_id (
-              id,
-              client_name,
-              phone,
-              street,
-              city,
-              state,
-              zip_code,
-              account_number
-            )
+            client_id
           `)
           .eq("lab_id", labIdData?.lab_id)
           .in('status', ['completed', 'shipped'])
@@ -176,7 +168,21 @@ const ShippingList: React.FC = () => {
     }
   );
 
-  // Use the useQuery hook to fetch clients for the current lab
+  // Separately fetch client data for all cases
+  const { data: caseClientData, error: caseClientError } = useQuery(
+    casesData && casesData.length > 0
+      ? supabase
+          .from('clients')
+          .select('*')
+          .in('id', casesData.map(c => c.client_id).filter(Boolean))
+      : null,
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  // Use the useQuery hook to fetch all clients for the current lab (for dropdown)
   const { data: clientsData, error: clientsError } = useQuery(
     labIdData?.lab_id
       ? supabase
@@ -208,13 +214,21 @@ const ShippingList: React.FC = () => {
       return;
     }
 
-    if (casesData) {
+    if (caseClientError) {
+      console.error('Error fetching client data:', caseClientError);
+      setIsLoading(false);
+      setIsRefreshing(false);
+      return;
+    }
+
+    if (casesData && caseClientData) {
       console.log('Raw data from Supabase:', casesData);
-      processShippingData(casesData);
+      console.log('Client data from Supabase:', caseClientData);
+      processShippingData(casesData, caseClientData);
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [casesData, casesError]);
+  }, [casesData, casesError, caseClientData, caseClientError]);
 
   // Process clients data when it changes
   useEffect(() => {
@@ -261,15 +275,18 @@ const ShippingList: React.FC = () => {
   };
 
   // Process shipping data from useQuery hook
-  const processShippingData = (data: any[]) => {
+  const processShippingData = (casesData: any[], clientsData: any[]) => {
     setIsLoading(true);
     setIsRefreshing(true);
     try {
       // Make sure data is an array before mapping
-      const casesData = Array.isArray(data) ? data : [];
-      console.log('Cases data array length:', casesData.length);
+      const cases = Array.isArray(casesData) ? casesData : [];
+      const clients = Array.isArray(clientsData) ? clientsData : [];
       
-      if (casesData.length === 0) {
+      console.log('Cases data array length:', cases.length);
+      console.log('Clients data array length:', clients.length);
+      
+      if (cases.length === 0) {
         console.log('No cases found with status completed or shipped');
         // Return early if no data to avoid further processing
         setShipments([]);
@@ -279,37 +296,50 @@ const ShippingList: React.FC = () => {
         return;
       }
       
-      const transformedData: Shipment[] = casesData.map(item => {
+      // Create a map of client IDs to client data for quick lookup
+      const clientMap = clients.reduce((map, client) => {
+        map[client.id] = client;
+        return map;
+      }, {});
+      
+      console.log('Client map:', clientMap);
+      
+      const transformedData: Shipment[] = cases.map(item => {
         let city = 'N/A';
         let clientAddress = 'N/A';
+        let deliveryMethod = 'Local';
+        let clientName = 'Unknown Client';
         
-        // Check if client is an array and has at least one element
-        const clientData = item.client && Array.isArray(item.client) && item.client.length > 0 
-          ? item.client[0] 
-          : null;
+        // Get client data from the clientMap using the client_id
+        const clientData = item.client_id ? clientMap[item.client_id] : null;
         
-        console.log('Processing case:', item.id, 'Client data:', clientData);
+        console.log('Processing case:', item.id, 'Client ID:', item.client_id, 'Client data:', clientData);
         
         if (clientData) {
+          clientName = clientData.client_name || 'Unknown Client';
           city = clientData.city || 'N/A';
           clientAddress = `${clientData.street || ''}, ${clientData.city || ''}, ${clientData.state || ''} ${clientData.zip_code || ''}`;
+          // Determine delivery method based on client location or preferences
+          deliveryMethod = clientData.state && clientData.state.trim() ? 'Shipping' : 'Local';
+          console.log('Client name set to:', clientName, 'Delivery method:', deliveryMethod);
         }
 
         return {
           id: item.id,
           caseId: item.case_number,
-          clientName: clientData ? clientData.client_name : 'Unknown Client',
+          clientName: clientName,
           clientAddress: clientAddress,
           city: city,
           patientName: item.patient_name,
-          shippingProvider: 'Local',
+          shippingProvider: deliveryMethod,
           trackingNumber: 'N/A',
           shipmentDate: item.ship_date ? format(new Date(item.ship_date), 'yyyy-MM-dd') : 'N/A',
           expectedDeliveryDate: item.due_date ? format(new Date(item.due_date), 'yyyy-MM-dd') : 'TBD',
-          status: item.status === 'completed' ? 'Delivered' : 'Shipped',
+          status: item.status === 'completed' ? 'Not Shipped' : 'Shipped',
           notes: '',
           clientId: clientData ? clientData.id : '',
           clientAccountNumber: clientData && clientData.account_number ? clientData.account_number : '',
+          delivery: deliveryMethod,
         };
       });
 
@@ -415,10 +445,10 @@ const ShippingList: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Delivered':
-        return 'bg-green-500 text-green-500 hover:bg-green-500 bg-opacity-10 hover:bg-opacity-10 hover:text-inherit';
-      case 'Shipped':
+      case 'Not Shipped':
         return 'bg-yellow-500 text-yellow-500 hover:bg-yellow-500 bg-opacity-10 hover:bg-opacity-10 hover:text-inherit';
+      case 'Shipped':
+        return 'bg-green-500 text-green-500 hover:bg-green-500 bg-opacity-10 hover:bg-opacity-10 hover:text-inherit';
       default:
         return 'bg-gray-500 text-gray-500 hover:bg-gray-500 bg-opacity-10 hover:bg-opacity-10 hover:text-inherit';
     }
@@ -508,7 +538,7 @@ const ShippingList: React.FC = () => {
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div>Local</div>,
+      cell: ({ row }) => <div>{row.original.delivery || 'Local'}</div>,
     },
     {
       accessorKey: "clientName",
@@ -635,7 +665,7 @@ const ShippingList: React.FC = () => {
   }, [shipments, filteredShipments]);
   
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto py-6 space-y-6">
       <PageHeader
         heading="Shipping Management"
         description="Manage and track all your shipments"
@@ -667,7 +697,7 @@ const ShippingList: React.FC = () => {
               </span>
             )}
           </div>
-          <div className="flex flex-1 items-center space-x-2">
+          <div className="flex flex-1 items-center space-x-2 px-2">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -737,7 +767,7 @@ const ShippingList: React.FC = () => {
               </Button>
             )}
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 px-2">
             <Button 
               variant="outline" 
               onClick={refreshData} 
@@ -766,7 +796,7 @@ const ShippingList: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -824,7 +854,7 @@ const ShippingList: React.FC = () => {
           </Table>
         </div>
 
-        <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="flex items-center justify-between space-x-2 py-4 px-2">
           <div className="flex-1 text-sm text-muted-foreground">
             Showing {table.getFilteredRowModel().rows.length} of {shipments.length} shipments
           </div>
