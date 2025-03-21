@@ -68,7 +68,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/lib/supabase";
 import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1797,10 +1796,10 @@ const InvoiceList: React.FC = () => {
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                 variant="default"
+                  variant={dueDateRange ? "default" : "outline"}
                   className="mr-2 h-8"
                 >
-                  <PrinterIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-4 w-4" />
                   {dueDateRange
                     ? `${dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} - ${dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}`
                     : "Select Custom Date"}
