@@ -174,7 +174,7 @@ export function DateRangePicker({
   onDateRangeChange,
   className,
 }: DateRangePickerProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [selectionStep, setSelectionStep] = useState<'start' | 'end'>('start');
   const containerRef = React.useRef<HTMLDivElement>(null);
 

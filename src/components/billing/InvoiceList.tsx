@@ -1781,7 +1781,7 @@ const InvoiceList: React.FC = () => {
               </>
             ) : null}
           </div>
-          <div className="relative w-72">
+          {/* <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search invoices..."
@@ -1789,7 +1789,52 @@ const InvoiceList: React.FC = () => {
               className="pl-8"
               onChange={handleSearch}
             />
+          </div> */}
+
+
+          <div className="relative w-120 flex items-center">
+            {/* Calendar Button */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={dueDateRange ? "secondary" : "outline"}
+                  className="mr-2 h-8"
+                >
+                  {dueDateRange
+                    ? `${dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} - ${dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}`
+                    : "Select Custom Date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0"
+                align="center"
+                side="top"
+                sideOffset={5}
+                avoidCollisions={true}
+                collisionPadding={20}
+                sticky="always"
+              >
+                <div className="p-4">
+                  <DateRangePicker
+                    dateRange={dueDateRange}
+                    onDateRangeChange={setDueDateRange}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Search Input with Search Icon */}
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search invoices..."
+                value={searchTerm}
+                className="pl-8 w-full"
+                onChange={handleSearch}
+              />
+            </div>
           </div>
+          
         </div>
 
         <div className="rounded-md border overflow-hidden">
