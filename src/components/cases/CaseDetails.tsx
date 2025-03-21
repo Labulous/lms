@@ -2344,7 +2344,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                         onClick={() => setIsPreviewModalOpen(true)}
                       >
                         {caseDetail?.invoice.length > 0
-                          ? caseDetail.case_number.replace(/^.{3}/, "INV")
+                          //? caseDetail.case_number.replace(/^.{3}/, "INV")
+                          ? caseDetail.case_number
                           : "N/A"}
                       </div>
                     </div>

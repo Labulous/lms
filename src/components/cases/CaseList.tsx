@@ -164,6 +164,38 @@ const CaseList: React.FC = () => {
     ? searchParams.get("dueDate")?.split("-")[2]
     : null;
   const columns: ColumnDef<ExtendedCase>[] = [
+    // {
+    //   accessorKey: "select",
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && "indeterminate")
+    //       }
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => {
+    //         row.toggleSelected(!!value);
+    //         if (value) {
+    //           setSelectedCases((items) => [...items, row.original.id]);
+    //         } else {
+    //           const cases = selectedCasesIds.filter(
+    //             (item) => item !== row.original.id
+    //           );
+    //           setSelectedCases(cases);
+    //         }
+    //       }}
+    //       aria-label="Select row"
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: "select",
       header: ({ table }) => (
@@ -172,7 +204,20 @@ const CaseList: React.FC = () => {
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(value) => {
+            table.toggleAllPageRowsSelected(!!value);
+    
+            if (value) {
+              // Select all visible row IDs
+              const allRowIds = table
+                .getRowModel()
+                .rows.map((row) => row.original.id);
+              setSelectedCases(allRowIds);
+            } else {
+              // Clear selection
+              setSelectedCases([]);
+            }
+          }}
           aria-label="Select all"
         />
       ),
@@ -181,14 +226,11 @@ const CaseList: React.FC = () => {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => {
             row.toggleSelected(!!value);
-            if (value) {
-              setSelectedCases((items) => [...items, row.original.id]);
-            } else {
-              const cases = selectedCasesIds.filter(
-                (item) => item !== row.original.id
-              );
-              setSelectedCases(cases);
-            }
+            setSelectedCases((prev) =>
+              value
+                ? [...prev, row.original.id]
+                : prev.filter((id) => id !== row.original.id)
+            );
           }}
           aria-label="Select row"
         />
@@ -196,6 +238,7 @@ const CaseList: React.FC = () => {
       enableSorting: false,
       enableHiding: false,
     },
+    
     {
       accessorKey: "working_pan_color",
       header: ({ column }) => (
@@ -1408,6 +1451,7 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1478,6 +1522,9 @@ const CaseList: React.FC = () => {
     // Open the print preview page
     window.open(`${window.location.origin}/print-preview`, "_blank");
   };
+
+
+ 
 
   const handlePrintSelectedOrder = () => {
     const selectedCases = table
