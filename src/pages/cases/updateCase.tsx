@@ -178,6 +178,7 @@ const UpdateCase: React.FC = () => {
         isDisplayAcctOnly,
         isDisplayDoctorAcctOnly,
         isHidePatientName,
+        delivery_method,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -364,7 +365,7 @@ const UpdateCase: React.FC = () => {
     }
   );
 
-  //debugger;
+ 
   let caseItem: any = caseDataa;
 
   const caseDetailApi: ExtendedCase | null = caseItem
@@ -448,7 +449,7 @@ const UpdateCase: React.FC = () => {
   }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    debugger;
+   
     e.preventDefault();
     setErrors({});
 
@@ -554,36 +555,35 @@ const UpdateCase: React.FC = () => {
           isDisplayAcctOnly: formData.isDisplayAcctOnly,
           isDisplayDoctorAcctOnly: formData.isDisplayDoctorAcctOnly,
           isHidePatientName: formData.isHidePatientName,
+          delivery_method : formData.deliveryMethod,
           // isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
           // isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
           // isHidePatientName: transformedData.isHidePatientName || false,
         },
         common_services:
           selectedProducts.flatMap((product) => {
-            // Flatten all subRow services
-            const subRowServices =
-              product.subRows?.flatMap(
-                (subRow) =>
-                  subRow?.services &&
-                  subRow?.services?.map((service) => service.id)
-              ) || [];
+            const subRowServices = product.subRows?.length
+              ? product.subRows.flatMap((subRow) =>
+                subRow?.services ? subRow.services.map((service) => service.id) : []
+              )
+              : product.services?.map((service) => service.id) || [];
 
-            // Filter common services not present in any subRow services
-            const filteredCommonServices =
-              product.commonServices?.filter(
-                (item) =>
-                  !item.add_to_all &&
-                  item.id &&
-                  !subRowServices.includes(item.id)
-              ) || [];
+            const filteredCommonServices = product.commonServices
+              ? product.commonServices.filter(
+                (item) => !item.add_to_all && item.id && !subRowServices.includes(item.id)
+              )
+              : [];
 
             return filteredCommonServices.length > 0
-              ? {
-                  teeth: product.teeth,
+              ? [
+                {
+                  teeth: product.teeth || [],
                   services: filteredCommonServices.map((item) => item.id),
-                }
-              : []; // Return an empty array if no valid services found
+                },
+              ]
+              : [];
           }) || [],
+
         invoiceId: caseDetailApi?.invoice?.[0].id,
         products: selectedProducts.filter((item) => item.id && item.type),
         enclosedItems: transformedData.enclosedItems,
@@ -611,7 +611,6 @@ const UpdateCase: React.FC = () => {
       return;
     }
     const fetchCaseData = async () => {
-      debugger;
       const lab = await getLabIdByUserId(user?.id as string);
 
       if (!lab?.labId) {
@@ -859,7 +858,7 @@ const UpdateCase: React.FC = () => {
               groupedProducts[productId].pontic_teeth.add(tooth)
             );
             // Create subRow for individual tooth
-            if (matchingProducts.length > 1) {
+            //if (matchingProducts.length > 1) {
               item.teethProduct?.tooth_number?.forEach((tooth: number) => {
                 groupedProducts[productId].subRows.push({
                   id: item?.teethProduct?.product_id,//productId,
@@ -899,7 +898,7 @@ const UpdateCase: React.FC = () => {
                   },
                 });
               });
-            }
+           // }
           });
 
           // Convert Set back to array for each main product row
@@ -933,7 +932,6 @@ const UpdateCase: React.FC = () => {
 
 
   useEffect(() => {
-    debugger;
     if (servicesData) {
       setSelectedProducts((prevSelectedProducts) => {
         return prevSelectedProducts.map((product) => {

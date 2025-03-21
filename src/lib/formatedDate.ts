@@ -27,3 +27,25 @@ export const formatDateWithTime = (dateString: string) => {
     return "Invalid Date";
   }
 };
+
+export const formatDateWithTime_appt = (dateString: string) => {
+  if (!dateString) return "Invalid Date";
+
+  // Convert "YYYY-MM-DD HH:mm:ss" → "YYYY-MM-DDTHH:mm:ssZ" for proper UTC parsing
+  const formattedDateString = dateString.replace(" ", "T") + "Z";
+
+  const date = new Date(formattedDateString);
+
+  if (isNaN(date.getTime())) return "Invalid Date"; // Validate the date
+
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+};
+
+

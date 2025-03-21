@@ -66,7 +66,7 @@ const NewCase: React.FC = () => {
     patientLastName: "",
     orderDate: format(new Date(), "yyyy-MM-dd"),
     status: "in_progress" as CaseStatus,
-    deliveryMethod: "Pickup" as DeliveryMethod,
+    deliveryMethod: "Local Delivery" as DeliveryMethod,
     deliveryMethodError: "",
     enclosedItems: {
       impression: 0,
@@ -340,6 +340,7 @@ const NewCase: React.FC = () => {
           custom_contact_details: transformedData.caseDetails?.customContact,
           custom_occulusal_details: transformedData.caseDetails?.customOcclusal,
           custom_pontic_details: transformedData.caseDetails?.customPontic,
+          delivery_method : transformedData.deliveryMethod,
           common_services:
             selectedProducts.flatMap((product) => {
               // Flatten all subRow services

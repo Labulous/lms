@@ -83,6 +83,7 @@ import { Service } from "@/data/mockServiceData";
 import MultiColumnServiceSelector from "./modals/MultiColumnServiceSelector";
 import { AddProductValuesDialog } from "@/components/settings/AddProductValuesDialog";
 import EditProductValuesDialog from "@/components/settings/EditProductValuesDialog";
+
 interface ProductTypeInfo {
   id: string;
   name: string;
@@ -316,6 +317,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(
     null
   );
+  const hasExpandedRow = useRef(false);
   const [products, setProducts] = useState<ProductType[]>([]);
   const [materials, setMaterials] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -365,8 +367,8 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setOpenDialog(null); // Close add dialog if open
     setOpenEditDialog(type);
   };
+
   const toggleRowExpansion = (rowId: string) => {
-    debugger;
     setExpandedRows((prev) => {
       const newArray = [...prev];
       // Check if the length is 1 and the value is an empty string
@@ -576,23 +578,22 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleProductSelect = (value: any, keepTeeth = false, index?: number) => {
-    debugger;
-  
+
     const product = products.find((p) => p.id === value.id);
     if (!product) return;
-  
+
     if (index === undefined || index === null) {
       toggleRowExpansion(product.id);
     }
-  
+
     setSelectedProduct(product);
-  
+
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index !== undefined && index >= 0 && index < prevSelectedProducts.length) {
         // Clone previous state to avoid direct mutation
         let updatedProducts = [...prevSelectedProducts];
-  
-        // Update only the existing row at `index`
+
+        // Update the main row product details
         updatedProducts[index] = {
           ...updatedProducts[index],
           name: product.name,
@@ -601,15 +602,26 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
             clientSpecialProducts?.find((item) => item.product_id === product.id)?.price ||
             product.price,
           is_taxable: product.is_taxable,
+          // Also update subRows
+          subRows: updatedProducts[index]?.subRows?.map((subRow) => ({
+            ...subRow,
+            name: product.name,
+            id: product.id,
+            price:
+              clientSpecialProducts?.find((item) => item.product_id === product.id)?.price ||
+              product.price,
+            is_taxable: product.is_taxable,
+          })) || [], // Ensure subRows are updated or set to an empty array if not present
         };
-  
+
         return updatedProducts;
       }
-  
+
       return prevSelectedProducts; // No new row is added, only updating the existing one
     });
   };
-  
+
+
 
   const handleServiceSelect = (service: Service, index: number) => {
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
@@ -663,8 +675,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index: number | undefined,
     SubIndex: number = 0
   ) => {
-    
-    debugger;
+
     const service = services.find((p) => p.id === value.id) || null;
     if (!service || index === undefined) return; // Ensure that the service is valid and index is provided
 
@@ -868,7 +879,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     index?: number,
     SubIndex: number = 0
   ) => {
-   
+
     const product = products.find((p) => p.id === value.id) || null;
     if (!product) return;
     console.log(index, SubIndex, "index subIndex");
@@ -966,12 +977,12 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       return updated;
     });
   };
+
   const handleProductTypeChange = (
     type: { name: string; id: string },
     index: number
   ) => {
-    debugger;
-    
+
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         const updatedProducts = [...prevSelectedProducts];
@@ -1077,12 +1088,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   //   groupSelectedTeeth(teeth);
   // };
 
-  const handleTeethSelectionChange = (
+  const handleTeethSelectionChange1 = (
     teeth: number[],
     pontic_teeth: number[],
     index: number
   ) => {
-    debugger;
     setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
       if (index >= 0 && index < prevSelectedProducts.length) {
         let updatedProducts = [...prevSelectedProducts];
@@ -1115,6 +1125,42 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
     groupSelectedTeeth(teeth);
   };
+
+  const handleTeethSelectionChange = (
+    teeth: number[],
+    pontic_teeth: number[],
+    index: number
+  ) => {
+    setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+      if (index >= 0 && index < prevSelectedProducts.length) {
+        let updatedProducts = [...prevSelectedProducts];
+
+        // Combine teeth and pontic_teeth without duplicates
+        const uniqueTeeth = Array.from(new Set([...teeth, ...pontic_teeth]));
+
+        // Always generate subRows, even if only one tooth is selected
+        const subRows = uniqueTeeth.map((tooth) => ({
+          ...updatedProducts[index],
+          teeth: [tooth], // Assigning a single tooth
+          pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
+        }));
+
+        updatedProducts[index] = {
+          ...updatedProducts[index],
+          teeth,
+          pontic_teeth,
+          subRows, // Now subRows are always generated
+        };
+
+        return updatedProducts;
+      } else {
+        return prevSelectedProducts;
+      }
+    });
+
+    groupSelectedTeeth(teeth);
+  };
+
 
 
 
@@ -1306,7 +1352,6 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
 
   useEffect(() => {
     if (isUpdate) {
-      debugger;
       console.log(selectedProducts, "selectedProductsselectedProducts updated");
       if (selectedProducts.length > 0) {
         const shades: ShadeData[] = selectedProducts.map((item) => {
@@ -1419,7 +1464,10 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       }
     }
   }, [isUpdate]);
+
+
   console.log(shadeData, "Shades data");
+
   const sortedShadesItems = shadesItems.sort((a, b) => {
     // Compare the names in ascending order
     if (a.name === "Custom") return 1; // "Custom" should go to the bottom
@@ -1427,6 +1475,19 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     return a.name.localeCompare(b.name); // Default sorting by name (A-Z)
   });
   console.log(selectedProducts, "selectedProducts");
+
+
+
+  useEffect(() => {
+    if (selectedProducts.length > 0 && !hasExpandedRow.current) {
+      selectedProducts.forEach((_, index) => {
+        toggleRowExpansion(index.toString());
+      });
+      hasExpandedRow.current = true;
+    }
+  }, [isUpdate, selectedProducts]);
+
+
   return (
     <div className="w-full">
       <div className="px-4 py-2 border-b border-slate-600 bg-gradient-to-r from-slate-600 via-slate-600 to-slate-700">
@@ -2911,9 +2972,37 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                   <Label className="text-xs text-gray-500">
                                     Price
                                   </Label>
-                                  <p className="text-sm font-medium">
+                                  {/* <p className="text-sm font-medium">
                                     ${row.price.toFixed(2)}
-                                  </p>
+                                  </p> */}
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={selectedProducts[index]?.price ?? ""}
+                                    onChange={(e) => {
+                                      const newPrice = Number(e.target.value) || 0; 
+
+                                      setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
+                                        const updatedProducts = [...prevSelectedProducts];
+
+                                        if (index >= 0 && index < updatedProducts.length) {
+                                          updatedProducts[index] = {
+                                            ...updatedProducts[index],
+                                            price: newPrice, 
+                                            subRows: updatedProducts[index]?.subRows?.map((subRow) => ({
+                                              ...subRow,
+                                              price: newPrice, 
+                                            })) ?? [], 
+                                          };
+                                        }
+
+                                        return updatedProducts;
+                                      });
+                                    }}
+                                    className="w-20 h-7 text-sm bg-white"
+                                  />
+
                                 </div>
                                 <Separator
                                   orientation="vertical"

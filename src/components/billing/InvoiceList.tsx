@@ -68,7 +68,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/lib/supabase";
 import { getLabDataByUserId, getLabIdByUserId } from "@/services/authService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -1537,7 +1536,7 @@ const InvoiceList: React.FC = () => {
         "Tag",
         "Status",
         "Client",
-        "Case #",
+        "INV #",
         "Amount",
         "Due Date"
       ];
@@ -1781,7 +1780,7 @@ const InvoiceList: React.FC = () => {
               </>
             ) : null}
           </div>
-          <div className="relative w-72">
+          {/* <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search invoices..."
@@ -1789,7 +1788,53 @@ const InvoiceList: React.FC = () => {
               className="pl-8"
               onChange={handleSearch}
             />
+          </div> */}
+
+
+          <div className="relative w-120 flex items-center">
+            {/* Calendar Button */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={dueDateRange ? "default" : "outline"}
+                  className="mr-2 h-8"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dueDateRange
+                    ? `${dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} - ${dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}`
+                    : "Select Custom Date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto p-0"
+                align="center"
+                side="top"
+                sideOffset={5}
+                avoidCollisions={true}
+                collisionPadding={20}
+                sticky="always"
+              >
+                <div>
+                  <DateRangePicker
+                    dateRange={dueDateRange}
+                    onDateRangeChange={setDueDateRange}
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            {/* Search Input with Search Icon */}
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search invoices..."
+                value={searchTerm}
+                className="pl-8 w-full"
+                onChange={handleSearch}
+              />
+            </div>
           </div>
+
         </div>
 
         <div className="rounded-md border overflow-hidden">
@@ -2025,7 +2070,7 @@ const InvoiceList: React.FC = () => {
                     </div>
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
-                    <div className="flex items-center">Case #</div>
+                    <div className="flex items-center">INV #</div>
                   </TableHead>
                   <TableHead
                     onClick={() => handleSort("amount")}
@@ -2054,7 +2099,7 @@ const InvoiceList: React.FC = () => {
                                 : "bg-transparent hover:bg-muted"
                             )}
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent sort trigger
+                              e.stopPropagation();
                             }}
                           >
                             <CalendarIcon className="h-4 w-4" />
@@ -2075,12 +2120,10 @@ const InvoiceList: React.FC = () => {
                           collisionPadding={20}
                           sticky="always"
                         >
-                          <div className="p-4">
-                            <DateRangePicker
-                              dateRange={dueDateRange}
-                              onDateRangeChange={setDueDateRange}
-                            />
-                          </div>
+                          <DateRangePicker
+                            dateRange={dueDateRange}
+                            onDateRangeChange={setDueDateRange}
+                          />
                         </PopoverContent>
                       </Popover>
                       {getSortIcon("dueDate")}
@@ -2196,12 +2239,15 @@ const InvoiceList: React.FC = () => {
                                   setIsPreviewModalOpen(true);
                                 }}
                               >
-                                {invoice.case_number
+                                {/* {invoice.case_number
                                   ? `INV-${invoice.case_number
                                     .split("-")
                                     .slice(1)
                                     .join("-")}`
-                                  : "No Invoice #"}
+                                  : "No Invoice #"} */}
+                                {invoice.case_number && /^\d{4}-\d+$/.test(invoice.case_number)
+                                  ? `INV-${invoice.case_number}`
+                                  : invoice.case_number || "No Invoice #"}
                               </button>
                             </HoverCardTrigger>
                             <HoverCardContent

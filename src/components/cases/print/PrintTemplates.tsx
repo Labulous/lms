@@ -1280,7 +1280,7 @@ export const AddressLabelTemplate: React.FC<PrintTemplateProps> = ({
             {caseData?.client?.client_name}
           </p>
           <p className="text-lg mb-2">{caseData?.client?.phone}</p>
-          <p className="text-lg mb-1">Case #: {caseData?.case_number}</p>
+          <p className="text-lg mb-1">Inv #: {caseData?.case_number}</p>
           <p className="text-lg">Patient: {caseData?.patient_name}</p>
         </div>
         <div>
@@ -1306,7 +1306,7 @@ export const PatientLabelTemplate: React.FC<PrintTemplateProps> = ({
   <div className="h-full flex items-center justify-center p-4">
     <div className="border border-gray-300 p-6 rounded-lg text-center w-full max-w-sm">
       <h2 className="text-2xl font-bold mb-2">{caseData?.patient_name}</h2>
-      <p className="text-xl mb-4">Case #: {caseData?.case_number}</p>
+      <p className="text-xl mb-4">INV #: {caseData?.case_number}</p>
       <div className="flex justify-center mb-2">
         <QRCodeSVG
           value={

@@ -117,7 +117,7 @@ class SearchService {
       return allCases.map(caseItem => ({
         type: 'case' as const,
         id: caseItem.id,
-        title: `${caseItem.patient_name} (Case #${caseItem.case_number})`,
+        title: `${caseItem.patient_name} (Inv #${caseItem.case_number})`,
         subtitle: `Client: ${caseItem.clients?.client_name || 'Unknown'}`,
         url: `/cases/${caseItem.id}`
       }));

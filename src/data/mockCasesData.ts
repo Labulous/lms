@@ -131,7 +131,6 @@ const saveCaseProduct = async (
   savedCaseId?: string
 ) => {
   // Step 1: Create a row in the enclosed_case table
-  debugger;
   try {
     const { data: caseProductData, error: caseProductError } = await supabase
       .from("case_products")
@@ -417,11 +416,14 @@ const saveCases = async (
     const enclosedCaseId = enclosedCaseData[0].id; // Get the enclosed_case_id
     const currentYear = new Date().getFullYear().toString().slice(-2);
     const currentMonth = String(new Date().getMonth() + 1).padStart(2, "0");
-    const sequentialNumber = String(caseCount + 1).padStart(5, "0");
+    const sequentialNumber = String(caseCount + 1);//.padStart(5, "0");
 
-    const case_number = `${labData?.name
-      .substring(0, 3)
-      .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
+    // const case_number = `${labData?.name
+    //   .substring(0, 3)
+    //   .toUpperCase()}-${currentYear}${currentMonth}-${sequentialNumber}`; // Step 2: Save cases overview, adding enclosed_case_id to the overview
+
+    const case_number = `${currentYear}${currentMonth}-${sequentialNumber}`;
+
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
@@ -589,6 +591,7 @@ const saveCases = async (
     console.error("Error in saveCases function:", error);
   }
 };
+
 const updateCases = async (
   cases: any,
   navigate?: any,
@@ -597,6 +600,8 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
+
+  debugger;
   console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
@@ -632,10 +637,13 @@ const updateCases = async (
 
     console.log("Enclosed case updated successfully:", enclosedCaseData);
 
+    
+
     // Step 2: Update cases overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
+      common_services: cases.common_services,
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase

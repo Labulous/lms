@@ -74,7 +74,7 @@ interface Client {
   id: string;
   client_name: string;
   account_number: string;
-  additional_lead_time?:string;
+  additional_lead_time?: string;
   doctors: {
     id: string;
     name: string;
@@ -159,7 +159,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
       setLoading(false);
     }
   };
-console.log(formData,"formData")
+  console.log(formData, "formData")
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
       logger.debug("OrderDetailsStep mounted", {
@@ -179,15 +179,15 @@ console.log(formData,"formData")
   // );
 
   const selectedClient = useMemo(() => {
-    const client = (clients || []).find((client) => client.id === formData.clientId);  
+    const client = (clients || []).find((client) => client.id === formData.clientId);
     if (client && formData.orderDate) {
       let newDueDate = new Date(formData.orderDate);
       const leadTime = client.additional_lead_time ? Number(client.additional_lead_time) : 0;
       if (leadTime > 0) {
         newDueDate.setDate(newDueDate.getDate() + leadTime);
-      }  
+      }
       // onChange("dueDate", newDueDate.toISOString()); 
-    }  
+    }
     return client;
   }, [clients, formData.clientId, formData.orderDate]);
 
@@ -195,6 +195,7 @@ console.log(formData,"formData")
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
+    debugger;
     const { name, value, type } = event.target;
     if (type === "checkbox") {
       const checkbox = event.target as HTMLInputElement;
@@ -393,6 +394,9 @@ console.log(formData,"formData")
         client.client_name.toLowerCase().includes(searchLower)
     );
   }, [clients, searchTerm]);
+
+  console.log("Order Date on render:", formData.orderDate);
+
 
   return (
     <div>
@@ -631,7 +635,7 @@ console.log(formData,"formData")
                 dateFormat="MM/dd/yyyy"
                 placeholder="Select order date"
                 updatedDate={
-                  formData.dueDate ? new Date(formData.orderDate) : new Date()
+                  formData.dueDate ? new Date(formData.orderDate.split("T")[0] + "T00:00:00") : new Date()
                 }
               />
               {errors.orderDate && (
@@ -704,9 +708,9 @@ console.log(formData,"formData")
                     checked={formData.is_appointment_TBD}
                     onCheckedChange={(checked) => {
                       onChange("is_appointment_TBD", checked);
-                      if (checked) {
-                        onChange("dueDate", undefined);
-                      }
+                      // if (checked) {
+                      //   onChange("dueDate", undefined);
+                      // }
                     }}
                   />
                 </div>
@@ -716,28 +720,25 @@ console.log(formData,"formData")
                   <DateTimePicker
                     date={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate)
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
                         : undefined
                     }
                     onSelect={(date) =>
-                      onChange("appointmentDate", date?.toISOString())
+                      onChange("appointmentDate", date ? date.toISOString() : undefined) 
                     }
-                    className={cn(
-                      errors.appointmentDate ? "border-red-500" : ""
-                    )}
+                    className={cn(errors.appointmentDate ? "border-red-500" : "")}
                     minDate={
-                      formData.orderDate
-                        ? new Date(formData.orderDate)
-                        : undefined
+                      formData.orderDate ? new Date(formData.orderDate) : undefined
                     }
                     dateFormat="MM/dd/yyyy h:mm aa"
                     placeholder="Select appointment date & time"
                     updatedDate={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate)
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
                         : undefined
                     }
                   />
+
                   {errors.appointmentDate && (
                     <p className="mt-1 text-sm text-red-600">
                       {errors.appointmentDate}

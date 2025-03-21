@@ -80,6 +80,9 @@ import toast from "react-hot-toast";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { useLocation } from "react-router-dom";
 import { calculateDueDate } from "@/lib/calculateDueDate";
+import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
+import { HoverCard } from "../ui/hover-card";
+import { HoverCardTrigger } from "@radix-ui/react-hover-card";
 
 const logger = createLogger({ module: "CaseList" });
 
@@ -87,6 +90,7 @@ const CaseList: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState<ExtendedCase[]>([]);
+  const [selectedCase, setSelectedCase] = useState<ExtendedCase | null>(null);
   const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState<string | null>(null);
@@ -110,6 +114,9 @@ const CaseList: React.FC = () => {
       return dueDateParam ? new Date() : undefined;
     }
   );
+
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
@@ -157,6 +164,38 @@ const CaseList: React.FC = () => {
     ? searchParams.get("dueDate")?.split("-")[2]
     : null;
   const columns: ColumnDef<ExtendedCase>[] = [
+    // {
+    //   accessorKey: "select",
+    //   header: ({ table }) => (
+    //     <Checkbox
+    //       checked={
+    //         table.getIsAllPageRowsSelected() ||
+    //         (table.getIsSomePageRowsSelected() && "indeterminate")
+    //       }
+    //       onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+    //       aria-label="Select all"
+    //     />
+    //   ),
+    //   cell: ({ row }) => (
+    //     <Checkbox
+    //       checked={row.getIsSelected()}
+    //       onCheckedChange={(value) => {
+    //         row.toggleSelected(!!value);
+    //         if (value) {
+    //           setSelectedCases((items) => [...items, row.original.id]);
+    //         } else {
+    //           const cases = selectedCasesIds.filter(
+    //             (item) => item !== row.original.id
+    //           );
+    //           setSelectedCases(cases);
+    //         }
+    //       }}
+    //       aria-label="Select row"
+    //     />
+    //   ),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
     {
       accessorKey: "select",
       header: ({ table }) => (
@@ -165,7 +204,20 @@ const CaseList: React.FC = () => {
             table.getIsAllPageRowsSelected() ||
             (table.getIsSomePageRowsSelected() && "indeterminate")
           }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          onCheckedChange={(value) => {
+            table.toggleAllPageRowsSelected(!!value);
+    
+            if (value) {
+              // Select all visible row IDs
+              const allRowIds = table
+                .getRowModel()
+                .rows.map((row) => row.original.id);
+              setSelectedCases(allRowIds);
+            } else {
+              // Clear selection
+              setSelectedCases([]);
+            }
+          }}
           aria-label="Select all"
         />
       ),
@@ -174,14 +226,11 @@ const CaseList: React.FC = () => {
           checked={row.getIsSelected()}
           onCheckedChange={(value) => {
             row.toggleSelected(!!value);
-            if (value) {
-              setSelectedCases((items) => [...items, row.original.id]);
-            } else {
-              const cases = selectedCasesIds.filter(
-                (item) => item !== row.original.id
-              );
-              setSelectedCases(cases);
-            }
+            setSelectedCases((prev) =>
+              value
+                ? [...prev, row.original.id]
+                : prev.filter((id) => id !== row.original.id)
+            );
           }}
           aria-label="Select row"
         />
@@ -189,6 +238,7 @@ const CaseList: React.FC = () => {
       enableSorting: false,
       enableHiding: false,
     },
+    
     {
       accessorKey: "working_pan_color",
       header: ({ column }) => (
@@ -390,17 +440,36 @@ const CaseList: React.FC = () => {
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           className="p-0 hover:bg-transparent"
         >
-          Case #
+          Inv #
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
+      // cell: ({ row }) => (
+      //   <Link
+      //     to={`/cases/${row.original.id}`}
+      //     className="font-medium text-primary hover:underline"
+      //   >
+      //     {row.getValue("case_number")}
+      //   </Link>
+      // ),
       cell: ({ row }) => (
-        <Link
-          to={`/cases/${row.original.id}`}
-          className="font-medium text-primary hover:underline"
+        <HoverCard
+          onOpenChange={(open) => {
+            if (open) {
+              setSelectedCase(row.original); // Set selected invoice
+              setIsPreviewModalOpen(true); // Open preview modal
+            }
+          }}
         >
-          {row.getValue("case_number")}
-        </Link>
+          <HoverCardTrigger asChild>
+            <Link
+              to={`/cases/${row.original.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {row.getValue("case_number")}
+            </Link>
+          </HoverCardTrigger>
+        </HoverCard>
       ),
     },
     {
@@ -684,7 +753,7 @@ const CaseList: React.FC = () => {
           rowDate.getFullYear() === value.getFullYear() &&
           rowDate.getMonth() === value.getMonth() &&
           dueDate?.split("T")?.[0].split("-")?.[2] ===
-            formatedDate?.toDateString().split(" ")?.[2]
+          formatedDate?.toDateString().split(" ")?.[2]
         );
       },
     },
@@ -805,9 +874,9 @@ const CaseList: React.FC = () => {
   const { data: query, error: caseError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from("cases")
-          .select(
-            `
+        .from("cases")
+        .select(
+          `
        id,
         created_at,
         received_date,
@@ -972,10 +1041,10 @@ const CaseList: React.FC = () => {
           )
           )
     `
-          )
-          .eq("lab_id", labIdData?.lab_id)
-          .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
-          .order("created_at", { ascending: false })
+        )
+        .eq("lab_id", labIdData?.lab_id)
+        .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
+        .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
     {
       revalidateOnFocus: true,
@@ -1032,7 +1101,7 @@ const CaseList: React.FC = () => {
       };
     }
   );
-  console.log(arragedNewCases,"arragedNewCases")
+  console.log(arragedNewCases, "arragedNewCases")
 
   const handleFetchData = async () => {
     try {
@@ -1212,7 +1281,7 @@ const CaseList: React.FC = () => {
         console.log("failed to fetch cases");
       }
       const arragedNewCases: ExtendedCase[] =
-        query?.map((item: any, index:number) => {
+        query?.map((item: any, index: number) => {
           return {
             ...item,
             products: item.teethProduct.map((tp: any) => ({
@@ -1230,7 +1299,7 @@ const CaseList: React.FC = () => {
               billing_type: tp.product.billing_type,
               discounted_price: tp.product.discounted_price,
               additional_services_id:
-              item?.teethProduct?.[index].additional_services_id,
+                item?.teethProduct?.[index].additional_services_id,
               teethProduct: {
                 id: tp.id,
                 is_range: tp.is_range,
@@ -1279,6 +1348,7 @@ const CaseList: React.FC = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
   useEffect(() => {
     if (previousPath === "cases") {
       handleFetchData();
@@ -1381,6 +1451,7 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1452,6 +1523,9 @@ const CaseList: React.FC = () => {
     window.open(`${window.location.origin}/print-preview`, "_blank");
   };
 
+
+ 
+
   const handlePrintSelectedOrder = () => {
     const selectedCases = table
       .getSelectedRowModel()
@@ -1521,7 +1595,7 @@ const CaseList: React.FC = () => {
             <tr>
               <th>Pan</th>
               <th>Tag</th>
-              <th>Case #</th>
+              <th>Inv #</th>
               <th>Patient Name</th>
               <th>Status</th>
               <th>Doctor</th>
@@ -1532,24 +1606,21 @@ const CaseList: React.FC = () => {
           </thead>
           <tbody>
             ${selectedCases
-              .map(
-                (caseItem) => `
+        .map(
+          (caseItem) => `
                 <tr>
                   <td>
-                    <span class="color-box" style="background-color: ${
-                      caseItem.working_pan_color || "white"
-                    };"></span>
+                    <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"
+            };"></span>
                     ${caseItem.working_pan_name || ""}
                   </td>
                   <td>
-                    ${
-                      caseItem?.tag?.name
-                        ? `<span class="color-box" style="background-color: ${
-                            caseItem.tag.color
-                          };"></span>
+                    ${caseItem?.tag?.name
+              ? `<span class="color-box" style="background-color: ${caseItem.tag.color
+              };"></span>
                         ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
-                        : ""
-                    }
+              : ""
+            }
                   </td>
                   <td>${caseItem.case_number}</td>
                   <td>${caseItem.patient_name}</td>
@@ -1560,8 +1631,8 @@ const CaseList: React.FC = () => {
                   <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
                 </tr>
               `
-              )
-              .join("")}
+        )
+        .join("")}
           </tbody>
         </table>
   
@@ -1685,6 +1756,8 @@ const CaseList: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+  if (!table) return <div>Loading...</div>;
+
   //   return <div>Error: {error}</div>;
   // }
   const amount = 20133;
@@ -1701,64 +1774,110 @@ const CaseList: React.FC = () => {
       </PageHeader>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
+          {/* <div className="flex gap-2">
+              {table && table.getSelectedRowModel().rows.length > 0 ? (
+                <>
+                  <span className="text-sm text-muted-foreground mr-2">
+                    {table.getSelectedRowModel().rows.length}{" "}
+                    {table.getSelectedRowModel().rows.length === 1
+                      ? "case"
+                      : "cases"}{" "}
+                    selected
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <PrinterIcon className="h-4 w-4 mr-2" />
+                        Print Options
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("lab-slip")}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Lab Slip
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("address-label")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Address Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("qr-code")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        QR Code Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("patient-label")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Patient Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintSelectedOrder()}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Selected Order
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
+            </div> */}
+
           <div className="flex gap-2">
-            {table.getSelectedRowModel().rows.length > 0 ? (
-              <>
-                <span className="text-sm text-muted-foreground mr-2">
-                  {table.getSelectedRowModel().rows.length}{" "}
-                  {table.getSelectedRowModel().rows.length === 1
-                    ? "case"
-                    : "cases"}{" "}
-                  selected
-                </span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <PrinterIcon className="h-4 w-4 mr-2" />
-                      Print Options
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("lab-slip")}
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Lab Slip
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("address-label")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Address Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("qr-code")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      QR Code Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("patient-label")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Patient Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintSelectedOrder()}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Selected Order
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : null}
+            <span className="text-sm text-muted-foreground mr-2">
+              {table?.getSelectedRowModel().rows.length || 0}{" "}
+              {table?.getSelectedRowModel().rows.length === 1 ? "case" : "cases"} selected
+            </span>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={table?.getSelectedRowModel().rows.length === 0} // ✅ Disable when no cases are selected
+                  className={table?.getSelectedRowModel().rows.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  <PrinterIcon className="h-4 w-4 mr-2" />
+                  Print Options
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("lab-slip")}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Lab Slip
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("address-label")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Address Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("qr-code")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  QR Code Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("patient-label")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Patient Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintSelectedOrder()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Selected Order
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
+
           <div className="flex items-center space-x-2">
             <Input
               placeholder="Filter cases..."
               value={
-                (table.getColumn("case_number")?.getFilterValue() as string) ??
+                (table && table.getColumn("case_number")?.getFilterValue() as string) ??
                 ""
               }
               onChange={(event) =>
@@ -1773,7 +1892,7 @@ const CaseList: React.FC = () => {
         <div className="rounded-md border">
           <Table>
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup, index) => (
+              {table && table.getHeaderGroups().map((headerGroup, index) => (
                 <TableRow key={index}>
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
@@ -1783,16 +1902,16 @@ const CaseList: React.FC = () => {
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {table && table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -1839,8 +1958,8 @@ const CaseList: React.FC = () => {
               </SelectContent>
             </Select>
             <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              {table && table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table && table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
           </div>
           <div className="space-x-2">
@@ -1863,25 +1982,51 @@ const CaseList: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Invoice Preview Modal */}
+      {isPreviewModalOpen && (
+        <InvoicePreviewModal
+          isOpen={isPreviewModalOpen}
+          onClose={() => {
+            setIsPreviewModalOpen(false);
+            setIsLoadingPreview(false);
+          }}
+          formData={{
+            clientId: selectedCase?.client?.id || "",
+            items: selectedCase?.invoice?.[0]?.items || [],
+            discount: selectedCase?.invoice?.[0]?.discount || 0,
+            discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage",
+            tax: selectedCase?.invoice?.[0]?.tax || 0,
+            notes: selectedCase?.invoice?.[0]?.notes || "",
+          }}
+          caseDetails={[
+            selectedCase
+              ? { ...selectedCase, labDetail: selectedCase?.labDetail as labDetail }
+              : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail },
+          ]}
+        />
+      )}
     </div>
   );
+
+  function getContrastColor(hexcolor: string): string {
+    // Default to black text for empty or invalid colors
+    if (!hexcolor || hexcolor === "transparent") return "red";
+
+    // Convert hex to RGB
+    const r = parseInt(hexcolor.slice(1, 3), 16);
+    const g = parseInt(hexcolor.slice(3, 5), 16);
+    const b = parseInt(hexcolor.slice(5, 7), 16);
+
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Return black or white depending on background color luminance
+    return luminance > 0.5 ? "#000000" : "#ffffff";
+  }
 };
 
-function getContrastColor(hexcolor: string): string {
-  // Default to black text for empty or invalid colors
-  if (!hexcolor || hexcolor === "transparent") return "red";
 
-  // Convert hex to RGB
-  const r = parseInt(hexcolor.slice(1, 3), 16);
-  const g = parseInt(hexcolor.slice(3, 5), 16);
-  const b = parseInt(hexcolor.slice(5, 7), 16);
-
-  // Calculate relative luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Return black or white depending on background color luminance
-  return luminance > 0.5 ? "#000000" : "#ffffff";
-}
 
 // export function calculateDueDate(
 //   dueDate?: string,
