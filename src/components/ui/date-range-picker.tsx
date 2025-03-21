@@ -17,11 +17,11 @@ const css = `
 }
 
 .date-range-picker {
-  position: absolute;
-  top: 100%;
+  position: relative;
+  top: 100%; /* Ensures it opens below */
   left: 0;
   z-index: 50;
-  margin-top: 0.5rem;
+  margin-top: 0rem; /* Space between trigger and picker */
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
@@ -174,6 +174,7 @@ export function DateRangePicker({
   onDateRangeChange,
   className,
 }: DateRangePickerProps) {
+  debugger;
   const [isOpen, setIsOpen] = useState(true);
   const [selectionStep, setSelectionStep] = useState<'start' | 'end'>('start');
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -217,7 +218,11 @@ export function DateRangePicker({
     onDateRangeChange(undefined);
     setSelectionStep('start');
     setIsOpen(false);
+  
+    // Allow immediate re-opening on next click
+    setTimeout(() => setIsOpen(true), 0);
   };
+  
 
   const formatDateRange = () => {
     if (!dateRange?.from) return "Select date range";
@@ -234,12 +239,15 @@ export function DateRangePicker({
     return "Date range selected";
   };
 
+  
+  
+
   const hasFilter = dateRange?.from != null;
 
   return (
     <div ref={containerRef} className={cn("date-range-picker-container", className)}>
       <style>{css}</style>
-      <div
+      {/* <div
         className={cn("date-picker-input", { "has-filter": hasFilter })}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -250,13 +258,13 @@ export function DateRangePicker({
             <X size={16} />
           </button>
         )}
-      </div>
+      </div> */}
       
       {isOpen && (
         <div className="date-range-picker">
-          <div className="selection-info">
+          {/* <div className="selection-info">
             {getSelectionText()}
-          </div>
+          </div> */}
           <DayPicker
             mode="range"
             defaultMonth={dateRange?.from}
@@ -268,15 +276,11 @@ export function DateRangePicker({
           <div className="footer">
             <button
               className="clear"
-              onClick={() => {
-                onDateRangeChange(undefined);
-                setSelectionStep('start');
-                setIsOpen(false);
-              }}
+              onClick={handleClear} 
             >
               Clear
             </button>
-            <button
+            {/* <button
               className="done"
               onClick={() => {
                 if (dateRange?.from && !dateRange.to) {
@@ -285,12 +289,12 @@ export function DateRangePicker({
                     to: dateRange.from,
                   });
                 }
-                setSelectionStep('start');
+                //setSelectionStep('start');
                 setIsOpen(false);
               }}
             >
               Done
-            </button>
+            </button> */}
           </div>
         </div>
       )}

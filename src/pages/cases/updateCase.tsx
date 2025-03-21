@@ -365,7 +365,7 @@ const UpdateCase: React.FC = () => {
     }
   );
 
-  debugger;
+ 
   let caseItem: any = caseDataa;
 
   const caseDetailApi: ExtendedCase | null = caseItem

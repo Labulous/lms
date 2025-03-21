@@ -1800,9 +1800,10 @@ const InvoiceList: React.FC = () => {
                   variant={dueDateRange ? "secondary" : "outline"}
                   className="mr-2 h-8"
                 >
-                  {dueDateRange
+                  Select Custom Date
+                  {/* {dueDateRange
                     ? `${dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} - ${dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}`
-                    : "Select Custom Date"}
+                    : "Select Custom Date"} */}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -1814,7 +1815,7 @@ const InvoiceList: React.FC = () => {
                 collisionPadding={20}
                 sticky="always"
               >
-                <div className="p-4">
+                <div>
                   <DateRangePicker
                     dateRange={dueDateRange}
                     onDateRangeChange={setDueDateRange}
@@ -1834,7 +1835,7 @@ const InvoiceList: React.FC = () => {
               />
             </div>
           </div>
-          
+
         </div>
 
         <div className="rounded-md border overflow-hidden">
@@ -2099,7 +2100,7 @@ const InvoiceList: React.FC = () => {
                                 : "bg-transparent hover:bg-muted"
                             )}
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent sort trigger
+                              e.stopPropagation(); 
                             }}
                           >
                             <CalendarIcon className="h-4 w-4" />
@@ -2120,12 +2121,10 @@ const InvoiceList: React.FC = () => {
                           collisionPadding={20}
                           sticky="always"
                         >
-                          <div className="p-4">
-                            <DateRangePicker
-                              dateRange={dueDateRange}
-                              onDateRangeChange={setDueDateRange}
-                            />
-                          </div>
+                          <DateRangePicker
+                            dateRange={dueDateRange}
+                            onDateRangeChange={setDueDateRange}
+                          />
                         </PopoverContent>
                       </Popover>
                       {getSortIcon("dueDate")}
