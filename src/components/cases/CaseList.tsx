@@ -414,7 +414,7 @@ const CaseList: React.FC = () => {
           onOpenChange={(open) => {
             if (open) {
               setSelectedCase(row.original); // Set selected invoice
-             setIsPreviewModalOpen(true); // Open preview modal
+              setIsPreviewModalOpen(true); // Open preview modal
             }
           }}
         >
@@ -1305,6 +1305,7 @@ const CaseList: React.FC = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
   useEffect(() => {
     if (previousPath === "cases") {
       handleFetchData();
@@ -1708,6 +1709,8 @@ const CaseList: React.FC = () => {
     return <div>Loading...</div>;
   }
 
+  if (!table) return <div>Loading...</div>;
+
   //   return <div>Error: {error}</div>;
   // }
   const amount = 20133;
@@ -1725,7 +1728,7 @@ const CaseList: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            {table.getSelectedRowModel().rows.length > 0 ? (
+            {table && table.getSelectedRowModel().rows.length > 0 ? (
               <>
                 <span className="text-sm text-muted-foreground mr-2">
                   {table.getSelectedRowModel().rows.length}{" "}
@@ -1781,7 +1784,7 @@ const CaseList: React.FC = () => {
             <Input
               placeholder="Filter cases..."
               value={
-                (table.getColumn("case_number")?.getFilterValue() as string) ??
+                (table && table.getColumn("case_number")?.getFilterValue() as string) ??
                 ""
               }
               onChange={(event) =>
@@ -1796,7 +1799,7 @@ const CaseList: React.FC = () => {
         <div className="rounded-md border">
           <Table>
             <TableHeader>
-              {table.getHeaderGroups().map((headerGroup, index) => (
+              {table &&  table.getHeaderGroups().map((headerGroup, index) => (
                 <TableRow key={index}>
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
@@ -1815,7 +1818,7 @@ const CaseList: React.FC = () => {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {table && table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -1862,8 +1865,8 @@ const CaseList: React.FC = () => {
               </SelectContent>
             </Select>
             <div className="flex-1 text-sm text-muted-foreground">
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
+              {table && table.getFilteredSelectedRowModel().rows.length} of{" "}
+              {table && table.getFilteredRowModel().rows.length} row(s) selected.
             </div>
           </div>
           <div className="space-x-2">
@@ -1896,39 +1899,41 @@ const CaseList: React.FC = () => {
             setIsLoadingPreview(false);
           }}
           formData={{
-            clientId: selectedCase?.client?.id || "", 
-            items: selectedCase?.invoice?.[0]?.items || [], 
-            discount: selectedCase?.invoice?.[0]?.discount || 0, 
-            discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage", 
-            tax: selectedCase?.invoice?.[0]?.tax || 0, 
-            notes: selectedCase?.invoice?.[0]?.notes || "", 
+            clientId: selectedCase?.client?.id || "",
+            items: selectedCase?.invoice?.[0]?.items || [],
+            discount: selectedCase?.invoice?.[0]?.discount || 0,
+            discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage",
+            tax: selectedCase?.invoice?.[0]?.tax || 0,
+            notes: selectedCase?.invoice?.[0]?.notes || "",
           }}
           caseDetails={[
             selectedCase
-              ? { ...selectedCase, labDetail: selectedCase.labDetail as labDetail }
-              : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail }, 
+              ? { ...selectedCase, labDetail: selectedCase?.labDetail as labDetail }
+              : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail },
           ]}
         />
       )}
     </div>
   );
+
+  function getContrastColor(hexcolor: string): string {
+    // Default to black text for empty or invalid colors
+    if (!hexcolor || hexcolor === "transparent") return "red";
+
+    // Convert hex to RGB
+    const r = parseInt(hexcolor.slice(1, 3), 16);
+    const g = parseInt(hexcolor.slice(3, 5), 16);
+    const b = parseInt(hexcolor.slice(5, 7), 16);
+
+    // Calculate relative luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    // Return black or white depending on background color luminance
+    return luminance > 0.5 ? "#000000" : "#ffffff";
+  }
 };
 
-function getContrastColor(hexcolor: string): string {
-  // Default to black text for empty or invalid colors
-  if (!hexcolor || hexcolor === "transparent") return "red";
 
-  // Convert hex to RGB
-  const r = parseInt(hexcolor.slice(1, 3), 16);
-  const g = parseInt(hexcolor.slice(3, 5), 16);
-  const b = parseInt(hexcolor.slice(5, 7), 16);
-
-  // Calculate relative luminance
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  // Return black or white depending on background color luminance
-  return luminance > 0.5 ? "#000000" : "#ffffff";
-}
 
 // export function calculateDueDate(
 //   dueDate?: string,
