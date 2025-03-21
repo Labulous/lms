@@ -1797,13 +1797,13 @@ const InvoiceList: React.FC = () => {
             <Popover>
               <PopoverTrigger asChild>
                 <Button
-                  variant={dueDateRange ? "secondary" : "outline"}
+                 variant="default"
                   className="mr-2 h-8"
                 >
-                  Select Custom Date
-                  {/* {dueDateRange
+                  <PrinterIcon className="mr-2 h-4 w-4" />
+                  {dueDateRange
                     ? `${dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} - ${dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}`
-                    : "Select Custom Date"} */}
+                    : "Select Custom Date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -2100,7 +2100,7 @@ const InvoiceList: React.FC = () => {
                                 : "bg-transparent hover:bg-muted"
                             )}
                             onClick={(e) => {
-                              e.stopPropagation(); 
+                              e.stopPropagation();
                             }}
                           >
                             <CalendarIcon className="h-4 w-4" />
