@@ -178,6 +178,7 @@ const UpdateCase: React.FC = () => {
         isDisplayAcctOnly,
         isDisplayDoctorAcctOnly,
         isHidePatientName,
+        delivery_method,
         invoice:invoices!case_id (
           id,
           case_id,
@@ -364,7 +365,7 @@ const UpdateCase: React.FC = () => {
     }
   );
 
-  //debugger;
+  debugger;
   let caseItem: any = caseDataa;
 
   const caseDetailApi: ExtendedCase | null = caseItem
@@ -554,6 +555,7 @@ const UpdateCase: React.FC = () => {
           isDisplayAcctOnly: formData.isDisplayAcctOnly,
           isDisplayDoctorAcctOnly: formData.isDisplayDoctorAcctOnly,
           isHidePatientName: formData.isHidePatientName,
+          delivery_method : formData.deliveryMethod,
           // isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
           // isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
           // isHidePatientName: transformedData.isHidePatientName || false,

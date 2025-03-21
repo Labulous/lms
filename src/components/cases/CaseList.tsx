@@ -1727,59 +1727,105 @@ const CaseList: React.FC = () => {
       </PageHeader>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
+          {/* <div className="flex gap-2">
+              {table && table.getSelectedRowModel().rows.length > 0 ? (
+                <>
+                  <span className="text-sm text-muted-foreground mr-2">
+                    {table.getSelectedRowModel().rows.length}{" "}
+                    {table.getSelectedRowModel().rows.length === 1
+                      ? "case"
+                      : "cases"}{" "}
+                    selected
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <PrinterIcon className="h-4 w-4 mr-2" />
+                        Print Options
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("lab-slip")}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Lab Slip
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("address-label")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Address Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("qr-code")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        QR Code Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintOptionSelect("patient-label")}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Patient Label
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handlePrintSelectedOrder()}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Selected Order
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
+            </div> */}
+
           <div className="flex gap-2">
-            {table && table.getSelectedRowModel().rows.length > 0 ? (
-              <>
-                <span className="text-sm text-muted-foreground mr-2">
-                  {table.getSelectedRowModel().rows.length}{" "}
-                  {table.getSelectedRowModel().rows.length === 1
-                    ? "case"
-                    : "cases"}{" "}
-                  selected
-                </span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <PrinterIcon className="h-4 w-4 mr-2" />
-                      Print Options
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("lab-slip")}
-                    >
-                      <Printer className="h-4 w-4 mr-2" />
-                      Lab Slip
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("address-label")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Address Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("qr-code")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      QR Code Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintOptionSelect("patient-label")}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Patient Label
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handlePrintSelectedOrder()}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      Selected Order
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : null}
+            <span className="text-sm text-muted-foreground mr-2">
+              {table?.getSelectedRowModel().rows.length || 0}{" "}
+              {table?.getSelectedRowModel().rows.length === 1 ? "case" : "cases"} selected
+            </span>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={table?.getSelectedRowModel().rows.length === 0} // ✅ Disable when no cases are selected
+                  className={table?.getSelectedRowModel().rows.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  <PrinterIcon className="h-4 w-4 mr-2" />
+                  Print Options
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("lab-slip")}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Lab Slip
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("address-label")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Address Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("qr-code")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  QR Code Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintOptionSelect("patient-label")}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Patient Label
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintSelectedOrder()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Selected Order
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
+
           <div className="flex items-center space-x-2">
             <Input
               placeholder="Filter cases..."
@@ -1799,7 +1845,7 @@ const CaseList: React.FC = () => {
         <div className="rounded-md border">
           <Table>
             <TableHeader>
-              {table &&  table.getHeaderGroups().map((headerGroup, index) => (
+              {table && table.getHeaderGroups().map((headerGroup, index) => (
                 <TableRow key={index}>
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
