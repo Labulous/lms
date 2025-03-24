@@ -1612,7 +1612,7 @@ const CaseList: React.FC = () => {
               display: block;
               background: white !important;
               font-family: Arial, sans-serif;
-              font-size: 10pt; /* Readable text size */
+              font-size: 8pt; /* Readable text size */
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
@@ -1651,9 +1651,9 @@ const CaseList: React.FC = () => {
               <th>Pan #</th>
               <th>Due Date</th>             
               <th>Appt. Date</th>
-              <th>Status e</th>
+              <th>Status</th>
               <th>Product</th>
-              <th>Tooth / Teeth</th>
+              <th>Tooth #</th>
               <th style="width: 50px;"></th>
             </tr>
           </thead>
@@ -1674,7 +1674,7 @@ const CaseList: React.FC = () => {
                   <td>${new Date(caseItem.appointment_date).toLocaleDateString()}</td>
                   <td>${caseItem.status}</td>
                   <td>
-                    ${[...new Set(caseItem.products?.map(product => product.product_code).filter(Boolean))].join(", ") || ""}
+                    ${[...new Set(caseItem.products?.map(product => product.name).filter(Boolean))].join(", ") || ""}
                   </td>
                   <td>
   ${(() => {
