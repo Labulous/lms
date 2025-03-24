@@ -41,6 +41,7 @@ import {
   PrinterIcon,
   FileText,
   Printer,
+  CalendarIcon,
 } from "lucide-react";
 import { getLabDataByUserId } from "@/services/authService";
 import { Badge } from "@/components/ui/badge";
@@ -206,7 +207,7 @@ const CaseList: React.FC = () => {
           }
           onCheckedChange={(value) => {
             table.toggleAllPageRowsSelected(!!value);
-    
+
             if (value) {
               // Select all visible row IDs
               const allRowIds = table
@@ -238,7 +239,7 @@ const CaseList: React.FC = () => {
       enableSorting: false,
       enableHiding: false,
     },
-    
+
     {
       accessorKey: "working_pan_color",
       header: ({ column }) => (
@@ -456,8 +457,8 @@ const CaseList: React.FC = () => {
         <HoverCard
           onOpenChange={(open) => {
             if (open) {
-              setSelectedCase(row.original); // Set selected invoice
-              setIsPreviewModalOpen(true); // Open preview modal
+              setSelectedCase(row.original);
+              setIsPreviewModalOpen(true);
             }
           }}
         >
@@ -484,8 +485,18 @@ const CaseList: React.FC = () => {
           <ChevronsUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => <div>{row.getValue("patient_name")}</div>,
+      cell: ({ row }) => {
+        const patientName = row.getValue("patient_name") as string | null;
+        return <div>{patientName || "N/A"}</div>;
+      },
+      sortingFn: (rowA, rowB) => {
+        const patientA = (rowA.getValue("patient_name") as string || "").toLowerCase();
+        const patientB = (rowB.getValue("patient_name") as string || "").toLowerCase();
+        return patientA.localeCompare(patientB);
+      },
+      sortDescFirst: false,
     },
+
     {
       accessorKey: "status",
       header: ({ column }) => (
@@ -657,10 +668,20 @@ const CaseList: React.FC = () => {
         </Button>
       ),
       cell: ({ row }) => {
-        const client = row.getValue("client") as { client_name: string } | null;
+        const client = row.getValue("client") as { client_name?: string } | null;
         return <div>{client?.client_name || "N/A"}</div>;
       },
+      sortingFn: (rowA, rowB) => {
+        const clientA =
+          (rowA.getValue("client") as { client_name?: string })?.client_name?.toLowerCase() || "";
+        const clientB =
+          (rowB.getValue("client") as { client_name?: string })?.client_name?.toLowerCase() || "";
+        return clientA.localeCompare(clientB);
+      },
+      sortDescFirst: false,
     },
+
+
     {
       accessorKey: "due_date",
       header: ({ column }) => (
@@ -757,6 +778,25 @@ const CaseList: React.FC = () => {
         );
       },
     },
+    // {
+    //   accessorKey: "received_date",
+    //   header: ({ column }) => (
+    //     <Button
+    //       variant="ghost"
+    //       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+    //       className="p-0 hover:bg-transparent"
+    //     >
+    //       Ordered Date
+    //       <ChevronsUpDown className="ml-2 h-4 w-4" />
+    //     </Button>
+    //   ),
+    //   cell: ({ row }) => {
+    //     const date = row.getValue("received_date") as string;
+    //     const createdAt = row.original.created_at;
+
+    //     return formatDate(date || createdAt);
+    //   },
+    // },
     {
       accessorKey: "received_date",
       header: ({ column }) => (
@@ -775,6 +815,13 @@ const CaseList: React.FC = () => {
 
         return formatDate(date || createdAt);
       },
+      sortingFn: (rowA, rowB) => {
+        const dateA = new Date(rowA.getValue("received_date") || rowA.original.created_at).getTime();
+        const dateB = new Date(rowB.getValue("received_date") || rowB.original.created_at).getTime();
+
+        return dateA - dateB;
+      },
+      sortDescFirst: false,
     },
     {
       id: "actions",
@@ -1022,6 +1069,7 @@ const CaseList: React.FC = () => {
                     created_at,
                     updated_at,
                     requires_shade,
+                    product_code,
                     material:materials!material_id (
                       name,
                       description,
@@ -1071,6 +1119,7 @@ const CaseList: React.FC = () => {
           requires_shade: tp.product.requires_shade,
           material: tp.product.material,
           product_type: tp.product.product_type,
+          product_code: tp.product.product_code,
           billing_type: tp.product.billing_type,
           discounted_price: tp.product.discounted_price,
           additional_services_id:
@@ -1253,6 +1302,7 @@ const CaseList: React.FC = () => {
                     created_at,
                     updated_at,
                     requires_shade,
+                    product_code,
                     material:materials!material_id (
                       name,
                       description,
@@ -1296,6 +1346,7 @@ const CaseList: React.FC = () => {
               requires_shade: tp.product.requires_shade,
               material: tp.product.material,
               product_type: tp.product.product_type,
+              product_code: tp.product.product_code,
               billing_type: tp.product.billing_type,
               discounted_price: tp.product.discounted_price,
               additional_services_id:
@@ -1451,7 +1502,6 @@ const CaseList: React.FC = () => {
   };
 
   const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
-    debugger;
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1524,9 +1574,10 @@ const CaseList: React.FC = () => {
   };
 
 
- 
+
 
   const handlePrintSelectedOrder = () => {
+    debugger
     const selectedCases = table
       .getSelectedRowModel()
       .rows.map((row) => row.original);
@@ -1535,6 +1586,7 @@ const CaseList: React.FC = () => {
       alert("Please select at least one case to print.");
       return;
     }
+
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
@@ -1560,7 +1612,7 @@ const CaseList: React.FC = () => {
               display: block;
               background: white !important;
               font-family: Arial, sans-serif;
-              font-size: 12pt; /* Readable text size */
+              font-size: 10pt; /* Readable text size */
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
@@ -1593,42 +1645,54 @@ const CaseList: React.FC = () => {
         <table>
           <thead>
             <tr>
-              <th>Pan</th>
-              <th>Tag</th>
               <th>Inv #</th>
-              <th>Patient Name</th>
-              <th>Status</th>
-              <th>Doctor</th>
-              <th>Client</th>
-              <th>Due Date</th>
-              <th>Ordered Date</th>
+              <th>Clinic</th>
+              <th>Patient</th>
+              <th>Pan #</th>
+              <th>Due Date</th>             
+              <th>Appt. Date</th>
+              <th>Status e</th>
+              <th>Product</th>
+              <th>Tooth / Teeth</th>
+              <th style="width: 50px;"></th>
             </tr>
           </thead>
           <tbody>
             ${selectedCases
         .map(
-          (caseItem) => `
+          (caseItem) => `          
                 <tr>
+                 <td>${caseItem.case_number}</td>
+                 <td>${caseItem.client.client_name}</td>
+                  <td>${caseItem.patient_name}</td>
                   <td>
                     <span class="color-box" style="background-color: ${caseItem.working_pan_color || "white"
             };"></span>
                     ${caseItem.working_pan_name || ""}
+                  </td>                  
+                 <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
+                  <td>${new Date(caseItem.appointment_date).toLocaleDateString()}</td>
+                  <td>${caseItem.status}</td>
+                  <td>
+                    ${[...new Set(caseItem.products?.map(product => product.product_code).filter(Boolean))].join(", ") || ""}
                   </td>
                   <td>
-                    ${caseItem?.tag?.name
-              ? `<span class="color-box" style="background-color: ${caseItem.tag.color
-              };"></span>
-                        ${caseItem.tag.name?.slice(0, 2).toUpperCase()}`
-              : ""
-            }
-                  </td>
-                  <td>${caseItem.case_number}</td>
-                  <td>${caseItem.patient_name}</td>
-                  <td>${caseItem.status}</td>
-                  <td>${caseItem.doctor.name}</td>
-                  <td>${caseItem.client.client_name}</td>
-                  <td>${new Date(caseItem.due_date).toLocaleDateString()}</td>
-                  <td>${new Date(caseItem.created_at).toLocaleDateString()}</td>
+  ${(() => {
+              const toothNumbers = caseItem.teethProduct
+                ?.flatMap(tp => tp.tooth_number || [])
+                .filter(Boolean)
+                .join(", ");
+
+              const ponticTeeth = caseItem.teethProduct
+                ?.flatMap(tp => tp.pontic_teeth || [])
+                .filter(Boolean)
+                .join(", ");
+
+              return [toothNumbers, ponticTeeth].filter(Boolean).join(" | ");
+            })()}
+</td>
+
+                  <td></td>
                 </tr>
               `
         )
@@ -1649,6 +1713,20 @@ const CaseList: React.FC = () => {
     `);
 
     printWindow.document.close();
+  };
+
+  const handlePrintInvoice = () => {
+    debugger
+    const selectedCases = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original);
+
+    if (selectedCases.length === 0) {
+      alert("Please select at least one case to print.");
+      return;
+    }
+    setIsPreviewModalOpen(true);
+
   };
 
   // const handlePrintSelectedOrder = () => {
@@ -1868,26 +1946,72 @@ const CaseList: React.FC = () => {
                   <FileText className="h-4 w-4 mr-2" />
                   Selected Order
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePrintInvoice()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Invoice
+                </DropdownMenuItem>
+
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
 
 
           <div className="flex items-center space-x-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-8">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Select Due Dates
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="start">
+                <div className="flex items-center justify-between pb-2">
+                  {dueDateFilter && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDueDateFilter(undefined);
+                        table.getColumn("due_date")?.setFilterValue(undefined);
+                        searchParams.delete("dueDate");
+                        setSearchParams(searchParams);
+                      }}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Clear Filter
+                    </Button>
+                  )}
+                </div>
+
+                <DayPicker
+                  mode="single"
+                  selected={dueDateFilter as Date}
+                  onSelect={(date) => {
+                    setDueDateFilter(date || undefined);
+                    if (date) {
+                      table.getColumn("due_date")?.setFilterValue(date);
+                      searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
+                    } else {
+                      table.getColumn("due_date")?.setFilterValue(undefined);
+                      searchParams.delete("dueDate");
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className="border-none"
+                />
+              </PopoverContent>
+            </Popover>
+
             <Input
               placeholder="Filter cases..."
-              value={
-                (table && table.getColumn("case_number")?.getFilterValue() as string) ??
-                ""
-              }
+              value={(table.getColumn("case_number")?.getFilterValue() as string) ?? ""}
               onChange={(event) =>
-                table
-                  .getColumn("case_number")
-                  ?.setFilterValue(event.target.value)
+                table.getColumn("case_number")?.setFilterValue(event.target.value)
               }
               className="h-8 w-[150px] lg:w-[250px]"
             />
           </div>
+
         </div>
         <div className="rounded-md border">
           <Table>
@@ -1991,19 +2115,23 @@ const CaseList: React.FC = () => {
             setIsPreviewModalOpen(false);
             setIsLoadingPreview(false);
           }}
-          formData={{
-            clientId: selectedCase?.client?.id || "",
-            items: selectedCase?.invoice?.[0]?.items || [],
-            discount: selectedCase?.invoice?.[0]?.discount || 0,
-            discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage",
-            tax: selectedCase?.invoice?.[0]?.tax || 0,
-            notes: selectedCase?.invoice?.[0]?.notes || "",
-          }}
-          caseDetails={[
-            selectedCase
-              ? { ...selectedCase, labDetail: selectedCase?.labDetail as labDetail }
-              : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail },
-          ]}
+          // formData={{
+          //   clientId: selectedCase?.client?.id || "",
+          //   items: selectedCase?.invoice?.[0]?.items || [],
+          //   discount: selectedCase?.invoice?.[0]?.discount || 0,
+          //   discountType: selectedCase?.invoice?.[0]?.discount_type || "percentage",
+          //   tax: selectedCase?.invoice?.[0]?.tax || 0,
+          //   notes: selectedCase?.invoice?.[0]?.notes || "",
+          // }}
+          caseDetails={
+            selectedCasesIds.length > 0
+              ? cases.filter((item) => selectedCasesIds.includes(item.id))
+              : [
+                selectedCase
+                  ? { ...selectedCase, labDetail: selectedCase?.labDetail as labDetail }
+                  : { ...cases[0], labDetail: cases[0]?.labDetail as labDetail },
+              ]
+          }
         />
       )}
     </div>

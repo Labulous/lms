@@ -24,6 +24,8 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({
   formData,
   caseDetails,
 }) => {
+
+  debugger;
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
