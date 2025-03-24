@@ -478,7 +478,10 @@ const CaseList: React.FC = () => {
       header: ({ column }) => (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={(e) => {
+            e.stopPropagation(); 
+            column.toggleSorting(undefined, true); 
+          }}
           className="p-0 hover:bg-transparent"
         >
           Patient Name
@@ -486,16 +489,19 @@ const CaseList: React.FC = () => {
         </Button>
       ),
       cell: ({ row }) => {
-        const patientName = row.getValue("patient_name") as string | null;
+        const patientName = row.original.patient_name as string | null;
         return <div>{patientName || "N/A"}</div>;
       },
       sortingFn: (rowA, rowB) => {
-        const patientA = (rowA.getValue("patient_name") as string || "").toLowerCase();
-        const patientB = (rowB.getValue("patient_name") as string || "").toLowerCase();
+        const patientA = (rowA.original.patient_name || "").toLowerCase();
+        const patientB = (rowB.original.patient_name || "").toLowerCase();
         return patientA.localeCompare(patientB);
       },
-      sortDescFirst: false,
+      enableSorting: true, 
+      enableMultiSort: true,
+      sortDescFirst: false, 
     },
+    
 
     {
       accessorKey: "status",
@@ -660,7 +666,10 @@ const CaseList: React.FC = () => {
       header: ({ column }) => (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={(e) => {
+            e.stopPropagation(); 
+            column.toggleSorting(undefined, true); 
+          }}
           className="p-0 hover:bg-transparent"
         >
           Client
@@ -678,8 +687,11 @@ const CaseList: React.FC = () => {
           (rowB.getValue("client") as { client_name?: string })?.client_name?.toLowerCase() || "";
         return clientA.localeCompare(clientB);
       },
-      sortDescFirst: false,
+      enableSorting: true, 
+      enableMultiSort: true, 
+      sortDescFirst: false, 
     },
+    
 
 
     {
