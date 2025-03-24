@@ -1674,112 +1674,113 @@ const InvoiceList: React.FC = () => {
       <div className="space-y-4" id="elementId">
         <div className="flex justify-between items-center">
           <div className="flex gap-2">
-            {selectedInvoices.length > 0 ? (
+            <span className="text-sm text-muted-foreground mr-2">
+              {selectedInvoices.length || 0}{" "}
+              {selectedInvoices.length === 1 ? "item" : "items"} selected
+            </span>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setIsPreviewModalOpen(true)}
+              disabled={selectedInvoices.length === 0}
+              className={selectedInvoices.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              <PrinterIcon className="mr-2 h-4 w-4" />
+              Print Invoices
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedInvoices.length === 0} // ✅ Disable when no items are selected
+                  className={selectedInvoices.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  <MoreHorizontal className="h-4 w-4 mr-2" />
+                  More Actions
+                </Button>
+              </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleBulkAction("sendReminder")}>
+                  <Bell className="mr-2 h-4 w-4" />
+                  Send Reminder
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkAction("exportCSV")}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Export to CSV
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <DropdownMenuItem
+                      className="flex items-center cursor-pointer"
+                      onSelect={(e) => e.preventDefault()}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      Change Due Date
+                    </DropdownMenuItem>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-auto p-0"
+                    align="center"
+                    side="top"
+                    sideOffset={5}
+                    avoidCollisions={true}
+                    collisionPadding={20}
+                    sticky="always"
+                  >
+                    <div className="p-4">
+                      <DateRangePicker
+                        dateRange={dueDateRange}
+                        onDateRangeChange={setDueDateRange}
+                      />
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          
+
+            {canApproveBulk && (
               <>
-                <span className="text-sm text-muted-foreground mr-2">
-                  {selectedInvoices.length}{" "}
-                  {selectedInvoices.length === 1 ? "item" : "items"} selected
-                </span>
-                {canApproveBulk && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleBulkAction("approve")}
-                      disabled={loadingState.isLoading}
-                    >
-                      {loadingState.action === "approve" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="mr-2 h-4 w-4" />
-                      )}
-                      Approve
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleBulkAction("approvePrint")}
-                      disabled={loadingState.isLoading}
-                    >
-                      {loadingState.action === "approvePrint" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <PrinterIcon className="mr-2 h-4 w-4" />
-                      )}
-                      Approve + Print
-                    </Button>
-                  </>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkAction("approve")}
+                  disabled={selectedInvoices.length === 0 || loadingState.isLoading}
+                  className={selectedInvoices.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                >
+                  {loadingState.action === "approve" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Approve
+                </Button>
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={() => setIsPreviewModalOpen(true)}
-                  disabled={loadingState.isLoading}
+                  onClick={() => handleBulkAction("approvePrint")}
+                  disabled={selectedInvoices.length === 0 || loadingState.isLoading}
+                  className={selectedInvoices.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
                 >
-                  <PrinterIcon className="mr-2 h-4 w-4" />
-                  Print Invoices
+                  {loadingState.action === "approvePrint" ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <PrinterIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Approve + Print
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={loadingState.isLoading}
-                    >
-                      <MoreHorizontal className="h-4 w-4 mr-2" />
-                      More Actions
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Bulk Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => handleBulkAction("sendReminder")}
-                      className="flex items-center"
-                    >
-                      <Bell className="mr-2 h-4 w-4" />
-                      <span>Send Reminder</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleBulkAction("exportCSV")}
-                      className="flex items-center"
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      <span>Export to CSV</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <DropdownMenuItem
-                          className="flex items-center cursor-pointer"
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          <span>Change Due Date</span>
-                        </DropdownMenuItem>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        className="w-auto p-0"
-                        align="center"
-                        side="top"
-                        sideOffset={5}
-                        avoidCollisions={true}
-                        collisionPadding={20}
-                        sticky="always"
-                      >
-                        <div className="p-4">
-                          <DateRangePicker
-                            dateRange={dueDateRange}
-                            onDateRangeChange={setDueDateRange}
-                          />
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </>
-            ) : null}
+            )}
           </div>
+
           {/* <div className="relative w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
