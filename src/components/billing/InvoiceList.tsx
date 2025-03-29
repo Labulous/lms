@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { DateRange } from "react-day-picker";
 import {
@@ -883,6 +883,23 @@ const InvoiceList: React.FC = () => {
     }
   };
 
+  const sortedInvoices = useMemo(() => {
+    return [...invoices].sort((a, b) => {
+      const valueA = a[sortConfig.key] ?? ""; 
+      const valueB = b[sortConfig.key] ?? "";
+  
+      if (typeof valueA === "number" && typeof valueB === "number") {
+        return sortConfig.direction === "asc" ? valueA - valueB : valueB - valueA;
+      }
+  
+      return sortConfig.direction === "asc"
+        ? String(valueA).localeCompare(String(valueB))
+        : String(valueB).localeCompare(String(valueA));
+    });
+  }, [invoices, sortConfig]);
+
+
+
   // Cleanup function for modal state
   useEffect(() => {
     return () => {
@@ -988,52 +1005,112 @@ const InvoiceList: React.FC = () => {
     setCurrentPage(pageNumber);
   };
 
+  // const handleSort = (key: keyof Invoice) => {
+  //   setSortConfig((prevConfig) => ({
+  //     key,
+  //     direction:
+  //       prevConfig.key === key && prevConfig.direction === "asc"
+  //         ? "desc"
+  //         : "asc",
+  //   }));
+  // };
+
+
+  // const sortData = (data: Invoice[]) => {
+  //   if (!sortConfig) return data;
+
+  //   return [...data].sort((a: any, b: any) => {
+  //     if (sortConfig.key === "date") {
+  //       const dateA = new Date(a.received_date || 0).getTime();
+  //       const dateB = new Date(b.received_date || 0).getTime();
+  //       return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+  //     }
+  //     if (sortConfig.key === "tag") {
+  //       const tagA = a.tag?.name || "";
+  //       const tagB = b.tag?.name || "";
+  //       return sortConfig.direction === "asc"
+  //         ? tagA.localeCompare(tagB)
+  //         : tagB.localeCompare(tagA);
+  //     }
+  //     if (sortConfig.key === "amount") {
+  //       const numA = Number(a.amount) || 0;
+  //       const numB = Number(b.amount) || 0;
+  //       return sortConfig.direction === "asc" ? numA - numB : numB - numA;
+  //     }
+
+  //     const valueA = String(a[sortConfig.key] || "").toLowerCase();
+  //     const valueB = String(b[sortConfig.key] || "").toLowerCase();
+
+  //     return sortConfig.direction === "asc"
+  //       ? valueA.localeCompare(valueB)
+  //       : valueB.localeCompare(valueA);
+  //   });
+  // };
+
+  // const getSortIcon = (key: keyof Invoice) => {
+  //   if (sortConfig.key !== key) {
+  //     return (
+  //       <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />
+  //     );
+  //   }
+  //   return sortConfig.direction === "asc" ? (
+  //     <ChevronUp className="ml-1 h-4 w-4" />
+  //   ) : (
+  //     <ChevronDown className="ml-1 h-4 w-4" />
+  //   );
+  // };
+
   const handleSort = (key: keyof Invoice) => {
     setSortConfig((prevConfig) => ({
       key,
       direction:
-        prevConfig.key === key && prevConfig.direction === "asc"
-          ? "desc"
-          : "asc",
+        prevConfig.key === key && prevConfig.direction === "asc" ? "desc" : "asc",
     }));
   };
-
+  
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
-
+  
     return [...data].sort((a: any, b: any) => {
+      if (sortConfig.key === "case_number") {
+        const extractNumber = (str: string) => {
+          const match = str.match(/(\d+)$/); // Extracts the last number (e.g., "237" from "2503-237")
+          return match ? parseInt(match[0], 10) : 0;
+        };
+  
+        const numA = extractNumber(a.case_number || "");
+        const numB = extractNumber(b.case_number || "");
+  
+        return sortConfig.direction === "asc" ? numA - numB : numB - numA;
+      }
+  
+      // Existing sorting logic for other fields
       if (sortConfig.key === "date") {
         const dateA = new Date(a.received_date || 0).getTime();
         const dateB = new Date(b.received_date || 0).getTime();
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
-      }
-      if (sortConfig.key === "tag") {
-        const tagA = a.tag?.name || "";
-        const tagB = b.tag?.name || "";
-        return sortConfig.direction === "asc"
-          ? tagA.localeCompare(tagB)
-          : tagB.localeCompare(tagA);
       }
       if (sortConfig.key === "amount") {
         const numA = Number(a.amount) || 0;
         const numB = Number(b.amount) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-
+  
       const valueA = String(a[sortConfig.key] || "").toLowerCase();
       const valueB = String(b[sortConfig.key] || "").toLowerCase();
-
       return sortConfig.direction === "asc"
         ? valueA.localeCompare(valueB)
         : valueB.localeCompare(valueA);
     });
   };
-
+  
+  
+  
+  
+  
   const getSortIcon = (key: keyof Invoice) => {
     if (sortConfig.key !== key) {
-      return (
-        <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />
-      );
+      return <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
     }
     return sortConfig.direction === "asc" ? (
       <ChevronUp className="ml-1 h-4 w-4" />
@@ -1041,6 +1118,8 @@ const InvoiceList: React.FC = () => {
       <ChevronDown className="ml-1 h-4 w-4" />
     );
   };
+
+  
 
   const processBatch = async (
     _invoiceBatch: string[],
@@ -1945,11 +2024,11 @@ const InvoiceList: React.FC = () => {
                     </Popover>
                   </TableHead>
                   <TableHead
-                    onClick={() => handleSort("invoiceNumber")}
+                    onClick={() => handleSort("case_number")}
                     className="cursor-pointer whitespace-nowrap"
                   >
                     <div className="flex items-center">
-                      Invoice #{getSortIcon("invoiceNumber")}
+                      Invoice #{getSortIcon("case_number")}
                     </div>
                   </TableHead>
                   <TableHead

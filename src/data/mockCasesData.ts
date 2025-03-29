@@ -601,8 +601,7 @@ const updateCases = async (
   oldDueAmount?: number
 ) => {
 
-  debugger;
-  console.log(cases, "casescases");
+   console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
     console.log(

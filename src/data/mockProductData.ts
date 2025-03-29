@@ -15,7 +15,7 @@ export interface SavedProduct {
   id: string;
   name: string;
   type: string;
-  teeth: number[];
+  teeth: (number | string)[];
   price: number;
   shades: ShadeData;
   discount: number;
@@ -23,7 +23,7 @@ export interface SavedProduct {
   additional_service_id: string;
   quantity?: number;
   subRows?: SavedProduct[];
-  pontic_teeth?: number[];
+  pontic_teeth?: (number | string)[];
   is_taxable: boolean;
   isServicesAll?: boolean;
   mainServices?: {

@@ -448,14 +448,49 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     fetchProductTypes();
   }, []);
   console.log(materials, "materials", MATERIALS);
-  const fetchedProducts = async (selectedType: string) => {
-    const selectedId = productTypes.find((item) => item.name === selectedType);
+  // const fetchedProducts = async (selectedType: string, toothType?: string) => {
+  //   debugger;
+  //   const selectedId = productTypes.find((item) => item.name === selectedType);
+  //   try {
+  //     setLoading(true);
+  //     if (!lab?.labId) {
+  //       return;
+  //     }
+  //     const { data: fetchedProducts, error } = await supabase
+  //       .from("products")
+  //       .select(
+  //         `
+  //         *,
+  //         material:materials!material_id (name, id),
+  //         product_type:product_types (name),
+  //         billing_type:billing_types (name, label)
+  //       `
+  //       )
+  //       .order("name")
+  //       .eq("lab_id", lab?.labId);
+
+  //     if (error) {
+  //       toast.error("Error fetching products from Supabase");
+  //       throw error;
+  //     }
+
+  //     setProducts(fetchedProducts);
+  //   } catch (error) {
+  //     toast.error("Failed to load products");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const fetchedProducts = async (selectedType: string, toothType?: string) => {
     try {
       setLoading(true);
       if (!lab?.labId) {
         return;
       }
-      const { data: fetchedProducts, error } = await supabase
+  
+      // Step 1: Fetch all products from Supabase
+      const { data: allProducts, error } = await supabase
         .from("products")
         .select(
           `
@@ -467,20 +502,33 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         )
         .order("name")
         .eq("lab_id", lab?.labId);
-
+  
       if (error) {
         toast.error("Error fetching products from Supabase");
         throw error;
       }
-
-      setProducts(fetchedProducts);
+  
+      let filteredProducts = allProducts; 
+  
+      // Step 2: If toothType is "Lower Arch" or "Upper Arch", filter only "Arch" billing types
+      if (toothType === "Lower Arc" || toothType === "Upper Arc") {
+        filteredProducts = allProducts.filter(
+          (product) => product.billing_type?.name === "perArch"
+        );
+      }
+  
+      setProducts(filteredProducts); // Set the filtered data
+  
     } catch (error) {
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
+  
   const fetchServices = async () => {
     if (!lab?.labId) {
       return;
@@ -527,7 +575,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     }
   }, [lab]);
 
-  const formatTeethRange = (teeth: number[]): string => {
+  const formatTeethRange = (teeth: (number | string)[]): string => {
     if (!teeth.length) return "";
 
     // Define the sequence for upper and lower teeth based on the provided data
@@ -539,11 +587,16 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     ];
 
     // Function to group consecutive teeth based on the sequence
-    const getConsecutiveGroups = (teeth: number[]): string[] => {
+    const getConsecutiveGroups = (teeth: (number | string)[]): string[] => {
       if (teeth.length === 0) return [];
 
-      // Sort the teeth based on the order in teethArray
-      const sortedTeeth = [...teeth].sort(
+      if (teeth.some((t) => typeof t === "string")) {
+        return [];
+      }
+
+      const numericTeeth = teeth as number[];
+
+      const sortedTeeth = [...numericTeeth].sort(
         (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
       );
 
@@ -554,21 +607,20 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       for (let i = 1; i <= sortedTeeth.length; i++) {
         const current = sortedTeeth[i];
 
-        // Check if the current tooth is consecutive to the previous one in the sequence
         if (teethArray.indexOf(current) !== teethArray.indexOf(prev) + 1) {
-          // End of a group
           if (groupStart === prev) {
             groups.push(groupStart.toString());
           } else {
             groups.push(`${groupStart}-${prev}`);
           }
-          groupStart = current; // Start a new group
+          groupStart = current;
         }
         prev = current;
       }
 
       return groups;
     };
+
 
     // Get consecutive groups of teeth
     const groupedTeeth = getConsecutiveGroups(teeth);
@@ -1016,39 +1068,41 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
     setSelectedType(type.name);
   };
 
-  const groupSelectedTeeth = (selectedTeeth: number[]) => {
-    // Sort selectedTeeth based on their order in teethArray
-    const sortedTeeth = selectedTeeth.sort(
+  const groupSelectedTeeth = (selectedTeeth: (number | string)[]) => {
+    if (selectedTeeth.some((t) => typeof t === "string")) {
+      return;
+    }
+
+    const numericTeeth = selectedTeeth as number[];
+
+    const sortedTeeth = numericTeeth.sort(
       (a, b) => teethArray.indexOf(a) - teethArray.indexOf(b)
     );
 
-    const groups = [];
-    let currentGroup = [sortedTeeth[0]];
+    const groups: number[][] = [];
+    let currentGroup: number[] = [sortedTeeth[0]];
 
     for (let i = 1; i < sortedTeeth.length; i++) {
       const prevIndex = teethArray.indexOf(sortedTeeth[i - 1]);
       const currentIndex = teethArray.indexOf(sortedTeeth[i]);
 
-      // Check if the current tooth is contiguous with the previous one
       if (currentIndex === prevIndex + 1) {
         currentGroup.push(sortedTeeth[i]);
       } else {
-        // If not contiguous, push the current group to groups and start a new group
         groups.push(currentGroup);
         currentGroup = [sortedTeeth[i]];
       }
     }
 
-    // Push the final group
     if (currentGroup.length) {
       groups.push(currentGroup);
     }
 
-    // Update the state with the grouped teeth
     setGroupSelectedTeethState(groups);
 
-    return groups; // Optional, for debugging or testing
+    return groups;
   };
+
 
 
 
@@ -1127,7 +1181,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
   };
 
   const handleTeethSelectionChange = (
-    teeth: number[],
+    teeth: (number | string)[],
     pontic_teeth: number[],
     index: number
   ) => {
@@ -1142,7 +1196,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
         const subRows = uniqueTeeth.map((tooth) => ({
           ...updatedProducts[index],
           teeth: [tooth], // Assigning a single tooth
-          pontic_teeth: pontic_teeth.includes(tooth) ? [tooth] : [],
+          pontic_teeth: pontic_teeth.includes(Number(tooth)) ? [tooth] : [],
         }));
 
         updatedProducts[index] = {
@@ -1693,7 +1747,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                         }}
                         disabled={loading || row.teeth.length === 0}
                         size="xs"
-                        onClick={() => fetchedProducts(row.type)}
+                        onClick={() => fetchedProducts(row.type,row.teeth?.toString())}
                         clientSpecialProducts={clientSpecialProducts}
                       />
                     </TableCell>
@@ -2981,7 +3035,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                     step="0.01"
                                     value={selectedProducts[index]?.price ?? ""}
                                     onChange={(e) => {
-                                      const newPrice = Number(e.target.value) || 0; 
+                                      const newPrice = Number(e.target.value) || 0;
 
                                       setselectedProducts((prevSelectedProducts: SavedProduct[]) => {
                                         const updatedProducts = [...prevSelectedProducts];
@@ -2989,11 +3043,11 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
                                         if (index >= 0 && index < updatedProducts.length) {
                                           updatedProducts[index] = {
                                             ...updatedProducts[index],
-                                            price: newPrice, 
+                                            price: newPrice,
                                             subRows: updatedProducts[index]?.subRows?.map((subRow) => ({
                                               ...subRow,
-                                              price: newPrice, 
-                                            })) ?? [], 
+                                              price: newPrice,
+                                            })) ?? [],
                                           };
                                         }
 

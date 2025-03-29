@@ -195,7 +195,6 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    debugger;
     const { name, value, type } = event.target;
     if (type === "checkbox") {
       const checkbox = event.target as HTMLInputElement;

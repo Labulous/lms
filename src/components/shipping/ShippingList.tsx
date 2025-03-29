@@ -3,7 +3,7 @@ import { useQuery } from '@supabase-cache-helpers/postgrest-swr';
 import { useAuth } from '@/contexts/AuthContext';
 import { getLabIdByUserId } from '@/services/authService';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, Truck, ChevronsUpDown, MoreHorizontal, Eye, Pencil, Filter } from 'lucide-react';
+import { Search, Plus, Truck, ChevronsUpDown, MoreHorizontal, Eye, Pencil, Filter, PrinterIcon, Printer, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -46,6 +46,7 @@ import {
 } from "@tanstack/react-table";
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
+import InvoicePreviewModal from '../invoices/InvoicePreviewModal';
 
 // Define interfaces for the data structure returned from Supabase
 interface ClientData {
@@ -122,6 +123,9 @@ const ShippingList: React.FC = () => {
   const [pageSize, setPageSize] = useState<number>(15);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] =
+    useState<any>(null);
 
   const pagination = useMemo(
     () => ({
@@ -148,8 +152,8 @@ const ShippingList: React.FC = () => {
   const { data: casesData, error: casesError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from('cases')
-          .select(`
+        .from('cases')
+        .select(`
             id,
             case_number,
             patient_name,
@@ -159,8 +163,8 @@ const ShippingList: React.FC = () => {
             ship_date,
             client_id
           `)
-          .eq("lab_id", labIdData?.lab_id)
-          .in('status', ['completed', 'shipped'])
+        .eq("lab_id", labIdData?.lab_id)
+        .in('status', ['completed', 'shipped'])
       : null,
     {
       revalidateOnFocus: true,
@@ -172,9 +176,9 @@ const ShippingList: React.FC = () => {
   const { data: caseClientData, error: caseClientError } = useQuery(
     casesData && casesData.length > 0
       ? supabase
-          .from('clients')
-          .select('*')
-          .in('id', casesData.map(c => c.client_id).filter(Boolean))
+        .from('clients')
+        .select('*')
+        .in('id', casesData.map(c => c.client_id).filter(Boolean))
       : null,
     {
       revalidateOnFocus: true,
@@ -186,9 +190,9 @@ const ShippingList: React.FC = () => {
   const { data: clientsData, error: clientsError } = useQuery(
     labIdData?.lab_id
       ? supabase
-          .from('clients')
-          .select('id, client_name, account_number, phone, street, city, state, zip_code')
-          .eq("lab_id", labIdData?.lab_id)
+        .from('clients')
+        .select('id, client_name, account_number, phone, street, city, state, zip_code')
+        .eq("lab_id", labIdData?.lab_id)
       : null,
     {
       revalidateOnFocus: false,
@@ -246,9 +250,9 @@ const ShippingList: React.FC = () => {
   // Filtered clients based on search term
   const filteredClients = useMemo(() => {
     if (!clientSearchTerm.trim()) return clients;
-    
-    return clients.filter(client => 
-      client.clientName.toLowerCase().includes(clientSearchTerm.toLowerCase()) || 
+
+    return clients.filter(client =>
+      client.clientName.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
       client.accountNumber.toLowerCase().includes(clientSearchTerm.toLowerCase())
     );
   }, [clients, clientSearchTerm]);
@@ -282,10 +286,10 @@ const ShippingList: React.FC = () => {
       // Make sure data is an array before mapping
       const cases = Array.isArray(casesData) ? casesData : [];
       const clients = Array.isArray(clientsData) ? clientsData : [];
-      
+
       console.log('Cases data array length:', cases.length);
       console.log('Clients data array length:', clients.length);
-      
+
       if (cases.length === 0) {
         console.log('No cases found with status completed or shipped');
         // Return early if no data to avoid further processing
@@ -295,26 +299,26 @@ const ShippingList: React.FC = () => {
         setIsRefreshing(false);
         return;
       }
-      
+
       // Create a map of client IDs to client data for quick lookup
       const clientMap = clients.reduce((map, client) => {
         map[client.id] = client;
         return map;
       }, {});
-      
+
       console.log('Client map:', clientMap);
-      
+
       const transformedData: Shipment[] = cases.map(item => {
         let city = 'N/A';
         let clientAddress = 'N/A';
         let deliveryMethod = 'Local';
         let clientName = 'Unknown Client';
-        
+
         // Get client data from the clientMap using the client_id
         const clientData = item.client_id ? clientMap[item.client_id] : null;
-        
+
         console.log('Processing case:', item.id, 'Client ID:', item.client_id, 'Client data:', clientData);
-        
+
         if (clientData) {
           clientName = clientData.client_name || 'Unknown Client';
           city = clientData.city || 'N/A';
@@ -345,15 +349,15 @@ const ShippingList: React.FC = () => {
 
       console.log('Transformed shipment data:', transformedData);
       setShipments(transformedData);
-      
+
       // Apply existing filters to the new data
       let filtered = transformedData;
-      
+
       if (selectedClient) {
         filtered = filtered.filter(shipment => shipment.clientId === selectedClient.id);
         console.log('After client filter:', filtered.length);
-      } 
-      
+      }
+
       if (searchTerm) {
         filtered = filtered.filter(shipment =>
           shipment.caseId.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -363,7 +367,7 @@ const ShippingList: React.FC = () => {
         );
         console.log('After search term filter:', filtered.length);
       }
-      
+
       setFilteredShipments(filtered);
       console.log('Final filtered shipments set:', filtered.length);
     } catch (error) {
@@ -373,7 +377,7 @@ const ShippingList: React.FC = () => {
       setIsRefreshing(false);
     }
   };
-  
+
   // Function to manually refresh data
   const refreshData = () => {
     setIsRefreshing(true);
@@ -386,13 +390,13 @@ const ShippingList: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    
+
     if (term === '') {
       // If search term is empty, apply only client filter if any
       applyFilters('', selectedClient);
       return;
     }
-    
+
     // Apply both search term and client filter
     applyFilters(term, selectedClient);
   };
@@ -422,7 +426,7 @@ const ShippingList: React.FC = () => {
 
   const applyFilters = (term: string, client: Client | null) => {
     let filtered = [...shipments];
-    
+
     // Apply search term filter
     if (term) {
       filtered = filtered.filter(shipment =>
@@ -432,14 +436,14 @@ const ShippingList: React.FC = () => {
         (shipment.trackingNumber && shipment.trackingNumber.toLowerCase().includes(term.toLowerCase()))
       );
     }
-    
+
     // Apply client filter
     if (client) {
-      filtered = filtered.filter(shipment => 
+      filtered = filtered.filter(shipment =>
         shipment.clientId === client.id
       );
     }
-    
+
     setFilteredShipments(filtered);
   };
 
@@ -663,7 +667,111 @@ const ShippingList: React.FC = () => {
     console.log('Current shipments state:', shipments.length);
     console.log('Current filteredShipments state:', filteredShipments.length);
   }, [shipments, filteredShipments]);
+
+  const handlePrintOptionSelect = (option: string, selectedId?: string[]) => {
+    const selectedCases = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original);
+
+    // if (selectedCases.length === 0 && !selectedId) return;
+    // console.log(selectedCases, "selectedCases");
+    // const previewState = {
+    //   type: option,
+    //   paperSize: "LETTER", 
+    //   caseData: {},
+    //   caseDetails: cases.filter((item) =>
+    //     selectedId && selectedId.length > 0
+    //       ? selectedId.includes(item.id)
+    //       : selectedCasesIds.includes(item.id)
+    //   ),
+    // };
+    // console.log(
+    //   cases.filter((item) =>
+    //     selectedId && selectedId.length > 0
+    //       ? selectedId.includes(item.id)
+    //       : selectedCasesIds.includes(item.id)
+    //   ),
+    //   "hi"
+    // );
+    // // Use a fixed storage key so that the data always overrides the previous entry.
+    // const storageKey = "printData";
+    // localStorage.setItem(storageKey, JSON.stringify(previewState));
+    // // Store data in localStorage
+
+    // // Open the print preview page
+    // window.open(`${window.location.origin}/print-preview`, "_blank");
+  };
+
+  const handleMarkShipped = async () => {
+    const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original.id);
   
+    if (!selectedCases.length) {
+      alert("Please select at least one case to mark as shipped.");
+      return;
+    }
+  
+    const confirmShipped = window.confirm(
+      `Are you sure you want to mark ${selectedCases.length} ${selectedCases.length === 1 ? "case" : "cases"} as shipped?`
+    );
+  
+    if (!confirmShipped) return;
+  
+    try {
+      setIsLoading(true); // Indicate loading state
+  
+      const { error } = await supabase
+        .from("cases")
+        .update({ status: "shipped" })
+        .in("id", selectedCases);
+  
+      if (error) throw error;
+  
+      alert("Selected cases have been marked as shipped.");
+  
+      // Refresh the shipping data after updating
+      await fetchShippingData();
+    } catch (error) {
+      console.error("Error updating case status:", error);
+      alert("Failed to update case status. Please try again.");
+    } finally {
+      setIsLoading(false); // Reset loading state
+    }
+  };
+  
+  const fetchShippingData = async () => {
+    debugger;
+    try {
+      setIsLoading(true);
+      
+      const { data: casesData, error: casesError } = await supabase
+        .from("cases")
+        .select("*")
+        .in("status", ["completed", "shipped"]) 
+        .eq("lab_id", labIdData?.lab_id);
+  
+      if (casesError) throw casesError;
+  
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("lab_id", labIdData?.lab_id);
+  
+      if (clientsError) throw clientsError;
+  
+      // Update table data
+      processShippingData(casesData, clientsData);
+    } catch (error) {
+      console.error("Error fetching shipping data:", error);
+      alert("Failed to refresh table data.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+
+
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <PageHeader
@@ -689,16 +797,60 @@ const ShippingList: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            {table.getSelectedRowModel().rows.length > 0 && (
-              <span className="text-sm text-muted-foreground mr-2">
+            {/* {table.getSelectedRowModel().rows.length > 0 && (
+              <><span className="text-sm text-muted-foreground mr-2">
                 {table.getSelectedRowModel().rows.length}{" "}
                 {table.getSelectedRowModel().rows.length === 1 ? "shipment" : "shipments"}{" "}
                 selected
+              </span><Button
+                variant="default"
+                size="sm"
+                onClick={() => setIsPreviewModalOpen(true)}
+                disabled={table.getSelectedRowModel().rows.length === 0}
+                className={table.getSelectedRowModel().rows.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+              >
+                  <PrinterIcon className="mr-2 h-4 w-4" />
+                  Print Options
+                </Button></>
+            )} */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground mr-2">
+                {table.getSelectedRowModel().rows.length || 0}{" "}
+                {table.getSelectedRowModel().rows.length === 1 ? "shipment" : "shipments"} selected
               </span>
-            )}
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsPreviewModalOpen(true)}
+                    disabled={table.getSelectedRowModel().rows.length === 0}
+                    className={table.getSelectedRowModel().rows.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                  >
+                    <PrinterIcon className="mr-2 h-4 w-4" />
+                    Print Options
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handlePrintOptionSelect("lab-slip")}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Invoice
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleMarkShipped()}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Mark as Shipped
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+
+
           </div>
           <div className="flex flex-1 items-center space-x-2 px-2">
-            <div className="relative w-full md:w-80">
+            {/* <div className="relative w-full md:w-80">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search shipments..."
@@ -706,8 +858,8 @@ const ShippingList: React.FC = () => {
                 onChange={handleSearch}
                 className="pl-8"
               />
-            </div>
-            
+            </div> */}
+
             {/* Client Filter Dropdown following standardized pattern */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -717,8 +869,8 @@ const ShippingList: React.FC = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-[300px]" align="start">
-                <div 
-                  className="sticky top-0 z-10 bg-background p-2 border-b" 
+                <div
+                  className="sticky top-0 z-10 bg-background p-2 border-b"
                   onClick={handleClientSearchClick}
                   onKeyDown={handleClientSearchKeyDown}
                 >
@@ -732,8 +884,8 @@ const ShippingList: React.FC = () => {
                 <div className="max-h-[300px] overflow-y-auto">
                   {filteredClients.length > 0 ? (
                     filteredClients.map(client => (
-                      <DropdownMenuItem 
-                        key={client.id} 
+                      <DropdownMenuItem
+                        key={client.id}
                         onClick={() => handleClientSelect(client)}
                         className="flex flex-col items-start py-2"
                       >
@@ -759,7 +911,7 @@ const ShippingList: React.FC = () => {
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            
+
             {selectedClient && (
               <Button variant="ghost" size="sm" onClick={clearClientFilter} className="h-8 px-2">
                 <span className="sr-only">Clear filter</span>
@@ -768,9 +920,19 @@ const ShippingList: React.FC = () => {
             )}
           </div>
           <div className="flex items-center space-x-2 px-2">
-            <Button 
-              variant="outline" 
-              onClick={refreshData} 
+            <div className="relative w-full md:w-60">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search shipments..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-8"
+              />
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={refreshData}
               className="h-8 px-2"
               disabled={isRefreshing}
             >
@@ -802,16 +964,16 @@ const ShippingList: React.FC = () => {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead 
+                    <TableHead
                       key={header.id}
                       className="whitespace-nowrap bg-muted hover:bg-muted"
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -928,6 +1090,14 @@ const ShippingList: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <InvoicePreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        caseDetails={
+          selectedInvoiceForPreview ? [selectedInvoiceForPreview] : []
+        }
+      />
     </div>
   );
 };

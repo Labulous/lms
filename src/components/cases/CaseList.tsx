@@ -118,6 +118,7 @@ const CaseList: React.FC = () => {
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [queryCases, setQueryCases] = useState<ExtendedCase[]>([]);
 
   const [tagFilter, setTagFilter] = useState<string[]>(() => {
     const tagParam = searchParams.get("tags");
@@ -479,8 +480,8 @@ const CaseList: React.FC = () => {
         <Button
           variant="ghost"
           onClick={(e) => {
-            e.stopPropagation(); 
-            column.toggleSorting(undefined, true); 
+            e.stopPropagation();
+            column.toggleSorting(undefined, true);
           }}
           className="p-0 hover:bg-transparent"
         >
@@ -497,11 +498,11 @@ const CaseList: React.FC = () => {
         const patientB = (rowB.original.patient_name || "").toLowerCase();
         return patientA.localeCompare(patientB);
       },
-      enableSorting: true, 
+      enableSorting: true,
       enableMultiSort: true,
-      sortDescFirst: false, 
+      sortDescFirst: false,
     },
-    
+
 
     {
       accessorKey: "status",
@@ -667,8 +668,8 @@ const CaseList: React.FC = () => {
         <Button
           variant="ghost"
           onClick={(e) => {
-            e.stopPropagation(); 
-            column.toggleSorting(undefined, true); 
+            e.stopPropagation();
+            column.toggleSorting(undefined, true);
           }}
           className="p-0 hover:bg-transparent"
         >
@@ -687,11 +688,11 @@ const CaseList: React.FC = () => {
           (rowB.getValue("client") as { client_name?: string })?.client_name?.toLowerCase() || "";
         return clientA.localeCompare(clientB);
       },
-      enableSorting: true, 
-      enableMultiSort: true, 
-      sortDescFirst: false, 
+      enableSorting: true,
+      enableMultiSort: true,
+      sortDescFirst: false,
     },
-    
+
 
 
     {
@@ -1103,6 +1104,8 @@ const CaseList: React.FC = () => {
     `
         )
         .eq("lab_id", labIdData?.lab_id)
+        // .not("status", "eq", "cancelled")
+        // .not("status", "eq", "Shipped") // Exclude "Shipped"
         .or("is_archive.is.null,is_archive.eq.false") // Includes null and false values
         .order("created_at", { ascending: false })
       : null, // Fetching a single record based on `activeCaseId`
@@ -1114,6 +1117,8 @@ const CaseList: React.FC = () => {
   if (caseError && labIdData?.lab_id) {
     // toast.error("failed to fetech cases");
   }
+
+  
 
   const arragedNewCases: ExtendedCase[] | undefined = query?.map(
     (item: any) => {
@@ -1395,6 +1400,9 @@ const CaseList: React.FC = () => {
       console.log("err");
     }
   };
+
+
+
   const table = useReactTable({
     data: filteredCases as ExtendedCase[],
     columns,
@@ -2048,12 +2056,12 @@ const CaseList: React.FC = () => {
             </TableHeader>
             <TableBody>
               {table && table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
+                table.getRowModel().rows.map((row: any) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                   >
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getVisibleCells().map((cell: any) => (
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,

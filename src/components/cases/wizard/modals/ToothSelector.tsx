@@ -14,8 +14,8 @@ import { MoveUp, MoveDown } from "lucide-react";
 
 interface ToothSelectorProps {
   billingType: string;
-  selectedTeeth: number[];
-  onSelectionChange: (teeth: number[], pontic?: number[]) => void;
+  selectedTeeth: (number | string)[];
+  onSelectionChange: (teeth: (number | string)[], pontic?: number[]) => void;
   addedTeethMap: Map<number, boolean> | null;
   disabled: boolean;
   selectedProduct: {
@@ -395,25 +395,23 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   const getAbutmentTeeth = (): number[] => {
     if (selectedTeeth.length < 2) return [];
 
-    const isUpperArch = selectedTeeth[0] >= 11 && selectedTeeth[0] <= 28;
-    const isLowerArch = selectedTeeth[0] >= 31 && selectedTeeth[0] <= 48;
+    if (selectedTeeth.some((t) => typeof t === "string")) {
+      return [];
+    }
+
+    const numericTeeth = selectedTeeth as number[];
+
+    const isUpperArch = numericTeeth[0] >= 11 && numericTeeth[0] <= 28;
+    const isLowerArch = numericTeeth[0] >= 31 && numericTeeth[0] <= 48;
 
     if (!isUpperArch && !isLowerArch) return [];
 
-    // Get teeth in visual order
     const visualOrderTeeth = isUpperArch
-      ? getUpperArchTeeth(
-          selectedTeeth[0],
-          selectedTeeth[selectedTeeth.length - 1]
-        )
-      : getLowerArchTeeth(
-          selectedTeeth[0],
-          selectedTeeth[selectedTeeth.length - 1]
-        );
+      ? getUpperArchTeeth(numericTeeth[0], numericTeeth[numericTeeth.length - 1])
+      : getLowerArchTeeth(numericTeeth[0], numericTeeth[numericTeeth.length - 1]);
 
-    // Return first and last teeth in the visual order if they are in the selected teeth
-    const selectedSet = new Set(selectedTeeth);
-    const abutments = [];
+    const selectedSet = new Set(numericTeeth);
+    const abutments: number[] = [];
 
     if (selectedSet.has(visualOrderTeeth[0])) {
       abutments.push(visualOrderTeeth[0]);
@@ -424,6 +422,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
     return abutments;
   };
+
 
   // Add this helper function to check if teeth are in same arch
   const areTeethInSameArch = (teeth: number[]): boolean => {
@@ -448,42 +447,42 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
   };
 
   // Updated isTeethRangeContinuous to handle cross-quadrant selections
-  const isTeethRangeContinuous = useCallback(
-    (teeth: number[]): boolean => {
-      if (teeth.length < 2) {
-        return false;
-      }
+  const isTeethRangeContinuous = useCallback((teeth: number[]): boolean => {
+    if (teeth.length < 2) return false;
 
-      // Only check same arch requirement for Bridge products
-      if (selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge")) {
-        const isUpperArch = teeth.every((t) => t >= 11 && t <= 28);
-        const isLowerArch = teeth.every((t) => t >= 31 && t <= 48);
+    // Ensure all values in teeth are numbers
+    const numericTeeth = teeth.filter((t): t is number => typeof t === "number");
 
-        if (!isUpperArch && !isLowerArch) {
-          return false;
-        }
-      }
+    // Check if the product type includes "bridge"
+    const isBridgeProduct = selectedProduct?.type?.some((t) => t.toLowerCase() === "bridge");
 
-      // Get teeth in visual order
-      const visualOrderTeeth = areTeethInSameArch(teeth)
-        ? teeth[0] >= 11 && teeth[0] <= 28
-          ? getUpperArchTeeth(teeth[0], teeth[teeth.length - 1])
-          : getLowerArchTeeth(teeth[0], teeth[teeth.length - 1])
-        : [];
+    if (isBridgeProduct) {
+      const isUpperArch = numericTeeth.every((t) => t >= 11 && t <= 28);
+      const isLowerArch = numericTeeth.every((t) => t >= 31 && t <= 48);
 
-      // Check if selected teeth match the visual order
-      const selectedSet = new Set(teeth);
-      return (
-        visualOrderTeeth.every((tooth) => selectedSet.has(tooth)) &&
-        teeth.length === visualOrderTeeth.length
-      );
-    },
-    [selectedProduct?.type]
-  );
+      if (!isUpperArch && !isLowerArch) return false;
+    }
 
-  // Effect to handle pontic mode
+    // Get teeth in visual order
+    const visualOrderTeeth = areTeethInSameArch(numericTeeth)
+      ? numericTeeth[0] >= 11 && numericTeeth[0] <= 28
+        ? getUpperArchTeeth(numericTeeth[0], numericTeeth[numericTeeth.length - 1])
+        : getLowerArchTeeth(numericTeeth[0], numericTeeth[numericTeeth.length - 1])
+      : [];
+
+    // Check if selected teeth match the visual order
+    const selectedSet = new Set(numericTeeth);
+    return (
+      visualOrderTeeth.every((tooth) => selectedSet.has(tooth)) &&
+      numericTeeth.length === visualOrderTeeth.length
+    );
+  }, [selectedProduct?.type]);
+
+
   useEffect(() => {
-    if (selectedTeeth.length < 2 || !isTeethRangeContinuous(selectedTeeth)) {
+    const numericTeeth = selectedTeeth.filter((t): t is number => typeof t === "number");
+
+    if (numericTeeth.length < 2 || !isTeethRangeContinuous(numericTeeth)) {
       // setPonticMode(false);
       // setPonticTeeth(new Set());
     }
@@ -544,7 +543,11 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   const isPonticSelectable = (toothNumber: number): boolean => {
     // Sort selectedTeeth in ascending order
-    const sortedTeeth = [...selectedTeeth].sort((a, b) => a - b);
+    if (selectedTeeth.some((t) => typeof t === "string")) {
+      return false; // If any string exists, prevent selection
+    }
+    const numericTeeth = selectedTeeth as number[];
+    const sortedTeeth = [...numericTeeth].sort((a, b) => a - b);
 
     // Check if the toothNumber is in selectedTeeth
     // if (!sortedTeeth.includes(toothNumber)) return false; // If not in selectedTeeth, it's not selectable
@@ -631,13 +634,13 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
 
   const handleToothClick = (toothNumber: number, event: React.MouseEvent) => {
     if (disabled) return;
-  
+
     // If in pontic mode, handle pontic selection separately.
     if (ponticMode) {
       handlePonticSelect(toothNumber);
       return;
     }
-  
+
     // Ctrl/Cmd-click: Toggle the clicked tooth, preserving previous selections.
     if (event.metaKey || event.ctrlKey) {
       const newIndividualSelections = new Set(individualSelections);
@@ -654,7 +657,7 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       onSelectionChange(Array.from(newIndividualSelections));
       return;
     }
-  
+
     // Shift-click: Select a range of teeth from the starting tooth to the clicked tooth.
     if (event.shiftKey) {
       // If no starting tooth is set or no teeth are selected, use the clicked tooth as start
@@ -664,10 +667,10 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
         onSelectionChange([toothNumber]);
         return;
       }
-      
+
       // Get teeth in the visual range between the start tooth and the clicked tooth
       const teethInRange = getTeethInVisualRange(rangeStartTooth, toothNumber);
-      
+
       if (teethInRange.length > 0) {
         // Create a new selection with the range
         const newRangeSelections = new Set(teethInRange);
@@ -677,26 +680,31 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
       }
       return;
     }
-  
+
     // Regular click (no modifier keys): Select just the clicked tooth
     const newSelection = new Set([toothNumber]);
     setIndividualSelections(newSelection);
     setRangeStartTooth(toothNumber); // Set this tooth as the start for potential future range selections
     onSelectionChange(Array.from(newSelection));
   };
-  
 
-  const getArchSelectionText = () => {
+
+  const getArchSelectionText = (): string => {
     if (billingType !== "perArch") return "";
 
-    const hasUpper = selectedTeeth.some((t) => t >= 11 && t <= 28);
-    const hasLower = selectedTeeth.some((t) => t >= 31 && t <= 48);
+    // Ensure selectedTeeth contains only numbers
+    const numericTeeth = selectedTeeth.filter((t): t is number => typeof t === "number");
+
+    const hasUpper = numericTeeth.some((t) => t >= 11 && t <= 28);
+    const hasLower = numericTeeth.some((t) => t >= 31 && t <= 48);
 
     if (hasUpper && hasLower) return "Both Arches";
     if (hasUpper) return "Upper Arch";
     if (hasLower) return "Lower Arch";
+
     return "";
   };
+
 
   const handleReset = () => {
     onSelectionChange([]);
@@ -771,7 +779,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="px-2"
               onClick={() =>
                 onSelectionChange([
-                  11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
+                  'Upper Arc'
+                  // 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
                 ])
               }
             >
@@ -784,7 +793,8 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="px-2"
               onClick={() =>
                 onSelectionChange([
-                  31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
+                  'Lower Arc'
+                  // 31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
                 ])
               }
             >
@@ -861,45 +871,45 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               {selectedProduct?.type?.some(
                 (t) => t.toLowerCase() === "bridge"
               ) && (
-                <>
-                  <div className="text-gray-400 text-sm text-center">
-                    Pontic Teeth
-                  </div>
+                  <>
+                    <div className="text-gray-400 text-sm text-center">
+                      Pontic Teeth
+                    </div>
 
-                  <div className="text-purple-600 text-xs font-bold text-center break-words max-w-[270px]">
-                    {groupSelectedTeethState.map((item, groupIndex) => {
-                      // Filter items based on selectedPontic
-                      const filteredTeeth = item.filter((tooth) =>
-                        selectedProduct?.selectedPontic?.includes(tooth)
-                      );
-
-                      // Get selectedPontic that are not in filteredTeeth
-                      const remainingPontic =
-                        selectedProduct?.selectedPontic?.filter(
-                          (pontic) => !item.includes(pontic)
+                    <div className="text-purple-600 text-xs font-bold text-center break-words max-w-[270px]">
+                      {groupSelectedTeethState.map((item, groupIndex) => {
+                        // Filter items based on selectedPontic
+                        const filteredTeeth = item.filter((tooth) =>
+                          selectedProduct?.selectedPontic?.includes(tooth)
                         );
 
-                      return (
-                        <div
-                          key={groupIndex}
-                          className="flex flex-wrap justify-center"
-                        >
-                          {/* Display filteredTeeth */}
-                          {filteredTeeth?.length > 0
-                            ? filteredTeeth.join(",") // Join filtered teeth with commas
-                            : "---"}{""}
-                          {/* Display remainingPontic not in selected teeth */}
-                          <div className="left-0">
-                            {remainingPontic?.length > 0
-                              ? `,${remainingPontic.join(",")}` // Join remainingPontic with commas
-                              : "---"}
+                        // Get selectedPontic that are not in filteredTeeth
+                        const remainingPontic =
+                          selectedProduct?.selectedPontic?.filter(
+                            (pontic) => !item.includes(pontic)
+                          );
+
+                        return (
+                          <div
+                            key={groupIndex}
+                            className="flex flex-wrap justify-center"
+                          >
+                            {/* Display filteredTeeth */}
+                            {filteredTeeth?.length > 0
+                              ? filteredTeeth.join(",") // Join filtered teeth with commas
+                              : "---"}{""}
+                            {/* Display remainingPontic not in selected teeth */}
+                            <div className="left-0">
+                              {remainingPontic?.length > 0
+                                ? `,${remainingPontic.join(",")}` // Join remainingPontic with commas
+                                : "---"}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
 
               {/* Display Abutment teeth */}
               {/* {(() => {
