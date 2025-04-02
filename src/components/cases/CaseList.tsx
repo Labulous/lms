@@ -6,6 +6,8 @@ import { CaseStatus, CASE_STATUS_DESCRIPTIONS } from "@/types/supabase";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { DayPicker } from "react-day-picker";
+
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import "react-day-picker/dist/style.css";
 import {
   Table,
@@ -84,7 +86,7 @@ import { calculateDueDate } from "@/lib/calculateDueDate";
 import InvoicePreviewModal from "../invoices/InvoicePreviewModal";
 import { HoverCard } from "../ui/hover-card";
 import { HoverCardTrigger } from "@radix-ui/react-hover-card";
-
+import { DateRange } from "react-day-picker";
 const logger = createLogger({ module: "CaseList" });
 
 const CaseList: React.FC = () => {
@@ -103,19 +105,27 @@ const CaseList: React.FC = () => {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
   const [selectedCasesIds, setSelectedCases] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(() => {
-    const statusParam = searchParams.get("status");
-    return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
-  });
-  const [dueDateFilter, setDueDateFilter] = useState<Date | undefined | string>(
-    () => {
-      const dueDateParam = searchParams.get("dueDate");
-
-      // Parse the date as UTC and return it, or undefined if no date is provided
-      return dueDateParam ? new Date() : undefined;
-    }
+  // const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(() => {
+  //   const statusParam = searchParams.get("status");
+  //   return statusParam ? (statusParam.split(",") as CaseStatus[]) : [];
+  // });
+  const allStatuses: CaseStatus[] = ["in_queue", "in_progress", "on_hold", "completed", "cancelled", "shipped"];
+  const [statusFilter, setStatusFilter] = useState<CaseStatus[]>(
+    allStatuses.filter(status => status !== "cancelled" && status !== "shipped")
   );
 
+  const [dueDateFilter, setDueDateFilter] = useState<DateRange | undefined>(() => {
+    debugger;
+  const dueDateParam = searchParams.get("dueDate");
+  if (!dueDateParam) return undefined;
+
+  const dates = dueDateParam.split(",");
+  return dates.length === 2
+    ? { from: new Date(dates[0]), to: new Date(dates[1]) }
+    : { from: new Date(dates[0]) }; 
+})
+
+  const [dueDateRange, setDueDateRange] = useState<DateRange | undefined>();
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [queryCases, setQueryCases] = useState<ExtendedCase[]>([]);
@@ -148,7 +158,7 @@ const CaseList: React.FC = () => {
   const location = useLocation();
   const previousPath = location?.state?.from || "No previous path available";
   if (typeof dueDateFilter === "string") {
-    const [year, month, day] = dueDateFilter.split("-").map(Number);
+    const [year, month, day] =  (dueDateFilter as string).split("-").map(Number);
     date = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0)); // Always 12 AM UTC
   } else {
     date = new Date();
@@ -161,7 +171,7 @@ const CaseList: React.FC = () => {
     "dueDateFilter"
   );
 
-  const month = date.getMonth() + 1; // Months are 0-indexed
+  const month = date.getMonth() - 1; // Months are 0-indexed
   const day = searchParams.get("dueDate")
     ? searchParams.get("dueDate")?.split("-")[2]
     : null;
@@ -538,6 +548,7 @@ const CaseList: React.FC = () => {
                   >
                     Clear
                   </Button>
+
                 )}
               </div>
               {[
@@ -692,21 +703,29 @@ const CaseList: React.FC = () => {
       enableMultiSort: true,
       sortDescFirst: false,
     },
-
-
-
     {
       accessorKey: "due_date",
       header: ({ column }) => (
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" className="p-0 hover:bg-transparent">
+              <Button variant="ghost" className="p-0 hover:bg-transparent"
+              // size = "icon"
+              >
                 <div className="flex items-center">
                   Due Date
                   {dueDateFilter && (
-                    <Badge variant="outline" className="ml-2 bg-background">
-                      {`${shortMonths[month - 1]} ${day}`}
+                    <Badge variant="outline" >
+                      {/* {`${shortMonths[month]} ${day}`} */}
+                      {/* {format(dueDateFilter.from, "LLL dd, y")}{dueDateFilter.to ? ` - ${format(dueDateFilter.to, "LLL dd, y")}` : ""
+                      } */}
+                      <CalendarIcon className="h-4 w-4 " />
+                      {/* {dueDateRange && (
+                        <span className="sr-only">
+                          {dueDateRange.from ? format(dueDateRange.from, "LLL dd, y") : ""} -{" "}
+                          {dueDateRange.to ? format(dueDateRange.to, "LLL dd, y") : ""}
+                        </span>
+                      )} */}
                     </Badge>
                   )}
                 </div>
@@ -731,23 +750,50 @@ const CaseList: React.FC = () => {
                     </Button>
                   )}
                 </div>
+                {/* <DayPicker
+                  mode="single"
+                  selected={dueDateFilter as { from: Date; to?: Date }}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      setDueDateFilter(range);
+                      column.setFilterValue(range);
+                      searchParams.set("dueDate", `${format(range.from, "yyyy-MM-dd")},${format(range.to, "yyyy-MM-dd")}`);
+                    } else if (range?.from) {
+                      setDueDateFilter(range.from);
+                      column.setFilterValue(range.from);
+                      searchParams.set("dueDate", format(range.from, "yyyy-MM-dd"));
+                    } else {
+                      setDueDateFilter(undefined);
+                      column.setFilterValue(undefined);
+                      searchParams.delete("dueDate");
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className="border-none"
+                /> */}
                 <DayPicker
                   mode="single"
-                  selected={dueDateFilter as Date}
+                  selected={dueDateFilter as Date | undefined}
                   onSelect={(date) => {
-                    setDueDateFilter(date || undefined);
-                    column.setFilterValue(date || undefined);
                     if (date) {
-                      console.log(date, "datedatedate");
+                      setDueDateFilter(prev => ({
+                        ...prev,
+                        from: date ? new Date(date) : undefined
+                      }));
 
+                      column.setFilterValue(date);
                       searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
                     } else {
+                      setDueDateFilter(undefined);
+                      column.setFilterValue(undefined);
                       searchParams.delete("dueDate");
                     }
                     setSearchParams(searchParams);
                   }}
                   className="border-none"
                 />
+
+
               </div>
             </PopoverContent>
           </Popover>
@@ -770,26 +816,18 @@ const CaseList: React.FC = () => {
         // const parsedDate = calculateDueDate(dueDate, client ?? undefined);
         // return parsedDate;
       },
-      filterFn: (row, id, value: Date) => {
+      filterFn: (row, id, value) => {
         if (!value) return true;
         let dueDate = row.getValue(id) as string;
-
         if (!dueDate) return false;
         let rowDate = new Date(dueDate);
-        // value.setUTCDate(value.getUTCDate() + 1);
-        const filterDate = searchParams.get("dueDate");
-        const formatedDate = filterDate ? new Date(filterDate) : null;
-        const utcDate = formatedDate
-          ? formatedDate.setUTCDate(formatedDate.getUTCDate() + 1)
-          : null;
 
-        return (
-          rowDate.getFullYear() === value.getFullYear() &&
-          rowDate.getMonth() === value.getMonth() &&
-          dueDate?.split("T")?.[0].split("-")?.[2] ===
-          formatedDate?.toDateString().split(" ")?.[2]
-        );
+        if (value.from && value.to) {
+          return rowDate >= value.from && rowDate <= value.to;
+        }
+        return rowDate.toDateString() === value.toDateString();
       },
+
     },
     // {
     //   accessorKey: "received_date",
@@ -1118,7 +1156,7 @@ const CaseList: React.FC = () => {
     // toast.error("failed to fetech cases");
   }
 
-  
+
 
   const arragedNewCases: ExtendedCase[] | undefined = query?.map(
     (item: any) => {
@@ -1749,6 +1787,14 @@ const CaseList: React.FC = () => {
 
   };
 
+  // Filter rows once
+  const filteredRows = table
+    ?.getRowModel()
+    .rows.filter((row: any) => statusFilter.includes(row.getValue("status") as CaseStatus));
+
+
+
+
   // const handlePrintSelectedOrder = () => {
   //   const selectedCases = table.getSelectedRowModel().rows.map((row) => row.original);
 
@@ -1979,10 +2025,17 @@ const CaseList: React.FC = () => {
           <div className="flex items-center space-x-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="h-8">
+                <Button variant="outline" className="h-8 bg-primary text-primary-foreground hover:bg-primary/90">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  Select Due Dates
+                  {dueDateFilter instanceof Date ? (
+                    format(dueDateFilter, "LLL dd, y")
+                  ) : dueDateFilter?.from ? (
+                    `${format(dueDateFilter.from, "LLL dd, y")}${dueDateFilter.to ? ` - ${format(dueDateFilter.to, "LLL dd, y")}` : ""}`
+                  ) : (
+                    "Select Custom Date"
+                  )}
                 </Button>
+
               </PopoverTrigger>
               <PopoverContent className="w-auto p-2" align="start">
                 <div className="flex items-center justify-between pb-2">
@@ -2002,23 +2055,32 @@ const CaseList: React.FC = () => {
                     </Button>
                   )}
                 </div>
-
                 <DayPicker
-                  mode="single"
-                  selected={dueDateFilter as Date}
-                  onSelect={(date) => {
-                    setDueDateFilter(date || undefined);
-                    if (date) {
-                      table.getColumn("due_date")?.setFilterValue(date);
-                      searchParams.set("dueDate", format(date, "yyyy-MM-dd"));
+
+                  mode="range"
+                  selected={dueDateFilter}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      setDueDateFilter(range);
+                      table.getColumn("due_date")?.setFilterValue(range);
+                      searchParams.set("dueDate", `${format(range.from, "yyyy-MM-dd")},${format(range.to, "yyyy-MM-dd")}`);
+                    } else if (range?.from) {
+                      setDueDateFilter(prev => ({
+                        ...prev,
+                        from: range.from ? new Date(range.from) : undefined
+                      }));
+                      table.getColumn("due_date")?.setFilterValue(range.from);
+                      searchParams.set("dueDate", format(range.from, "yyyy-MM-dd"));
                     } else {
+                      setDueDateFilter(undefined);
                       table.getColumn("due_date")?.setFilterValue(undefined);
                       searchParams.delete("dueDate");
                     }
                     setSearchParams(searchParams);
                   }}
                   className="border-none"
-                />
+                />;
+
               </PopoverContent>
             </Popover>
 
@@ -2055,33 +2117,27 @@ const CaseList: React.FC = () => {
               ))}
             </TableHeader>
             <TableBody>
-              {table && table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row: any) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell: any) => (
+              {filteredRows.length > 0 ? (
+                filteredRows.map((row) => (
+                  <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                    {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
                     No cases found.
                   </TableCell>
                 </TableRow>
               )}
-            </TableBody>
+            </TableBody>;
+
+
+
           </Table>
         </div>
         <div className="flex items-center justify-between space-x-2 py-4">
