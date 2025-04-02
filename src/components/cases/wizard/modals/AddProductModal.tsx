@@ -66,8 +66,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     setSelectedTeeth([]);
   };
 
-  const handleToothSelectionChange = (teeth: number[]) => {
-    setSelectedTeeth(teeth);
+  const handleToothSelectionChange = (teeth: (number | string)[], pontic?: number[]) => {
+    setSelectedTeeth(teeth as number[]);
   };
 
   const validateStep2 = () => {
