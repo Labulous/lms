@@ -777,22 +777,8 @@ const ShippingList: React.FC = () => {
       <PageHeader
         heading="Shipping Management"
         description="Manage and track all your shipments"
-      >
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link to="/shipping/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Add New Shipment
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link to="/shipping/providers">
-              <Truck className="mr-2 h-4 w-4" />
-              Manage Providers
-            </Link>
-          </Button>
-        </div>
-      </PageHeader>
+      />
+
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -849,21 +835,11 @@ const ShippingList: React.FC = () => {
 
 
           </div>
-          <div className="flex flex-1 items-center space-x-2 px-2">
-            {/* <div className="relative w-full md:w-80">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search shipments..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className="pl-8"
-              />
-            </div> */}
-
+          <div className="flex items-center justify-end space-x-2 px-2">
             {/* Client Filter Dropdown following standardized pattern */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2">
+                <Button variant="outline">
                   <Filter className="mr-2 h-4 w-4" />
                   {selectedClient ? `Client: ${selectedClient.clientName}` : 'Filter by Client'}
                 </Button>
@@ -918,8 +894,7 @@ const ShippingList: React.FC = () => {
                 ✕
               </Button>
             )}
-          </div>
-          <div className="flex items-center space-x-2 px-2">
+
             <div className="relative w-full md:w-60">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -929,32 +904,6 @@ const ShippingList: React.FC = () => {
                 className="pl-8"
               />
             </div>
-
-            <Button
-              variant="outline"
-              onClick={refreshData}
-              className="h-8 px-2"
-              disabled={isRefreshing}
-            >
-              <span className="sr-only">Refresh</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
-              >
-                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                <path d="M21 3v5h-5" />
-                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                <path d="M3 21v-5h5" />
-              </svg>
-            </Button>
           </div>
         </div>
 
