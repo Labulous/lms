@@ -771,6 +771,9 @@ const CaseList: React.FC = () => {
                   }}
                   className="border-none"
                 /> */}
+
+
+{/*                 
                 <DayPicker
                   mode="single"
                   selected={dueDateFilter as Date | undefined}
@@ -786,6 +789,31 @@ const CaseList: React.FC = () => {
                     } else {
                       setDueDateFilter(undefined);
                       column.setFilterValue(undefined);
+                      searchParams.delete("dueDate");
+                    }
+                    setSearchParams(searchParams);
+                  }}
+                  className="border-none"
+                /> */}
+
+<DayPicker
+                  mode="range"
+                  selected={dueDateFilter}
+                  onSelect={(range) => {
+                    if (range?.from && range?.to) {
+                      setDueDateFilter(range);
+                      table.getColumn("due_date")?.setFilterValue(range);
+                      searchParams.set("dueDate", `${format(range.from, "yyyy-MM-dd")},${format(range.to, "yyyy-MM-dd")}`);
+                    } else if (range?.from) {
+                      setDueDateFilter(prev => ({
+                        ...prev,
+                        from: range.from ? new Date(range.from) : undefined
+                      }));
+                      table.getColumn("due_date")?.setFilterValue(range.from);
+                      searchParams.set("dueDate", format(range.from, "yyyy-MM-dd"));
+                    } else {
+                      setDueDateFilter(undefined);
+                      table.getColumn("due_date")?.setFilterValue(undefined);
                       searchParams.delete("dueDate");
                     }
                     setSearchParams(searchParams);
