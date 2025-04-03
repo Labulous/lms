@@ -17,7 +17,7 @@ export interface SavedProduct {
   discount: number;
   billingType: string;
   notes?: string;
-  selectedTeeth: number[];
+  selectedTeeth: (string|number)[];
   quantity?: number;
 }
 
@@ -39,7 +39,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState("");
-  const [selectedTeeth, setSelectedTeeth] = useState<number[]>([]);
+  const [selectedTeeth, setSelectedTeeth] = useState<(string|number)[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [ponticTeeth, setPonticTeeth] = useState<Set<number>>(new Set());
 
@@ -66,7 +66,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
     setSelectedTeeth([]);
   };
 
-  const handleToothSelectionChange = (teeth: number[]) => {
+  const handleToothSelectionChange = (teeth: (string | number)[]) => {
     setSelectedTeeth(teeth);
   };
 
@@ -170,12 +170,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                       onChange={(e) =>
                         handleTypeSelect(
                           e.target.value as
-                            | "Crown"
-                            | "Bridge"
-                            | "Removable"
-                            | "Implant"
-                            | "Coping"
-                            | "Appliance"
+                          | "Crown"
+                          | "Bridge"
+                          | "Removable"
+                          | "Implant"
+                          | "Coping"
+                          | "Appliance"
                         )
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -201,7 +201,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({
                         </label>
                         <ToothSelector
                           billingType={selectedProduct.billingType}
-                          onSelectionChange={handleToothSelectionChange}
+                          //onSelectionChange={handleToothSelectionChange}
+                          onSelectionChange={(teeth: (string | number)[]) => handleToothSelectionChange(teeth)}
                           selectedTeeth={[]}
                           addedTeethMap={null}
                           disabled={false}
