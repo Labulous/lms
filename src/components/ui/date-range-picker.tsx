@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { DayPicker, DateRange } from 'react-day-picker';
-import { format, isBefore } from 'date-fns';
+import { format, isBefore,setHours, setMinutes, setSeconds, setMilliseconds } from 'date-fns';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import 'react-day-picker/dist/style.css';
 import cn from 'classnames';
+
 
 interface DateRangePickerProps {
   dateRange: DateRange | undefined;
@@ -179,6 +180,11 @@ export function DateRangePicker({
   const [selectionStep, setSelectionStep] = useState<'start' | 'end'>('start');
   const containerRef = React.useRef<HTMLDivElement>(null);
 
+  const toUtcMidnight = (date: Date) => {
+    return setMilliseconds(setSeconds(setMinutes(setHours(date, 0), 0), 0), 0);
+  };
+  
+
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -190,6 +196,29 @@ export function DateRangePicker({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // const handleSelect = (range: DateRange | undefined) => {
+  //   if (!range?.from) {
+  //     onDateRangeChange(undefined);
+  //     setSelectionStep('start');
+  //     return;
+  //   }
+
+  //   if (selectionStep === 'start') {
+  //     onDateRangeChange({ from: range.from, to: undefined });
+  //     setSelectionStep('end');
+  //     return;
+  //   }
+
+  //   if (selectionStep === 'end' && range.to) {
+  //     if (isBefore(range.to, range.from)) {
+  //       onDateRangeChange({ from: range.to, to: range.from });
+  //     } else {
+  //       onDateRangeChange(range);
+  //     }
+  //     setSelectionStep('start');
+  //   }
+  // };
+
   const handleSelect = (range: DateRange | undefined) => {
     if (!range?.from) {
       onDateRangeChange(undefined);
@@ -197,22 +226,27 @@ export function DateRangePicker({
       return;
     }
 
+    const fromUtc = toUtcMidnight(range.from);
+    const toUtc = range.to ? toUtcMidnight(range.to) : fromUtc;
+
     if (selectionStep === 'start') {
-      onDateRangeChange({ from: range.from, to: undefined });
+      onDateRangeChange({ from: fromUtc, to: fromUtc });
       setSelectionStep('end');
       return;
     }
 
     if (selectionStep === 'end' && range.to) {
-      if (isBefore(range.to, range.from)) {
-        onDateRangeChange({ from: range.to, to: range.from });
+      if (isBefore(toUtc, fromUtc)) {
+        onDateRangeChange({ from: toUtc, to: fromUtc });
       } else {
-        onDateRangeChange(range);
+        onDateRangeChange({ from: fromUtc, to: toUtc });
       }
       setSelectionStep('start');
     }
   };
 
+
+  
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDateRangeChange(undefined);

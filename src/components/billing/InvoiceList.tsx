@@ -885,13 +885,13 @@ const InvoiceList: React.FC = () => {
 
   const sortedInvoices = useMemo(() => {
     return [...invoices].sort((a, b) => {
-      const valueA = a[sortConfig.key] ?? ""; 
+      const valueA = a[sortConfig.key] ?? "";
       const valueB = b[sortConfig.key] ?? "";
-  
+
       if (typeof valueA === "number" && typeof valueB === "number") {
         return sortConfig.direction === "asc" ? valueA - valueB : valueB - valueA;
       }
-  
+
       return sortConfig.direction === "asc"
         ? String(valueA).localeCompare(String(valueB))
         : String(valueB).localeCompare(String(valueA));
@@ -1067,23 +1067,23 @@ const InvoiceList: React.FC = () => {
         prevConfig.key === key && prevConfig.direction === "asc" ? "desc" : "asc",
     }));
   };
-  
+
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
-  
+
     return [...data].sort((a: any, b: any) => {
       if (sortConfig.key === "case_number") {
         const extractNumber = (str: string) => {
           const match = str.match(/(\d+)$/); // Extracts the last number (e.g., "237" from "2503-237")
           return match ? parseInt(match[0], 10) : 0;
         };
-  
+
         const numA = extractNumber(a.case_number || "");
         const numB = extractNumber(b.case_number || "");
-  
+
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-  
+
       // Existing sorting logic for other fields
       if (sortConfig.key === "date") {
         const dateA = new Date(a.received_date || 0).getTime();
@@ -1095,7 +1095,7 @@ const InvoiceList: React.FC = () => {
         const numB = Number(b.amount) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-  
+
       const valueA = String(a[sortConfig.key] || "").toLowerCase();
       const valueB = String(b[sortConfig.key] || "").toLowerCase();
       return sortConfig.direction === "asc"
@@ -1103,11 +1103,11 @@ const InvoiceList: React.FC = () => {
         : valueB.localeCompare(valueA);
     });
   };
-  
-  
-  
-  
-  
+
+
+
+
+
   const getSortIcon = (key: keyof Invoice) => {
     if (sortConfig.key !== key) {
       return <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
@@ -1119,7 +1119,7 @@ const InvoiceList: React.FC = () => {
     );
   };
 
-  
+
 
   const processBatch = async (
     _invoiceBatch: string[],
@@ -1371,27 +1371,57 @@ const InvoiceList: React.FC = () => {
       );
     }
 
+    // filtered = filtered.filter((invoice) => {
+    //   const matchesDate =
+    //     !dateFilter ||
+    //     (invoice.date &&
+    //       format(new Date(invoice.date), "yyyy-MM-dd") ===
+    //       format(dateFilter, "yyyy-MM-dd"));
+
+    //   const matchesDueDate = !dueDateRange || !invoice.invoice?.[0]?.due_date
+    //     ? true
+    //     : (dueDateRange.from && dueDateRange.to)
+    //       ? (new Date(invoice.invoice[0].due_date) >= dueDateRange.from &&
+    //         new Date(invoice.invoice[0].due_date) <= dueDateRange.to)
+    //       : dueDateRange.from
+    //         ? new Date(invoice.invoice[0].due_date) >= dueDateRange.from
+    //         : dueDateRange.to
+    //           ? new Date(invoice.invoice[0].due_date) <= dueDateRange.to
+    //           : true;
+
+    //   return matchesDate && matchesDueDate;
+    // });
+
     filtered = filtered.filter((invoice) => {
       const matchesDate =
         !dateFilter ||
         (invoice.date &&
-          format(new Date(invoice.date), "yyyy-MM-dd") ===
-          format(dateFilter, "yyyy-MM-dd"));
+          format(toUtcMidnight(new Date(invoice.date)), "yyyy-MM-dd") ===
+          format(toUtcMidnight(new Date(dateFilter)), "yyyy-MM-dd"));
 
-      const matchesDueDate = !dueDateRange || !invoice.invoice?.[0]?.due_date
+      const invoiceDueDate = invoice.invoice?.[0]?.due_date
+        ? toUtcMidnight(new Date(invoice.invoice[0].due_date)) // Ensure UTC midnight
+        : null;
+
+      const matchesDueDate = !dueDateRange || !invoiceDueDate
         ? true
-        : (dueDateRange.from && dueDateRange.to)
-          ? (new Date(invoice.invoice[0].due_date) >= dueDateRange.from &&
-            new Date(invoice.invoice[0].due_date) <= dueDateRange.to)
+        : dueDateRange.from && dueDateRange.to
+          ? (invoiceDueDate >= toUtcMidnight(new Date(dueDateRange.from)) &&
+            invoiceDueDate <= toUtcMidnight(new Date(dueDateRange.to)))
           : dueDateRange.from
-            ? new Date(invoice.invoice[0].due_date) >= dueDateRange.from
+            ? invoiceDueDate >= toUtcMidnight(new Date(dueDateRange.from))
             : dueDateRange.to
-              ? new Date(invoice.invoice[0].due_date) <= dueDateRange.to
+              ? invoiceDueDate <= toUtcMidnight(new Date(dueDateRange.to))
               : true;
 
       return matchesDate && matchesDueDate;
     });
+    const toUtcMidnight = (date: Date) => {
+      return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    };
+ 
 
+    
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
         statusFilter.includes(invoice.status)
@@ -1824,7 +1854,7 @@ const InvoiceList: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-          
+
 
             {canApproveBulk && (
               <>
@@ -2425,11 +2455,22 @@ const InvoiceList: React.FC = () => {
                             minimumFractionDigits: 2,
                           })}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        {/* <TableCell className="whitespace-nowrap">
                           {new Date(
                             invoice?.due_date ?? "2000-01-01"
                           ).toLocaleDateString()}
+                        </TableCell> */}
+                        <TableCell className="whitespace-nowrap">
+                          {invoice?.due_date
+                            ? new Intl.DateTimeFormat("en-US", {
+                              year: "2-digit",
+                              month: "2-digit",
+                              day: "2-digit",
+                              timeZone: "UTC",
+                            }).format(new Date(invoice.due_date))
+                            : "N/A"}
                         </TableCell>
+
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

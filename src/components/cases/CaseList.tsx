@@ -816,17 +816,35 @@ const CaseList: React.FC = () => {
         // const parsedDate = calculateDueDate(dueDate, client ?? undefined);
         // return parsedDate;
       },
+      // filterFn: (row, id, value) => {
+      //   if (!value) return true;
+      //   let dueDate = row.getValue(id) as string;
+      //   if (!dueDate) return false;
+      //   let rowDate = new Date(dueDate);
+
+      //   if (value.from && value.to) {
+      //     return rowDate >= value.from && rowDate <= value.to;
+      //   }
+      //   return rowDate.toDateString() === value?.toDateString();
+      // },
       filterFn: (row, id, value) => {
-        if (!value) return true;
+        if (!value) return true; 
         let dueDate = row.getValue(id) as string;
         if (!dueDate) return false;
+      
         let rowDate = new Date(dueDate);
-
+      
         if (value.from && value.to) {
-          return rowDate >= value.from && rowDate <= value.to;
+          return rowDate >= new Date(value.from) && rowDate <= new Date(value.to);
         }
-        return rowDate.toDateString() === value.toDateString();
+      
+        if (value.from) {
+          return rowDate.toDateString() === new Date(value.from).toDateString();
+        }
+      
+        return false; 
       },
+
 
     },
     // {
@@ -2079,7 +2097,7 @@ const CaseList: React.FC = () => {
                     setSearchParams(searchParams);
                   }}
                   className="border-none"
-                />;
+                />
 
               </PopoverContent>
             </Popover>
@@ -2134,7 +2152,7 @@ const CaseList: React.FC = () => {
                   </TableCell>
                 </TableRow>
               )}
-            </TableBody>;
+            </TableBody>
 
 
 
