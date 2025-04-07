@@ -122,6 +122,19 @@ interface ModalState {
   type: BulkAction | null;
 }
 
+// Client interface following the standardized pattern across the application
+interface Client {
+  id: string;
+  accountNumber: string;
+  clientName: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string;
+}
+
+
 interface LoadingState {
   action: BulkAction | null;
   isLoading: boolean;
@@ -1973,15 +1986,15 @@ const InvoiceList: React.FC = () => {
                       }}
                     />
                   </TableHead>
-                  <TableHead
-                    onClick={() => handleSort("date")}
-                    className="cursor-pointer whitespace-nowrap"
-                  >
-                    <div className="flex items-center">
-                      Date
-                      {getSortIcon("date")}
-                    </div>
-                  </TableHead>
+                    <TableHead
+                      onClick={() => handleSort("date")}
+                      className="cursor-pointer whitespace-nowrap"
+                    >
+                      <div className="flex items-center">
+                        Date
+                        {getSortIcon("date")}
+                      </div>
+                    </TableHead>
                   <TableHead
                     className="cursor-pointer whitespace-nowrap"
                   >

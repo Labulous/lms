@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -16,13 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MoreVertical, PrinterIcon, X } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronsUpDown, ChevronUp, Eye, Filter, MoreVertical, PrinterIcon, Search, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@radix-ui/react-dropdown-menu";
 import { Checkbox } from "../ui/checkbox";
@@ -30,6 +31,29 @@ import AdjustmentReceiptPreviewModal from "./print/AdjustmentReceiptPreviewModal
 import { labDetail } from "@/types/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { Popover, PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
+import { DateRangePicker } from "../ui/date-range-picker";
+import { format } from "date-fns-tz/format";
+import { useQuery } from '@supabase-cache-helpers/postgrest-swr';
+import { DateRange } from "react-day-picker";
+
+type SortConfig = {
+  key: keyof Adjustment;
+  direction: "asc" | "desc";
+};
+
+// Client interface following the standardized pattern across the application
+interface Client {
+  id: string;
+  accountNumber: string;
+  clientName: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string;
+}
+
 
 // Mock data for development
 const mockAdjustments = [
@@ -62,6 +86,19 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   const [labs, setLabs] = useState<labDetail[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const { user } = useAuth();
+  const [paymentDateRange, setPaymentDateRange] = useState<DateRange | undefined>();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<Client[]>([]);
+
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "payment_date",
+    direction: "desc",
+  });
+
 
   const clearSearch = () => {
     setSearchQuery("");
@@ -148,30 +185,331 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
 
   console.log(adjustments, "adjustmentsadjustments");
 
+  const handleSort = (key: keyof Adjustment) => {
+    setSortConfig((prevConfig) => ({
+      key,
+      direction:
+        prevConfig.key === key && prevConfig.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+
+  const getSortIcon = (key: keyof Adjustment) => {
+    if (sortConfig.key !== key) {
+      return <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
+    }
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-1 h-4 w-4" />
+    );
+  };
+
+  const sortData = (data: Adjustment[]) => {
+    if (!sortConfig) return data;
+
+    return [...data].sort((a: Adjustment, b: Adjustment) => {
+      const { key, direction } = sortConfig;
+
+      // Sort by payment_date (date comparison)
+      if (key === "payment_date") {
+        const dateA = new Date(a.payment_date || 0).getTime();
+        const dateB = new Date(b.payment_date || 0).getTime();
+        return direction === "asc" ? dateA - dateB : dateB - dateA;
+      }
+
+      // Special case: sort by nested client.client_name
+      if (key === "client") {
+        const aName = a.client?.client_name?.toLowerCase() ?? "";
+        const bName = b.client?.client_name?.toLowerCase() ?? "";
+        return direction === "asc"
+          ? aName.localeCompare(bName)
+          : bName.localeCompare(aName);
+      }
+
+      // Generic string or number comparison
+      const aVal = a[key] ?? "";
+      const bVal = b[key] ?? "";
+
+      // Handle numbers (e.g., credit_amount, debit_amount)
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return direction === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      // Handle strings
+      const strA = String(aVal).toLowerCase();
+      const strB = String(bVal).toLowerCase();
+      return direction === "asc"
+        ? strA.localeCompare(strB)
+        : strB.localeCompare(strA);
+    });
+  };
+
+  // First, get the lab_id of the logged-in user
+  const {
+    data: labIdData,
+    error: labError,
+    isLoading: isLabLoading,
+  } = useQuery(
+    supabase.from("users").select("lab_id").eq("id", user?.id).single(),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  // Use the useQuery hook to fetch all clients for the current lab (for dropdown)
+  const { data: clientsData, error: clientsError } = useQuery(
+    labIdData?.lab_id
+      ? supabase
+        .from('clients')
+        .select('id, client_name, account_number, phone, street, city, state, zip_code')
+        .eq("lab_id", labIdData?.lab_id)
+      : null,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  // Process clients data when it changes
+  useEffect(() => {
+    if (clientsError) {
+      console.error('Error fetching clients:', clientsError);
+      return;
+    }
+
+    if (clientsData) {
+      console.log('Raw client data from Supabase:', clientsData);
+      processClientData(clientsData);
+    }
+  }, [clientsData, clientsError]);
+
+
+  // Filtered clients based on search term
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm.trim()) return clients;
+
+    return clients.filter(client =>
+      client.clientName.toLowerCase().includes(clientSearchTerm.toLowerCase()) ||
+      client.clientName.toLowerCase().includes(clientSearchTerm.toLowerCase())
+    );
+  }, [clients, clientSearchTerm]);
+
+
+  // Process client data from useQuery hook
+  const processClientData = (data: any[]) => {
+    try {
+      // Transform to match the standardized client interface
+      const transformedClients: Client[] = data.map(client => ({
+        id: client.id,
+        clientName: client.client_name || '',
+        accountNumber: client.account_number || '',
+        phone: client.phone || '',
+        street: client.street || '',
+        city: client.city || '',
+        state: client.state || '',
+        zipCode: client.zip_code || ''
+      }));
+
+      setClients(transformedClients);
+    } catch (error) {
+      console.error('Error processing client data:', error);
+    }
+  };
+
+
+  const handleClientSearchClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleClientSearchKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+
+  const handleClientSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setClientSearchTerm(e.target.value);
+  };
+
+  const handleClientSelect = (client: Client) => {
+    setSelectedClient(client);
+    //applyFilters(searchTerm, client);
+  };
+
+
+  const clearClientFilter = () => {
+    setSelectedClient(null);
+    setClientSearchTerm('');
+    //applyFilters(searchTerm, null);
+  };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value.toLowerCase();
+    setSearchTerm(term);
+
+    if (term === '') {
+      // If search term is empty, apply only client filter if any
+      //applyFilters('', selectedClient);
+      return;
+    }
+
+    // Apply both search term and client filter
+    //applyFilters(term, selectedClient);
+  };
+
+ const applyFilters = (term: string, client: Client | null) => {
+    let filtered = [...adjustments];
+
+    // // Apply search term filter
+    // if (term) {
+    //   filtered = filtered.filter(adjustment =>
+    //     adjustment.toLowerCase().includes(term.toLowerCase()) ||
+    //     shipment.clientName.toLowerCase().includes(term.toLowerCase()) ||
+    //     shipment.patientName.toLowerCase().includes(term.toLowerCase()) ||
+    //     (shipment.trackingNumber && shipment.trackingNumber.toLowerCase().includes(term.toLowerCase()))
+    //   );
+    // }
+
+    // Apply client filter
+    // if (client) {
+    //   filtered = filtered.filter(adjustments =>
+    //     adjustments.client === client
+    //   );
+    // }
+
+    // setFilteredShipments(filtered);
+  };
+
+
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center">
-          {selectedAdjustments && selectedAdjustments.length > 0 && (
-            <>
-              <span className="text-sm text-muted-foreground mr-2">
-                {selectedAdjustments.length}{" "}
-                {selectedAdjustments.length === 1 ? "item" : "items"} selected
-              </span>
+          {/* {selectedAdjustments && selectedAdjustments.length > 0 && ( */}
+          <>
+            <span className="text-sm text-muted-foreground mr-2">
+              {selectedAdjustments.length}{" "}
+              {selectedAdjustments.length === 1 ? "item" : "items"} selected
+            </span>
 
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setIsPreviewModalOpen(true)}
-              >
-                <PrinterIcon className="mr-2 h-4 w-4" />
-                Print Invoices
-              </Button>
-            </>
-          )}
+            {/* <Button
+              variant="default"
+              size="sm"
+              onClick={() => setIsPreviewModalOpen(true)}
+            >
+              <PrinterIcon className="mr-2 h-4 w-4" />
+              Print Invoices
+            </Button> */}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setIsPreviewModalOpen(true)}
+              disabled={selectedAdjustments.length === 0}
+              className={selectedAdjustments.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              <PrinterIcon className="mr-2 h-4 w-4" />
+              Print Invoices
+            </Button>
+          </>
+          {/* )} */}
         </div>
 
         <div className="flex items-center gap-4">
+
+          {/* Calendar Button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={paymentDateRange ? "default" : "outline"}
+                className="mr-2 h-8"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {paymentDateRange
+                  ? `${paymentDateRange.from ? format(paymentDateRange.from, "LLL dd, y") : ""} - ${paymentDateRange.to ? format(paymentDateRange.to, "LLL dd, y") : ""}`
+                  : "Select Custom Date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-auto p-0"
+              align="center"
+              side="top"
+              sideOffset={5}
+              avoidCollisions={true}
+              collisionPadding={20}
+              sticky="always"
+            >
+              <div>
+                <DateRangePicker
+                  dateRange={paymentDateRange}
+                  onDateRangeChange={setPaymentDateRange}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
+
+
+          <div className="flex items-center justify-end space-x-2 px-2">
+            {/* Client Filter Dropdown following standardized pattern */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="mr-2 h-4 w-4" />
+                  {selectedClient ? `Client: ${selectedClient.clientName}` : 'Filter by Client'}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-[300px]" align="start">
+                <div
+                  className="sticky top-0 z-10 bg-background p-2 border-b"
+                  onClick={handleClientSearchClick}
+                  onKeyDown={handleClientSearchKeyDown}
+                >
+                  <Input
+                    placeholder="Search clients..."
+                    value={clientSearchTerm}
+                    onChange={handleClientSearchChange}
+                    className="w-full"
+                  />
+                </div>
+                <div className="max-h-[300px] overflow-y-auto">
+                  {filteredClients.length > 0 ? (
+                    filteredClients.map(client => (
+                      <DropdownMenuItem
+                        key={client.id}
+                        onClick={() => handleClientSelect(client)}
+                        className="flex flex-col items-start py-2"
+                      >
+                        <div className="font-medium">{client.clientName}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Account: {client.accountNumber}
+                        </div>
+                      </DropdownMenuItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                      No clients found
+                    </div>
+                  )}
+                </div>
+                {selectedClient && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={clearClientFilter} className="justify-center text-red-500">
+                      Clear Filter
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {selectedClient && (
+              <Button variant="ghost" size="sm" onClick={clearClientFilter} className="h-8 px-2">
+                <span className="sr-only">Clear filter</span>
+                ✕
+              </Button>
+            )}
+          </div>
+
           <div className="relative">
             <Input
               placeholder="Search adjustments..."
@@ -191,7 +529,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
             )}
           </div>
 
-          <Select value={dateFilter} onValueChange={setDateFilter}>
+          {/* <Select value={dateFilter} onValueChange={setDateFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="All Dates" />
             </SelectTrigger>
@@ -201,7 +539,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
               <SelectItem value="60">Last 60 Days</SelectItem>
               <SelectItem value="90">Last 90 Days</SelectItem>
             </SelectContent>
-          </Select>
+          </Select> */}
         </div>
       </div>
 
@@ -219,16 +557,53 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                   aria-label="Select all"
                 />
               </TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Client</TableHead>
+              {/* <TableHead>Date</TableHead> */}
+              <TableHead
+                onClick={() => handleSort("payment_date")}
+                className="cursor-pointer whitespace-nowrap"
+              >
+                <div className="flex items-center">
+                  Date
+                  {getSortIcon("payment_date")}
+                </div>
+              </TableHead>
+              {/* <TableHead>Client</TableHead>
               <TableHead>Description</TableHead>
               <TableHead className="text-right">Credit Amount</TableHead>
-              <TableHead className="text-right">Debit Amount</TableHead>
+              <TableHead className="text-right">Debit Amount</TableHead> */}
+              <TableHead onClick={() => handleSort("client")} className="cursor-pointer">
+                <div className="flex items-center">
+                  Client
+                  {getSortIcon("client")}
+                </div>
+              </TableHead>
+
+              <TableHead onClick={() => handleSort("description")} className="cursor-pointer">
+                <div className="flex items-center">
+                  Description
+                  {getSortIcon("description")}
+                </div>
+              </TableHead>
+
+              <TableHead onClick={() => handleSort("credit_amount")} className="cursor-pointer">
+                <div className="flex items-center">
+                  Credit Amount
+                  {getSortIcon("credit_amount")}
+                </div>
+              </TableHead>
+
+              <TableHead onClick={() => handleSort("debit_amount")} className="cursor-pointer">
+                <div className="flex items-center">
+                  Debit Amount
+                  {getSortIcon("debit_amount")}
+                </div>
+              </TableHead>
+
               <TableHead className="w-[30px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {adjustments.map((adjustment) => (
+            {sortData(adjustments).map((adjustment) => (
               <TableRow key={adjustment.id}>
                 <TableCell>
                   <Checkbox
@@ -249,7 +624,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                 <TableCell>{adjustment.description}</TableCell>
                 <TableCell className="text-right">
                   {adjustment?.credit_amount != null &&
-                  adjustment.credit_amount > 0
+                    adjustment.credit_amount > 0
                     ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
                     : "-"}
                 </TableCell>

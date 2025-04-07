@@ -1724,6 +1724,36 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
     )
     : [];
 
+  const markAsShipped = async () => {
+    const isConfirmed = window.confirm("Are you sure you want to mark this case as shipped?");
+    if (!isConfirmed) return;
+
+    try {
+      const today = new Date().toISOString().split("T")[0];
+
+      const { error } = await supabase
+        .from("cases")
+        .update({ status: "shipped", ship_date: today })
+        .eq("id", caseDetail.id);
+
+      if (error) {
+        console.error("Error updating shipment:", error);
+        toast.error("Failed to update shipment status.");
+        return;
+      }
+
+      setCaseDetail((prev) =>
+        prev ? { ...prev, status: "shipped", ship_date: today } : prev
+      );
+
+      toast.success("Shipment marked as shipped!");
+    } catch (error) {
+      console.error("Error marking as shipped:", error);
+      toast.error("An error occurred. Please try again.");
+    }
+  };
+
+
 
   console.log(consolidatedProducts, "consolidatedProducts");
   console.log(caseDetail, "caseDetails");
@@ -1792,6 +1822,8 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                                 caseDetail.status === "completed",
                               "bg-red-500 text-red-500 hover:bg-red-500":
                                 caseDetail.status === "cancelled",
+                              "bg-purple-500 text-purple-500 hover:bg-purple-500":
+                                caseDetail.status === "shipped",
                             }
                           )}
                         >
@@ -1899,7 +1931,7 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button
+                {/* <Button
                   onClick={() =>
                     caseDetail.status === "completed"
                       ? setIsScheduleModal(true)
@@ -1910,7 +1942,30 @@ const CaseDetails: React.FC<CaseDetailsProps> = ({
                   {caseDetail.status === "completed"
                     ? "Schedule Delivery"
                     : "Complete"}
+                </Button> */}
+
+                <Button
+                  onClick={() => {
+                    if (caseDetail.status === "completed") {
+                      markAsShipped();
+                    } else if (caseDetail.status !== "shipped") {
+                      setIsScheduleModal(true);
+                    }
+                  }}
+                  disabled={caseDetail.status === "shipped"}
+                  size="sm"
+                  className={`w-full px-4 py-2 rounded-md text-white font-medium transition-all duration-200 ${caseDetail.status === "shipped"
+                    ? "bg-green-600 cursor-not-allowed"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                    }`}
+                >
+                  {caseDetail.status === "shipped"
+                    ? "Shipped"
+                    : caseDetail.status === "completed"
+                      ? "Mark as Shipped"
+                      : "Schedule Delivery"}
                 </Button>
+
               </div>
 
               <div className="flex items-center space-x-4">
