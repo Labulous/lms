@@ -719,11 +719,11 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                   <DateTimePicker
                     date={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z"))
                         : undefined
                     }
                     onSelect={(date) =>
-                      onChange("appointmentDate", date ? date.toISOString() : undefined) 
+                      onChange("appointmentDate", date ? date.toISOString() : undefined)
                     }
                     className={cn(errors.appointmentDate ? "border-red-500" : "")}
                     minDate={
@@ -733,7 +733,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                     placeholder="Select appointment date & time"
                     updatedDate={
                       formData.appointmentDate
-                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z")) 
+                        ? new Date(formData.appointmentDate + (formData.appointmentDate.endsWith("Z") ? "" : "Z"))
                         : undefined
                     }
                   />
@@ -760,6 +760,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                 name="status"
                 value={formData.status}
                 onValueChange={(value) => onChange("status", value)}
+                disabled={formData.status === "shipped"}
               >
                 <SelectTrigger
                   className={cn(
@@ -814,6 +815,14 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{CASE_STATUS_DESCRIPTIONS["cancelled"]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{CASE_STATUS_DESCRIPTIONS["shipped"]}</p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

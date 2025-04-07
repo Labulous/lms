@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CalendarIcon, ChevronDown, ChevronsUpDown, ChevronUp, Eye, Filter, MoreVertical, PrinterIcon, Search, X } from "lucide-react";
+import { CalendarIcon, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronsUpDown, ChevronUp, Eye, Filter, MoreVertical, PrinterIcon, Search, X } from "lucide-react";
 import { Adjustment } from "@/pages/billing/Adjustments";
 import { formatDate } from "@/lib/formatedDate";
 import {
@@ -93,6 +93,9 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
+  const [filteredAdjustments, setFilteredAdjustments] = useState<Adjustment[]>([]);
+
+  const totalPages = Math.ceil(adjustments.length / itemsPerPage);
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "payment_date",
@@ -245,6 +248,35 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
     });
   };
 
+  const processedAdjustments = useMemo(() => {
+    debugger;
+   if (!adjustments) return [];
+  
+    let filtered = adjustments;
+  
+    if (paymentDateRange?.from && paymentDateRange?.to) {
+      filtered = adjustments.filter((adjustment) => {
+        const paymentDate = new Date(adjustment.payment_date);
+        const paymentDateOnly = new Date(paymentDate.setHours(0, 0, 0, 0));
+        const fromDateOnly = new Date(paymentDateRange.from!.setHours(0, 0, 0, 0));
+        const toDateOnly = new Date(paymentDateRange.to!.setHours(23, 59, 59, 999));
+        return paymentDateOnly >= fromDateOnly && paymentDateOnly <= toDateOnly;
+      });
+    }
+  
+     // Filter by selectedClient
+  if (selectedClient) {
+    filtered = filtered.filter(
+      (adjustment) => adjustment.client?.client_name === selectedClient.clientName
+    );
+  }
+    // Return sorted data if sortConfig exists, otherwise return filtered
+    return sortConfig ? sortData(filtered) : filtered;
+  
+  }, [adjustments, paymentDateRange, selectedClient, sortConfig]);
+  
+  
+
   // First, get the lab_id of the logged-in user
   const {
     data: labIdData,
@@ -357,7 +389,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
     //applyFilters(term, selectedClient);
   };
 
- const applyFilters = (term: string, client: Client | null) => {
+  const applyFilters = (term: string, client: Client | null) => {
     let filtered = [...adjustments];
 
     // // Apply search term filter
@@ -380,6 +412,31 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
     // setFilteredShipments(filtered);
   };
 
+  const getSortedAndPaginatedData = () => {
+    const data = searchTerm
+      ? processedAdjustments.filter((adjustment) =>
+          adjustment.client?.client_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      : processedAdjustments;
+  
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+   const EmptyState = () => (
+      <TableRow>
+        <TableCell colSpan={9} className="h-24 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <p className="text-muted-foreground">No Adjustment found</p>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
 
 
   return (
@@ -458,7 +515,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
                   {selectedClient ? `Client: ${selectedClient.clientName}` : 'Filter by Client'}
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[300px]" align="start">
+              <DropdownMenuContent className="w-[300px] p-2 bg-white shadow-lg border border-gray-200 " align="start">
                 <div
                   className="sticky top-0 z-10 bg-background p-2 border-b"
                   onClick={handleClientSearchClick}
@@ -549,11 +606,31 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
+                  // checked={
+                  //   adjustments.length > 0 &&
+                  //   selectedAdjustments.length === adjustments.length
+                  // }
                   checked={
-                    adjustments.length > 0 &&
-                    selectedAdjustments.length === adjustments.length
+                    getSortedAndPaginatedData().length > 0 &&
+                    getSortedAndPaginatedData().every((adjust) =>
+                      selectedAdjustments.includes(adjust.id.toString())
+                    )
                   }
-                  onCheckedChange={handleSelectAllAdjustment}
+
+                  // onCheckedChange={handleSelectAllAdjustment}
+
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedAdjustments(
+                        getSortedAndPaginatedData().map(
+                          (adjust) => adjust.id.toString()
+                        )
+                      );
+                    } else {
+                      setSelectedAdjustments([]);
+                    }
+                  }}
+
                   aria-label="Select all"
                 />
               </TableHead>
@@ -603,79 +680,78 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortData(adjustments).map((adjustment) => (
-              <TableRow key={adjustment.id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedAdjustments.includes(
-                      adjustment?.id.toString()
-                    )}
-                    onCheckedChange={(checked) =>
-                      handleSelectsAdjustment(
-                        adjustment?.id.toString(),
-                        checked as boolean
-                      )
-                    }
-                    aria-label={`Select adjustment ${adjustment?.id.toString()}`}
-                  />
-                </TableCell>
-                <TableCell>{formatDate(adjustment.payment_date)}</TableCell>
-                <TableCell>{adjustment.client.client_name}</TableCell>
-                <TableCell>{adjustment.description}</TableCell>
-                <TableCell className="text-right">
-                  {adjustment?.credit_amount != null &&
-                    adjustment.credit_amount > 0
-                    ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
-                    : "-"}
-                </TableCell>
-
-                <TableCell className="text-right">
-                  {adjustment.debit_amount && adjustment?.debit_amount > 0
-                    ? `$${adjustment.debit_amount.toFixed(2)}`
-                    : "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 p-0"
-                      >
-                        <div className="">
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="flex space-x-4 bg-gray-50 p-2 rounded-md"
-                    >
-                      <DropdownMenuItem
-                        onClick={() => {
-                          handleSelectAdjustment(
-                            adjustment.id.toString(),
-                            true as boolean
-                          );
-                          setIsPreviewModalOpen(true);
-                        }}
-                        className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
-                        style={{ display: "flex", flexDirection: "row" }}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-4">
+                  Loading...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : getSortedAndPaginatedData().length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <EmptyState />
+                </TableCell>
+              </TableRow>
+            ) : (
+              getSortedAndPaginatedData().map((adjustment) => (
+                <TableRow key={adjustment.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedAdjustments.includes(adjustment?.id.toString())}
+                      onCheckedChange={(checked) =>
+                        handleSelectsAdjustment(adjustment?.id.toString(), checked as boolean)
+                      }
+                      aria-label={`Select adjustment ${adjustment?.id.toString()}`}
+                    />
+                  </TableCell>
+                  <TableCell>{formatDate(adjustment.payment_date)}</TableCell>
+                  <TableCell>{adjustment.client.client_name}</TableCell>
+                  <TableCell>{adjustment.description}</TableCell>
+                  <TableCell className="text-right">
+                    {adjustment?.credit_amount != null && adjustment.credit_amount > 0
+                      ? `$${(adjustment.credit_amount || 0).toFixed(2)}`
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {adjustment.debit_amount && adjustment?.debit_amount > 0
+                      ? `$${adjustment.debit_amount.toFixed(2)}`
+                      : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="flex space-x-4 bg-gray-50 p-2 rounded-md"
+                      >
+                        <DropdownMenuItem
+                          onClick={() => {
+                            handleSelectAdjustment(adjustment.id.toString(), true);
+                            setIsPreviewModalOpen(true);
+                          }}
+                          className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
+                          style={{ display: "flex", flexDirection: "row" }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
+
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <Select defaultValue="20">
           <SelectTrigger className="w-[70px]">
             <SelectValue />
@@ -687,7 +763,66 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
           </SelectContent>
         </Select>
         <div className="text-sm text-muted-foreground">1-2 of 2</div>
+      </div> */}
+
+      <div className="flex items-center justify-between mt-4">
+        <Select
+          value={itemsPerPage.toString()}
+          onValueChange={(value) => {
+            setItemsPerPage(Number(value));
+            setCurrentPage(1);
+          }}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10 per page</SelectItem>
+            <SelectItem value="20">20 per page</SelectItem>
+            <SelectItem value="50">50 per page</SelectItem>
+            <SelectItem value="100">100 per page</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex justify-center flex-1">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handlePageChange(1)}
+              disabled={currentPage === 1}
+              className="hidden sm:flex transition-all duration-200 hover:scale-105"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="transition-all duration-200 hover:scale-105"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() =>
+                handlePageChange(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+              className="transition-all duration-200 hover:scale-105"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => handlePageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className="hidden sm:flex transition-all duration-200 hover:scale-105"
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+        <div className="w-[180px]" /> {/* Spacer to balance the layout */}
       </div>
+
 
       {isPreviewModalOpen && (
         <AdjustmentReceiptPreviewModal

@@ -49,7 +49,9 @@ interface Case {
 export interface Adjustment {
   id: number;
   created_at: string; // ISO date string
-  client: { client_name: string };
+  client: {
+    id: string; client_name: string 
+};
   lab_id: string;
   credit_amount: number | null; // Nullable in case it's not provided
   debit_amount: number | null; // Nullable in case it's not provided

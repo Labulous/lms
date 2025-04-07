@@ -495,7 +495,7 @@ const ShippingList: React.FC = () => {
       ),
       cell: ({ row }) => (
         <Link
-          to={`/shipping/${row.original.id}`}
+          to={`/cases/${row.original.id}`}
           className="font-medium text-primary hover:underline"
         >
           {row.getValue("caseId")}
@@ -609,13 +609,13 @@ const ShippingList: React.FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => navigate(`/shipping/${row.original.id}`)}
+                onClick={() => navigate(`/cases/${row.original.id}`)}
               >
                 <Eye className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigate(`/shipping/${row.original.id}/edit`)}
+                 onClick={() => navigate(`/cases/update/?caseId=${row.original.id}`)}
               >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
