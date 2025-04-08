@@ -466,7 +466,7 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
               className={selectedAdjustments.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
             >
               <PrinterIcon className="mr-2 h-4 w-4" />
-              Print Invoices
+              Print Memos
             </Button>
           </>
           {/* )} */}
