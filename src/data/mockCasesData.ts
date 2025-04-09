@@ -428,7 +428,14 @@ const saveCases = async (
       ...cases.overview,
       enclosed_case_id: enclosedCaseId,
       case_number,
+      ...(cases.overview.status === "completed" && {
+        completed_date: new Date().toISOString(),
+      }),
+      ...(cases.overview.status === "shipped" && {
+        ship_date: new Date().toISOString(),
+      }),
     };
+
 
     const { data, error } = await supabase
       .from("cases")
@@ -600,8 +607,9 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
+  debugger;
 
-   console.log(cases, "casescases");
+  console.log(cases, "casescases");
   try {
     setLoadingState && setLoadingState({ isLoading: true, action: "update" });
     console.log(
@@ -636,13 +644,19 @@ const updateCases = async (
 
     console.log("Enclosed case updated successfully:", enclosedCaseData);
 
-    
+
 
     // Step 2: Update cases overview
     const overviewWithEnclosedCaseId = {
       ...cases.overview,
       enclosed_case_id: cases.enclosed_case_id,
       common_services: cases.common_services,
+      ...(cases.overview.status === "completed" && {
+        completed_date: new Date().toISOString(),
+      }),
+      ...(cases.overview.status === "shipped" && {
+        ship_date: new Date().toISOString(),
+      }),
     };
 
     const { data: caseOverviewData, error: caseOverviewError } = await supabase
