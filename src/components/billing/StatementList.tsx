@@ -142,15 +142,15 @@ const StatementList = ({ statement }: StatementList) => {
 
   const { user } = useAuth();
   const handleSelectAll = (checked: boolean) => {
-    // debugger;
+    debugger;
     if (checked) {
-      setSelectedStatements(
-        filteredStatements.map((statement: any) => statement.id)
-      );
+      setSelectedStatements(filteredStatements.map((statement: { id: string }) => statement.id));
     } else {
       setSelectedStatements([]);
     }
   };
+
+
 
   const handleSelectStatement = (statementId: string) => {
     setSelectedStatements((prev) =>
@@ -629,12 +629,9 @@ const StatementList = ({ statement }: StatementList) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
-                <Checkbox
-                  checked={
-                    selectedStatements.length === mockStatements.length &&
-                    mockStatements.length > 0
-                  }
-                  onCheckedChange={handleSelectAll}
+              <Checkbox
+                  checked={selectedStatements.length === filteredStatements.length && filteredStatements.length > 0}
+                  onCheckedChange={(checked: boolean) => handleSelectAll(checked)}
                 />
               </TableHead>
 

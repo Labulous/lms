@@ -1432,9 +1432,9 @@ const InvoiceList: React.FC = () => {
     const toUtcMidnight = (date: Date) => {
       return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
     };
- 
 
-    
+
+
     if (statusFilter.length > 0) {
       filtered = filtered.filter((invoice) =>
         statusFilter.includes(invoice.status)
@@ -1986,15 +1986,15 @@ const InvoiceList: React.FC = () => {
                       }}
                     />
                   </TableHead>
-                    <TableHead
-                      onClick={() => handleSort("date")}
-                      className="cursor-pointer whitespace-nowrap"
-                    >
-                      <div className="flex items-center">
-                        Date
-                        {getSortIcon("date")}
-                      </div>
-                    </TableHead>
+                  <TableHead
+                    onClick={() => handleSort("date")}
+                    className="cursor-pointer whitespace-nowrap"
+                  >
+                    <div className="flex items-center">
+                      Date
+                      {getSortIcon("date")}
+                    </div>
+                  </TableHead>
                   <TableHead
                     className="cursor-pointer whitespace-nowrap"
                   >
@@ -2192,9 +2192,9 @@ const InvoiceList: React.FC = () => {
                       {getSortIcon("clientName")}
                     </div>
                   </TableHead>
-                  <TableHead className="whitespace-nowrap">
+                  {/* <TableHead className="whitespace-nowrap">
                     <div className="flex items-center">INV #</div>
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead
                     onClick={() => handleSort("amount")}
                     className="cursor-pointer text-right whitespace-nowrap"
@@ -2357,9 +2357,13 @@ const InvoiceList: React.FC = () => {
                               <button
                                 type="button"
                                 className="text-blue-600 hover:underline"
-                                onClick={() => {
-                                  setSelectedInvoices([invoice?.id as string]);
-                                  setIsPreviewModalOpen(true);
+                                // onClick={() => {
+                                //   setSelectedInvoices([invoice?.id as string]);
+                                //   setIsPreviewModalOpen(true);
+                                // }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCaseClick(invoice);
                                 }}
                               >
                                 {/* {invoice.case_number
@@ -2369,7 +2373,7 @@ const InvoiceList: React.FC = () => {
                                     .join("-")}`
                                   : "No Invoice #"} */}
                                 {invoice.case_number && /^\d{4}-\d+$/.test(invoice.case_number)
-                                  ? `INV-${invoice.case_number}`
+                                  ? `${invoice.case_number}`
                                   : invoice.case_number || "No Invoice #"}
                               </button>
                             </HoverCardTrigger>
@@ -2438,7 +2442,7 @@ const InvoiceList: React.FC = () => {
                         <TableCell className="whitespace-nowrap">
                           {invoice?.client?.client_name || "Unknown Client"}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap">
+                        {/* <TableCell className="whitespace-nowrap">
                           <button
                             className="text-blue-600 hover:underline"
                             onClick={(e) => {
@@ -2448,7 +2452,7 @@ const InvoiceList: React.FC = () => {
                           >
                             {invoice.case_number}
                           </button>
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-right whitespace-nowrap">
                           $
                           {(
