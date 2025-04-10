@@ -607,7 +607,6 @@ const updateCases = async (
   oldAmount?: number,
   oldDueAmount?: number
 ) => {
-  debugger;
 
   console.log(cases, "casescases");
   try {

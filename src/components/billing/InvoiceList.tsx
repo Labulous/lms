@@ -28,6 +28,7 @@ import {
   Trash2,
   CheckCircle,
   Printer as PrinterIcon,
+  ChevronsDown,
 } from "lucide-react";
 import {
   mockInvoices,
@@ -692,6 +693,8 @@ const InvoiceList: React.FC = () => {
     };
     getLabData();
   }, []);
+
+
   const [caseFilter, setCaseFilter] = useState<string>("");
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [editMode, setEditMode] = useState<"edit" | "payment">("edit");
@@ -1081,34 +1084,81 @@ const InvoiceList: React.FC = () => {
     }));
   };
 
+  // const sortData = (data: Invoice[]) => {
+
+  //   if (!sortConfig) return data;
+
+  //   return [...data].sort((a: any, b: any) => {
+  //     if (sortConfig.key === "case_number") {
+  //       const extractNumber = (str: string) => {
+  //         const match = str.match(/(\d+)$/); // Extracts the last number (e.g., "237" from "2503-237")
+  //         return match ? parseInt(match[0], 10) : 0;
+  //       };
+
+  //       const numA = extractNumber(a.case_number || "");
+  //       const numB = extractNumber(b.case_number || "");
+
+  //       return sortConfig.direction === "asc" ? numA - numB : numB - numA;
+  //     }
+
+  //     // Existing sorting logic for other fields
+  //     if (sortConfig.key === "date") {
+  //       const dateA = new Date(a.received_date || 0).getTime();
+  //       const dateB = new Date(b.received_date || 0).getTime();
+  //       return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
+  //     }
+  //     if (sortConfig.key === "amount") {
+  //       const numA = Number(a.amount) || 0;
+  //       const numB = Number(b.amount) || 0;
+  //       return sortConfig.direction === "asc" ? numA - numB : numB - numA;
+  //     }
+
+  //     const valueA = String(a[sortConfig.key] || "").toLowerCase();
+  //     const valueB = String(b[sortConfig.key] || "").toLowerCase();
+  //     return sortConfig.direction === "asc"
+  //       ? valueA.localeCompare(valueB)
+  //       : valueB.localeCompare(valueA);
+  //   });
+  // };
+
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
-
+  
     return [...data].sort((a: any, b: any) => {
+      // Extracting and handling specific fields
       if (sortConfig.key === "case_number") {
         const extractNumber = (str: string) => {
-          const match = str.match(/(\d+)$/); // Extracts the last number (e.g., "237" from "2503-237")
+          const match = str.match(/(\d+)$/); // Extracts the last number
           return match ? parseInt(match[0], 10) : 0;
         };
-
+  
         const numA = extractNumber(a.case_number || "");
         const numB = extractNumber(b.case_number || "");
-
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-
-      // Existing sorting logic for other fields
+  
       if (sortConfig.key === "date") {
         const dateA = new Date(a.received_date || 0).getTime();
         const dateB = new Date(b.received_date || 0).getTime();
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
+  
       if (sortConfig.key === "amount") {
         const numA = Number(a.amount) || 0;
         const numB = Number(b.amount) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-
+    
+      // Sorting by clientName, with null/undefined checks
+      if (sortConfig.key === "clientName") {
+        const nameA = (a.client?.client_name || "").toLowerCase();
+        const nameB = (b.client?.client_name || "").toLowerCase();
+        return sortConfig.direction === "asc"
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      }
+  
+      // For other fields, make sure to handle undefined/empty values correctly
       const valueA = String(a[sortConfig.key] || "").toLowerCase();
       const valueB = String(b[sortConfig.key] || "").toLowerCase();
       return sortConfig.direction === "asc"
@@ -1116,21 +1166,21 @@ const InvoiceList: React.FC = () => {
         : valueB.localeCompare(valueA);
     });
   };
-
-
+  
 
 
 
   const getSortIcon = (key: keyof Invoice) => {
-    if (sortConfig.key !== key) {
-      return <ChevronsUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
+    if (sortConfig.key === key) {
+      return sortConfig.direction === "asc" ? (
+        <ChevronsUpDown className="ml-2 h-4 w-4" />
+      ) : (
+        <ChevronsDown className="ml-2 h-4 w-4" />
+      );
     }
-    return sortConfig.direction === "asc" ? (
-      <ChevronUp className="ml-1 h-4 w-4" />
-    ) : (
-      <ChevronDown className="ml-1 h-4 w-4" />
-    );
+    return <ChevronsUpDown className="ml-2 h-4 w-4" />;
   };
+
 
 
 
@@ -2188,8 +2238,7 @@ const InvoiceList: React.FC = () => {
                     className="cursor-pointer whitespace-nowrap"
                   >
                     <div className="flex items-center">
-                      Client
-                      {getSortIcon("clientName")}
+                      Client {getSortIcon("clientName")}
                     </div>
                   </TableHead>
                   {/* <TableHead className="whitespace-nowrap">

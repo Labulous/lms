@@ -249,7 +249,6 @@ const AdjustmentList = ({ adjustments }: { adjustments: Adjustment[] }) => {
   };
 
   const processedAdjustments = useMemo(() => {
-    debugger;
    if (!adjustments) return [];
   
     let filtered = adjustments;

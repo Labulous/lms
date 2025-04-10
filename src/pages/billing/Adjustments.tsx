@@ -88,7 +88,6 @@ const Adjustments = () => {
           labId
         } = data;
 
-        debugger;
         if (!updatedInvoices || !client) {
           console.error("Missing updatedInvoices or client information.");
           return;

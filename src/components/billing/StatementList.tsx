@@ -142,7 +142,6 @@ const StatementList = ({ statement }: StatementList) => {
 
   const { user } = useAuth();
   const handleSelectAll = (checked: boolean) => {
-    debugger;
     if (checked) {
       setSelectedStatements(filteredStatements.map((statement: { id: string }) => statement.id));
     } else {

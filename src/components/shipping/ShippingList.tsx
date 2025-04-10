@@ -306,7 +306,6 @@ const ShippingList: React.FC = () => {
     status?: string;
     isfromDashboard?: boolean;
   }) => {
-    debugger;
     setIsLoading(true);
     setIsRefreshing(true);
     try {
@@ -1080,7 +1079,6 @@ const ShippingList: React.FC = () => {
   };
 
   const fetchShippingData = async () => {
-    debugger;
     try {
       setIsLoading(true);
 

@@ -214,7 +214,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   console.log(selectedClient, "selectedClient");
 
   const handleSubmit = async () => {
-    debugger;
     try {
       setLoading(true);
 
@@ -263,7 +262,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   console.log(creditType, "creditType");
 
   const handlePaymentAmountChange = (newAmount: number) => {
-    debugger;
     let remainingAmount = newAmount; // Payment amount to be allocated
     let tempNewAmount = newAmount;
 
@@ -373,7 +371,6 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     checked: boolean,
     reducePayment?: number | null
   ) => {
-    debugger;
     console.log("select");
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {

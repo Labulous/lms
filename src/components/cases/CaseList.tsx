@@ -2415,7 +2415,6 @@ const CaseList: React.FC = () => {
   );
 
   const [dueDateFilter, setDueDateFilter] = useState<DateRange | undefined>(() => {
-    debugger;
     const dueDateParam = searchParams.get("dueDate");
     if (!dueDateParam) return undefined;
 
