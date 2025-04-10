@@ -36,6 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BalanceTrackingItem } from "@/types/supabase";
 import { getLabIdByUserId } from "@/services/authService";
 import { formatDate } from "@/lib/formatedDate";
+import { useNavigate } from "react-router-dom";
 
 interface NewCreditModalProps {
   onClose: () => void;
@@ -77,6 +78,7 @@ interface Case {
 }
 
 export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [date, setDate] = useState<Date>();
   const [selectedClient, setSelectedClient] = useState("");
@@ -210,7 +212,9 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     return Object.keys(newErrors).length === 0;
   };
   console.log(selectedClient, "selectedClient");
+
   const handleSubmit = async () => {
+    debugger;
     try {
       setLoading(true);
 
@@ -242,6 +246,11 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
       }
 
       toast.success("Credit created successfully");
+      navigate("/", { replace: true });
+      setTimeout(() => {
+        navigate("/billing/adjustments", { replace: true });
+      }, 100);
+
       // onClose();
     } catch (error) {
       console.error("Error creating credit:", error);
@@ -254,6 +263,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
   console.log(creditType, "creditType");
 
   const handlePaymentAmountChange = (newAmount: number) => {
+    debugger;
     let remainingAmount = newAmount; // Payment amount to be allocated
     let tempNewAmount = newAmount;
 
@@ -286,28 +296,50 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     setUpdatedInvoices(newUpdatedInvoices);
 
     // Allocate payments based on the remaining amount
+    // const newAllocation = invoices.reduce(
+    //   (acc: Record<string, number>, inv: any) => {
+    //     if (remainingAmount > 0 && inv.invoicesData?.[0]) {
+    //       const dueAmount = inv.invoicesData[0].due_amount;
+
+    //       if (remainingAmount >= dueAmount) {
+    //         // Fully allocate to this invoice
+    //         acc[inv.id] = dueAmount;
+    //         remainingAmount -= dueAmount;
+    //       } else {
+    //         // Partially allocate to this invoice
+    //         acc[inv.id] = remainingAmount;
+    //         remainingAmount = 0;
+    //       }
+    //     } else {
+    //       // No allocation if there's no remaining amount
+    //       acc[inv.id] = 0;
+    //     }
+    //     return acc;
+    //   },
+    //   {}
+    // );
+
+
     const newAllocation = invoices.reduce(
       (acc: Record<string, number>, inv: any) => {
         if (remainingAmount > 0 && inv.invoicesData?.[0]) {
           const dueAmount = inv.invoicesData[0].due_amount;
-
+    
           if (remainingAmount >= dueAmount) {
-            // Fully allocate to this invoice
             acc[inv.id] = dueAmount;
             remainingAmount -= dueAmount;
           } else {
-            // Partially allocate to this invoice
             acc[inv.id] = remainingAmount;
             remainingAmount = 0;
           }
-        } else {
-          // No allocation if there's no remaining amount
-          acc[inv.id] = 0;
         }
+        // ❌ Don't add inv.id with value 0 here
         return acc;
       },
       {}
     );
+
+    
 
     // Calculate total due
     const totalDue = invoices.reduce(
@@ -341,6 +373,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
     checked: boolean,
     reducePayment?: number | null
   ) => {
+    debugger;
     console.log("select");
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (invoice) {
@@ -570,59 +603,61 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
               ) : invoices.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Invoice #</TableHead>
-                      <TableHead>Patient</TableHead>
-                      <TableHead className="text-right">
-                        Original Amount
-                      </TableHead>
-                      <TableHead className="text-right">Amount Due</TableHead>
-                      <TableHead className="text-right">payment</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell>{formatDate(invoice.created_at)}</TableCell>
-                        <TableCell>{invoice.case_number}</TableCell>
-                        <TableCell>{invoice.patient_name}</TableCell>
-                        <TableCell className="text-right">
-                          ${invoice.invoicesData[0].amount || 0}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ${invoice.invoicesData[0].due_amount || 0}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          ${(paymentAllocation[invoice.id] || 0)}
-                        </TableCell>
-                        <TableCell>
-                          <Checkbox
-                            checked={paymentAllocation[invoice.id] > 0}
-                            disabled={
-                              (paymentAmount === 0 ||
-                                Object.values(paymentAllocation).reduce(
-                                  (sum, value) => sum + value,
-                                  0
-                                ) >= paymentAmount) &&
-                              !(paymentAllocation[invoice.id] > 0)
-                            }
-                            onCheckedChange={(checked) =>
-                              handleInvoiceSelect(
-                                invoice.id,
-                                checked as boolean,
-                                paymentAllocation[invoice.id]
-                              )
-                            }
-                          />
-                        </TableCell>
+                <div className="max-h-[200px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Invoice #</TableHead>
+                        <TableHead>Patient</TableHead>
+                        <TableHead className="text-right">
+                          Original Amount
+                        </TableHead>
+                        <TableHead className="text-right">Amount Due</TableHead>
+                        <TableHead className="text-right">payment</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map((invoice) => (
+                        <TableRow key={invoice.id}>
+                          <TableCell>{formatDate(invoice.created_at)}</TableCell>
+                          <TableCell>{invoice.case_number}</TableCell>
+                          <TableCell>{invoice.patient_name}</TableCell>
+                          <TableCell className="text-right">
+                            ${invoice.invoicesData[0].amount || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${invoice.invoicesData[0].due_amount || 0}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            ${(paymentAllocation[invoice.id] || 0)}
+                          </TableCell>
+                          <TableCell>
+                            <Checkbox
+                              checked={paymentAllocation[invoice.id] > 0}
+                              disabled={
+                                (paymentAmount === 0 ||
+                                  Object.values(paymentAllocation).reduce(
+                                    (sum, value) => sum + value,
+                                    0
+                                  ) >= paymentAmount) &&
+                                !(paymentAllocation[invoice.id] > 0)
+                              }
+                              onCheckedChange={(checked) =>
+                                handleInvoiceSelect(
+                                  invoice.id,
+                                  checked as boolean,
+                                  paymentAllocation[invoice.id]
+                                )
+                              }
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="text-center py-4 text-muted-foreground">
                   No matching invoices.

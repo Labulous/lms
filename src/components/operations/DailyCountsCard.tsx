@@ -547,6 +547,7 @@ const DailyCountsCard = ({
         navigate('/shipping', {
           state: {
             initialFilters: {
+              isfromDashboard: true,
               status: 'shipped',
               dateRange: {
                 startDate: todayStart,

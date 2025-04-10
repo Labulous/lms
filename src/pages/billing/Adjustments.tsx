@@ -50,8 +50,8 @@ export interface Adjustment {
   id: number;
   created_at: string; // ISO date string
   client: {
-    id: string; client_name: string 
-};
+    id: string; client_name: string
+  };
   lab_id: string;
   credit_amount: number | null; // Nullable in case it's not provided
   debit_amount: number | null; // Nullable in case it's not provided
@@ -84,18 +84,27 @@ const Adjustments = () => {
           paymentAmount,
           overpaymentAmount,
           remainingBalance,
+          paymentAllocation,
           labId
         } = data;
 
+        debugger;
         if (!updatedInvoices || !client) {
           console.error("Missing updatedInvoices or client information.");
           return;
         }
 
-        const caseNumbers = updatedInvoices.map((inv: Invoice) => inv.case_number).join(",");
+        const caseNumbers = updatedInvoices
+          .filter((inv: any) => paymentAllocation[inv.id] > 0)
+          .map((inv: any) => inv.case_number)
+          .join(",");
 
         // Step 1: Update invoices
-        for (const invoice of updatedInvoices) {
+        const invoicesToUpdate = updatedInvoices.filter(
+          (inv: any) => paymentAllocation[inv.id] > 0
+        );
+
+        for (const invoice of invoicesToUpdate) {
           const dueAmount = invoice.invoicesData[0]?.due_amount || 0;
           const { id } = invoice.invoicesData[0];
           const status = dueAmount === 0 ? "paid" : "partially_paid";
@@ -117,6 +126,40 @@ const Adjustments = () => {
             );
           }
         }
+
+
+
+        // for (const invoice of updatedInvoices) {
+        //   const invoiceData = invoice.invoicesData?.[0];
+
+        //   if (!invoiceData) continue;
+
+        //   const { id, amount, due_amount } = invoiceData;
+
+        //   // Only update if amount and due_amount are not the same
+        //   if (amount !== due_amount) {
+        //     const status = due_amount === 0 ? "paid" : "partially_paid";
+
+        //     const invoiceUpdate = {
+        //       status,
+        //       due_amount,
+        //       updated_at: new Date().toISOString(),
+        //     };
+
+        //     const { error: updateError } = await supabase
+        //       .from("invoices")
+        //       .update(invoiceUpdate)
+        //       .eq("id", id);
+
+        //     if (updateError) {
+        //       throw new Error(
+        //         `Failed to update invoice with ID ${id}: ${updateError.message}`
+        //       );
+        //     }
+        //   }
+        // }
+
+
 
         console.log("All invoices updated successfully.");
 
