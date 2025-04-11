@@ -184,9 +184,8 @@ const Statements = () => {
         const clientData = await clientsService.getClientById(client_id);
         if (clientData) {
           const today = moment.utc();
-          const statementNumber = `${today.format("YYYYMMDD")}${
-            clientData?.accountNumber
-          }`;
+          const statementNumber = `${today.format("YYYYMMDD")}${clientData?.accountNumber
+            }`;
 
           // Check if a statement exists for the current client, lab, and month
           const { data: existingStatement, error: checkError } = await supabase
@@ -278,6 +277,41 @@ const Statements = () => {
     fetchStatements();
   }, [refresh, user]);
 
+  const resendEmail = async () => {
+    debugger;
+    const url = 'https://uwxqagemdiucibfrsyhy.supabase.co/functions/v1/resend-email';
+  
+    const payload = {
+      to: 'cruxbasesoftware@gmail.com',
+      subject: 'Welcome to our app!',
+      html: '<strong>Hello there!</strong><p>Thanks for signing up.</p>',
+    };
+  
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3eHFhZ2VtZGl1Y2liZnJzeWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU0MDgyMDIsImV4cCI6MjA0MDk4NDIwMn0.36GOlkodaSZgFOtxLbn6-0uEOIQ0_lmvSEHaD-cWMPQ',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+  
+      const result = await response.json();
+      console.log('Success:', result);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+  
+  
+
+
   console.log("monthStatement", monthStatement);
   return (
     <main className="flex flex-col gap-8 p-8">
@@ -315,6 +349,9 @@ const Statements = () => {
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             New Statement
           </Button>
+
+         
+
         </div>
       </div>
 

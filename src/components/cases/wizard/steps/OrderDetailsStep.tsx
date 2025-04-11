@@ -903,7 +903,7 @@ const OrderDetailsStep: React.FC<OrderDetailsStepProps> = ({
                       placeholder="Enter the Pan"
                       className="bg-white"
                       value={formData.workingPanName}
-                      maxLength={4}
+                      maxLength={15}
                       onChange={(e) =>
                         onChange(
                           "workingPanName",

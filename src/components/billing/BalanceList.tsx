@@ -18,6 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Button } from "../ui/button";
 
 const BalanceList = () => {
   // State
@@ -27,6 +28,7 @@ const BalanceList = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedClientInvoices, setSelectedClientInvoices] = useState<any[]>([]);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedClientName, setSelectedClientName] = useState("");
   const { user } = useAuth();
   const filteredBalances: BalanceTrackingItem[] = balaceList.filter(
@@ -95,6 +97,7 @@ const BalanceList = () => {
         total_amount: Number(invoice.total_amount || 0),
         amount_paid: Number(invoice.amount_paid || 0),
         due_amount: Number(invoice.due_amount || 0),
+        status: invoice.status,
         case_number: invoice.cases?.case_number || ""
       }));
 
@@ -161,7 +164,140 @@ const BalanceList = () => {
 
     getPaymentList();
   }, []);
+  const toggleInvoiceSelection = (invoiceId: string) => {
+    setSelectedInvoices(prev => 
+      prev.includes(invoiceId)
+        ? prev.filter(id => id !== invoiceId)
+        : [...prev, invoiceId]
+    );
+  };
+  const toggleSelectAll = () => {
+    if (selectedInvoices.length === selectedClientInvoices.length) {
+      setSelectedInvoices([]);
+    } else {
+      setSelectedInvoices(selectedClientInvoices.map(invoice => invoice.id));
+    }
+  };
+const handleExportCSV = (invoices: any[], clientName: string) => {
+  const invoicesToExport = selectedInvoices.length > 0 
+  ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
+  : selectedClientInvoices;
 
+if (invoicesToExport.length === 0) return;
+  if (invoices.length === 0) return;
+
+  // Create CSV header
+  const csvHeader = [
+    'Invoice Number,Date,Total,Paid,Outstanding,Status'
+  ].join('\n');
+
+  // Create CSV body
+  const csvBody = invoices.map(invoice => {
+    const invNumber = invoice.case_number ? 
+      `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
+    const date = new Date(invoice.created_at).toLocaleDateString();
+    const total = invoice.amount;
+    const paid = invoice.amount - invoice.due_amount;
+    const outstanding = invoice.due_amount;
+    const status = invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
+
+    return `${invNumber},${date},${total},${paid},${outstanding},${status}`;
+  }).join('\n');
+
+  // Add totals row
+  const totals = [
+    '',
+    'Totals:',
+    invoices.reduce((sum, inv) => sum + inv.amount, 0),
+    invoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0),
+    invoices.reduce((sum, inv) => sum + inv.due_amount, 0),
+    ''
+  ].join(',');
+
+  const csv = `${csvHeader}\n${csvBody}\n${totals}`;
+
+  // Create blob and download
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${clientName}-invoices-${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+};
+
+const handleBatchPrint = (invoices: any[], clientName: string) => {
+  const invoicesToPrint = selectedInvoices.length > 0 
+    ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
+    : selectedClientInvoices;
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+
+  const printContent = `
+    <html>
+      <head>
+        <title>Invoices - ${clientName}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f2f2f2; }
+          .total-row { font-weight: bold; background-color: #eee; }
+        </style>
+      </head>
+      <body>
+        <h2>Outstanding Invoices - ${clientName}</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice #</th>
+              <th>Date</th>
+              <th>Total</th>
+              <th>Paid</th>
+              <th>Outstanding</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoices.map(invoice => {
+              const invNumber = invoice.case_number ? 
+                `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
+              return `
+                <tr>
+                  <td>${invNumber}</td>
+                  <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
+                  <td>${formatCurrency(invoice.amount)}</td>
+                  <td>${formatCurrency(invoice.amount - invoice.due_amount)}</td>
+                  <td>${formatCurrency(invoice.due_amount)}</td>
+                  <td>${invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m : any) => m.toUpperCase())}</td>
+                </tr>
+              `;
+            }).join('')}
+            <tr class="total-row">
+              <td colspan="2">Total Invoices: ${invoices.length}</td>
+              <td>${formatCurrency(invoices.reduce((sum, inv) => sum + inv.amount, 0))}</td>
+              <td>${formatCurrency(invoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0))}</td>
+              <td>${formatCurrency(invoices.reduce((sum, inv) => sum + inv.due_amount, 0))}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(() => window.close(), 500);
+          }
+        </script>
+      </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+};
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -263,9 +399,26 @@ const BalanceList = () => {
 
       {/* Invoice Details Drawer */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <SheetContent>
+        <SheetContent className="w-[600px]">
           <SheetHeader>
-            <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle>
+            {/* <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle> */}
+            <div className="flex justify-between items-center">
+              <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle>
+              <div className="flex gap-1 mr-3">
+                <Button variant="outline" 
+                onClick={() => handleBatchPrint(selectedClientInvoices, selectedClientName)}
+                disabled={selectedClientInvoices.length === 0}
+                >
+                  Batch Print
+                </Button>
+                <Button variant="outline" 
+                onClick={() => handleExportCSV(selectedClientInvoices, selectedClientName)}
+                disabled={selectedClientInvoices.length === 0}
+                >
+                  Export
+                </Button>
+              </div>
+            </div>
           </SheetHeader>
           <div className="mt-6">
             <Table>
@@ -276,34 +429,61 @@ const BalanceList = () => {
                   <TableHead>Total</TableHead>
                   <TableHead>Paid</TableHead>
                   <TableHead>Outstanding</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {selectedClientInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell>
-                      {/* {invoice.invoice_number} */}
-                      {(() => {
-                        const caseNumber = invoice?.case_number ?? "";
-                        const parts = caseNumber.split("-");
-                        parts[0] = "INV";
-                        return parts.join("-");
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invoice.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                    <TableCell>
-                      {formatCurrency(invoice.amount - invoice.due_amount)}
-                    </TableCell>
-                    {/* <TableCell>{formatCurrency(invoice.amount_paid)}</TableCell> */}
-                    <TableCell>{formatCurrency(invoice.due_amount)}</TableCell>
-                    {/* <TableCell>
-                      {formatCurrency(invoice.total_amount - invoice.amount_paid)}
-                    </TableCell> */}
-                  </TableRow>
-                ))}
+              {selectedClientInvoices.map((invoice) => {
+                  const formattedStatus = invoice.status
+                    .replace(/_/g, ' ')
+                    .replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
+                    
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell>
+                        {(() => {
+                          const caseNumber = invoice?.case_number ?? "";
+                          const parts = caseNumber.split("-");
+                          parts[0] = "INV";
+                          return parts.join("-");
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invoice.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{formatCurrency(invoice.amount)}</TableCell>
+                      <TableCell>
+                        {formatCurrency(invoice.amount - invoice.due_amount)}
+                      </TableCell>
+                      <TableCell>{formatCurrency(invoice.due_amount)}</TableCell>
+                      <TableCell>{formattedStatus}</TableCell>
+                    </TableRow>
+                  )
+                })}
+                {/* Totals Row */}
+                {selectedClientInvoices.length > 0 && (
+            <TableRow className="bg-muted/50 font-medium">
+              <TableCell colSpan={2}>
+                Total Invoices: {selectedClientInvoices.length}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(
+                  selectedClientInvoices.reduce((sum, inv) => sum + inv.amount, 0)
+                )}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(
+                  selectedClientInvoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0)
+                )}
+              </TableCell>
+              <TableCell>
+                {formatCurrency(
+                  selectedClientInvoices.reduce((sum, inv) => sum + inv.due_amount, 0)
+                )}
+              </TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          )}
               </TableBody>
             </Table>
           </div>

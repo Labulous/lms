@@ -859,17 +859,17 @@
 //         if (!value) return true; 
 //         let dueDate = row.getValue(id) as string;
 //         if (!dueDate) return false;
-      
+
 //         let rowDate = new Date(dueDate);
-      
+
 //         if (value.from && value.to) {
 //           return rowDate >= new Date(value.from) && rowDate <= new Date(value.to);
 //         }
-      
+
 //         if (value.from) {
 //           return rowDate.toDateString() === new Date(value.from).toDateString();
 //         }
-      
+
 //         return false; 
 //       },
 
@@ -1803,7 +1803,7 @@
 //         .join("")}
 //           </tbody>
 //         </table>
-  
+
 //         <script>
 //           setTimeout(() => {
 //             window.print();
@@ -2393,7 +2393,7 @@ const CaseList: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [cases, setCases] = useState<ExtendedCase[]>([]);
   const [selectedCase, setSelectedCase] = useState<ExtendedCase | null>(null);
-   const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
+  const [filteredCases, setFilteredCases] = useState<ExtendedCase[]>([]);
   const [filteredCasesStatus, setFilteredCasesStatus] = useState<ExtendedCase[]>([]);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState<string | null>(null);
@@ -3999,7 +3999,7 @@ const CaseList: React.FC = () => {
             case "on_hold":
               return caseItem.status === "on_hold";
             case "received_today":
-              if (!caseItem.received_date) return false; 
+              if (!caseItem.received_date) return false;
               const receivedDate = new Date(caseItem.received_date);
               return (
                 receivedDate >= todayUTC && receivedDate < tomorrowUTC
@@ -4285,6 +4285,55 @@ const CaseList: React.FC = () => {
     printWindow.document.close();
   };
 
+
+  const handleMarkAsCompleted = async () => {
+    const selectedCases = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original);
+
+    if (selectedCases.length === 0) {
+      alert("Please select at least one case to mark as completed.");
+      return;
+    }
+
+    const confirm = window.confirm(
+      `Are you sure you want to mark these ${selectedCases.length} ${selectedCases.length === 1 ? "case" : "cases"} as completed?`
+    );
+    if (!confirm) return;
+
+    try {
+      const updatedCases = selectedCases.map((caseItem) => ({
+        ...caseItem,
+        status: "completed",
+      }));
+
+      await Promise.all(
+        updatedCases.map(async (caseItem) => {
+          const today = new Date().toISOString();
+          const { error } = await supabase
+            .from("cases")
+            .update({ status: "completed", completed_date: today })
+            .eq("id", caseItem.id);
+
+          if (error) {
+            console.error("Error updating case:", error);
+            toast.error(`Failed to update case ID ${caseItem.id}`);
+          }
+        })
+      );
+
+      alert("Selected cases have been marked as completed.");
+      navigate("/", { replace: true });
+      setTimeout(() => {
+        navigate("/cases", { replace: true });
+      }, 100);
+    } catch (error) {
+      console.error("Error marking cases as completed:", error);
+      alert("An error occurred while updating cases.");
+    }
+  };
+
+
   const handlePrintInvoice = () => {
     debugger
     const selectedCases = table
@@ -4527,6 +4576,10 @@ const CaseList: React.FC = () => {
                 <DropdownMenuItem onClick={() => handlePrintInvoice()}>
                   <FileText className="h-4 w-4 mr-2" />
                   Invoice
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleMarkAsCompleted()}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Mark as Completed
                 </DropdownMenuItem>
 
               </DropdownMenuContent>

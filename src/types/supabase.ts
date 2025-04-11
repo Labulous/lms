@@ -308,6 +308,7 @@ export interface ShadeDataDisplay {
 }
 
 export interface PaymentListItem {
+  client_id: string;
   id: string;
   payment_date: string; // ISO 8601 date string
   amount: number;

@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, MoreVertical, PrinterIcon, Settings2, X } from "lucide-react";
+import { Eye, MailIcon, MoreVertical, PrinterIcon, Settings2, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getLabIdByUserId } from "@/services/authService";
 import { BalanceTrackingItem, labDetail } from "@/types/supabase";
@@ -38,8 +38,15 @@ import { Address, clientsService, Doctor } from "@/services/clientsService";
 import { Client as ClientItem } from "@/services/clientsService";
 import StatementReceiptPreviewModal from "./print/StatementReceiptPreviewModal";
 import moment from "moment";
+import ReactDOM from "react-dom";
+import { StatementReceiptTemplate } from "../cases/print/PrintTemplates";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { createRoot } from "react-dom/client";
+const RESEND_API = import.meta.env.VITE_RESEND_API;
+const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Mock data for development
 const mockStatements = [
   {
     id: "1",
@@ -114,7 +121,7 @@ const StatementList = ({ statement }: StatementList) => {
   const [isClientLoading, setIsClientLoading] = useState(false);
   const [clients, setClients] = useState<ClientItem[]>([]);
   const [lab, setLab] = useState<{ labId: string; name: string } | null>();
-
+  const [isSendingBulkEmail, setIsSendingBulkEmail] = useState(false);
   const currentDate = new Date();
 
   const [selectmonth, setSelectMonth] = useState(
@@ -148,9 +155,6 @@ const StatementList = ({ statement }: StatementList) => {
       setSelectedStatements([]);
     }
   };
-
-
-
   const handleSelectStatement = (statementId: string) => {
     setSelectedStatements((prev) =>
       prev.includes(statementId)
@@ -233,10 +237,14 @@ const StatementList = ({ statement }: StatementList) => {
         }
         setLab(labData);
         const data = await clientsService.getClients(labData?.labId);
-
         if (Array.isArray(data)) {
           setClients(data);
+          // Only set filtered statements after clients are loaded
+          setFilteredStatements(statement);
         }
+        // if (Array.isArray(data)) {
+        //   setClients(data);
+        // }
       } catch (error) {
         console.error("Error fetching clients:", error);
         toast.error("Failed to load clients");
@@ -245,8 +253,8 @@ const StatementList = ({ statement }: StatementList) => {
       }
     };
     fetchClients();
-    setFilteredStatements(statement);
-  }, [statement]);
+    // setFilteredStatements(statement);
+  }, [user?.id]);
 
   const handleMonthChange = (e: any) => {
     setSelectMonth(e);
@@ -260,9 +268,9 @@ const StatementList = ({ statement }: StatementList) => {
         return selectedClient === "" || selectedClient === "All Clients"
           ? itemMonth === Number(selMonth) && itemYear === Number(selectyear)
           : itemMonth === Number(selMonth) &&
-              itemYear === Number(selectyear) &&
-              item.client.client_name.toLowerCase() ===
-                selectedClient.toLocaleLowerCase();
+          itemYear === Number(selectyear) &&
+          item.client.client_name.toLowerCase() ===
+          selectedClient.toLocaleLowerCase();
       })
     );
   };
@@ -278,9 +286,9 @@ const StatementList = ({ statement }: StatementList) => {
         return selectedClient === "" || selectedClient === "All Clients"
           ? itemMonth === Number(selectmonth) && itemYear === Number(selYear)
           : itemMonth === Number(selectmonth) &&
-              itemYear === Number(selYear) &&
-              item.client.client_name.toLowerCase() ===
-                selectedClient.toLocaleLowerCase();
+          itemYear === Number(selYear) &&
+          item.client.client_name.toLowerCase() ===
+          selectedClient.toLocaleLowerCase();
       })
     );
   };
@@ -330,165 +338,263 @@ const StatementList = ({ statement }: StatementList) => {
           itemMonth === Number(selectmonth) &&
           itemYear === Number(selectyear) &&
           item.client.client_name.toLowerCase() ===
-            selectedClient.toLocaleLowerCase()
+          selectedClient.toLocaleLowerCase()
         );
       })
     );
 
     return filter.length > 0 ? filter : [];
   }, [searchTerm, clients]);
+  
+  const fetchStatementDetails = async (statementId: string) => {
+    try {
+      // Find the selected statement
+      const statementData = filteredStatements.find(
+        (s: any) => s.id === statementId
+      );
 
-  const handleViewDetails = async (statementId: string) => {
-    const statementData = filteredStatements.filter(
-      (l: any) => l.id === statementId
-    );
-    const { data: clientData, error } = await supabase
-      .from("clients")
-      .select("*")
-      .eq("client_name", statementData[0]?.client.client_name)
-      .single();
-
-    const startOfMonth = moment
-      .utc(`${selectyear}-${selectmonth}-01`)
-      .format("YYYY-MM-DD");
-    const nextMonth = moment
-      .utc(startOfMonth)
-      .add(1, "month")
-      .format("YYYY-MM-DD");
-
-    const { data: invoicesData, error: errro1 } = await supabase
-      .from("invoices")
-      .select(
-        `
-          *,
-          case:cases(case_number, patient_name)
-        `
-      )
-      .eq("client_id", clientData?.id)
-      .gte("created_at", startOfMonth)
-      .lt("created_at", nextMonth)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    const { data: paymentsData, error: paymentsError } = await supabase
-      .from("payments")
-      .select("created_at,payment_method,amount")
-      .eq("client_id", clientData?.id)
-      .gte("created_at", startOfMonth)
-      .lt("created_at", nextMonth)
-      .order("created_at", { ascending: false });
-
-    if (paymentsError) {
-      console.error("Error fetching payments:", paymentsError);
-    }
-
-    // const { data: adjustmentsData, error: adjustmentsError } = await supabase
-    //   .from("adjustments")
-    //   .select("*")
-    //   .eq("client_id", clientData?.id)
-    //   .order("created_at", { ascending: false });
-
-    // if (adjustmentsError) {
-    //   console.error("Error fetching adjustments:", adjustmentsError);
-    // }
-
-    let combinedData: InvoiceItem[] = [];
-
-    invoicesData?.forEach((invoice) => {
-      combinedData.push({
-        date: invoice.created_at,
-        activity: `Invoice  ${invoice.case?.case_number?.replace(
-          "TES",
-          "INV"
-        )} : ${invoice.case?.patient_name}`,
-        amount: invoice.amount || 0,
-        balance: invoice.balance || 0,
-        type: "I",
-      });
-    });
-
-    paymentsData?.forEach((payment) => {
-      combinedData.push({
-        date: payment.created_at,
-        activity: `Payment: ${payment?.payment_method}`,
-        amount: payment.amount || 0,
-        balance: 0,
-        type: "P",
-      });
-    });
-
-    // adjustmentsData?.forEach(adjustment => {
-    //   combinedData.push({
-    //     date: adjustment.created_at,
-    //     activity: adjustment.description,
-    //     amount: adjustment.credit_amount,
-    //     balance: adjustment.balance || 0,
-    //   });
-    // });
-
-    let runningBalance = 0;
-    const { data: balanceList, error: balanceListError } = await supabase
-      .from("balance_tracking")
-      .select("*")
-      .eq("client_id", clientData?.id);
-
-    if (balanceListError) {
-      console.error("Error fetching balance list:", balanceListError);
-    } else {
-      runningBalance = balanceList.reduce((sum, item) => {
-        return (
-          sum +
-          (item.last_month || 0) +
-          (item.days_30_plus || 0) +
-          (item.days_60_plus || 0) +
-          (item.days_90_plus || 0)
-        );
-      }, 0);
-
-      console.log("Total Outstanding Balance:", runningBalance);
-    }
-
-    combinedData.sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    if (runningBalance >= 0) {
-      combinedData.unshift({
-        date: "",
-        activity: "Previous Balance",
-        amount: 0,
-        balance: runningBalance,
-        type: "PB",
-      });
-    }
-
-    combinedData = combinedData.map((transaction) => {
-      if (transaction.type === "I") {
-        runningBalance += transaction.amount;
-      } else if (transaction.type === "P") {
-        runningBalance -= transaction.amount;
+      if (!statementData) {
+        throw new Error("Statement not found");
       }
 
+      // Fetch client data
+      const { data: clientData, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("client_name", statementData.client.client_name)
+        .single();
+
+      if (error) throw error;
+      if (!clientData) throw new Error("Client not found");
+
+      // Date calculations
+      const startOfMonth = moment
+        .utc(`${selectyear}-${selectmonth}-01`)
+        .format("YYYY-MM-DD");
+      const nextMonth = moment
+        .utc(startOfMonth)
+        .add(1, "month")
+        .format("YYYY-MM-DD");
+
+      // Fetch invoices
+      const { data: invoicesData } = await supabase
+        .from("invoices")
+        .select(`
+        *,
+        case:cases(case_number, patient_name)
+      `)
+        .eq("client_id", clientData.id)
+        .gte("created_at", startOfMonth)
+        .lt("created_at", nextMonth)
+        .order("created_at", { ascending: false });
+
+      // Fetch payments
+      const { data: paymentsData } = await supabase
+        .from("payments")
+        .select("created_at,payment_method,amount")
+        .eq("client_id", clientData.id)
+        .gte("created_at", startOfMonth)
+        .lt("created_at", nextMonth)
+        .order("created_at", { ascending: false });
+
+      // Fetch balance tracking
+      const { data: balanceList } = await supabase
+        .from("balance_tracking")
+        .select("*")
+        .eq("client_id", clientData.id);
+
+      // Calculate running balance
+      let runningBalance = balanceList?.reduce((sum, item) => (
+        sum +
+        (item.last_month || 0) +
+        (item.days_30_plus || 0) +
+        (item.days_60_plus || 0) +
+        (item.days_90_plus || 0)
+      ), 0) || 0;
+
+      // Combine data
+      let combinedData: InvoiceItem[] = [];
+
+      invoicesData?.forEach((invoice) => {
+        combinedData.push({
+          date: invoice.created_at,
+          activity: `Invoice ${invoice.case?.case_number?.replace("TES", "INV")} : ${invoice.case?.patient_name
+            }`,
+          amount: invoice.amount || 0,
+          balance: invoice.balance || 0,
+          type: "I",
+        });
+      });
+
+      paymentsData?.forEach((payment) => {
+        combinedData.push({
+          date: payment.created_at,
+          activity: `Payment: ${payment.payment_method}`,
+          amount: payment.amount || 0,
+          balance: 0,
+          type: "P",
+        });
+      });
+
+      // Sort and calculate balances
+      combinedData.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      if (runningBalance >= 0) {
+        combinedData.unshift({
+          date: "",
+          activity: "Previous Balance",
+          amount: 0,
+          balance: runningBalance,
+          type: "PB",
+        });
+      }
+
+      combinedData = combinedData.map((transaction) => {
+        if (transaction.type === "I") {
+          runningBalance += transaction.amount;
+        } else if (transaction.type === "P") {
+          runningBalance -= transaction.amount;
+        }
+        return { ...transaction, balance: runningBalance };
+      });
+
       return {
-        ...transaction,
-        balance: runningBalance,
+        client: clientData,
+        statement: statementData,
+        invoiceData: combinedData,
+        labData: labs
+      };
+      console.log("combinedData=============================================================", combinedData)
+    } catch (error) {
+      console.error("Error fetching statement details:", error);
+      throw error;
+    }
+  };
+
+  // Updated handleViewDetails using the new function
+  const handleViewDetails = async (statementId: string) => {
+    try {
+      const details = await fetchStatementDetails(statementId);
+      setStatementDetails([details]);
+      setIsPreviewModalOpen(true);
+    } catch (error) {
+      toast.error("Failed to load statement details");
+    }
+  };
+
+  const blobToBase64 = async (blob: Blob) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64String = reader.result?.toString().split(",")[1];
+        if (base64String) resolve(base64String);
+        else reject("Failed to convert Blob to Base64");
       };
     });
+  };
 
-    const statementDetailsObject: StatementDetails = {
-      statement: statementData[0],
-      client: clientData,
-      invoiceData: combinedData || [],
-      updated_at: statementData[0].updated_at,
-    };
-    setStatementDetails([statementDetailsObject]);
-    setSelectedStatements([statementId]);
-    setIsPreviewModalOpen(true);
+  const handleSendBulkEmails = async () => {
+    if (selectedStatements.length === 0) return;
+
+    setIsSendingBulkEmail(true);
+    try {
+      const attachments = [];
+      const recipientEmails = [];
+
+      for (const statementId of selectedStatements) {
+        try {
+          const details = await fetchStatementDetails(statementId);
+          if (!details.client?.email) continue;
+
+          recipientEmails.push(details.client.email);
+
+          const tempContainer = document.createElement("div");
+          document.body.appendChild(tempContainer);
+          const root = createRoot(tempContainer);
+          root.render(
+            <StatementReceiptTemplate
+              caseDetails={[details]}
+              labData={details.labData}
+              paperSize="LETTER"
+            />
+          );
+          await new Promise(resolve => setTimeout(resolve, 50));
+          const canvas = await html2canvas(tempContainer, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+
+          const pdf = new jsPDF({ compress: true });
+          const imgData = canvas.toDataURL("image/png");
+          const imgWidth = 210; // A4 width in mm
+          //const imgWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = 297; // A4 height in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          pdf.addImage(imgData, "image/png", 0, 0, imgWidth, imgHeight);
+          const pdfBlob = await new Response(pdf.output("blob")).blob();
+          const pdfBase64 = await blobToBase64(pdfBlob);
+          console.log("pdfBlob", pdfBlob)
+          console.log("pdfBase64", pdfBase64)
+          attachments.push({
+            filename: `Statement-${details.statement.statement_number}.pdf`,
+            content: pdfBase64,
+            contentType: "application/pdf",
+          });
+          console.log("attachments", attachments)
+          root.unmount();
+          document.body.removeChild(tempContainer);
+        } catch (error) {
+          console.error(`Failed to process statement ${statementId}:`, error);
+        }
+      }
+
+      if (recipientEmails.length === 0) {
+        toast.error("No valid recipients found.");
+        setIsSendingBulkEmail(false);
+        return;
+      }
+      const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "example.resend.dev",
+          to: recipientEmails,
+          // to: "cruxbasesoftware@gmail.com",
+          subject: "Your Statement Receipts",
+          html: "<p>Attached are your statement receipts.</p>",
+          attachments: attachments,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        toast.success("Bulk emails sent successfully!");
+      } else {
+        throw new Error(result.error || "Unknown error");
+      }
+    } catch (error: any) {
+      console.error("Bulk email error:", error);
+      toast.error("Failed to send bulk emails.");
+    } finally {
+      setIsSendingBulkEmail(false);
+    }
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative" >
+      {loading && (
+        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-50">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center  gap-1">
           <div className="relative w-[200px]">
@@ -569,26 +675,23 @@ const StatementList = ({ statement }: StatementList) => {
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        <div className="flex items-center">
-          {/* {selectedStatements && selectedStatements.length > 0 && (
-            <>
-              <span className="text-sm text-muted-foreground mr-2">
-                {selectedStatements.length}{" "}
-                {selectedStatements.length === 1 ? "item" : "items"} selected
-              </span>
-
+          {selectedStatements.length > 0 && (
+            <div>
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => setIsPreviewModalOpen(true)}
+                onClick={handleSendBulkEmails}
+                disabled={isSendingBulkEmail}
+                className="ml-2"
               >
-                <PrinterIcon className="mr-2 h-4 w-4" />
-                Print Statement
+                <MailIcon className="mr-2 h-4 w-4" />
+                {isSendingBulkEmail ? "Sending..." : "Send To Client"}
               </Button>
-            </>
-          )} */}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center">
         </div>
 
         <div className="flex items-center gap-4">
@@ -610,25 +713,16 @@ const StatementList = ({ statement }: StatementList) => {
               </Button>
             )}
           </div>
-
-          {/* <Select value={clientStatus} onValueChange={setClientStatus}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Client Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active Client</SelectItem>
-              <SelectItem value="inactive">Inactive Client</SelectItem>
-            </SelectContent>
-          </Select> */}
         </div>
-      </div>
 
+      </div>
       <div className="rounded-md border">
+
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
-              <Checkbox
+                <Checkbox
                   checked={selectedStatements.length === filteredStatements.length && filteredStatements.length > 0}
                   onCheckedChange={(checked: boolean) => handleSelectAll(checked)}
                 />
@@ -689,18 +783,6 @@ const StatementList = ({ statement }: StatementList) => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[160px]">
-                      {/* <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedStatements([statement?.id as string]);
-                          setIsPreviewModalOpen(true);
-                        }}
-                        //onClick={handlePrintReceipts}
-                        className="cursor-pointer"
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem> */}
-
                       <DropdownMenuItem
                         onClick={() =>
                           handleViewDetails(statement?.id as string)
@@ -717,7 +799,9 @@ const StatementList = ({ statement }: StatementList) => {
             ))}
           </TableBody>
         </Table>
+
       </div>
+      {/* )} */}
 
       <div className="flex items-center justify-between">
         <Select defaultValue="20">

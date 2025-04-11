@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NewPaymentModal } from "./NewPaymentModal";
 import {
@@ -19,6 +19,10 @@ import {
   PrinterIcon,
   MoreVertical,
   Eye,
+  Filter,
+  CalendarIcon,
+  ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 import { InvoiceItem } from "@/data/mockInvoicesData";
 import { supabase } from "@/lib/supabase";
@@ -34,15 +38,27 @@ import {
   updateBalanceTracking_new,
 } from "@/lib/updateBalanceTracking";
 import { cn } from "@/lib/utils";
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuTrigger,
+// } from "@radix-ui/react-dropdown-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@radix-ui/react-dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import PaymentReceiptPreviewModal from "./print/PaymentReceiptPreviewModal";
 import Payments from "@/pages/billing/Payments";
-
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { DateRange, DayPicker } from "react-day-picker";
 interface SortConfig {
   key: keyof PaymentListItem;
   direction: "asc" | "desc";
@@ -51,23 +67,36 @@ interface SortConfig {
 interface Invoice {
   case_number: string;
 }
-
+interface Client {
+  client_name: ReactNode;
+  id: string;
+  account_number: string;
+  clientName: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone?: string;
+}
 export function PaymentsList() {
   const [showNewPaymentModal, setShowNewPaymentModal] = useState(false);
   const [paymentsList, setPaymentList] = useState<PaymentListItem[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<PaymentListItem[]>(
     []
   );
-
+  const [clients, setClients] = useState<Client[]>([]);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPayments, setSelectedPayments] = useState<string[]>([]);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  //const [dateRange, setDateRange] = useState<  undefined>();
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [labs, setLabs] = useState<labDetail[]>([]);
-
+  // const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: "payment_date",
     direction: "desc",
@@ -76,8 +105,25 @@ export function PaymentsList() {
     labId: string;
     name: string;
   } | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
 
   const { user } = useAuth();
+  const getClientsList = async () => {
+    try {
+      const { data: clientsData, error: clientsError } = await supabase
+        .from("clients")
+        .select("id, client_name,account_number"); // Select only necessary client fields
+
+      if (clientsError) {
+        console.error("Error fetching clients:", clientsError);
+        return;
+      }
+
+      setClients(clientsData as Client[]);
+    } catch (error) {
+      console.error("Error fetching clients list:", error);
+    }
+  };
 
   const getPaymentList = async () => {
     setLoading(true);
@@ -101,6 +147,7 @@ export function PaymentsList() {
             status,
             over_payment,
             remaining_payment,
+             client_id,
             clients!client_id ( client_name )
           `
         )
@@ -118,6 +165,8 @@ export function PaymentsList() {
       }));
 
       setPaymentList(transformedPaymentList as PaymentListItem[]);
+      // setClients(transformedPaymentList);
+      getClientsList();
       setFilteredPayments(transformedPaymentList as PaymentListItem[]);
     } catch (err) {
       console.error("Error fetching payment list:", err);
@@ -125,26 +174,157 @@ export function PaymentsList() {
       setLoading(false);
     }
   };
+  // const processClientData = (data: any[]) => {
+  //   try {
+  //     // Transform to match the standardized client interface
+  //     const transformedClients: Client[] = data.map(client => ({
+  //       id: client.id,
+  //       clientName: client.client_name || '',
+  //       accountNumber: client.account_number || '',
+  //       phone: client.phone || '',
+  //       street: client.street || '',
+  //       city: client.city || '',
+  //       state: client.state || '',
+  //       zipCode: client.zip_code || ''
+  //     }));
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
+  //     setClients(transformedClients);
+  //   } catch (error) {
+  //     console.error('Error processing client data:', error);
+  //   }
+  // };
+  // const applyFilters = (term: string, client: Client | null) => {
+  //   let filtered = [...clients];
 
-    const filtered = paymentsList.filter((payment) => {
-      const searchableFields = [
-        payment.clients?.client_name,
-        payment.payment_method,
-        payment.amount.toString(),
-      ];
+  //   // Apply search term filter
+  //   if (term) {
+  //     filtered = filtered.filter(shipment =>
+  //       client?.accountNumber.toLowerCase().includes(term.toLowerCase()) ||
+  //       client?.client_name.toLowerCase().includes(term.toLowerCase())
+  //       // client..toLowerCase().includes(term.toLowerCase()) ||
+  //       // (shipment.trackingNumber && shipment.trackingNumber.toLowerCase().includes(term.toLowerCase()))
+  //     );
+  //   }
 
-      return searchableFields.some((field) =>
-        field?.toString().toLowerCase().includes(term)
-      );
-    });
+  //   // Apply client filter
+  //   if (client) {
+  //     filtered = filtered.filter(shipment =>
+  //       shipment.clientId === client.id
+  //     );
+  //   }
 
-    setFilteredPayments(filtered);
+  //   // setFilteredShipments(filtered);
+  // };
+  // const applyFilters = (generalSearch: string, client: Client | null) => {
+  //   let filtered = paymentsList;
+
+  //   if (generalSearch) {
+  //     filtered = filtered.filter(payment =>
+  //       Object.values(payment).some(value =>
+  //         String(value).toLowerCase().includes(generalSearch.toLowerCase())
+  //       )
+  //     );
+  //   }
+
+  //   if (client) {
+  //     filtered = filtered.filter(payment => payment.client_id === client.id);
+  //   }
+
+  //   setFilteredPayments(filtered);
+  // };
+  useEffect(() => {
+    const updateFilteredPayments = () => {
+      let filtered = [...paymentsList];
+
+      if (searchTerm) {
+        filtered = filtered.filter((payment) => {
+          const searchableFields = [
+            payment.clients?.client_name,
+            payment.payment_method,
+            payment.amount.toString(),
+          ];
+          return searchableFields.some((field) =>
+            field?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        });
+      }
+
+      if (selectedClient) {
+        filtered = filtered.filter(payment => payment.client_id === selectedClient.id);
+      }
+
+      if (dateRange?.from || dateRange?.to) {
+        filtered = filtered.filter((payment) => {
+          const paymentDate = new Date(payment.payment_date);
+          const from = dateRange.from ? new Date(dateRange.from) : null;
+          const to = dateRange.to ? new Date(dateRange.to) : null;
+
+          // Normalize dates to cover entire days
+          if (from) from.setHours(0, 0, 0, 0);
+          if (to) to.setHours(23, 59, 59, 999);
+
+          return (
+            (!from || paymentDate >= from) &&
+            (!to || paymentDate <= to)
+          );
+        });
+      }
+      // if (selectedMethod) {
+      //   filtered = filtered.filter(payment =>
+      //     payment.payment_method === selectedMethod
+      //   );
+      // }
+      if (selectedMethod) {
+        filtered = filtered.filter(payment =>
+          payment.payment_method === selectedMethod
+        );
+      }
+
+      setFilteredPayments(filtered);
+    };
+
+    updateFilteredPayments();
+  }, [searchTerm, selectedClient, dateRange, paymentsList, selectedMethod]);
+  // const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const term = e.target.value.toLowerCase();
+  //   setSearchTerm(term);
+
+  //   const filtered = paymentsList.filter((payment) => {
+  //     const searchableFields = [
+  //       payment.clients?.client_name,
+  //       payment.payment_method,
+  //       payment.amount.toString(),
+  //     ];
+
+  //     return searchableFields.some((field) =>
+  //       field?.toString().toLowerCase().includes(term)
+  //     );
+  //   });
+
+  //   setFilteredPayments(filtered);
+  // };
+  const handleClientSearchClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
-
+  const handleClientSearchKeyDown = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
+  const handleMethodSelect = (method: string | null) => {
+    setSelectedMethod(method);
+  };
+  const handleClientSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setClientSearchTerm(e.target.value);
+  };
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value.toLowerCase());
+  };
+  // const handleClientSelect = (client: Client) => {
+  //   setSelectedClient(client);
+  //   applyFilters(searchTerm, client);
+  // };
+  const handleClientSelect = (client: Client) => {
+    setSelectedClient(client);
+  };
   const handleSort = (key: keyof PaymentListItem) => {
     setSortConfig((currentConfig) => ({
       key,
@@ -168,6 +348,35 @@ export function PaymentsList() {
     }
     return <ArrowUpDown className="ml-2 h-4 w-4 text-gray-400" />;
   };
+  // const filteredClients = useMemo(() => {
+  //   if (!clientSearchTerm.trim()) return clients;
+
+  //   return clients.filter(client =>
+  //     client.client_name.toLowerCase().includes(clientSearchTerm.toLowerCase())
+  //     // client.accountNumber.toLowerCase().includes(clientSearchTerm.toLowerCase())
+  //   );
+  // }, [clients, clientSearchTerm]);
+  // const filteredClients = useMemo(() => {
+  //   if (!clientSearchTerm.trim()) return clients;
+
+  //   return clients.filter(client =>
+  //     client.client_name.toLowerCase().includes(clientSearchTerm.toLowerCase())
+  //   );
+  // }, [clients, clientSearchTerm]);
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm.trim()) return clients;
+
+    return clients.filter(client =>
+      typeof client.client_name === "string" &&
+      client.client_name.toLowerCase().includes(clientSearchTerm.toLowerCase())
+    );
+  }, [clients, clientSearchTerm]);
+
+
+  console.log(clients, "filtered clients =====================================================>>>>>>>>>>>>>>>>>>>>>>>>>")
+  useEffect(() => {
+    console.log("Filtered Clients:", filteredClients);
+  }, [filteredClients]); // Log whenever filteredClients changes
 
   const getSortedData = () => {
     const sorted = [...filteredPayments].sort((a, b) => {
@@ -190,6 +399,19 @@ export function PaymentsList() {
     return sorted;
   };
 
+  // useEffect(() => {
+  //   if (filteredPayments.length > 0) {
+  //     setSelectedPayments(filteredPayments.map((payment) => payment.id));
+  //   }
+  // }, [filteredPayments]);
+
+  // const handleSelectAllPayments = (checked: boolean) => {
+  //   if (checked) {
+  //     setSelectedPayments(filteredPayments.map((payment) => payment.id));
+  //   } else {
+  //     setSelectedPayments([]);
+  //   }
+  // };
   const handleSelectAllPayments = (checked: boolean) => {
     if (checked) {
       const allPaymentIds = filteredPayments.map((payment) => payment.id);
@@ -382,15 +604,15 @@ export function PaymentsList() {
         credit:
           overpaymentAmount > 0
             ? Math.max(
-                (existingBalanceTracking?.credit ?? 0) + overpaymentAmount,
-                0
-              )
+              (existingBalanceTracking?.credit ?? 0) + overpaymentAmount,
+              0
+            )
             : paymentMethod == "credit form"
-            ? Math.max(
+              ? Math.max(
                 (existingBalanceTracking?.credit ?? 0) - paymentAmount,
                 0
               )
-            : Math.max(existingBalanceTracking?.credit ?? 0),
+              : Math.max(existingBalanceTracking?.credit ?? 0),
         updated_at: new Date().toISOString(),
         client_id: client,
       };
@@ -433,6 +655,11 @@ export function PaymentsList() {
     }
   };
 
+  const clearClientFilter = () => {
+    setSelectedClient(null);
+    setClientSearchTerm('');
+    // applyFilters(searchTerm, null);
+  };
   useEffect(() => {
     const fetchLabs = async () => {
       setLoading(true);
@@ -487,7 +714,14 @@ export function PaymentsList() {
       fetchLabs();
     }
   }, [user?.id]);
-
+  const paymentMethods = useMemo(() => {
+    const methods = new Set<string>();
+    paymentsList.forEach(payment => {
+      if (payment.payment_method) methods.add(payment.payment_method);
+    });
+    return Array.from(methods);
+  }, [paymentsList]);
+  type PaymentMethod = typeof paymentMethods[number];
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between space-y-2">
@@ -507,17 +741,22 @@ export function PaymentsList() {
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="flex flex-1 items-center space-x-2">
-          <div className="relative w-72">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search payments..."
-              value={searchTerm}
-              className="pl-8"
-              onChange={handleSearch}
-            />
-          </div>
-          {selectedPayments.length > 0 && (
+        <div className="flex flex-1 items-center space-x-2 mr-14">
+        <span className="text-sm text-muted-foreground mr-2">
+            {selectedPayments.length || 0}{" "}
+            {selectedPayments.length === 1 ? "payment" : "payments"} selected
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPreviewModalOpen(true)}
+            disabled={selectedPayments.length === 0}
+            className={selectedPayments.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            <PrinterIcon className="mr-2 h-4 w-4" />
+            Print Receipts ({selectedPayments.length})
+          </Button>
+          {/* {selectedPayments.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -527,7 +766,129 @@ export function PaymentsList() {
               <PrinterIcon className="mr-2 h-4 w-4" />
               Print Receipts ({selectedPayments.length})
             </Button>
+          )} */}
+        </div>
+        {/* <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground mr-20">
+            {selectedPayments.length || 0}{" "}
+            {selectedPayments.length === 1 ? "payment" : "payments"} selected
+          </span>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPreviewModalOpen(true)}
+            disabled={selectedPayments.length === 0}
+            className={selectedPayments.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+          >
+            <PrinterIcon className="mr-2 h-4 w-4" />
+            Print Receipts ({selectedPayments.length})
+          </Button>
+        </div> */}
+
+        <div className="flex items-center space-x-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-8 bg-primary text-primary-foreground hover:bg-primary/90">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    `${format(dateRange.from, 'MMM dd, yyyy')} - ${format(dateRange.to, 'MMM dd, yyyy')}`
+                  ) : (
+                    format(dateRange.from, 'MMM dd, yyyy')
+                  )
+                ) : (
+                  'Select Custom Date'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex items-center justify-between pb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setDateRange(undefined)}
+                >
+                  Clear Filter
+                </Button>
+              </div>
+              <DayPicker
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                className="border-none"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="flex items-right justify-end space-x-2 px-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                {selectedClient ? `Client: ${selectedClient.client_name}` : 'Filter by Client'}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[300px]" align="start">
+              <div
+                className="sticky top-0 z-10 bg-background p-2 border-b"
+                onClick={handleClientSearchClick}
+                onKeyDown={handleClientSearchKeyDown}
+              >
+                <Input
+                  placeholder="Search clients..."
+                  value={clientSearchTerm}
+                  onChange={handleClientSearchChange}
+                  className="w-full"
+                />
+              </div>
+              <div className="max-h-[300px] overflow-y-auto">
+                {filteredClients.length > 0 ? (
+                  filteredClients.map(client => (
+                    <DropdownMenuItem
+                      key={client.id}
+                      onClick={() => handleClientSelect(client)}
+                      className="flex flex-col items-start py-2"
+                    >
+                      <div className="font-medium">{client.client_name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Account: {client.account_number}
+                      </div>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    No clients found
+                  </div>
+                )}
+              </div>
+              {selectedClient && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={clearClientFilter} className="justify-center text-red-500">
+                    Clear Filter
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {selectedClient && (
+            <Button variant="ghost" size="sm" onClick={clearClientFilter} className="h-8 px-2">
+              <span className="sr-only">Clear filter</span>
+              ✕
+            </Button>
           )}
+        </div>
+        <div className="relative w-72">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search payments..."
+            value={searchTerm}
+            className="pl-8"
+            onChange={handleSearch}
+          />
         </div>
       </div>
 
@@ -542,26 +903,133 @@ export function PaymentsList() {
                       filteredPayments.length > 0 &&
                       selectedPayments.length === filteredPayments.length
                     }
-                    onCheckedChange={handleSelectAllPayments}
+                    //onCheckedChange={handleSelectAllPayments}
+                    onCheckedChange={(checked) => handleSelectAllPayments(!!checked)}
                     aria-label="Select all"
                   />
                 </TableHead>
-                <TableHead
+                {/* <TableHead
                   onClick={() => handleSort("payment_date")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
                     Date{getSortIcon("payment_date")}
                   </div>
+                </TableHead> */}
+                <TableHead className="cursor-pointer whitespace-nowrap">
+                  <div className="flex items-center space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" className="p-0 h-auto">
+                          {dateRange?.from ? (
+                            dateRange.to ? (
+                              `${format(dateRange.from, "MMM dd, yyyy")} - ${format(dateRange.to, "MMM dd, yyyy")}`
+                            ) : (
+                              format(dateRange.from, "MMM dd, yyyy")
+                            )
+                          ) : (
+                            "Date"
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="flex items-center justify-between pb-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 text-xs"
+                            onClick={() => setDateRange(undefined)}
+                          >
+                            Clear Filter
+                          </Button>
+                        </div>
+                        <DayPicker
+                          mode="range"
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                          className="border-none"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <ArrowUpDown
+                      className="h-4 w-4 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSort("payment_date");
+                      }}
+                    />
+                  </div>
                 </TableHead>
-                <TableHead
+
+                {/* <TableHead
                   onClick={() => handleSort("client_name")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
                     Client{getSortIcon("client_name")}
                   </div>
+                </TableHead> */}
+                <TableHead className="cursor-pointer whitespace-nowrap">
+                  <div className="flex items-center space-x-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="p-0 h-auto">
+                          {selectedClient ? `Client: ${selectedClient.client_name}` : "Client"}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-[300px]" align="start">
+                        <div
+                          className="sticky top-0 z-10 bg-background p-2 border-b"
+                          onClick={handleClientSearchClick}
+                          onKeyDown={handleClientSearchKeyDown}
+                        >
+                          <Input
+                            placeholder="Search clients..."
+                            value={clientSearchTerm}
+                            onChange={handleClientSearchChange}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="max-h-[300px] overflow-y-auto">
+                          {filteredClients.length > 0 ? (
+                            filteredClients.map((client) => (
+                              <DropdownMenuItem
+                                key={client.id}
+                                onClick={() => handleClientSelect(client)}
+                                className="flex flex-col items-start py-2"
+                              >
+                                <div className="font-medium">{client.client_name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Account: {client.account_number}
+                                </div>
+                              </DropdownMenuItem>
+                            ))
+                          ) : (
+                            <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                              No clients found
+                            </div>
+                          )}
+                        </div>
+                        {selectedClient && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={clearClientFilter} className="justify-center text-red-500">
+                              Clear Filter
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ArrowUpDown
+                      className="h-4 w-4 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSort("client_name");
+                      }}
+                    />
+                  </div>
                 </TableHead>
+
                 <TableHead
                   onClick={() => handleSort("amount")}
                   className="cursor-pointer whitespace-nowrap"
@@ -570,14 +1038,43 @@ export function PaymentsList() {
                     Amount{getSortIcon("amount")}
                   </div>
                 </TableHead>
-                <TableHead
+                {/* <TableHead
                   onClick={() => handleSort("payment_method")}
                   className="cursor-pointer whitespace-nowrap"
                 >
                   <div className="flex items-center">
                     Method{getSortIcon("payment_method")}
                   </div>
+                </TableHead> */}
+                <TableHead className="cursor-pointer whitespace-nowrap">
+                  <div className="flex items-center space-x-2">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="p-0 h-auto">Method</Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => setSelectedMethod(null)}>
+                          All Methods
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {paymentMethods.map((method) => (
+                          <DropdownMenuItem key={method} onClick={() => setSelectedMethod(method)}>
+                            {method.charAt(0).toUpperCase() + method.slice(1)}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ArrowUpDown
+                      className="h-4 w-4 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSort("payment_method");
+                      }}
+                    />
+
+                  </div>
                 </TableHead>
+
                 <TableHead className="text-right">Over Payment</TableHead>
                 <TableHead className="text-right">Remaining</TableHead>
                 <TableHead className="text-right"></TableHead>
@@ -586,99 +1083,105 @@ export function PaymentsList() {
             <TableBody>
               {loading
                 ? Array.from({ length: 5 }).map((_, index) => (
-                    <TableRow key={`loading-${index}`}>
-                      <TableCell>
-                        <div className="h-4 w-4 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-24 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-4 w-20 rounded bg-muted animate-pulse" />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  <TableRow key={`loading-${index}`}>
+                    <TableCell>
+                      <div className="h-4 w-4 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-24 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+                    </TableCell>
+                  </TableRow>
+                ))
                 : getSortedData().map((payment) => (
-                    <TableRow
-                      key={payment.id}
-                      className="hover:bg-muted/50 transition-colors"
+                  <TableRow
+                    key={payment.id}
+                    className="hover:bg-muted/50 transition-colors"
+                  >
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedPayments.includes(payment.id)}
+                        onCheckedChange={(checked) =>
+                          handleSelectPayments(payment.id, checked as boolean)
+                        }
+                        aria-label={`Select payment ${payment.id}`}
+                      />
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {formatDate(payment.payment_date)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {payment.clients?.client_name}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      ${payment.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {payment.payment_method}
+                    </TableCell>
+                    {/* <TableCell className="text-right">
+                      ${payment.over_payment.toFixed(2)}
+                    </TableCell> */}
+                    <TableCell
+                      className={"bg-red-500 text-white my-0 h-12 flex justify-center items-center text-center"}
                     >
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedPayments.includes(payment.id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectPayments(payment.id, checked as boolean)
-                          }
-                          aria-label={`Select payment ${payment.id}`}
-                        />
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(payment.payment_date)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {payment.clients?.client_name}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        ${payment.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">
-                        {payment.payment_method}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${payment.over_payment.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${payment.remaining_payment.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 p-0"
-                            >
-                              <div className="">
-                                <MoreVertical className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </div>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent
-                            align="end"
-                            className="flex space-x-4 bg-gray-50 p-2 rounded-md"
+                      ${payment.over_payment.toFixed(2)}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      ${payment.remaining_payment.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0"
                           >
-                            <DropdownMenuItem
-                              onClick={() => {
-                                handleSelectPayment(
-                                  payment.id,
-                                  true as boolean
-                                );
-                                setIsPreviewModalOpen(true);
-                              }}
-                              className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
-                              style={{ display: "flex", flexDirection: "row" }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            <div className="">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Open menu</span>
+                            </div>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="flex space-x-4 bg-gray-50 p-2 rounded-md"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => {
+                              handleSelectPayment(
+                                payment.id,
+                                true as boolean
+                              );
+                              setIsPreviewModalOpen(true);
+                            }}
+                            className="cursor-pointer p-2 rounded-md hover:bg-gray-300"
+                            style={{ display: "flex", flexDirection: "row" }}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
             </TableBody>
           </Table>
         </div>
