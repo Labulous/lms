@@ -225,6 +225,7 @@ export const QRCodeTemplate: React.FC<PrintTemplateProps> = ({
 export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
   caseDetails,
 }) => {
+  debugger;
   const formatTeethRange = (teeth: number[]): string => {
     if (!teeth.length) return "";
 
@@ -299,50 +300,52 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
     const mergedMap = new Map();
 
     // Iterate through the products array
-    products.forEach((product: any) => {
-      // Create a key for identifying the product by its properties
-      const key = JSON.stringify({
-        id: product.id,
-        shades: {
-          occlusal: product.teethProduct.occlusal_shade,
-          body: product.teethProduct.body_shade,
-          gingival: product.teethProduct.gingival_shade,
-          stump: product.teethProduct.stump_shade,
-        },
-        service: product.service?.id,
-      });
-
-      // Check if this product has already been merged
-      if (mergedMap.has(key)) {
-        const existingProduct = mergedMap.get(key);
-
-        // Merge the tooth_number array, ensuring no duplicates
-        const mergedToothNumbers = [
-          ...new Set([
-            ...existingProduct.teethProduct.tooth_number,
-            ...product.teethProduct.tooth_number,
-          ]),
-        ];
-        existingProduct.teethProduct.tooth_number = mergedToothNumbers;
-
-        // Sum up price, final_price, and total for merged products
-        if (existingProduct.discounted_price && product.discounted_price) {
-          existingProduct.discounted_price.price +=
-            product.discounted_price.price;
-          existingProduct.discounted_price.final_price +=
-            product.discounted_price.final_price;
-          existingProduct.discounted_price.total +=
-            product.discounted_price.total;
-        }
-      } else {
-        // For the first occurrence, create a shallow copy to prevent modifying the original data
-        mergedMap.set(key, {
-          ...product,
-          discounted_price: { ...product.discounted_price },
-          teethProduct: { ...product.teethProduct },
+    if (Array.isArray(products)) {
+      products.forEach((product: any) => {
+        // Create a key for identifying the product by its properties
+        const key = JSON.stringify({
+          id: product.id,
+          shades: {
+            occlusal: product.teethProduct.occlusal_shade,
+            body: product.teethProduct.body_shade,
+            gingival: product.teethProduct.gingival_shade,
+            stump: product.teethProduct.stump_shade,
+          },
+          service: product.service?.id,
         });
-      }
-    });
+
+        // Check if this product has already been merged
+        if (mergedMap.has(key)) {
+          const existingProduct = mergedMap.get(key);
+
+          // Merge the tooth_number array, ensuring no duplicates
+          const mergedToothNumbers = [
+            ...new Set([
+              ...existingProduct.teethProduct.tooth_number,
+              ...product.teethProduct.tooth_number,
+            ]),
+          ];
+          existingProduct.teethProduct.tooth_number = mergedToothNumbers;
+
+          // Sum up price, final_price, and total for merged products
+          if (existingProduct.discounted_price && product.discounted_price) {
+            existingProduct.discounted_price.price +=
+              product.discounted_price.price;
+            existingProduct.discounted_price.final_price +=
+              product.discounted_price.final_price;
+            existingProduct.discounted_price.total +=
+              product.discounted_price.total;
+          }
+        } else {
+          // For the first occurrence, create a shallow copy to prevent modifying the original data
+          mergedMap.set(key, {
+            ...product,
+            discounted_price: { ...product.discounted_price },
+            teethProduct: { ...product.teethProduct },
+          });
+        }
+      });
+    }
 
     // Return the merged products as a new array (does not affect the original `products` array)
     return Array.from(mergedMap.values());
@@ -351,19 +354,21 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
     const groupedByType: { [key: string]: any[] } = {};
 
     // Iterate through the products array and group them by teethProduct.type
-    products.forEach((product: any) => {
-      const type = product.teethProduct?.type;
+    if (Array.isArray(products)) {
+      products.forEach((product: any) => {
+        const type = product.teethProduct?.type;
 
-      // If the type exists, group by it
-      if (type) {
-        if (!groupedByType[type]) {
-          groupedByType[type] = [];
+        // If the type exists, group by it
+        if (type) {
+          if (!groupedByType[type]) {
+            groupedByType[type] = [];
+          }
+
+          // Add the current product to the corresponding type group
+          groupedByType[type].push(product);
         }
-
-        // Add the current product to the corresponding type group
-        groupedByType[type].push(product);
-      }
-    });
+      });
+    }
 
     return groupedByType;
   }
@@ -493,9 +498,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                   $
                   {serviceDetails.discount > 0
                     ? (
-                        serviceDetails.price -
-                        (serviceDetails.price * serviceDetails.discount) / 100
-                      ).toLocaleString()
+                      serviceDetails.price -
+                      (serviceDetails.price * serviceDetails.discount) / 100
+                    ).toLocaleString()
                     : serviceDetails.price?.toLocaleString()}{" "}
                 </p>
                 <p
@@ -697,9 +702,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       $
                                       {additionalDiscount[index] > 0
                                         ? (
-                                            item.price -
-                                            additionalDiscount[index]
-                                          )?.toLocaleString()
+                                          item.price -
+                                          additionalDiscount[index]
+                                        )?.toLocaleString()
                                         : item.price?.toLocaleString()}
                                     </p>
                                     <p
@@ -709,9 +714,9 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       $
                                       {additionalDiscount[index] > 0
                                         ? (
-                                            item.price -
-                                            additionalDiscount[index]
-                                          )?.toLocaleString()
+                                          item.price -
+                                          additionalDiscount[index]
+                                        )?.toLocaleString()
                                         : item.price?.toLocaleString()}
                                     </p>
                                   </div>
@@ -752,8 +757,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       style={{
                                         color:
                                           TYPE_COLORS[
-                                            item?.teethProduct
-                                              .type as keyof typeof TYPE_COLORS
+                                          item?.teethProduct
+                                            .type as keyof typeof TYPE_COLORS
                                           ] || TYPE_COLORS.Other,
                                       }}
                                     >
@@ -788,8 +793,8 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                       style={{
                                         color:
                                           TYPE_COLORS[
-                                            item?.teethProduct
-                                              .type as keyof typeof TYPE_COLORS
+                                          item?.teethProduct
+                                            .type as keyof typeof TYPE_COLORS
                                           ] || TYPE_COLORS.Other,
                                       }}
                                     >
@@ -813,169 +818,169 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                               {(item?.teethProduct?.occlusal_shade?.name ||
                                 item?.teethProduct?.custom_occlusal_shade ||
                                 item?.teethProduct?.manual_occlusal_shade) && (
-                                <span className="font-xs">Shade:&nbsp;</span>
-                              )}
+                                  <span className="font-xs">Shade:&nbsp;</span>
+                                )}
                               {/* Occlusal Shade */}
                               {(item?.teethProduct?.occlusal_shade?.name ||
                                 item?.teethProduct?.custom_occlusal_shade ||
                                 item?.teethProduct?.manual_occlusal_shade) && (
-                                <>
-                                  <span>
-                                    <span className="font-xs">Incisal: </span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct
-                                        ?.manual_occlusal_shade ||
-                                        item?.teethProduct?.occlusal_shade
-                                          ?.name}
-                                    </span>
-                                    {item?.teethProduct
-                                      ?.custom_occlusal_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              item?.teethProduct
-                                                .type as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {
-                                          item?.teethProduct
-                                            ?.custom_occlusal_shade
-                                        }{" "}
-                                        (custom)
+                                  <>
+                                    <span>
+                                      <span className="font-xs">Incisal: </span>
+                                      <span className="font-bold">
+                                        {item?.teethProduct
+                                          ?.manual_occlusal_shade ||
+                                          item?.teethProduct?.occlusal_shade
+                                            ?.name}
                                       </span>
-                                    )}
-                                  </span>
-                                  <span className="text-xs">
-                                    {(item?.teethProduct?.body_shade?.name ||
-                                      item?.teethProduct?.gingival_shade
-                                        ?.name ||
-                                      item?.teethProduct?.stump_shade ||
-                                      item?.teethProduct?.custom_body_shade ||
-                                      item?.teethProduct
-                                        ?.custom_gingival_shade ||
-                                      item?.teethProduct?.custom_stump_shade ||
-                                      item?.teethProduct?.manual_body_shade ||
-                                      item?.teethProduct
-                                        ?.manual_gingival_shade ||
-                                      item?.teethProduct
-                                        ?.manual_stump_shade) && <span>,</span>}
-                                  </span>
-                                </>
-                              )}
+                                      {item?.teethProduct
+                                        ?.custom_occlusal_shade && (
+                                          <span
+                                            className="font-extrabold"
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                item?.teethProduct
+                                                  .type as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            {
+                                              item?.teethProduct
+                                                ?.custom_occlusal_shade
+                                            }{" "}
+                                            (custom)
+                                          </span>
+                                        )}
+                                    </span>
+                                    <span className="text-xs">
+                                      {(item?.teethProduct?.body_shade?.name ||
+                                        item?.teethProduct?.gingival_shade
+                                          ?.name ||
+                                        item?.teethProduct?.stump_shade ||
+                                        item?.teethProduct?.custom_body_shade ||
+                                        item?.teethProduct
+                                          ?.custom_gingival_shade ||
+                                        item?.teethProduct?.custom_stump_shade ||
+                                        item?.teethProduct?.manual_body_shade ||
+                                        item?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                        item?.teethProduct
+                                          ?.manual_stump_shade) && <span>,</span>}
+                                    </span>
+                                  </>
+                                )}
 
                               {/* Body Shade */}
                               {(item?.teethProduct?.body_shade?.name ||
                                 item?.teethProduct?.custom_body_shade ||
                                 item?.teethProduct?.manual_body_shade) && (
-                                <>
-                                  <span>
-                                    <span className="font-normal">Body: </span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct?.manual_body_shade ||
-                                        item?.teethProduct?.body_shade?.name}
-                                    </span>
-                                    {item?.teethProduct?.custom_body_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
+                                  <>
+                                    <span>
+                                      <span className="font-normal">Body: </span>
+                                      <span className="font-bold">
+                                        {item?.teethProduct?.manual_body_shade ||
+                                          item?.teethProduct?.body_shade?.name}
+                                      </span>
+                                      {item?.teethProduct?.custom_body_shade && (
+                                        <span
+                                          className="font-extrabold"
+                                          style={{
+                                            color:
+                                              TYPE_COLORS[
                                               item?.product_type
                                                 ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {item?.teethProduct?.custom_body_shade}{" "}
-                                        {item?.teethProduct?.custom_body_shade
-                                          ? "(cus)"
-                                          : ""}
-                                      </span>
-                                    )}
-                                  </span>
-                                  {(item?.teethProduct?.gingival_shade?.name ||
-                                    item?.teethProduct?.stump_shade ||
-                                    item?.teethProduct?.custom_gingival_shade ||
-                                    item?.teethProduct?.custom_stump_shade ||
-                                    item?.teethProduct?.manual_gingival_shade ||
-                                    item?.teethProduct?.manual_stump_shade) && (
-                                    <span>,</span>
-                                  )}
-                                </>
-                              )}
+                                              ] || TYPE_COLORS.Other,
+                                          }}
+                                        >
+                                          {item?.teethProduct?.custom_body_shade}{" "}
+                                          {item?.teethProduct?.custom_body_shade
+                                            ? "(cus)"
+                                            : ""}
+                                        </span>
+                                      )}
+                                    </span>
+                                    {(item?.teethProduct?.gingival_shade?.name ||
+                                      item?.teethProduct?.stump_shade ||
+                                      item?.teethProduct?.custom_gingival_shade ||
+                                      item?.teethProduct?.custom_stump_shade ||
+                                      item?.teethProduct?.manual_gingival_shade ||
+                                      item?.teethProduct?.manual_stump_shade) && (
+                                        <span>,</span>
+                                      )}
+                                  </>
+                                )}
 
                               {/* Gingival Shade */}
                               {(item?.teethProduct?.gingival_shade?.name ||
                                 item?.teethProduct?.custom_gingival_shade ||
                                 item?.teethProduct?.manual_gingival_shade) && (
-                                <>
-                                  <span>
-                                    <span className="font-normal">
-                                      Gingival:{" "}
-                                    </span>
-                                    <span className="font-bold">
-                                      {item?.teethProduct
-                                        ?.manual_gingival_shade ||
-                                        item?.teethProduct?.gingival_shade
-                                          ?.name}
-                                    </span>
-                                    {item?.teethProduct
-                                      ?.custom_gingival_shade && (
-                                      <span
-                                        className="font-extrabold"
-                                        style={{
-                                          color:
-                                            TYPE_COLORS[
-                                              item?.product_type
-                                                ?.name as keyof typeof TYPE_COLORS
-                                            ] || TYPE_COLORS.Other,
-                                        }}
-                                      >
-                                        {
-                                          item?.teethProduct
-                                            ?.custom_gingival_shade
-                                        }{" "}
-                                        (custom)
+                                  <>
+                                    <span>
+                                      <span className="font-normal">
+                                        Gingival:{" "}
                                       </span>
-                                    )}
-                                  </span>
-                                  {(item?.teethProduct?.stump_shade ||
-                                    item?.teethProduct?.custom_stump_shade ||
-                                    item?.teethProduct?.manual_stump_shade) && (
-                                    <span>,</span>
-                                  )}
-                                </>
-                              )}
+                                      <span className="font-bold">
+                                        {item?.teethProduct
+                                          ?.manual_gingival_shade ||
+                                          item?.teethProduct?.gingival_shade
+                                            ?.name}
+                                      </span>
+                                      {item?.teethProduct
+                                        ?.custom_gingival_shade && (
+                                          <span
+                                            className="font-extrabold"
+                                            style={{
+                                              color:
+                                                TYPE_COLORS[
+                                                item?.product_type
+                                                  ?.name as keyof typeof TYPE_COLORS
+                                                ] || TYPE_COLORS.Other,
+                                            }}
+                                          >
+                                            {
+                                              item?.teethProduct
+                                                ?.custom_gingival_shade
+                                            }{" "}
+                                            (custom)
+                                          </span>
+                                        )}
+                                    </span>
+                                    {(item?.teethProduct?.stump_shade ||
+                                      item?.teethProduct?.custom_stump_shade ||
+                                      item?.teethProduct?.manual_stump_shade) && (
+                                        <span>,</span>
+                                      )}
+                                  </>
+                                )}
 
                               {/* Stump Shade */}
                               {(item?.teethProduct?.custom_stump_shade ||
                                 item?.teethProduct?.stump_shade ||
                                 item?.teethProduct?.manual_stump_shade) && (
-                                <span>
-                                  <span className="font-normal">Stump: </span>
-                                  <span className="font-bold">
-                                    {item?.teethProduct?.manual_stump_shade ||
-                                      item?.teethProduct?.stump_shade?.name}
-                                  </span>
-                                  {item?.teethProduct?.custom_stump_shade && (
-                                    <span
-                                      className="font-extrabold"
-                                      style={{
-                                        color:
-                                          TYPE_COLORS[
+                                  <span>
+                                    <span className="font-normal">Stump: </span>
+                                    <span className="font-bold">
+                                      {item?.teethProduct?.manual_stump_shade ||
+                                        item?.teethProduct?.stump_shade?.name}
+                                    </span>
+                                    {item?.teethProduct?.custom_stump_shade && (
+                                      <span
+                                        className="font-extrabold"
+                                        style={{
+                                          color:
+                                            TYPE_COLORS[
                                             item?.product_type
                                               ?.name as keyof typeof TYPE_COLORS
-                                          ] || TYPE_COLORS.Other,
-                                      }}
-                                    >
-                                      {item?.teethProduct?.custom_stump_shade}{" "}
-                                      (custom)
-                                    </span>
-                                  )}
-                                </span>
-                              )}
+                                            ] || TYPE_COLORS.Other,
+                                        }}
+                                      >
+                                        {item?.teethProduct?.custom_stump_shade}{" "}
+                                        (custom)
+                                      </span>
+                                    )}
+                                  </span>
+                                )}
                             </p>
                           </div>
                         </div>
@@ -998,7 +1003,7 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                           $
                           {item.discounted_price.discount > 0
                             ? (item.price * item.discounted_price.discount) /
-                              100
+                            100
                             : item.price}
                         </p>
                         <p
@@ -1204,15 +1209,15 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 {invoice?.invoice?.[0]?.amount
                                   ? invoice?.client?.tax_rate > 0
                                     ? `$${(
-                                        (invoice.client.tax_rate / 100) *
-                                        invoice.invoice[0].amount
-                                      ).toFixed(2)}`
+                                      (invoice.client.tax_rate / 100) *
+                                      invoice.invoice[0].amount
+                                    ).toFixed(2)}`
                                     : invoice?.invoice?.[0]?.taxes > 0
-                                    ? `$${(
+                                      ? `$${(
                                         (invoice.invoice[0].taxes / 100) *
                                         invoice.invoice[0].amount
                                       ).toFixed(2)}`
-                                    : "-"
+                                      : "-"
                                   : "-"}
                               </span>
                             </div>
@@ -1225,17 +1230,17 @@ export const InvoiceTemplate: React.FC<PrintTemplateProps> = ({
                                 {invoice?.invoice?.[0]?.amount
                                   ? invoice?.client?.tax_rate > 0
                                     ? (
-                                        invoice.invoice[0].amount +
-                                        (invoice.client.tax_rate / 100) *
-                                          invoice.invoice[0].amount
-                                      ).toFixed(2)
+                                      invoice.invoice[0].amount +
+                                      (invoice.client.tax_rate / 100) *
+                                      invoice.invoice[0].amount
+                                    ).toFixed(2)
                                     : invoice?.invoice?.[0]?.taxes > 0
-                                    ? (
+                                      ? (
                                         invoice.invoice[0].amount +
                                         (invoice.invoice[0].taxes / 100) *
-                                          invoice.invoice[0].amount
+                                        invoice.invoice[0].amount
                                       ).toFixed(2)
-                                    : invoice.invoice[0].amount.toFixed(2)
+                                      : invoice.invoice[0].amount.toFixed(2)
                                   : "-"}
                               </span>
                             </div>
@@ -1696,12 +1701,12 @@ export const LabSlipTemplate: React.FC<any> = ({
     const { data: services, error: caseError } = useQuery(
       labIdData?.lab_id
         ? supabase
-            .from("services")
-            .select(
-              ` *
+          .from("services")
+          .select(
+            ` *
         `
-            )
-            .eq("lab_id", labIdData.lab_id)
+          )
+          .eq("lab_id", labIdData.lab_id)
         : null, // Fetching a single record based on `activeCaseId`
       {
         revalidateOnFocus: true, // Refetch when the window is focused
@@ -1825,7 +1830,7 @@ export const LabSlipTemplate: React.FC<any> = ({
                       style={{
                         color:
                           TYPE_COLORS[
-                            teeth.teethProduct.type as keyof typeof TYPE_COLORS
+                          teeth.teethProduct.type as keyof typeof TYPE_COLORS
                           ] || TYPE_COLORS.Other,
                       }}
                     >
@@ -1921,8 +1926,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                                 style={{
                                   color:
                                     TYPE_COLORS[
-                                      item?.teethProduct
-                                        .type as keyof typeof TYPE_COLORS
+                                    item?.teethProduct
+                                      .type as keyof typeof TYPE_COLORS
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
@@ -1955,8 +1960,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                                 style={{
                                   color:
                                     TYPE_COLORS[
-                                      item?.teethProduct
-                                        .type as keyof typeof TYPE_COLORS
+                                    item?.teethProduct
+                                      .type as keyof typeof TYPE_COLORS
                                     ] || TYPE_COLORS.Other,
                                 }}
                               >
@@ -1979,145 +1984,145 @@ export const LabSlipTemplate: React.FC<any> = ({
                         {(item?.teethProduct?.occlusal_shade?.name ||
                           item?.teethProduct?.custom_occlusal_shade ||
                           item?.teethProduct?.manual_occlusal_shade) && (
-                          <>
-                            <span>
-                              <span className="font-normal">Incisal: </span>
-                              <span className="font-bold">
-                                {item?.teethProduct?.manual_occlusal_shade ||
-                                  item?.teethProduct?.occlusal_shade?.name}
-                              </span>
-                              {item?.teethProduct?.custom_occlusal_shade && (
-                                <span
-                                  className="font-extrabold"
-                                  style={{
-                                    color:
-                                      TYPE_COLORS[
+                            <>
+                              <span>
+                                <span className="font-normal">Incisal: </span>
+                                <span className="font-bold">
+                                  {item?.teethProduct?.manual_occlusal_shade ||
+                                    item?.teethProduct?.occlusal_shade?.name}
+                                </span>
+                                {item?.teethProduct?.custom_occlusal_shade && (
+                                  <span
+                                    className="font-extrabold"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
                                         item?.teethProduct
                                           .type as keyof typeof TYPE_COLORS
-                                      ] || TYPE_COLORS.Other,
-                                  }}
-                                >
-                                  {item?.teethProduct?.custom_occlusal_shade}{" "}
-                                  (custom)
-                                </span>
-                              )}
-                            </span>
-                            {(item?.teethProduct?.body_shade?.name ||
-                              item?.teethProduct?.gingival_shade?.name ||
-                              item?.teethProduct?.stump_shade ||
-                              item?.teethProduct?.custom_body_shade ||
-                              item?.teethProduct?.custom_gingival_shade ||
-                              item?.teethProduct?.custom_stump_shade ||
-                              item?.teethProduct?.manual_body_shade ||
-                              item?.teethProduct?.manual_gingival_shade ||
-                              item?.teethProduct?.manual_stump_shade) && (
-                              <span>,</span>
-                            )}
-                          </>
-                        )}
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {item?.teethProduct?.custom_occlusal_shade}{" "}
+                                    (custom)
+                                  </span>
+                                )}
+                              </span>
+                              {(item?.teethProduct?.body_shade?.name ||
+                                item?.teethProduct?.gingival_shade?.name ||
+                                item?.teethProduct?.stump_shade ||
+                                item?.teethProduct?.custom_body_shade ||
+                                item?.teethProduct?.custom_gingival_shade ||
+                                item?.teethProduct?.custom_stump_shade ||
+                                item?.teethProduct?.manual_body_shade ||
+                                item?.teethProduct?.manual_gingival_shade ||
+                                item?.teethProduct?.manual_stump_shade) && (
+                                  <span>,</span>
+                                )}
+                            </>
+                          )}
 
                         {/* Body Shade */}
                         {(item?.teethProduct?.body_shade?.name ||
                           item?.teethProduct?.custom_body_shade ||
                           item?.teethProduct?.manual_body_shade) && (
-                          <>
-                            <span>
-                              <span className="font-normal">Body: </span>
-                              <span className="font-bold">
-                                {item?.teethProduct?.manual_body_shade ||
-                                  item?.teethProduct?.body_shade?.name}
-                              </span>
-                              {item?.teethProduct?.custom_body_shade && (
-                                <span
-                                  className="font-extrabold"
-                                  style={{
-                                    color:
-                                      TYPE_COLORS[
+                            <>
+                              <span>
+                                <span className="font-normal">Body: </span>
+                                <span className="font-bold">
+                                  {item?.teethProduct?.manual_body_shade ||
+                                    item?.teethProduct?.body_shade?.name}
+                                </span>
+                                {item?.teethProduct?.custom_body_shade && (
+                                  <span
+                                    className="font-extrabold"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
                                         item?.product_type
                                           ?.name as keyof typeof TYPE_COLORS
-                                      ] || TYPE_COLORS.Other,
-                                  }}
-                                >
-                                  {item?.teethProduct?.custom_body_shade}{" "}
-                                  {item?.teethProduct?.custom_body_shade
-                                    ? "(cus)"
-                                    : ""}
-                                </span>
-                              )}
-                            </span>
-                            {(item?.teethProduct?.gingival_shade?.name ||
-                              item?.teethProduct?.stump_shade ||
-                              item?.teethProduct?.custom_gingival_shade ||
-                              item?.teethProduct?.custom_stump_shade ||
-                              item?.teethProduct?.manual_gingival_shade ||
-                              item?.teethProduct?.manual_stump_shade) && (
-                              <span>,</span>
-                            )}
-                          </>
-                        )}
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {item?.teethProduct?.custom_body_shade}{" "}
+                                    {item?.teethProduct?.custom_body_shade
+                                      ? "(cus)"
+                                      : ""}
+                                  </span>
+                                )}
+                              </span>
+                              {(item?.teethProduct?.gingival_shade?.name ||
+                                item?.teethProduct?.stump_shade ||
+                                item?.teethProduct?.custom_gingival_shade ||
+                                item?.teethProduct?.custom_stump_shade ||
+                                item?.teethProduct?.manual_gingival_shade ||
+                                item?.teethProduct?.manual_stump_shade) && (
+                                  <span>,</span>
+                                )}
+                            </>
+                          )}
 
                         {/* Gingival Shade */}
                         {(item?.teethProduct?.gingival_shade?.name ||
                           item?.teethProduct?.custom_gingival_shade ||
                           item?.teethProduct?.manual_gingival_shade) && (
-                          <>
-                            <span>
-                              <span className="font-normal">Gingival: </span>
-                              <span className="font-bold">
-                                {item?.teethProduct?.manual_gingival_shade ||
-                                  item?.teethProduct?.gingival_shade?.name}
-                              </span>
-                              {item?.teethProduct?.custom_gingival_shade && (
-                                <span
-                                  className="font-extrabold"
-                                  style={{
-                                    color:
-                                      TYPE_COLORS[
+                            <>
+                              <span>
+                                <span className="font-normal">Gingival: </span>
+                                <span className="font-bold">
+                                  {item?.teethProduct?.manual_gingival_shade ||
+                                    item?.teethProduct?.gingival_shade?.name}
+                                </span>
+                                {item?.teethProduct?.custom_gingival_shade && (
+                                  <span
+                                    className="font-extrabold"
+                                    style={{
+                                      color:
+                                        TYPE_COLORS[
                                         item?.product_type
                                           ?.name as keyof typeof TYPE_COLORS
-                                      ] || TYPE_COLORS.Other,
-                                  }}
-                                >
-                                  {item?.teethProduct?.custom_gingival_shade}{" "}
-                                  (custom)
-                                </span>
-                              )}
-                            </span>
-                            {(item?.teethProduct?.stump_shade ||
-                              item?.teethProduct?.custom_stump_shade ||
-                              item?.teethProduct?.manual_stump_shade) && (
-                              <span>,</span>
-                            )}
-                          </>
-                        )}
+                                        ] || TYPE_COLORS.Other,
+                                    }}
+                                  >
+                                    {item?.teethProduct?.custom_gingival_shade}{" "}
+                                    (custom)
+                                  </span>
+                                )}
+                              </span>
+                              {(item?.teethProduct?.stump_shade ||
+                                item?.teethProduct?.custom_stump_shade ||
+                                item?.teethProduct?.manual_stump_shade) && (
+                                  <span>,</span>
+                                )}
+                            </>
+                          )}
 
                         {/* Stump Shade */}
                         {(item?.teethProduct?.custom_stump_shade ||
                           item?.teethProduct?.stump_shade ||
                           item?.teethProduct?.manual_stump_shade) && (
-                          <span>
-                            <span className="font-normal">Stump: </span>
-                            <span className="font-bold">
-                              {item?.teethProduct?.manual_stump_shade ||
-                                item?.teethProduct?.stump_shade?.name}
-                            </span>
-                            {item?.teethProduct?.custom_stump_shade && (
-                              <span
-                                className="font-extrabold"
-                                style={{
-                                  color:
-                                    TYPE_COLORS[
+                            <span>
+                              <span className="font-normal">Stump: </span>
+                              <span className="font-bold">
+                                {item?.teethProduct?.manual_stump_shade ||
+                                  item?.teethProduct?.stump_shade?.name}
+                              </span>
+                              {item?.teethProduct?.custom_stump_shade && (
+                                <span
+                                  className="font-extrabold"
+                                  style={{
+                                    color:
+                                      TYPE_COLORS[
                                       item?.product_type
                                         ?.name as keyof typeof TYPE_COLORS
-                                    ] || TYPE_COLORS.Other,
-                                }}
-                              >
-                                {item?.teethProduct?.custom_stump_shade}{" "}
-                                (custom)
-                              </span>
-                            )}
-                          </span>
-                        )}
+                                      ] || TYPE_COLORS.Other,
+                                  }}
+                                >
+                                  {item?.teethProduct?.custom_stump_shade}{" "}
+                                  (custom)
+                                </span>
+                              )}
+                            </span>
+                          )}
                       </p>
                       <p className="mb-2 mt-0.5 ml-6">
                         <span className="font-bold">Notes:&nbsp;</span>
@@ -2145,8 +2150,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                 itemsLength === 3
                   ? "scale(0.75)"
                   : itemsLength === 2
-                  ? "scale(0.6)"
-                  : "scale(0.8)",
+                    ? "scale(0.6)"
+                    : "scale(0.8)",
               transformOrigin: "top",
             }}
           >
@@ -2164,8 +2169,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                       itemsLength === 3
                         ? "scale(1.5)"
                         : itemsLength === 2
-                        ? "scale(1.2)"
-                        : "scale(1)",
+                          ? "scale(1.2)"
+                          : "scale(1)",
                   }}
                 >
                   {/* {groupShades.length === 1 && (
@@ -2451,9 +2456,8 @@ export const LabSlipTemplate: React.FC<any> = ({
             <Header caseDetail={item} />
 
             <div
-              className={`grid grid-cols-${
-                products?.length < 3 ? products?.length : 3
-              } gap-0`}
+              className={`grid grid-cols-${products?.length < 3 ? products?.length : 3
+                } gap-0`}
             >
               {products?.map((teeth: any, index: number) => {
                 return (
@@ -2511,8 +2515,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                       {item.contact_type === "not_applicable"
                         ? "not_applicable"
                         : item.contact_type !== "custom"
-                        ? item.contact_type?.split("_")?.join(" ")
-                        : item.custom_contact_details || ""}
+                          ? item.contact_type?.split("_")?.join(" ")
+                          : item.custom_contact_details || ""}
                     </div>
                   </div>
                   <div>
@@ -2521,8 +2525,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                       {item.pontic_type === "not_applicable"
                         ? "not_applicable"
                         : item.pontic_type !== "custom"
-                        ? item.pontic_type?.split("_")?.join(" ")
-                        : item.custom_pontic_details || ""}
+                          ? item.pontic_type?.split("_")?.join(" ")
+                          : item.custom_pontic_details || ""}
                     </div>
                   </div>
                   <div>
@@ -2531,8 +2535,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                       {item.margin_design_type === "not_applicable"
                         ? "not_applicable"
                         : item.margin_design_type !== "custom"
-                        ? item.margin_design_type?.split("_")?.join(" ")
-                        : item.custom_margin_design_type || ""}
+                          ? item.margin_design_type?.split("_")?.join(" ")
+                          : item.custom_margin_design_type || ""}
                     </div>
                   </div>
                   <div>
@@ -2543,8 +2547,8 @@ export const LabSlipTemplate: React.FC<any> = ({
                       {item.occlusion_design_type === "not_applicable"
                         ? "not_applicable"
                         : item.occlusion_design_type !== "custom"
-                        ? item.occlusion_design_type?.split("_")?.join(" ")
-                        : item.custom_occlusion_design_type || ""}
+                          ? item.occlusion_design_type?.split("_")?.join(" ")
+                          : item.custom_occlusion_design_type || ""}
                     </div>
                   </div>
                   <div>
@@ -2553,12 +2557,12 @@ export const LabSlipTemplate: React.FC<any> = ({
                       {item.alloy_type === "not_applicable"
                         ? "not_applicable"
                         : item.alloy_type !== "custom"
-                        ? item.alloy_type
+                          ? item.alloy_type
                             ?.split("_")
                             ?.join(" ")
                             ?.split("-")
                             .join(" ")
-                        : item.custon_alloy_type || ""}
+                          : item.custon_alloy_type || ""}
                     </div>
                   </div>
                 </div>
@@ -2599,13 +2603,13 @@ export const LabSlipTemplate: React.FC<any> = ({
                   .filter(
                     (enclosed) =>
                       item?.enclosed_items?.[
-                        enclosed.key as keyof typeof item.enclosed_items
+                      enclosed.key as keyof typeof item.enclosed_items
                       ]
                   )
                   .map((enclosed) => {
                     const quantity =
                       item?.enclosed_items?.[
-                        enclosed.key as keyof typeof item.enclosed_items
+                      enclosed.key as keyof typeof item.enclosed_items
                       ];
                     return quantity ? `${quantity} x ${enclosed.label}` : "";
                   })
@@ -2655,8 +2659,8 @@ export const PaymentReceiptTemplate: React.FC<PrintStatementTemplateProps> = ({
                       <div>{labData?.office_address?.address_1}</div>
                       <div>
                         {labData?.office_address?.city &&
-                        labData?.office_address?.state_province &&
-                        labData?.office_address?.zip_postal
+                          labData?.office_address?.state_province &&
+                          labData?.office_address?.zip_postal
                           ? `${labData.office_address.city}, ${labData.office_address.state_province} ${labData.office_address.zip_postal}`
                           : ""}
                       </div>
@@ -2780,8 +2784,8 @@ export const AdjustmentReceiptTemplate: React.FC<
                       <div>{labData?.office_address?.address_1}</div>
                       <div>
                         {labData?.office_address?.city &&
-                        labData?.office_address?.state_province &&
-                        labData?.office_address?.zip_postal
+                          labData?.office_address?.state_province &&
+                          labData?.office_address?.zip_postal
                           ? `${labData.office_address.city}, ${labData.office_address.state_province} ${labData.office_address.zip_postal}`
                           : ""}
                       </div>
@@ -2801,8 +2805,8 @@ export const AdjustmentReceiptTemplate: React.FC<
                         {adjustment.credit_amount > 0
                           ? "Credit Memo"
                           : adjustment.debit_amount > 0
-                          ? "Debit Memo"
-                          : ""}
+                            ? "Debit Memo"
+                            : ""}
                       </strong>{" "}
                     </p>
                     <p>
@@ -2864,13 +2868,13 @@ export const AdjustmentReceiptTemplate: React.FC<
                         $
                         {item.credit_amount > 0
                           ? item.credit_amount.toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
                           : item.debit_amount.toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                       </p>
 
                       <p style={{ marginBottom: "8px" }}>
@@ -2904,14 +2908,14 @@ export const StatementReceiptTemplate: React.FC<
       dueDate: "2025-02-15",
       transactions: caseDetails?.length
         ? caseDetails[0].invoiceData.filter((item: any) => {
-            // Include items that are not of type "P"
-            if (item.type !== "P") {
-              return true;
-            }
+          // Include items that are not of type "P"
+          if (item.type !== "P") {
+            return true;
+          }
 
-            // For items with type "P", check if the date is less than or equal to updated_at
-            return item.date <= caseDetails[0].updated_at;
-          })
+          // For items with type "P", check if the date is less than or equal to updated_at
+          return item.date <= caseDetails[0].updated_at;
+        })
         : [],
       previousBalance: 100.0,
       payments: 0.0,
@@ -2957,8 +2961,8 @@ export const StatementReceiptTemplate: React.FC<
               Statement of{" "}
               {caseDetails?.length
                 ? moment(caseDetails[0].statement.created_at).format(
-                    "MMMM YYYY"
-                  )
+                  "MMMM YYYY"
+                )
                 : ""}{" "}
               for {caseDetails?.length ? caseDetails[0].client.client_name : ""}
             </p>
@@ -2988,8 +2992,8 @@ export const StatementReceiptTemplate: React.FC<
                   <td className="border border-gray-300 p-1">
                     {caseDetails?.length
                       ? moment(caseDetails[0].statement.created_at)
-                          .add(30, "days")
-                          .format("MM/DD/YYYY")
+                        .add(30, "days")
+                        .format("MM/DD/YYYY")
                       : "N/A"}
                   </td>
                   <td className="border border-gray-300 p-1"></td>
@@ -3033,8 +3037,8 @@ export const StatementReceiptTemplate: React.FC<
               Statement of{" "}
               {caseDetails?.length
                 ? moment(caseDetails[0].statement.created_at).format(
-                    "MMMM YYYY"
-                  )
+                  "MMMM YYYY"
+                )
                 : ""}{" "}
               for {caseDetails?.length ? caseDetails[0].client.client_name : ""}
             </p>
@@ -3073,10 +3077,10 @@ export const StatementReceiptTemplate: React.FC<
                     {transaction?.type === "PB"
                       ? ""
                       : typeof transaction?.amount === "number"
-                      ? transaction?.type === "P"
-                        ? `($${transaction.amount.toFixed(2)})`
-                        : `$${transaction.amount.toFixed(2)}`
-                      : ""}
+                        ? transaction?.type === "P"
+                          ? `($${transaction.amount.toFixed(2)})`
+                          : `$${transaction.amount.toFixed(2)}`
+                        : ""}
                   </td>
                   <td className="p-2 border border-gray-400 text-right">
                     ${transaction.balance.toFixed(2)}

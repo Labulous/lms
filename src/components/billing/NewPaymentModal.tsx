@@ -146,6 +146,7 @@ export function NewPaymentModal({
     checked: boolean,
     allocatedAmount?: number | null
   ) => {
+    debugger;
     const invoice = invoices.find((invoice) => invoice.id === invoiceId);
     if (!invoice) return;
 
@@ -230,8 +231,14 @@ export function NewPaymentModal({
           0
         );
 
+        
+
+        // setRemainingBalance(
+        //   (balanceSummary?.outstanding_balance || 0) - newTotalAllocated
+        // );
+        
         setRemainingBalance(
-          (balanceSummary?.outstanding_balance || 0) - newTotalAllocated
+          (balanceSummary?.outstanding_balance || 0) - (allocatedAmount || 0)
         );
         setOverpaymentAmount(Math.max(0, paymentAmount - newTotalAllocated));
 
@@ -244,6 +251,7 @@ export function NewPaymentModal({
     }
   };
   const handleSubmit = () => {
+    debugger;
     const paymentData = {
       client: selectedClient,
       date,

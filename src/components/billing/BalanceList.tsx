@@ -19,6 +19,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "../ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@radix-ui/react-hover-card";
+import { InvoiceTemplate } from "../cases/print/PrintTemplates";
 
 const BalanceList = () => {
   // State
@@ -30,6 +32,9 @@ const BalanceList = () => {
   const [selectedClientInvoices, setSelectedClientInvoices] = useState<any[]>([]);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [selectedClientName, setSelectedClientName] = useState("");
+  const [selectedCase, setSelectedCase] = useState<any>(null);
+  const [isCaseDrawerOpen, setIsCaseDrawerOpen] = useState(false);
+
   const { user } = useAuth();
   const filteredBalances: BalanceTrackingItem[] = balaceList.filter(
     (balance) => {
@@ -78,11 +83,81 @@ const BalanceList = () => {
   };
 
   // Function to fetch client invoices
+  // const fetchClientInvoices = async (clientId: string, clientName: string) => {
+  //   try {
+  //     const { data: invoices, error } = await supabase
+  //       .from("invoices")
+  //       .select("*, cases(case_number)")
+  //       .eq("client_id", clientId)
+  //       .in("status", ["unpaid", "partially_paid"]);
+
+  //     if (error) {
+  //       console.error("Error fetching invoices:", error);
+  //       return;
+  //     }
+
+  //     // Transform the data to ensure numeric values
+  //     const transformedInvoices = invoices?.map(invoice => ({
+  //       ...invoice,
+  //       total_amount: Number(invoice.total_amount || 0),
+  //       amount_paid: Number(invoice.amount_paid || 0),
+  //       due_amount: Number(invoice.due_amount || 0),
+  //       status: invoice.status,
+  //       case_number: invoice.cases?.case_number || ""
+  //     }));
+
+  //     setSelectedClientInvoices(transformedInvoices || []);
+  //     setSelectedClientName(clientName);
+  //     setDrawerOpen(true);
+  //   } catch (err) {
+  //     console.error("Error fetching client invoices:", err);
+  //   }
+  // };
+
   const fetchClientInvoices = async (clientId: string, clientName: string) => {
     try {
       const { data: invoices, error } = await supabase
         .from("invoices")
-        .select("*, cases(case_number)") 
+        .select(`
+          *,
+          cases!case_id (
+            id,
+            created_at,
+            received_date,
+            ship_date,
+            status,
+            patient_name,
+            due_date,
+            case_number,
+            client:clients!client_id (
+              id,
+              client_name,
+              phone,
+              street,
+              city,
+              state,
+              zip_code,
+              tax_rate
+            ),
+            doctor:doctors!doctor_id (
+              id,
+              name,
+              client:clients!client_id (
+                id,
+                client_name,
+                phone
+              )
+            ),
+            tag:working_tags!working_tag_id (
+              name,
+              color
+            ),
+            product_ids:case_products!id (
+              id,
+              products_id
+            )
+          )
+        `)
         .eq("client_id", clientId)
         .in("status", ["unpaid", "partially_paid"]);
 
@@ -91,23 +166,98 @@ const BalanceList = () => {
         return;
       }
 
-      // Transform the data to ensure numeric values
-      const transformedInvoices = invoices?.map(invoice => ({
-        ...invoice,
-        total_amount: Number(invoice.total_amount || 0),
-        amount_paid: Number(invoice.amount_paid || 0),
-        due_amount: Number(invoice.due_amount || 0),
-        status: invoice.status,
-        case_number: invoice.cases?.case_number || ""
+      const enrichedInvoices = await Promise.all((invoices || []).map(async (invoice) => {
+        const singleCase = invoice.cases;
+        const productsIdArray = singleCase?.product_ids?.map((p: { products_id: any; }) => p.products_id) || [];
+        const caseProductIds = singleCase?.product_ids?.map((p: { id: any; }) => p.id) || [];
+
+        let products: { discounted_price: any; teethProduct: any; id: any; name: any; price: any; material: { name: any; }[]; }[] = [];
+        let discountedPriceData: any[] = [];
+        let teethProductData: any[] = [];
+
+        if (productsIdArray.length > 0) {
+          const { data: productData } = await supabase
+            .from("products")
+            .select(`
+              id,
+              name,
+              price,
+              material:materials!material_id (name)
+            `)
+            .in("id", productsIdArray);
+
+          const { data: discounted } = await supabase
+            .from("discounted_price")
+            .select("*")
+            .in("product_id", productsIdArray)
+            .eq("case_id", singleCase.id);
+
+          discountedPriceData = discounted || [];
+
+          const { data: teeth } = await supabase
+            .from("case_product_teeth")
+            .select(`
+              id,
+              is_range,
+              tooth_number,
+              product_id,
+              occlusal_shade:shade_options!occlusal_shade_id (name),
+              body_shade:shade_options!body_shade_id (name),
+              gingival_shade:shade_options!gingival_shade_id (name),
+              stump_shade:shade_options!stump_shade_id (name)
+            `)
+            .in("product_id", productsIdArray)
+            .in("case_product_id", caseProductIds);
+
+          teethProductData = teeth || [];
+
+          products = (productData || []).flatMap(product => {
+            const relevantDiscounts = discountedPriceData.filter(
+              d => d.product_id === product.id
+            );
+            const relevantTeeth = teethProductData.filter(
+              t => t.product_id === product.id
+            );
+
+            return relevantTeeth.map((tp, idx) => ({
+              ...product,
+              discounted_price: relevantDiscounts[idx] || null,
+              teethProduct: tp,
+            })).filter(p => p.teethProduct?.tooth_number);
+          });
+        }
+
+        return {
+          ...invoice,
+          total_amount: Number(invoice.total_amount || 0),
+          amount_paid: Number(invoice.amount_paid || 0),
+          due_amount: Number(invoice.due_amount || 0),
+          case_number: singleCase?.case_number || "",
+          case: singleCase,
+          client: singleCase?.client || null,
+          doctor: singleCase?.doctor || null,
+          products: products,
+          invoice: (singleCase?.invoice || []).map((inv: any) => ({
+            id: inv.id,
+            case_id: inv.case_id,
+            amount: Number(inv.amount || 0),
+            taxes: Number(inv.taxes || 0),
+            status: inv.status || "",
+            due_amount: Number(inv.due_amount || 0),
+            due_date: inv.due_date || null
+          }))
+        };
       }));
 
-      setSelectedClientInvoices(transformedInvoices || []);
+      setSelectedClientInvoices(enrichedInvoices);
       setSelectedClientName(clientName);
       setDrawerOpen(true);
     } catch (err) {
       console.error("Error fetching client invoices:", err);
     }
   };
+
+
 
   useEffect(() => {
     const getPaymentList = async () => {
@@ -165,7 +315,7 @@ const BalanceList = () => {
     getPaymentList();
   }, []);
   const toggleInvoiceSelection = (invoiceId: string) => {
-    setSelectedInvoices(prev => 
+    setSelectedInvoices(prev =>
       prev.includes(invoiceId)
         ? prev.filter(id => id !== invoiceId)
         : [...prev, invoiceId]
@@ -178,65 +328,65 @@ const BalanceList = () => {
       setSelectedInvoices(selectedClientInvoices.map(invoice => invoice.id));
     }
   };
-const handleExportCSV = (invoices: any[], clientName: string) => {
-  const invoicesToExport = selectedInvoices.length > 0 
-  ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
-  : selectedClientInvoices;
+  const handleExportCSV = (invoices: any[], clientName: string) => {
+    const invoicesToExport = selectedInvoices.length > 0
+      ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
+      : selectedClientInvoices;
 
-if (invoicesToExport.length === 0) return;
-  if (invoices.length === 0) return;
+    if (invoicesToExport.length === 0) return;
+    if (invoices.length === 0) return;
 
-  // Create CSV header
-  const csvHeader = [
-    'Invoice Number,Date,Total,Paid,Outstanding,Status'
-  ].join('\n');
+    // Create CSV header
+    const csvHeader = [
+      'Invoice Number,Date,Total,Paid,Outstanding,Status'
+    ].join('\n');
 
-  // Create CSV body
-  const csvBody = invoices.map(invoice => {
-    const invNumber = invoice.case_number ? 
-      `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
-    const date = new Date(invoice.created_at).toLocaleDateString();
-    const total = invoice.amount;
-    const paid = invoice.amount - invoice.due_amount;
-    const outstanding = invoice.due_amount;
-    const status = invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
+    // Create CSV body
+    const csvBody = invoices.map(invoice => {
+      const invNumber = invoice.case_number ?
+        `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
+      const date = new Date(invoice.created_at).toLocaleDateString();
+      const total = invoice.amount;
+      const paid = invoice.amount - invoice.due_amount;
+      const outstanding = invoice.due_amount;
+      const status = invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
 
-    return `${invNumber},${date},${total},${paid},${outstanding},${status}`;
-  }).join('\n');
+      return `${invNumber},${date},${total},${paid},${outstanding},${status}`;
+    }).join('\n');
 
-  // Add totals row
-  const totals = [
-    '',
-    'Totals:',
-    invoices.reduce((sum, inv) => sum + inv.amount, 0),
-    invoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0),
-    invoices.reduce((sum, inv) => sum + inv.due_amount, 0),
-    ''
-  ].join(',');
+    // Add totals row
+    const totals = [
+      '',
+      'Totals:',
+      invoices.reduce((sum, inv) => sum + inv.amount, 0),
+      invoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0),
+      invoices.reduce((sum, inv) => sum + inv.due_amount, 0),
+      ''
+    ].join(',');
 
-  const csv = `${csvHeader}\n${csvBody}\n${totals}`;
+    const csv = `${csvHeader}\n${csvBody}\n${totals}`;
 
-  // Create blob and download
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${clientName}-invoices-${new Date().toISOString().split('T')[0]}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
-};
+    // Create blob and download
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${clientName}-invoices-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
-const handleBatchPrint = (invoices: any[], clientName: string) => {
-  const invoicesToPrint = selectedInvoices.length > 0 
-    ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
-    : selectedClientInvoices;
+  const handleBatchPrint = (invoices: any[], clientName: string) => {
+    const invoicesToPrint = selectedInvoices.length > 0
+      ? selectedClientInvoices.filter(invoice => selectedInvoices.includes(invoice.id))
+      : selectedClientInvoices;
 
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-  const printContent = `
+    const printContent = `
     <html>
       <head>
         <title>Invoices - ${clientName}</title>
@@ -263,19 +413,19 @@ const handleBatchPrint = (invoices: any[], clientName: string) => {
           </thead>
           <tbody>
             ${invoices.map(invoice => {
-              const invNumber = invoice.case_number ? 
-                `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
-              return `
+      const invNumber = invoice.case_number ?
+        `INV-${invoice.case_number.split('-').slice(1).join('-')}` : '';
+      return `
                 <tr>
                   <td>${invNumber}</td>
                   <td>${new Date(invoice.created_at).toLocaleDateString()}</td>
                   <td>${formatCurrency(invoice.amount)}</td>
                   <td>${formatCurrency(invoice.amount - invoice.due_amount)}</td>
                   <td>${formatCurrency(invoice.due_amount)}</td>
-                  <td>${invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m : any) => m.toUpperCase())}</td>
+                  <td>${invoice.status.replace(/_/g, ' ').replace(/(^\w|\s\w)/g, (m: any) => m.toUpperCase())}</td>
                 </tr>
               `;
-            }).join('')}
+    }).join('')}
             <tr class="total-row">
               <td colspan="2">Total Invoices: ${invoices.length}</td>
               <td>${formatCurrency(invoices.reduce((sum, inv) => sum + inv.amount, 0))}</td>
@@ -295,9 +445,23 @@ const handleBatchPrint = (invoices: any[], clientName: string) => {
     </html>
   `;
 
-  printWindow.document.write(printContent);
-  printWindow.document.close();
-};
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+  };
+
+  const handleCaseClick = (invoice: any) => {
+    console.log("Invoice clicked:", invoice);
+    // The invoice IS the case since we're querying the cases table
+    const caseId = invoice?.id;
+    if (caseId) {
+      setSelectedCase(caseId);
+      setIsCaseDrawerOpen(true);
+    } else {
+      console.error("No case ID found in invoice:", invoice);
+    }
+  };
+
+
   return (
     <div className="space-y-4">
       {/* Filters and Actions */}
@@ -403,17 +567,17 @@ const handleBatchPrint = (invoices: any[], clientName: string) => {
           <SheetHeader>
             {/* <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle> */}
             <div className="flex justify-between items-center">
-              <SheetTitle>Outstanding Invoices - {selectedClientName}</SheetTitle>
+              <SheetTitle> Outstanding Invoices - <span style={{ color: "blue" }}>{selectedClientName}</span></SheetTitle>
               <div className="flex gap-1 mr-3">
-                <Button variant="outline" 
-                onClick={() => handleBatchPrint(selectedClientInvoices, selectedClientName)}
-                disabled={selectedClientInvoices.length === 0}
+                <Button variant="outline"
+                  onClick={() => handleBatchPrint(selectedClientInvoices, selectedClientName)}
+                  disabled={selectedClientInvoices.length === 0}
                 >
                   Batch Print
                 </Button>
-                <Button variant="outline" 
-                onClick={() => handleExportCSV(selectedClientInvoices, selectedClientName)}
-                disabled={selectedClientInvoices.length === 0}
+                <Button variant="outline"
+                  onClick={() => handleExportCSV(selectedClientInvoices, selectedClientName)}
+                  disabled={selectedClientInvoices.length === 0}
                 >
                   Export
                 </Button>
@@ -425,29 +589,68 @@ const handleBatchPrint = (invoices: any[], clientName: string) => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Invoice #</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Paid</TableHead>
                   <TableHead>Outstanding</TableHead>
-                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {selectedClientInvoices.map((invoice) => {
+                {selectedClientInvoices.map((invoice) => {
                   const formattedStatus = invoice.status
                     .replace(/_/g, ' ')
                     .replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase());
-                    
+
                   return (
                     <TableRow key={invoice.id}>
-                      <TableCell>
+                      {/* <TableCell>
                         {(() => {
                           const caseNumber = invoice?.case_number ?? "";
-                          const parts = caseNumber.split("-");
-                          parts[0] = "INV";
-                          return parts.join("-");
+                          return caseNumber;
+                          // const parts = caseNumber.split("-");
+                          // parts[0] = "INV";
+                          // return parts.join("-");
                         })()}
+                      </TableCell> */}
+                      <TableCell className="whitespace-nowrap">
+                        <HoverCard openDelay={200}>
+                          <HoverCardTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-blue-600 hover:underline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCaseClick(invoice);
+                              }}
+                            >
+                              {invoice?.case_number ?? ""}
+                            </button>
+                          </HoverCardTrigger>
+                          <HoverCardContent
+                            className="w-[600px] p-0 overflow-hidden max-h-[800px]"
+                            side="right"
+                            sideOffset={20}
+                            align="start"
+                          >
+                            <div className="w-full">
+                              <div
+                                className="w-full transform scale-[0.85] origin-top-left -mt-4"
+                                style={{
+                                  transform: "scale(0.85) translateX(20px)",
+                                }}
+                              >
+                                <InvoiceTemplate
+                                  paperSize="LETTER"
+                                  caseDetails={[invoice]}
+                                />
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
                       </TableCell>
+
+                      <TableCell>{formattedStatus}</TableCell>
                       <TableCell>
                         {new Date(invoice.created_at).toLocaleDateString()}
                       </TableCell>
@@ -456,34 +659,33 @@ const handleBatchPrint = (invoices: any[], clientName: string) => {
                         {formatCurrency(invoice.amount - invoice.due_amount)}
                       </TableCell>
                       <TableCell>{formatCurrency(invoice.due_amount)}</TableCell>
-                      <TableCell>{formattedStatus}</TableCell>
                     </TableRow>
                   )
                 })}
                 {/* Totals Row */}
                 {selectedClientInvoices.length > 0 && (
-            <TableRow className="bg-muted/50 font-medium">
-              <TableCell colSpan={2}>
-                Total Invoices: {selectedClientInvoices.length}
-              </TableCell>
-              <TableCell>
-                {formatCurrency(
-                  selectedClientInvoices.reduce((sum, inv) => sum + inv.amount, 0)
+                  <TableRow className="bg-muted/50 font-medium">
+                    <TableCell colSpan={3}>
+                      Total Invoices: {selectedClientInvoices.length}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(
+                        selectedClientInvoices.reduce((sum, inv) => sum + inv.amount, 0)
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(
+                        selectedClientInvoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0)
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {formatCurrency(
+                        selectedClientInvoices.reduce((sum, inv) => sum + inv.due_amount, 0)
+                      )}
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
                 )}
-              </TableCell>
-              <TableCell>
-                {formatCurrency(
-                  selectedClientInvoices.reduce((sum, inv) => sum + (inv.amount - inv.due_amount), 0)
-                )}
-              </TableCell>
-              <TableCell>
-                {formatCurrency(
-                  selectedClientInvoices.reduce((sum, inv) => sum + inv.due_amount, 0)
-                )}
-              </TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          )}
               </TableBody>
             </Table>
           </div>

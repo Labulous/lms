@@ -447,6 +447,7 @@ export function PaymentsList() {
   }, []);
 
   const handleNewPayment = async (paymentData: any) => {
+    debugger;
     console.log("New payment data:", paymentData);
 
     try {
@@ -527,6 +528,21 @@ export function PaymentsList() {
             lab_id: labData?.labId,
             payment_date: date,
           });
+      }
+      if (paymentMethod !== "credit form" && overpaymentAmount > 0) {
+        const { error: adjustmentError } = await supabase
+        .from("adjustments")
+        .insert({
+          client_id: client,
+          credit_amount: overpaymentAmount,
+          description: `Overpayment: ${caseNumbers}`,
+          lab_id: labData?.labId,
+          payment_date: date,
+        });
+
+      if (adjustmentError) {
+        throw new Error(`Failed to insert payment: ${adjustmentError.message}`);
+      }
       }
 
       console.log("Payment inserted successfully.", insertedPayment);
@@ -742,7 +758,7 @@ export function PaymentsList() {
 
       <div className="flex items-center justify-between">
         <div className="flex flex-1 items-center space-x-2 mr-14">
-        <span className="text-sm text-muted-foreground mr-2">
+          <span className="text-sm text-muted-foreground mr-2">
             {selectedPayments.length || 0}{" "}
             {selectedPayments.length === 1 ? "payment" : "payments"} selected
           </span>

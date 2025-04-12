@@ -283,6 +283,7 @@ const Statements = () => {
   
     const payload = {
       to: 'cruxbasesoftware@gmail.com',
+      //to: 'shrikant321@gmail.com',
       subject: 'Welcome to our app!',
       html: '<strong>Hello there!</strong><p>Thanks for signing up.</p>',
     };
