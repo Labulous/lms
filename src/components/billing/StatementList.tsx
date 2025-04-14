@@ -497,6 +497,7 @@ const StatementList = ({ statement }: StatementList) => {
   };
 
   const handleSendBulkEmails = async () => {
+    debugger;
     if (selectedStatements.length === 0) return;
 
     setIsSendingBulkEmail(true);
@@ -566,8 +567,8 @@ const StatementList = ({ statement }: StatementList) => {
         },
         body: JSON.stringify({
           from: "example.resend.dev",
-          to: recipientEmails,
-          // to: "cruxbasesoftware@gmail.com",
+          //to: recipientEmails,
+          to: "cruxbasesoftware@gmail.com",
           subject: "Your Statement Receipts",
           html: "<p>Attached are your statement receipts.</p>",
           attachments: attachments,
