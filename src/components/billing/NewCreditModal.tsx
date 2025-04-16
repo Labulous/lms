@@ -322,7 +322,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
       (acc: Record<string, number>, inv: any) => {
         if (remainingAmount > 0 && inv.invoicesData?.[0]) {
           const dueAmount = inv.invoicesData[0].due_amount;
-    
+
           if (remainingAmount >= dueAmount) {
             acc[inv.id] = dueAmount;
             remainingAmount -= dueAmount;
@@ -337,7 +337,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
       {}
     );
 
-    
+
 
     // Calculate total due
     const totalDue = invoices.reduce(
@@ -505,7 +505,7 @@ export function NewCreditModal({ onClose, onSubmit }: NewCreditModalProps) {
                 </Label>
                 <DatePicker
                   date={date}
-                  onSelect={setDate}
+                  onSelect={(d: any) => setDate(new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())))}
                 // error={errors.date}
                 />
               </div>

@@ -365,7 +365,7 @@ const UpdateCase: React.FC = () => {
     }
   );
 
- 
+
   let caseItem: any = caseDataa;
 
   const caseDetailApi: ExtendedCase | null = caseItem
@@ -416,6 +416,7 @@ const UpdateCase: React.FC = () => {
           notes: tp.notes,
           service: tp.service,
           quantity: tp.quantity,
+          services_discount: tp.services_discount,
         },
       })),
     }
@@ -554,7 +555,7 @@ const UpdateCase: React.FC = () => {
           isDisplayAcctOnly: formData.isDisplayAcctOnly,
           isDisplayDoctorAcctOnly: formData.isDisplayDoctorAcctOnly,
           isHidePatientName: formData.isHidePatientName,
-          delivery_method : formData.deliveryMethod,
+          delivery_method: formData.deliveryMethod,
           // isDisplayAcctOnly: transformedData.isDisplayAcctOnly || false,
           // isDisplayDoctorAcctOnly: transformedData.isDisplayDoctorAcctOnly || false,
           // isHidePatientName: transformedData.isHidePatientName || false,
@@ -598,9 +599,44 @@ const UpdateCase: React.FC = () => {
         caseDetail?.invoice[0].amount,
         Number(caseDetail?.invoice[0].due_amount)
       );
+
+      // const overviewChanges = getChanges(caseDetail, newCase.overview);
+      // const productChanges = getChanges(caseDetail?.products, newCase.products); // optional
+      // const enclosedChanges = getChanges(caseDetail?.enclosed_items, newCase.enclosedItems); // optional
+
+      // const auditChanges = {
+      //   overview: overviewChanges,
+      //   products: productChanges,
+      //   enclosedItems: enclosedChanges,
+      // };
+
+      // const hasChanges =
+      //   Object.keys(overviewChanges).length ||
+      //   Object.keys(productChanges).length ||
+      //   Object.keys(enclosedChanges).length;
+
+      // if (hasChanges) {
+
+      // }
+
+
     } catch (error) {
       toast.error("Failed to create case");
     }
+  };
+
+
+  const getChanges = (oldData: any, newData: any) => {
+    const changes: Record<string, { from: any; to: any }> = {};
+    for (const key in newData) {
+      if (JSON.stringify(oldData?.[key]) !== JSON.stringify(newData[key])) {
+        changes[key] = {
+          from: oldData?.[key],
+          to: newData[key],
+        };
+      }
+    }
+    return changes;
   };
 
   useEffect(() => {
@@ -711,6 +747,7 @@ const UpdateCase: React.FC = () => {
           return services;
         });
         setSelectedProducts(() => {
+
           const groupedProducts: any = {};
           caseDataApi.products.forEach((item: any, index: number) => {
             const matchingProducts = caseDataApi.products.filter((l: any) => l.case_prodcut_no === item?.case_prodcut_no);
@@ -858,46 +895,46 @@ const UpdateCase: React.FC = () => {
             );
             // Create subRow for individual tooth
             //if (matchingProducts.length > 1) {
-              item.teethProduct?.tooth_number?.forEach((tooth: number) => {
-                groupedProducts[productId].subRows.push({
-                  id: item?.teethProduct?.product_id,//productId,
-                  name: item?.name || "",
-                  // Map to only return the service id
-                  type: item?.teethProduct?.type || "",
-                  price: item?.discounted_price?.price || 0,
-                  additional_service_id: item.teethProduct.additional_services_id,
-                  services_discount: item.teethProduct?.services_discount,
-                  quantity: item.discounted_price?.quantity,
-                  discount: item?.discounted_price?.discount || 0,
-                  discounted_price_id: item.discounted_price?.id,
-                  case_product_id: item.teethProduct.case_product_id,
-                  case_prodcut_no: item.teethProduct.case_prodcut_no,
-                  teeth: [tooth], // Single tooth per subRow
-                  pontic_teeth: item?.pontic_teeth,
-                  notes: item?.teethProduct?.notes || "",
-                  shades: {
-                    body_shade: item.teethProduct?.body_shade?.id || null,
-                    gingival_shade:
-                      item?.teethProduct?.gingival_shade?.id || null,
-                    occlusal_shade:
-                      item?.teethProduct?.occlusal_shade?.id || null,
-                    stump_shade: item.teethProduct?.stump_shade?.id || null,
-                    custom_body: item.teethProduct?.custom_body_shade || null,
-                    custom_occlusal:
-                      item.teethProduct?.custom_occlusal_shade || null,
-                    custom_gingival:
-                      item.teethProduct?.custom_gingival_shade || null,
-                    custom_stump: item.teethProduct?.custom_stump_shade || null,
-                    manual_body: item.teethProduct?.manual_body_shade || null,
-                    manual_occlusal:
-                      item.teethProduct?.manual_occlusal_shade || null,
-                    manual_gingival:
-                      item.teethProduct?.manual_gingival_shade || null,
-                    manual_stump: item.teethProduct?.manual_stump_shade || null,
-                  },
-                });
+            item.teethProduct?.tooth_number?.forEach((tooth: number) => {
+              groupedProducts[productId].subRows.push({
+                id: item?.teethProduct?.product_id,//productId,
+                name: item?.name || "",
+                // Map to only return the service id
+                type: item?.teethProduct?.type || "",
+                price: item?.discounted_price?.price || 0,
+                additional_service_id: item.teethProduct.additional_services_id,
+                services_discount: item.teethProduct?.services_discount,
+                quantity: item.discounted_price?.quantity,
+                discount: item?.discounted_price?.discount || 0,
+                discounted_price_id: item.discounted_price?.id,
+                case_product_id: item.teethProduct.case_product_id,
+                case_prodcut_no: item.teethProduct.case_prodcut_no,
+                teeth: [tooth], // Single tooth per subRow
+                pontic_teeth: item?.pontic_teeth,
+                notes: item?.teethProduct?.notes || "",
+                shades: {
+                  body_shade: item.teethProduct?.body_shade?.id || null,
+                  gingival_shade:
+                    item?.teethProduct?.gingival_shade?.id || null,
+                  occlusal_shade:
+                    item?.teethProduct?.occlusal_shade?.id || null,
+                  stump_shade: item.teethProduct?.stump_shade?.id || null,
+                  custom_body: item.teethProduct?.custom_body_shade || null,
+                  custom_occlusal:
+                    item.teethProduct?.custom_occlusal_shade || null,
+                  custom_gingival:
+                    item.teethProduct?.custom_gingival_shade || null,
+                  custom_stump: item.teethProduct?.custom_stump_shade || null,
+                  manual_body: item.teethProduct?.manual_body_shade || null,
+                  manual_occlusal:
+                    item.teethProduct?.manual_occlusal_shade || null,
+                  manual_gingival:
+                    item.teethProduct?.manual_gingival_shade || null,
+                  manual_stump: item.teethProduct?.manual_stump_shade || null,
+                },
               });
-           // }
+            });
+            // }
           });
 
           // Convert Set back to array for each main product row
