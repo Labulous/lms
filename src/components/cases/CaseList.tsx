@@ -3019,19 +3019,31 @@ const CaseList: React.FC = () => {
       accessorKey: "client",
       header: ({ column }) => (
         <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" className="p-0 hover:bg-transparent">
-              <div className="flex items-center">
+          <div className="flex items-center">
+            <PopoverTrigger asChild>
+              <span className="cursor-pointer select-none">
                 Client
-                <ChevronsUpDown className="ml-2 h-4 w-4" />
                 {clientFilter.length > 0 && (
                   <Badge variant="outline" className="ml-2 bg-background">
                     {clientFilter.length}
                   </Badge>
                 )}
-              </div>
-            </Button>
-          </PopoverTrigger>
+              </span>
+            </PopoverTrigger>
+            {/* Separate button for sorting only */}
+            <button
+              type="button"
+              aria-label="Sort by client name"
+              className="p-0 hover:bg-transparent ml-1"
+              style={{ background: "none", border: "none" }}
+              onClick={e => {
+                e.stopPropagation();
+                column.toggleSorting();
+              }}
+            >
+              <ChevronsUpDown className="ml-2 h-4 w-4" />
+            </button>
+          </div>
           <PopoverContent className="w-[200px] p-2 max-h-64 overflow-y-auto" align="start">
             <div className="space-y-2">
               <div className="flex items-center justify-between pb-2 mb-2 border-b">

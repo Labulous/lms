@@ -779,13 +779,13 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="px-2"
               onClick={() =>
                 onSelectionChange([
-                  'Upper Arc'
+                  'Upper Arch'
                   // 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28,
                 ])
               }
             >
               <MoveUp className="h-3 w-3" />
-              <span>Select Upper Arc</span>
+              <span>Select Upper Arch</span>
             </Button>
             <Button
               variant="outline"
@@ -793,13 +793,13 @@ const ToothSelector: React.FC<ToothSelectorProps> = ({
               className="px-2"
               onClick={() =>
                 onSelectionChange([
-                  'Lower Arc'
+                  'Lower Arch'
                   // 31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48,
                 ])
               }
             >
               <MoveDown className="h-3 w-3" />
-              <span>Select Lower Arc</span>
+              <span>Select Lower Arch</span>
             </Button>
           </div>
 

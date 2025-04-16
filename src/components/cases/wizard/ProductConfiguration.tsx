@@ -511,7 +511,7 @@ const ProductConfiguration: React.FC<ProductConfigurationProps> = ({
       let filteredProducts = allProducts; 
   
       // Step 2: If toothType is "Lower Arch" or "Upper Arch", filter only "Arch" billing types
-      if (toothType === "Lower Arc" || toothType === "Upper Arc") {
+      if (toothType === "Lower Arch" || toothType === "Upper Arch") {
         filteredProducts = allProducts.filter(
           (product) => product.billing_type?.name === "perArch"
         );
