@@ -285,7 +285,7 @@ export interface OfficeAddress {
 }
 
 export interface labDetail {
-  name: string;
+  name?: string;
   id?: string;
   attachements?: string;
   office_address: OfficeAddress;

@@ -8,6 +8,7 @@ import { updateBalanceTracking } from "@/lib/updateBalanceTracking";
 import { duplicateInvoiceProductsByTeeth } from "@/lib/dulicateProductsByTeeth";
 import { fetchCaseCount } from "@/utils/invoiceCaseNumberConversion";
 import { getLabIdByUserId } from "@/services/authService";
+import { logAuditAction } from "@/utils/auditLog";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -219,7 +220,8 @@ const saveCaseProduct = async (
         type: product.type || "",
         additional_services_id:
           product?.services?.map((item: { id: string }) => item.id) || [],
-        services_discount: product?.services?.[0]?.discount || 0,
+        //services_discount: product?.services?.[0]?.discount || 0,
+        services_discount: product?.services_discount || 0 ,
         lab_id: cases.overview.lab_id || "",
         quantity: product.quantity || 1, // Ensure at least 1
         occlusal_shade_id:
@@ -593,6 +595,14 @@ const saveCases = async (
 
     // Step 5: Save the overview to localStorage
 
+    await logAuditAction({
+      actionType: "CREATE",
+      entityType: "case",
+      entityId: cases.overview.id,
+      changes: 'New case created',
+      performedBy: cases.overview.created_by,
+    });
+
     localStorage.setItem("cases", JSON.stringify(cases));
   } catch (error) {
     console.error("Error in saveCases function:", error);
@@ -826,7 +836,8 @@ const updateCases = async (
         type: product.type || "",
         additional_services_id:
           product?.services?.map((item: { id: string }) => item.id) || [],
-        services_discount: product?.services?.[0]?.discount || 0,
+        //services_discount: product?.services?.[0]?.discount || 0,
+        services_discount: product?.services_discount || 0 ,
         lab_id: cases.overview.lab_id || "",
         quantity: product.quantity || 1, // Ensure at least 1
         occlusal_shade_id:
@@ -1223,6 +1234,15 @@ const updateCases = async (
         });
       });
     }
+debugger;
+await logAuditAction({
+  actionType: "UPDATE",
+  entityType: "case",
+  entityId: caseId as string,
+  changes: 'Case Updated',
+  performedBy: cases.overview.created_by as string,
+});
+
 
 
 

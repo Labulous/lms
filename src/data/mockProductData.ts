@@ -26,6 +26,7 @@ export interface SavedProduct {
   pontic_teeth?: (number | string)[];
   is_taxable: boolean;
   isServicesAll?: boolean;
+  services_discount? : number;
   mainServices?: {
     id: string | null;
     name: string;

@@ -46,6 +46,7 @@ import { createRoot } from "react-dom/client";
 const RESEND_API = import.meta.env.VITE_RESEND_API;
 const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const VITE_EMAIL_FROM = import.meta.env.VITE_EMAIL_FROM;
 
 const mockStatements = [
   {
@@ -205,7 +206,8 @@ const StatementList = ({ statement }: StatementList) => {
 
         // Assuming you want the first lab's details
         if (data && data.length > 0) {
-          setLabs(data[0].lab as any);
+          // setLabs(data[0].lab as any);
+          setLabs(data[0] as any);
         }
       } catch (err: any) {
         console.error("Error fetching labs data:", err.message);
@@ -345,7 +347,7 @@ const StatementList = ({ statement }: StatementList) => {
 
     return filter.length > 0 ? filter : [];
   }, [searchTerm, clients]);
-  
+
   const fetchStatementDetails = async (statementId: string) => {
     try {
       // Find the selected statement
@@ -504,14 +506,22 @@ const StatementList = ({ statement }: StatementList) => {
     try {
       const attachments = [];
       const recipientEmails = [];
-
       for (const statementId of selectedStatements) {
         try {
-          const details = await fetchStatementDetails(statementId);
+          let details = await fetchStatementDetails(statementId);
+          console.log("details", details)
           if (!details.client?.email) continue;
+          const clientEmail = details.client.email;
+          const clientName = details.client.client_name;
+          const lab = details.labData[0];
+          const labName = lab?.name || "Lab Name";
+          const labEmail = lab?.office_address?.email || "LabEmail";
+          const labPhone = lab?.office_address?.phone_number || "";
 
-          recipientEmails.push(details.client.email);
-
+          // const labName = details.labData?.name || "Lab Name";
+          // const labEmail = details.labData?.office_address?.email || "LabEmail";
+          // const labPhone = details.labData?.office_address?.phone_number || "";
+          recipientEmails.push(clientEmail);
           const tempContainer = document.createElement("div");
           document.body.appendChild(tempContainer);
           const root = createRoot(tempContainer);
@@ -526,31 +536,63 @@ const StatementList = ({ statement }: StatementList) => {
           const canvas = await html2canvas(tempContainer, {
             scale: 2,
             useCORS: true,
-            logging: false
+            logging: false,
           });
 
           const pdf = new jsPDF({ compress: true });
           const imgData = canvas.toDataURL("image/png");
-          const imgWidth = 210; // A4 width in mm
-          //const imgWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = 297; // A4 height in mm
+          const imgWidth = 210;
+          const pageHeight = 297;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
           pdf.addImage(imgData, "image/png", 0, 0, imgWidth, imgHeight);
           const pdfBlob = await new Response(pdf.output("blob")).blob();
           const pdfBase64 = await blobToBase64(pdfBlob);
-          console.log("pdfBlob", pdfBlob)
-          console.log("pdfBase64", pdfBase64)
           attachments.push({
             filename: `Statement-${details.statement.statement_number}.pdf`,
             content: pdfBase64,
             contentType: "application/pdf",
           });
-          console.log("attachments", attachments)
           root.unmount();
           document.body.removeChild(tempContainer);
+          const now = new Date();
+          const monthYear = now.toLocaleString("default", { month: "long", year: "numeric" });
+          const subject = `Monthly Statement – ${labName}`;
+          const htmlBody = `
+            <p>Dear <strong>${labName}</strong>,</p>
+            <p>Attached is your monthly statement for <strong>${monthYear}</strong> from <strong>${labName}</strong>, summarizing recent transactions and balances.</p>
+            <p>For any discrepancies or inquiries, please reach out to us at <strong>${labEmail}</strong>.</p>
+            <p>Best regards,</p>
+            <p><strong>${labName}</strong><br/>
+            <strong>${labPhone} | ${labEmail}</strong></p>
+          `;
+          console.log("htmlBody", htmlBody);
+
+          // Send email using Supabase function
+          const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              from: `Statement <statement@${VITE_EMAIL_FROM}>`,
+              to: recipientEmails,
+              subject: subject,
+              html: htmlBody,
+              attachments: attachments,
+            }),
+          });
+
+          const result = await response.json();
+          if (response.ok) {
+            toast.success("Bulk emails sent successfully!");
+          } else {
+            throw new Error(result.error || "Unknown error");
+          }
         } catch (error) {
           console.error(`Failed to process statement ${statementId}:`, error);
+          toast.error("Failed to send bulk emails.");
         }
       }
 
@@ -559,28 +601,6 @@ const StatementList = ({ statement }: StatementList) => {
         setIsSendingBulkEmail(false);
         return;
       }
-      const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          from: "example.resend.dev",
-          //to: recipientEmails,
-          to: "cruxbasesoftware@gmail.com",
-          subject: "Your Statement Receipts",
-          html: "<p>Attached are your statement receipts.</p>",
-          attachments: attachments,
-        }),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        toast.success("Bulk emails sent successfully!");
-      } else {
-        throw new Error(result.error || "Unknown error");
-      }
     } catch (error: any) {
       console.error("Bulk email error:", error);
       toast.error("Failed to send bulk emails.");
@@ -588,7 +608,6 @@ const StatementList = ({ statement }: StatementList) => {
       setIsSendingBulkEmail(false);
     }
   };
-
   return (
     <div className="space-y-4 relative" >
       {loading && (

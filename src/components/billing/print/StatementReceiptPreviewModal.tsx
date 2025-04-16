@@ -19,6 +19,7 @@ import { createRoot } from "react-dom/client";
 const RESEND_API = import.meta.env.VITE_RESEND_API;
 const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const VITE_EMAIL_FROM = import.meta.env.VITE_EMAIL_FROM;
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
@@ -193,19 +194,28 @@ const StatementReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
       toast.error("Cannot send email: Missing data.");
       return;
     }
-
+ 
     setIsSendingEmail(true);
     setError(null);
-
+    console.log("caseDetails", caseDetails);
+ 
     try {
-      const attachments = [];
+      const attachments: { filename: string; content: string; contentType: string; }[] = [];
       const recipientEmails = [];
-
+ 
+      const labName = caseDetails[0]?.labData?.name || "Your Lab";
+      const labEmail = caseDetails[0]?.labData?.office_address.email || "lab@example.com";
+      const labPhone = caseDetails[0]?.labData?.office_address?.phone_number || "(000) 000-0000";
+      const currentMonthYear = new Date().toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
+ 
       for (const detail of caseDetails) {
         try {
           if (!detail.client?.email) continue;
           recipientEmails.push(detail.client.email);
-          console.log("recipientEmails", recipientEmails)
+ 
           const tempContainer = document.createElement("div");
           document.body.appendChild(tempContainer);
           const root = createRoot(tempContainer);
@@ -217,56 +227,71 @@ const StatementReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
             />
           );
           await new Promise(resolve => setTimeout(resolve, 50));
+ 
           const canvas = await html2canvas(tempContainer, {
             scale: 2,
             useCORS: true,
-            logging: false
+            logging: false,
           });
+ 
           const pdf = new jsPDF({ compress: true });
           const imgData = canvas.toDataURL("image/png");
           const imgWidth = 210;
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
+ 
           pdf.addImage(imgData, "image/png", 0, 0, imgWidth, imgHeight);
           const pdfBlob = await new Response(pdf.output("blob")).blob();
           const pdfBase64 = await blobToBase64(pdfBlob);
-          console.log("pdfBlob", pdfBlob)
-          console.log("pdfBase64", pdfBase64)
+ 
           attachments.push({
             filename: `Statement-${detail.statement?.statement_number || Date.now()}.pdf`,
             content: pdfBase64,
             contentType: "application/pdf",
           });
+ 
           root.unmount();
           document.body.removeChild(tempContainer);
         } catch (error) {
           console.error(`Failed to process statement:`, error);
         }
       }
-
+ 
       if (recipientEmails.length === 0) {
         toast.error("No valid recipients found.");
         return;
       }
-
+ 
+      const emailSubject = `Monthly Statement – ${labName}`;
+      const emailHtml = `
+        <p>Dear <strong>${caseDetails[0]?.statement?.client?.client_name || "Client"}</strong>,</p>
+        <p>Attached is your monthly statement for <strong>${currentMonthYear}</strong> from <strong>${labName}</strong>, summarizing recent transactions and balances.</p>
+        <p>For any discrepancies or inquiries, please reach out to us at <strong><a href="mailto:${labEmail}">${labEmail}</a></strong>.</p>
+        <p>Best regards,<br/><br/>
+        <strong>${labName}</strong><br/>
+        <strong>${labPhone}</strong> | <strong><a href="mailto:${labEmail}">${labEmail}</a></strong></p>
+      `;
+ 
+      // Prepare the bulk email data for the Resend function
+      const bulkEmails = recipientEmails.map(email => ({
+        from: `Statement <statement@${VITE_EMAIL_FROM}>`,
+        to: email,
+        subject: emailSubject,
+        html: emailHtml,
+        attachments,
+      }));
+ 
       const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
         },
-        body: JSON.stringify({
-          from: "your-email@yourdomain.com",
-          to: recipientEmails,
-          subject: "Your Statement Receipt",
-          html: "<p>Attached is your statement receipt.</p>",
-          attachments: attachments,
-        }),
+        body: JSON.stringify({ bulkEmails }),
       });
-
+ 
       const result = await response.json();
       if (response.ok) {
-        toast.success("Email sent successfully!");
+        toast.success("Emails sent successfully!");
       } else {
         throw new Error(result.error || "Unknown error");
       }
@@ -277,6 +302,7 @@ const StatementReceiptPreviewModal: React.FC<InvoicePreviewModalProps> = ({
       setIsSendingEmail(false);
     }
   };
+
   if (!isOpen) return null;
 
   const currentLabData = Array.isArray(labData) ? labData[0] : labData;

@@ -29,6 +29,8 @@ import {
   CheckCircle,
   Printer as PrinterIcon,
   ChevronsDown,
+  MailIcon,
+  Send,
 } from "lucide-react";
 import {
   mockInvoices,
@@ -96,6 +98,12 @@ import { InvoiceTemplate } from "@/components/cases/print/PrintTemplates";
 import { ExtendedCase } from "../cases/CaseDetails";
 import { useQuery } from "@supabase-cache-helpers/postgrest-swr";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { createRoot } from "react-dom/client";
+import html2canvas from "html2canvas";
+const VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const VITE_EMAIL_FROM = import.meta.env.VITE_EMAIL_FROM;
+
 
 // import { generatePDF } from "@/lib/generatePdf";
 
@@ -189,7 +197,7 @@ const InvoiceList: React.FC = () => {
     useState<any>(null);
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [isCaseDrawerOpen, setIsCaseDrawerOpen] = useState(false);
-
+  const [isSendingBulkEmail, setIsSendingBulkEmail] = useState(false);
   const { user } = useAuth();
 
   // Initialize invoices
@@ -234,6 +242,7 @@ const InvoiceList: React.FC = () => {
         client:clients!client_id (
           id,
           client_name,
+          email,
           phone,
           street,
           city,
@@ -1123,7 +1132,7 @@ const InvoiceList: React.FC = () => {
 
   const sortData = (data: Invoice[]) => {
     if (!sortConfig) return data;
-  
+
     return [...data].sort((a: any, b: any) => {
       // Extracting and handling specific fields
       if (sortConfig.key === "case_number") {
@@ -1131,24 +1140,24 @@ const InvoiceList: React.FC = () => {
           const match = str.match(/(\d+)$/); // Extracts the last number
           return match ? parseInt(match[0], 10) : 0;
         };
-  
+
         const numA = extractNumber(a.case_number || "");
         const numB = extractNumber(b.case_number || "");
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-  
+
       if (sortConfig.key === "date") {
         const dateA = new Date(a.received_date || 0).getTime();
         const dateB = new Date(b.received_date || 0).getTime();
         return sortConfig.direction === "asc" ? dateA - dateB : dateB - dateA;
       }
-  
+
       if (sortConfig.key === "amount") {
         const numA = Number(a.amount) || 0;
         const numB = Number(b.amount) || 0;
         return sortConfig.direction === "asc" ? numA - numB : numB - numA;
       }
-    
+
       // Sorting by clientName, with null/undefined checks
       if (sortConfig.key === "clientName") {
         const nameA = (a.client?.client_name || "").toLowerCase();
@@ -1157,7 +1166,7 @@ const InvoiceList: React.FC = () => {
           ? nameA.localeCompare(nameB)
           : nameB.localeCompare(nameA);
       }
-  
+
       // For other fields, make sure to handle undefined/empty values correctly
       const valueA = String(a[sortConfig.key] || "").toLowerCase();
       const valueB = String(b[sortConfig.key] || "").toLowerCase();
@@ -1166,7 +1175,7 @@ const InvoiceList: React.FC = () => {
         : valueB.localeCompare(valueA);
     });
   };
-  
+
 
 
 
@@ -1812,6 +1821,235 @@ const InvoiceList: React.FC = () => {
     }
   };
 
+  const blobToBase64 = async (blob: Blob) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+        const base64String = reader.result?.toString().split(",")[1];
+        if (base64String) resolve(base64String);
+        else reject("Failed to convert Blob to Base64");
+      };
+    });
+  };
+
+  const handleSendBulkEmails = async () => {
+    if (selectedInvoices.length === 0) return;
+    setIsSendingBulkEmail(true);
+    let successCount = 0;
+    try {
+      for (const invoiceId of selectedInvoices) {
+        try {
+          const invoiceDetails = invoicesData.find(
+            (inv: any) => inv.id === invoiceId
+          );
+          console.log("invoiceDetails", invoiceDetails)
+          if (!invoiceDetails?.client?.email) {
+            console.warn(`Skipping invoice ${invoiceId} - no client email`);
+            continue;
+          }
+
+          const tempContainer = document.createElement("div");
+          document.body.appendChild(tempContainer);
+          const root = createRoot(tempContainer);
+
+          root.render(
+            <InvoiceTemplate
+              caseDetails={[invoiceDetails]}
+              paperSize="LETTER"
+            />
+          );
+
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const canvas = await html2canvas(tempContainer, {
+            scale: 2,
+            useCORS: true,
+            logging: false
+          });
+
+          const pdf = new jsPDF({ compress: true });
+          const imgWidth = 210;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          pdf.addImage(canvas, "PNG", 0, 0, imgWidth, imgHeight);
+          console.log("lab", lab)
+          const pdfBlob = await new Response(pdf.output("blob")).blob();
+          const pdfBase64 = await blobToBase64(pdfBlob);
+
+          root.unmount();
+          document.body.removeChild(tempContainer);
+
+          const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              from: `Invoices <invoices@${VITE_EMAIL_FROM}>`,
+              to: invoiceDetails.client.email,
+              subject: `Invoice #${invoiceDetails.case_number || invoiceDetails.id} – ${lab?.name}`,
+              html: `
+                <p>Dear <strong>${invoiceDetails.client.client_name || "Valued Client"}</strong>,</p>
+                <p>
+                Attached is Invoice <strong>#${invoiceDetails.case_number || invoiceDetails.id}</strong> dated <strong>${new Date(invoiceDetails.created_at).toLocaleDateString()}</strong>, issued by <strong>${lab?.name}</strong>.
+                <br />
+                Please review and process the payment.
+                </p>
+                <p>
+                For any questions, contact us at 
+                <a href="mailto:${lab?.office_address.email || 'info@example.com'}">
+                <strong>${lab?.office_address.email || 'info@example.com'}</strong>
+                </a>.
+                </p>
+
+               <p>
+                 Best regards,<br /><br />
+                 <strong>${lab?.name}</strong><br />
+                 ${lab?.office_address?.phone_number || ""} | <a href="mailto:${lab?.office_address.email || 'info@example.com'}">
+                   <strong>${lab?.office_address.email || 'info@example.com'}</strong>
+                 </a>
+               </p>
+               <br />
+
+              `,
+              attachments: [{
+                filename: `Invoice-${invoiceDetails.case_number || invoiceDetails.id}.pdf`,
+                content: pdfBase64,
+                contentType: "application/pdf"
+              }]
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error("Email failed");
+          }
+        } catch (error) {
+          console.error(`Failed invoice ${invoiceId}:`, error);
+          toast.error(`Failed to send invoice ${invoiceId}`);
+        }
+      }
+      if (successCount > 0) {
+        toast.success(`${successCount} email${successCount > 1 ? "s" : ""} sent successfully`);
+      }
+      //toast.success("Emails sent successfully!");
+    } catch (error) {
+      console.error("Bulk email error:", error);
+      toast.error("Error sending emails");
+    } finally {
+      setIsSendingBulkEmail(false);
+    }
+  };
+
+
+  // const handleSendBulkEmails = async () => {
+  //   debugger;
+  //   if (selectedInvoices.length === 0) return;
+  //   setIsSendingBulkEmail(true);
+  //   let successCount = 0;
+  //   const bulkEmails = []; // Array to store bulk email data
+
+  //   try {
+  //     for (const invoiceId of selectedInvoices) {
+  //       const invoiceDetails = invoicesData.find((inv: any) => inv.id === invoiceId);
+  //       console.log("invoiceDetails", invoiceDetails);
+
+  //       if (!invoiceDetails?.client?.email) {
+  //         console.warn(`Skipping invoice ${invoiceId} - no client email`);
+  //         continue;
+  //       }
+
+  //       const tempContainer = document.createElement("div");
+  //       document.body.appendChild(tempContainer);
+  //       const root = createRoot(tempContainer);
+
+  //       root.render(
+  //         <InvoiceTemplate
+  //           caseDetails={[invoiceDetails]}
+  //           paperSize="LETTER"
+  //         />
+  //       );
+
+  //       await new Promise(resolve => setTimeout(resolve, 500));
+
+  //       const canvas = await html2canvas(tempContainer, {
+  //         scale: 2,
+  //         useCORS: true,
+  //         logging: false,
+  //       });
+
+  //       const pdf = new jsPDF({ compress: true });
+  //       const imgWidth = 210;
+  //       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  //       pdf.addImage(canvas, "PNG", 0, 0, imgWidth, imgHeight);
+  //       const pdfBlob = await new Response(pdf.output("blob")).blob();
+  //       const pdfBase64 = await blobToBase64(pdfBlob);
+
+  //       root.unmount();
+  //       document.body.removeChild(tempContainer);
+
+  //       // Push each email's data to the bulkEmails array
+  //       bulkEmails.push({
+  //         from: `Invoices <invoices@${VITE_EMAIL_FROM}>`,
+  //         to: invoiceDetails.client.email,
+  //         subject: `Invoice #${invoiceDetails.case_number || invoiceDetails.id} – ${lab?.name}`,
+  //         html: `
+  //           <p>Dear ${invoiceDetails.client.client_name || "Valued Client"},</p>
+  //           <p>
+  //             Attached is Invoice #${invoiceDetails.case_number || invoiceDetails.id} dated ${new Date(invoiceDetails.created_at).toLocaleDateString()}, issued by ${lab?.name}.
+  //             <br />
+  //             Please review and process the payment.
+  //           </p>
+  //           <p>
+  //             For any questions, contact us at ${lab?.office_address.email || "our office"}.
+  //           </p>
+  //           <p>
+  //             Best regards,<br />
+  //             ${lab?.name}<br />
+  //             ${lab?.office_address?.phone_number || ""} | ${lab?.office_address.email || ""}
+  //           </p>
+  //         `,
+  //         attachments: [{
+  //           filename: `Invoice-${invoiceDetails.case_number || invoiceDetails.id}.pdf`,
+  //           content: pdfBase64,
+  //           contentType: "application/pdf"
+  //         }]
+  //       });
+  //     }
+
+  //     // Check if there are any valid emails to send
+  //     if (bulkEmails.length === 0) {
+  //       toast.error("No valid emails to send.");
+  //       return;
+  //     }
+
+  //     // Send all emails at once using the backend function
+  //     const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+  //       },
+  //       body: JSON.stringify({ bulkEmails }),
+  //     });
+
+  //     const result = await response.json();
+  //     if (response.ok) {
+  //       successCount = bulkEmails.length; // Set the success count to the total number of emails sent
+  //       toast.success(`${successCount} email${successCount > 1 ? "s" : ""} sent successfully`);
+  //     } else {
+  //       throw new Error(result.error || "Unknown error");
+  //     }
+
+  //   } catch (error) {
+  //     console.error("Bulk email error:", error);
+  //     toast.error("Error sending emails");
+  //   } finally {
+  //     setIsSendingBulkEmail(false);
+  //   }
+  // };
+
+
   return (
     <div className="relative">
       {isCaseDrawerOpen && selectedCase && (
@@ -1917,8 +2155,23 @@ const InvoiceList: React.FC = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-
-
+            {selectedInvoices.length > 0 && (
+              <div>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSendBulkEmails}
+                  disabled={selectedInvoices.length === 0 || isSendingBulkEmail}
+                >
+                  {isSendingBulkEmail ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <MailIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Send Invoices
+                </Button>
+              </div>
+            )}
             {canApproveBulk && (
               <>
                 <Button
