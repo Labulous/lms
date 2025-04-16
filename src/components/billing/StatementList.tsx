@@ -569,27 +569,27 @@ const StatementList = ({ statement }: StatementList) => {
           console.log("htmlBody", htmlBody);
 
           // Send email using Supabase function
-          // const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json",
-          //     Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
-          //   },
-          //   body: JSON.stringify({
-          //     from: `Statement <statement@${VITE_EMAIL_FROM}>`,
-          //     to: recipientEmails,
-          //     subject: subject,
-          //     html: htmlBody,
-          //     attachments: attachments,
-          //   }),
-          // });
+          const response = await fetch(`${VITE_SUPABASE_URL}/functions/v1/resend-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              from: `Statement <statement@${VITE_EMAIL_FROM}>`,
+              to: recipientEmails,
+              subject: subject,
+              html: htmlBody,
+              attachments: attachments,
+            }),
+          });
 
-          // const result = await response.json();
-          // if (response.ok) {
-          //   toast.success("Bulk emails sent successfully!");
-          // } else {
-          //   throw new Error(result.error || "Unknown error");
-          // }
+          const result = await response.json();
+          if (response.ok) {
+            toast.success("Bulk emails sent successfully!");
+          } else {
+            throw new Error(result.error || "Unknown error");
+          }
         } catch (error) {
           console.error(`Failed to process statement ${statementId}:`, error);
           toast.error("Failed to send bulk emails.");
