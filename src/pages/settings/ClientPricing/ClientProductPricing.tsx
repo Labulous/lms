@@ -663,7 +663,7 @@ const ClientProductPricing = ({
               </Button>
             </SheetTrigger>
             <SheetContent className="w-[80vw] flex flex-col h-full">
-              <SheetHeader className="mb-5">
+              <SheetHeader className="flex-shrink-0">
                 <SheetTitle>Edit Prices</SheetTitle>
                 <SheetDescription>
                   Update prices for {selectedClient === "default"
@@ -672,8 +672,8 @@ const ClientProductPricing = ({
                   }
                 </SheetDescription>
               </SheetHeader>
-              <div className="space-y-5">
-                <div className="flex justify-between items-center">
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <div className="flex justify-between items-center mb-5">
                   <h3 className="text-lg font-semibold">Products</h3>
                   <div className="flex space-x-2">
                     <Button
@@ -690,195 +690,197 @@ const ClientProductPricing = ({
                     </Button>
                   </div>
                 </div>
-                <div className="rounded-md border h-full">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-white z-10">
-                      <TableRow className="bg-muted hover:bg-muted">
-                        <TableHead>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleSort("name")}
-                            className="h-8 p-0 font-medium"
-                          >
-                            Name
-                            {getSortIcon("name")}
-                          </Button>
-                        </TableHead>
-                        <TableHead className="relative">
-                          <div className="flex items-center gap-2">
+                <div className="flex-1 overflow-y-auto">
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-white z-10">
+                        <TableRow className="bg-muted hover:bg-muted">
+                          <TableHead>
                             <Button
                               variant="ghost"
-                              onClick={() => handleSort("material")}
+                              onClick={() => handleSort("name")}
                               className="h-8 p-0 font-medium"
                             >
-                              Material
-                              {getSortIcon("material")}
+                              Name
+                              {getSortIcon("name")}
                             </Button>
-                            <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 px-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setIsFilterOpen(true);
-                                  }}
-                                >
-                                  <Filter className="h-4 w-4 z-50" />
-                                  {selectedMaterial && (
-                                    <span className="ml-2 text-primary text-xs">
-                                      (Filtered)
-                                    </span>
-                                  )}
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-48 z-50 pointer-events-auto"
-                                align="start"
-                                side="bottom"
-                                sideOffset={5}
-                                style={{ position: 'fixed' }}
+                          </TableHead>
+                          <TableHead className="relative">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                onClick={() => handleSort("material")}
+                                className="h-8 p-0 font-medium"
                               >
-                                <div className="space-y-2">
-                                  <div className="font-medium">Filter by Material</div>
-                                  <div className="flex flex-col gap-2">
-                                    <Button
-                                      variant={!selectedMaterial ? "default" : "outline"}
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedMaterial(null);
-                                        setIsFilterOpen(false);
-                                      }}
-                                      className="justify-start"
-                                    >
-                                      All Materials
-                                    </Button>
-                                    {uniqueMaterials.map((material) => (
+                                Material
+                                {getSortIcon("material")}
+                              </Button>
+                              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 px-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setIsFilterOpen(true);
+                                    }}
+                                  >
+                                    <Filter className="h-4 w-4 z-50" />
+                                    {selectedMaterial && (
+                                      <span className="ml-2 text-primary text-xs">
+                                        (Filtered)
+                                      </span>
+                                    )}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-48 z-50 pointer-events-auto"
+                                  align="start"
+                                  side="bottom"
+                                  sideOffset={5}
+                                  style={{ position: 'fixed' }}
+                                >
+                                  <div className="space-y-2">
+                                    <div className="font-medium">Filter by Material</div>
+                                    <div className="flex flex-col gap-2">
                                       <Button
-                                        key={material}
-                                        variant={selectedMaterial === material ? "default" : "outline"}
+                                        variant={!selectedMaterial ? "default" : "outline"}
                                         size="sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          setSelectedMaterial(material);
+                                          setSelectedMaterial(null);
                                           setIsFilterOpen(false);
                                         }}
                                         className="justify-start"
                                       >
-                                        {material}
+                                        All Materials
                                       </Button>
-                                    ))}
+                                      {uniqueMaterials.map((material) => (
+                                        <Button
+                                          key={material}
+                                          variant={selectedMaterial === material ? "default" : "outline"}
+                                          size="sm"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedMaterial(material);
+                                            setIsFilterOpen(false);
+                                          }}
+                                          className="justify-start"
+                                        >
+                                          {material}
+                                        </Button>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                        </TableHead>
-                        <TableHead>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleSort("price")}
-                            className="h-8 p-0 font-medium"
-                          >
-                            Default Price
-                            {getSortIcon("price")}
-                          </Button>
-                        </TableHead>
-                        <TableHead>New Price</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody className="overflow-y-scroll">
-                      {(sortConfig.key ? sortData(filteredProducts) : filteredProducts)?.map((product) => {
-                        const hasNewPrice =
-                          selectedClient !== "default"
-                            ? !!getClientPrice(product.id, selectedClient)
-                            : !!defaultClientPrices.find(
-                                (item) => item.productId === product.id
-                              );
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <Button
+                              variant="ghost"
+                              onClick={() => handleSort("price")}
+                              className="h-8 p-0 font-medium"
+                            >
+                              Default Price
+                              {getSortIcon("price")}
+                            </Button>
+                          </TableHead>
+                          <TableHead>New Price</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody className="overflow-y-scroll">
+                        {(sortConfig.key ? sortData(filteredProducts) : filteredProducts)?.map((product) => {
+                          const hasNewPrice =
+                            selectedClient !== "default"
+                              ? !!getClientPrice(product.id, selectedClient)
+                              : !!defaultClientPrices.find(
+                                  (item) => item.productId === product.id
+                                );
 
-                        return (
-                          <TableRow
-                            key={product.id}
-                            className={cn(
-                              "hover:bg-muted/50",
-                              selectedClient !== "default" &&
-                                hasNewPrice &&
-                                "bg-blue-50"
-                            )}
-                          >
-                            <TableCell className="font-medium">
-                              {product.name}
-                            </TableCell>
-                            <TableCell>{product.material.name}</TableCell>
-                            <TableCell>${product.price.toFixed(2)}</TableCell>
-                            <TableCell>
-                              {selectedClient !== "default" ? (
-                                <Input
-                                  type="number"
-                                  value={
-                                    getClientPrice(product.id, selectedClient) ?? ""
-                                  }
-                                  onChange={(e) =>
-                                    handlePriceChange(
-                                      product.id,
-                                      e.target.value
-                                    )
-                                  }
-                                  step="0.01"
-                                  min="0"
-                                  placeholder={product.price.toFixed(2)}
-                                  className="w-24"
-                                />
-                              ) : (
-                                <Input
-                                  type="number"
-                                  placeholder="Ener new"
-                                  value={
-                                    defaultClientPrices.find(
-                                      (item) => item.productId === product.id
-                                    )?.price || 0
-                                  }
-                                  onChange={(e) => {
-                                    const newPrice =
-                                      parseFloat(e.target.value) || 0;
-                                    setDefaultClientPrices((prevPrices) => {
-                                      const index = prevPrices.findIndex(
-                                        (item) =>
-                                          item.productId === product.id
-                                      );
-                                      if (index !== -1) {
-                                        // Update existing item
-                                        const updatedPrices = [...prevPrices];
-                                        updatedPrices[index] = {
-                                          ...updatedPrices[index],
-                                          price: newPrice,
-                                        };
-                                        return updatedPrices;
-                                      } else {
-                                        // Add new item
-                                        return [
-                                          ...prevPrices,
-                                          {
-                                            productId: product.id,
-                                            price: newPrice,
-                                          },
-                                        ];
-                                      }
-                                    });
-                                  }}
-                                  step="0.01"
-                                  min="0"
-                                  className="w-24"
-                                />
+                          return (
+                            <TableRow
+                              key={product.id}
+                              className={cn(
+                                "hover:bg-muted/50",
+                                selectedClient !== "default" &&
+                                  hasNewPrice &&
+                                  "bg-blue-50"
                               )}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                            >
+                              <TableCell className="font-medium">
+                                {product.name}
+                              </TableCell>
+                              <TableCell>{product.material.name}</TableCell>
+                              <TableCell>${product.price.toFixed(2)}</TableCell>
+                              <TableCell>
+                                {selectedClient !== "default" ? (
+                                  <Input
+                                    type="number"
+                                    value={
+                                      getClientPrice(product.id, selectedClient) ?? ""
+                                    }
+                                    onChange={(e) =>
+                                      handlePriceChange(
+                                        product.id,
+                                        e.target.value
+                                      )
+                                    }
+                                    step="0.01"
+                                    min="0"
+                                    placeholder={product.price.toFixed(2)}
+                                    className="w-24"
+                                  />
+                                ) : (
+                                  <Input
+                                    type="number"
+                                    placeholder="Ener new"
+                                    value={
+                                      defaultClientPrices.find(
+                                        (item) => item.productId === product.id
+                                      )?.price || 0
+                                    }
+                                    onChange={(e) => {
+                                      const newPrice =
+                                        parseFloat(e.target.value) || 0;
+                                      setDefaultClientPrices((prevPrices) => {
+                                        const index = prevPrices.findIndex(
+                                          (item) =>
+                                            item.productId === product.id
+                                        );
+                                        if (index !== -1) {
+                                          // Update existing item
+                                          const updatedPrices = [...prevPrices];
+                                          updatedPrices[index] = {
+                                            ...updatedPrices[index],
+                                            price: newPrice,
+                                          };
+                                          return updatedPrices;
+                                        } else {
+                                          // Add new item
+                                          return [
+                                            ...prevPrices,
+                                            {
+                                              productId: product.id,
+                                              price: newPrice,
+                                            },
+                                          ];
+                                        }
+                                      });
+                                    }}
+                                    step="0.01"
+                                    min="0"
+                                    className="w-24"
+                                  />
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </div>
             </SheetContent>

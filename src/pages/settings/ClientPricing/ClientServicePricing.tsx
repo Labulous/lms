@@ -665,7 +665,7 @@ const ClientServicePricing = ({
                 </SheetDescription>
               </SheetHeader>
               <div className="flex-1 overflow-y-auto mt-6">
-                <div className="rounded-md border h-full">
+                <div className="rounded-md border">
                   <Table>
                     <TableHeader className="sticky top-0 bg-white z-10">
                       <TableRow className="bg-muted hover:bg-muted">
